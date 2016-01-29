@@ -8,6 +8,7 @@ bak/
 # Generated files to ignore
 Run*/
 runList.html
+data
 
 # File types to ignore
 *.root
