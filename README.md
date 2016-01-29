@@ -2,7 +2,7 @@
 
 **OVERWATCH**: **O**nline **V**isualization of **E**merging t**R**ends and **W**eb **A**ccessible de**T**ector **C**onditions using the **H**LT.
 
-This project encompasses functionality to handle everything from initial processing of files received from the HLT to a dynamic website providing basic QA functionality and everything in between. While this project was created for the purposes of EMCal real time monitoring, it can provide this functionality to any detector which utilizes the HLT by modifying only a few lines of code ([see blow](#adding-a-detector)). It is highly configurable, allowing the user wide freedom to look at the data in nearly any way that can be imagined. 
+This project encompasses functionality to handle everything from initial processing of files received from the HLT to a dynamic website providing basic QA functionality and everything in between. While this project was created for the purposes of EMCal real time monitoring, it can provide this functionality to any detector which utilizes the HLT by modifying only a few lines of code ([see below](#adding-a-detector)). It is highly configurable, allowing the user wide freedom to look at the data in nearly any way that can be imagined. 
 
 ## Introduction
 
