@@ -138,6 +138,11 @@ def createPageForRootFileAccess(dirPrefix, dirName, subsystem, generateTemplate 
         None
 
     """
+    # Make sure that the dir exists before trying to create the file
+    if not os.path.exists(os.path.join(dirPrefix, subsystem)):
+        os.makedirs(os.path.join(dirPrefix, subsystem))
+
+    # Create file
     f = open(os.path.join(dirPrefix, subsystem + "ROOTFiles.html"), "wb")
     #print "Writing page:", os.path.join(dirPrefix, subsystem + "ROOTFiles.html")
 
