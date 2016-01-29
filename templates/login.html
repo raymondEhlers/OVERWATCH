@@ -1,0 +1,44 @@
+{% extends "layout.html" %}
+{% block head %}
+    <!-- Handles removing confusing messages after we have logged out. -->
+    <script type="text/javascript">
+        function removeLogoutFlashes() {
+            var flashes = document.getElementById("flashes");
+            if (flashes != null)
+            {
+                var children = flashes.children
+                for (var i = 0; i < children.length; i++)
+                {
+                    /*console.log(children[i])
+                    console.log(children[i].textContent);*/
+                    if (children[i].textContent === "Please log in to access this page." || children[i].textContent.search("Login Success for") != -1)
+                    {
+                        children[i].style.display="none";
+                    }
+                }
+            }
+        }
+    </script>
+{% endblock %}
+{% block onLoad %}removeLogoutFlashes();{% endblock %}
+{% block body %}
+    <h1>ALICE OVERWATCH</h1>
+    <a class="anchor" name="topOfPage"></a>
+    <h3>Online Detector monitoring and Basic QA</h3>
+    {% if current_user.is_authenticated %}
+        <p>Logged in as user {{ current_user.id }}. No additional authentication is needed!</p>
+    {% else %}
+        <p>Please login</p>
+        {% if error %}
+            <p class=error><strong>Error:</strong> {{ error }}
+        {% endif %}
+        <form action="" method="post">
+            Username:<br>
+            <input type="text" name="username" value="{{ request.form.username }}"><br>
+            Password:<br>
+            <input type="password" name="password"><br>
+            <input type="hidden" value="{{ nextValue or '' }}" name="next">
+            <input value="Login" type="submit" />
+        </form>
+    {% endif %}
+{% endblock %}

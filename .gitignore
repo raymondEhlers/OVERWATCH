@@ -1,0 +1,17 @@
+# Sensitive files to ignore
+serverParams.py
+
+# Directories to ignore
+build/
+bak/
+
+# Generated files to ignore
+Run*/
+runList.html
+
+# File types to ignore
+*.root
+*.zip
+*.pyc
+*.png
+*.DS_Store

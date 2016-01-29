@@ -1,0 +1,154 @@
+{% extends "layout.html" %}
+{% block head %}
+    <script type="text/javascript">
+        /* Helper function to show selected option and hide all others */
+        function setOptionsVisibleAsNecessary(selectedFunction) {
+            var availableOptions = document.getElementById("qaFunction").options
+            //console.log(availableOptions)
+            var selectorNeedsToBeSet = true
+            for (var i = 0; i < availableOptions.length; i++)
+            {
+                if (availableOptions[i].className === selectedFunction)
+                {
+                    availableOptions[i].disabled = false;
+                    availableOptions[i].removeAttribute("hidden");
+                    if (selectorNeedsToBeSet === true)
+                    {
+                        availableOptions[i].selected = true;
+                        selectorNeedsToBeSet = false;
+                    }
+                }
+                else
+                {
+                    availableOptions[i].disabled = true;
+                    availableOptions[i].setAttribute("hidden", "hidden");
+                    availableOptions[i].selected = false;
+                }
+            }
+        }
+
+        /* Only valid functions are shown for each subsystem */
+        function showOnlyValidSelectors() {
+            document.getElementById("subsystem").addEventListener("change", function() {
+                /* Find elemnts of the new subsystem */
+                //console.log(this.value);
+                var selector = this.value + "Selector"
+                var hiddenElementsToShow = document.getElementsByClassName(selector);
+                if (hiddenElementsToShow.length > 0)
+                {
+                    //console.log(hiddenElementsToShow);
+                    setOptionsVisibleAsNecessary(selector);
+                }
+                else
+                {
+                    //console.log("No functions available!");
+                    setOptionsVisibleAsNecessary("noSelector");
+                }
+
+                /* Fixes the docstring */
+                /* See: https://stackoverflow.com/a/23612498 */
+                document.getElementById("qaFunction").dispatchEvent(new Event('change'));
+            });
+
+            /* Apply the selector filtering define above on load */
+            /* See: https://stackoverflow.com/a/23612498 */
+            document.getElementById("subsystem").dispatchEvent(new Event('change'));
+
+        }
+
+        /* Hides functions which are not being shown */
+        /* Note that showFunctionDocstring is not actually defined in the css. But that means it will be displayed */
+        /* Based on: https://stackoverflow.com/a/24849350 */
+        function switchDocstrings() {
+            /* Registers a listener for the future */
+            document.getElementById("qaFunction").addEventListener("change", function() {
+                /* Selects the first element, which is fine, since there should only be one visible */
+                var visibleElement = document.querySelector(".showFunctionDocstring");
+                /* this refers to the qaSelector */
+                var hiddenElementToShow = document.getElementById(this.value);
+                /*console.log(this.value);
+                console.log(visibleElement);
+                console.log(hiddenElementToShow);*/
+
+                /* Hides the old element */
+                if (visibleElement != null) {
+                    visibleElement.className = "hideFunctionDocstring";
+                }
+                /* Shows the new element */
+                if (hiddenElementToShow != null) {
+                    hiddenElementToShow.className = "showFunctionDocstring";
+                }
+
+            });
+
+            /* Fire a change to activate the above to set the proper function on page load. */
+            /* See: https://stackoverflow.com/a/23612498 */
+            // Create a new 'change' event
+            var event = new Event('change');
+
+            // Dispatch it.
+            document.getElementById("qaFunction").dispatchEvent(event);
+        }
+    </script>
+{% endblock %}
+{% block onLoad %}showOnlyValidSelectors();switchDocstrings();{% endblock %}
+{% block body %}
+    <a class="anchor" name="topOfPage"></a>
+    <h1>OVERWATCH Basic QA</h1>
+    <form class="qaSelector" id="qaSelector" action"/processQA" method="post">
+        <table class="processQATable">
+            <tr>
+                <td class="centerTableElement">First run</td>
+                <td class="centerTableElement">Last run</td>
+                <td class="centerTableElement">Subsystem</td>
+                <td class="centerTableElement">QA Function</td>
+            </tr>
+            <tr>
+                <td class="centerTableElement">
+                    <select name="firstRun">
+                        {% for run in runList %}
+                        <option value="{{ run }}">Run {{ run.replace("Run","")}}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td class="centerTableElement">
+                    <select name="lastRun">
+                        {% for run in runList %}
+                        <option value="{{ run }}">Run {{ run.replace("Run","") }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td class="centerTableElement">
+                    <select name="subsystem" id="subsystem">
+                        {% for subsystem in subsystemList %}
+                        <option value="{{ subsystem }}">{{ subsystem }}</option>
+                        {% endfor %}
+                    </select>
+                </td>
+                <td class="centerTableElement">
+                    <select name="qaFunction" id="qaFunction">
+                        {% for subsystem in qaFunctionsList %}
+                            {% for funcName in qaFunctionsList[subsystem] %}
+                            <option class="{{ subsystem }}Selector" value="{{ funcName }}">{{ funcName }}</option>
+                            {% endfor %}
+                        {% endfor %}
+                        <option class="noSelector" value="noFunction" hidden="hidden">No fuctions available!</option>
+                    </select>
+                </td>
+            </tr>
+        </table>
+        <br />
+        <!-- div is just to manage placement -->
+        <div style="padding-left: 6.5em">
+            <input style="display: inline-block;" value="Process QA" class="submitButton" type="submit" />
+        </div>
+    </form>
+    <!-- QA function descriptions -->
+    <div class="contentDivider">
+        {% for funcName, docStringList in docStrings.items() %}
+            {# Replaces new lines with HTML new lines (ie <br>) and replaces groups of spaces with no break spaces #}
+            <p class="hideFunctionDocstring" id="{{ funcName }}"><strong>{{ funcName }} ({{ docStringList[0] }}):</strong><br />{{ docStringList[1].replace("\n","<br />").replace("    ","&nbsp&nbsp&nbsp&nbsp") | safe }}</p>
+        {% endfor %}
+        <p class="hideFunctionDocstring" id="noFunction" >No functions are available in this subsystem! Please select another subsystem!</p>
+    </div>
+{% endblock %}

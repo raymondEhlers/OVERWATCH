@@ -1,0 +1,226 @@
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd">
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta http-equiv="Content-Type" content="text/html; charset=utf-8" />
+  <meta http-equiv="Content-Style-Type" content="text/css" />
+  <meta name="generator" content="pandoc" />
+  <title></title>
+  <style type="text/css">code{white-space: pre;}</style>
+  <style type="text/css">
+div.sourceCode { overflow-x: auto; }
+table.sourceCode, tr.sourceCode, td.lineNumbers, td.sourceCode {
+  margin: 0; padding: 0; vertical-align: baseline; border: none; }
+table.sourceCode { width: 100%; line-height: 100%; }
+td.lineNumbers { text-align: right; padding-right: 4px; padding-left: 4px; color: #aaaaaa; border-right: 1px solid #aaaaaa; }
+td.sourceCode { padding-left: 5px; }
+code > span.kw { color: #007020; font-weight: bold; } /* Keyword */
+code > span.dt { color: #902000; } /* DataType */
+code > span.dv { color: #40a070; } /* DecVal */
+code > span.bn { color: #40a070; } /* BaseN */
+code > span.fl { color: #40a070; } /* Float */
+code > span.ch { color: #4070a0; } /* Char */
+code > span.st { color: #4070a0; } /* String */
+code > span.co { color: #60a0b0; font-style: italic; } /* Comment */
+code > span.ot { color: #007020; } /* Other */
+code > span.al { color: #ff0000; font-weight: bold; } /* Alert */
+code > span.fu { color: #06287e; } /* Function */
+code > span.er { color: #ff0000; font-weight: bold; } /* Error */
+code > span.wa { color: #60a0b0; font-weight: bold; font-style: italic; } /* Warning */
+code > span.cn { color: #880000; } /* Constant */
+code > span.sc { color: #4070a0; } /* SpecialChar */
+code > span.vs { color: #4070a0; } /* VerbatimString */
+code > span.ss { color: #bb6688; } /* SpecialString */
+code > span.im { } /* Import */
+code > span.va { color: #19177c; } /* Variable */
+code > span.cf { color: #007020; font-weight: bold; } /* ControlFlow */
+code > span.op { color: #666666; } /* Operator */
+code > span.bu { } /* BuiltIn */
+code > span.ex { } /* Extension */
+code > span.pp { color: #bc7a00; } /* Preprocessor */
+code > span.at { color: #7d9029; } /* Attribute */
+code > span.do { color: #ba2121; font-style: italic; } /* Documentation */
+code > span.an { color: #60a0b0; font-weight: bold; font-style: italic; } /* Annotation */
+code > span.cv { color: #60a0b0; font-weight: bold; font-style: italic; } /* CommentVar */
+code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Information */
+  </style>
+  <link href="data:text/css;charset=utf-8,%0A%0A%0A%0Adiv%23header%2C%20header%0A%7B%0A%0Aborder%2Dbottom%3A%201px%20solid%20%23aaa%3B%0Amargin%2Dbottom%3A%200%2E5em%3B%0A%7D%0A%2Etitle%20%0A%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0A%2Eauthor%2C%20%2Edate%20%0A%7B%0Atext%2Dalign%3A%20center%3B%0A%7D%0A%0Adiv%23TOC%2C%20nav%23TOC%0A%7B%0A%0Aborder%2Dbottom%3A%201px%20solid%20%23aaa%3B%0Amargin%2Dbottom%3A%200%2E5em%3B%0A%7D%0A%40media%20print%0A%7B%0Adiv%23TOC%2C%20nav%23TOC%0A%7B%0A%0Adisplay%3A%20none%3B%0A%7D%0A%7D%0A%0Abody%0A%7B%0Awidth%3A%20900px%3B%0Amargin%2Dleft%3A%20auto%3B%0Amargin%2Dright%3A%20auto%3B%0A%7D%0A%0Ah1%2C%20h2%2C%20h3%2C%20h4%2C%20h5%2C%20h6%0A%7B%0Afont%2Dfamily%3A%20%22Helvetica%20Neue%22%2C%20Helvetica%2C%20%22Liberation%20Sans%22%2C%20Calibri%2C%20Arial%2C%20sans%2Dserif%3B%20%0A%0Apage%2Dbreak%2Dafter%3A%20avoid%3B%20%0A%7D%0A%0Adiv%20div%2C%20section%20section%20%0A%7B%0Amargin%2Dleft%3A%202em%3B%20%0A%7D%0Ap%20%7B%7D%0Ablockquote%0A%7B%20font%2Dstyle%3A%20italic%3B%0A%7D%0Ali%20%0A%7B%0A%7D%0Ali%20%3E%20p%20%0A%7B%0Amargin%2Dtop%3A%201em%3B%20%0A%7D%0Aul%20%0A%7B%0A%7D%0Aul%20li%20%0A%7B%0A%7D%0Aol%20%0A%7B%0A%7D%0Aol%20li%20%0A%7B%0A%7D%0Ahr%20%7B%7D%0A%0Asub%20%0A%7B%0A%7D%0Asup%20%0A%7B%0A%7D%0Aem%20%0A%7B%0A%7D%0Aem%20%3E%20em%20%0A%7B%0Afont%2Dstyle%3A%20normal%3B%0A%7D%0Astrong%20%0A%7B%0A%7D%0A%0Aa%20%0A%7B%0A%0Atext%2Ddecoration%3A%20none%3B%0A%7D%0A%40media%20screen%0A%7B%0Aa%3Ahover%0A%7B%0A%0Atext%2Ddecoration%3A%20underline%3B%0A%7D%0A%7D%0A%40media%20print%0A%7B%0Aa%20%7B%0A%0Acolor%3A%20black%3B%0Abackground%3A%20transparent%3B%0A%7D%0Aa%5Bhref%5E%3D%22http%3A%2F%2F%22%5D%3Aafter%2C%20a%5Bhref%5E%3D%22https%3A%2F%2F%22%5D%3Aafter%0A%7B%0A%0Acontent%3A%20%22%20%28%22%20attr%28href%29%20%22%29%20%22%3B%0Afont%2Dsize%3A%2090%25%3B%0A%7D%0A%7D%0A%0Aimg%0A%7B%0A%0Avertical%2Dalign%3A%20middle%3B%0A%7D%0Adiv%2Efigure%20%0A%7B%0A%0Amargin%2Dleft%3A%20auto%3B%0Amargin%2Dright%3A%20auto%3B%0Atext%2Dalign%3A%20center%3B%0Afont%2Dstyle%3A%20italic%3B%0A%7D%0Ap%2Ecaption%20%0A%7B%0A%0A%7D%0A%0Apre%2C%20code%20%7B%0Abackground%2Dcolor%3A%20%23fdf7ee%3B%0A%0A%0A%0Awhite%2Dspace%3A%20pre%2Dwrap%3B%20%0Awhite%2Dspace%3A%20%2Dmoz%2Dpre%2Dwrap%20%21important%3B%20%0Awhite%2Dspace%3A%20%2Dpre%2Dwrap%3B%20%0Awhite%2Dspace%3A%20%2Do%2Dpre%2Dwrap%3B%20%0Aword%2Dwrap%3A%20break%2Dword%3B%20%0A%0A%7D%0Apre%20%0A%7B%0A%0Apadding%3A%200%2E5em%3B%20%0Aborder%2Dradius%3A%205px%3B%20%0A%0Aborder%3A%201px%20solid%20%23aaa%3B%0A%0Amargin%2Dleft%3A%200%2E5em%3B%0Amargin%2Dright%3A%200%2E5em%3B%0A%7D%0A%40media%20screen%0A%7B%0Apre%0A%7B%0A%0Awhite%2Dspace%3A%20pre%3B%0Aoverflow%3A%20auto%3B%0A%0Aborder%3A%201px%20dotted%20%23777%3B%0A%7D%0A%7D%0Acode%20%0A%7B%0A%7D%0Ap%20%3E%20code%2C%20li%20%3E%20code%20%0A%7B%0A%0Apadding%2Dleft%3A%202px%3B%0Apadding%2Dright%3A%202px%3B%0A%7D%0Ali%20%3E%20p%20code%20%0A%7B%0A%0Apadding%3A%202px%3B%0A%7D%0A%0Aspan%2Emath%20%0A%7B%0A%0A%7D%0Adiv%2Emath%20%0A%7B%0A%7D%0Aspan%2ELaTeX%20%0A%7B%0A%7D%20eq%20%0A%7B%0A%7D%20%0A%0Atable%0A%7B%0Aborder%2Dcollapse%3A%20collapse%3B%0Aborder%2Dspacing%3A%200%3B%20%0Aborder%2Dbottom%3A%202pt%20solid%20%23000%3B%0Aborder%2Dtop%3A%202pt%20solid%20%23000%3B%20%0A%0Amargin%2Dleft%3A%20auto%3B%0Amargin%2Dright%3A%20auto%3B%0A%7D%0Athead%20%0A%7B%0Aborder%2Dbottom%3A%201pt%20solid%20%23000%3B%0Abackground%2Dcolor%3A%20%23eee%3B%20%0A%7D%0Atr%2Eheader%20%0A%7B%0A%7D%20tbody%20%0A%7B%0A%7D%0A%0Atr%20%7B%0A%7D%0Atr%2Eodd%3Ahover%2C%20tr%2Eeven%3Ahover%20%0A%7B%0Abackground%2Dcolor%3A%20%23eee%3B%0A%7D%0A%0Atr%2Eodd%20%7B%7D%0Atr%2Eeven%20%7B%7D%0Atd%2C%20th%20%0A%7B%20vertical%2Dalign%3A%20top%3B%20%0Avertical%2Dalign%3A%20baseline%3B%20%0Apadding%2Dleft%3A%200%2E5em%3B%0Apadding%2Dright%3A%200%2E5em%3B%0Apadding%2Dtop%3A%200%2E2em%3B%0Apadding%2Dbottom%3A%200%2E2em%3B%0A%7D%0A%0A%0Ath%20%0A%7B%0Afont%2Dweight%3A%20bold%3B%20%7D%0Atfoot%20%0A%7B%0A%7D%0Acaption%20%0A%7B%0Acaption%2Dside%3A%20top%3B%0Aborder%3A%20none%3B%0Afont%2Dsize%3A%200%2E9em%3B%0Afont%2Dstyle%3A%20italic%3B%0Atext%2Dalign%3A%20center%3B%0Amargin%2Dbottom%3A%200%2E3em%3B%20%0Apadding%2Dbottom%3A%200%2E2em%3B%0A%7D%0A%0Adl%20%0A%7B%0Aborder%2Dtop%3A%202pt%20solid%20black%3B%0Apadding%2Dtop%3A%200%2E5em%3B%0Aborder%2Dbottom%3A%202pt%20solid%20black%3B%0A%7D%0Adt%20%0A%7B%0Afont%2Dweight%3A%20bold%3B%0A%7D%0Add%2Bdt%20%0A%7B%0Aborder%2Dtop%3A%201pt%20solid%20black%3B%0Apadding%2Dtop%3A%200%2E5em%3B%0A%7D%0Add%20%0A%7B%0Amargin%2Dbottom%3A%200%2E5em%3B%0A%7D%0Add%2Bdd%20%0A%7B%0Aborder%2Dtop%3A%201px%20solid%20black%3B%20%0A%7D%0A%0Aa%2Efootnote%2C%20a%2EfootnoteRef%20%7B%20%0Afont%2Dsize%3A%20small%3B%20vertical%2Dalign%3A%20text%2Dtop%3B%0A%7D%0Aa%5Bhref%5E%3D%22%23fnref%22%5D%2C%20a%2Ereversefootnote%20%0A%7B%0A%7D%0A%40media%20print%0A%7B%0Aa%5Bhref%5E%3D%22%23fnref%22%5D%2C%20a%2Ereversefootnote%20%0A%7B%0A%0Adisplay%3A%20none%3B%0A%7D%0A%7D%0Adiv%2Efootnotes%20%0A%7B%0A%7D%0Adiv%2Efootnotes%20li%5Bid%5E%3D%22fn%22%5D%20%0A%7B%0A%7D%0A%0A%40media%20print%0A%7B%0A%2Enoprint%0A%7B%0Adisplay%3Anone%3B%0A%7D%0A%7D%0A" rel="stylesheet" type="text/css" />
+</head>
+<body>
+<h1 id="alice-overwatch">ALICE OVERWATCH</h1>
+<p><strong>OVERWATCH</strong>: <strong>O</strong>nline <strong>V</strong>isualization of <strong>E</strong>merging t<strong>R</strong>ends and <strong>W</strong>eb <strong>A</strong>ccessible de<strong>T</strong>ector <strong>C</strong>onditions using the <strong>H</strong>LT.</p>
+<p>This project encompasses functionality to handle everything from initial processing of files received from the HLT to a dynamic website providing basic QA functionality and everything in between. While this project was created for the purposes of EMCal real time monitoring, it can provide this functionality to any detector which utilizes the HLT by modifying only a few lines of code (<a href="#adding-a-detector">see blow</a>). It is highly configurable, allowing the user wide freedom to look at the data in nearly any way that can be imagined.</p>
+<h2 id="introduction">Introduction</h2>
+<p>This project utilizes data from the HLT. Histograms are received and should be saved out at a fixed time interval (outside of the scope of this project). <em>Process Runs</em> will move, classify, and process the files. This includes printing the histograms, and transferring to the files to PDSF for wider access to the data. This data is then served by the <em>Web App</em>. It also handles calls to <em>Process Runs</em> for dynamic features, including stepping through the data in time, both within a run and by run, as well as basic QA.</p>
+<h4 id="technical-description">Technical Description</h4>
+<p>General audiences may skip this section.</p>
+<p>This project utilizes data from the HLT (although it could be from any source of histograms if they were saved properly). Access to the HLT must be handled and is outside the scope of this package - our current setup uses a number of systems at CERN. The histograms are received from the HLT, and then saved to a file at a fixed time interval (this is currently performed every minute). A cron job is then setup to run <em>Process Runs</em> at some short time interval. It is generally best to run <em>Process Runs</em> less frequently than the interval between writes of the HLT files. <em>Process Runs</em> will move, classify, and process the files. This includes printing the histograms, and transferring to the files to PDSF for wider access to the data. <em>Process Runs</em> also contains functions to allow more dynamic processing of the data, including stepping through the data in time, both within a run and by run, as well as basic QA.</p>
+<p>To handle viewing of the data, the server <em>Web App</em> is used. It serves up the processed and printed data. This also handles stepping through time slices (both within runs as well as by run using the QA features) of the data by hooking into functions defined in <em>Process Runs</em>. It can also be configured to provide direct access to the underlying ROOT files. The <em>Web App</em> can serve run pages based on Jinja2 templates (preferred) or fully static web pages, as both are written out. See <a href="#directory-structure">here</a> for more information about the files that are written out.</p>
+<p>The <em>Web App</em> is configured to work as both a full web server or a WSGI server. Since authenticated is required for all of the data, Flask must serve all files. (/static could be served by a traditional server, since no authentication is needed for those files, but there are only a few small files, so it does not seem worthwhile to add the complicated when Flask seems to work fine, if not at the best performance).</p>
+<p>A full, high performance web server is available in <em>Full Stack Server</em>. It is extremely simple, but it can act as a front end to the Flask server, which is a task usually performed by a more traditional web server such as Apache or Nginx. When the <em>Full Stack Server</em> is used, the <em>Web App</em> is used as a WSGI server and it will automatically be loaded by the <em>Full Stack Server</em>.</p>
+<p>This package has not been tested against python 3.</p>
+<h2 id="setup-and-usage">Setup and Usage</h2>
+<ol style="list-style-type: decimal">
+<li><p>Install dependencies: <code>flask Flask-Login Flask-Bcrypt bcrypt numpy</code>. Pip is the recommended install method. If using the <em>Web App</em> as a WSGI server on PDSF, then <code>uwsgi</code> is also needed. It is not needed for a normal user.</p></li>
+<li><p>Optional, but recommended: Build the documentation. See <a href="#documentation">here</a>.</p></li>
+<li><p>Configure <em>Process Runs</em> and the <em>Web App</em> with files in the <code>config</code> directory. Copy <code>serverParams_stub</code> to <code>serverParams</code> so that it is usable. Begin configuring with the options in <code>sharedParams</code> file, and then configure <code>processingParams</code> and <code>serverParams</code> as necessary. Most defaults should be fine but at minimum, the <code>users</code> and <code>secretKey</code> must be configured in <code>serverParams</code>. Each option is extensively documented, which can be viewed in the source file or the documentation.</p></li>
+<li><p>Configure the directory structure. See <a href="#directory-structure">here</a>.</p></li>
+<li><p>Run <em>Process Runs</em> to process the available data. <code>python processRuns.py</code></p></li>
+<li><p>Run the <em>Web App</em> to look at the data in a better organized way. <code>python webApp.py</code></p></li>
+</ol>
+<h2 id="documentation">Documentation</h2>
+<p>Based on <code>sphinx-autodoc</code> generation, the documentation is generated from the docstrings in the code. While they can be viewed in the source files or via python, sphinx compiles them into HTML, facilitating a cleaner view of the information. To build the documentation,</p>
+<ol style="list-style-type: decimal">
+<li><p>Install the dependencies. The documentation requires the python packages <code>sphinx sphinxcontrib-napoleon sphinx-autodoc recommonmark</code>. Pip is the recommended install method.</p></li>
+<li><p>Build the documentation using:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> doc
+<span class="kw">make</span> html
+<span class="kw">open</span> doc/build/html/index.html</code></pre></div></li>
+</ol>
+<p>The documentation will be created and available in the <code>doc/build/html/</code>. It is recommended to start with the <code>index.html</code> page.</p>
+<h2 id="adding-a-detector">Adding a Detector</h2>
+<p>Adding a new detector to the project is well documented in the <code>processRunsModules.detectors</code> package. Please look at it in the documentation (or look at it via python or the source file, <code>processRunsModules/detectors/__init__.py</code>). After following this guide, create a pull request for this repository at <a href="https://github.com/raymondEhlers/OVERWATCH">raymondEhlers/OVERWATCH</a>.</p>
+<h2 id="file-structure">File Structure</h2>
+<h3 id="files">Files</h3>
+<ul>
+<li><p><code>processRuns.py</code> - Moves, classifies, and processes files from the HLT. It will drive functions to produce html and images to display the data for arbitrary times and runs. This file and the associated modules contains functions that provide a large majority of the overall functionality.</p></li>
+<li><p><code>webApp.py</code> - A Flask application which handles serving either dynamic (template) or static (simple html pages) run pages to display the QA data. It handles authentication, as well as allowing dynamic features, such as viewing time slices of the data within and between runs.</p></li>
+<li><p><code>fullStackServer.py</code> - A higher performance front-end server for use with <code>webApp.py</code>. Not necessary at PDSF, but useful for testing, and it allows for deployment at other places without additional infrastructure setup.</p></li>
+</ul>
+<p>Inside of the data folder, there are a few main HTML files. <code>(subsystem)output.html</code> displays images from the run. <code>(subsystem)ROOTFiles.html</code> links to the raw ROOT files that are saved out for each write of histograms from the HLT. In both cases, <code>(subsystem)</code> is the three letter name of a detector in all caps.</p>
+<h3 id="directory-structure">Directory Structure</h3>
+<p>There are specific directories for data, docs, config, templates, modules, and additional static files.</p>
+<p><strong>IMPORTANT NOTE</strong>: <em>Process Runs</em> saves many files, including templates, relative to the <code>data/</code> directory (it was done for historical reasons). Consequently, <strong>if the data directory is not going to be stored in the root folder of this repository, then create a symlink to it and call it <code>data</code></strong>. For instance, if it the data is going to be stored at <code>/path/to/data</code>, then in the root folder of the repository, one should run <code>ln -s /path/to/data data</code>.</p>
+<ul>
+<li><p>data/ - Contains all of the histogram data. Also contains static HTML pages that are an alternative to the dynamic templates normally used to render the site.</p></li>
+<li><p>doc/ - Contains the files to build the documentation for the project. See <a href="#documentation">here</a>.</p></li>
+<li><p>config/ - Contains all of the configuration files for <em>Process Runs</em>, the <em>Web App</em>, and running the <em>Web App</em> as a WSGI server. See the documentation or the source files for more information about the individual options.</p></li>
+<li><p>processRunsModules/ - Contains most of the functionality of <em>Process Runs</em>, as well as some generally useful utilities. See the documentation for more information.</p></li>
+<li><p>templates/ - Contains all of the jinja2 templates needed to render the website. The main templates are stored in the root of the folder, while templates related to the data are stored in a “data” directory that mirrors the structure of the main “data” directory.</p></li>
+<li><p>static/ - Contains the shared <code>css</code>, <code>javascript</code>, and background texture.</p></li>
+<li><p>webAppModules/ - Contains helper functions for the <em>Web App</em>. See the documentation for more information.</p></li>
+</ul>
+<p>For reference, an example file structure is shown below.</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">.</span>
+├── <span class="kw">fullStackServer.py</span>
+├── <span class="kw">processRuns.py</span>
+├── <span class="kw">README.html</span>
+├── <span class="kw">README.md</span>
+├── <span class="kw">startWSGIServer.sh</span>
+├── <span class="kw">webApp.py</span>
+├── <span class="kw">config</span>
+│   ├── <span class="kw">__init__.py</span>
+│   ├── <span class="kw">processingParams.py</span>
+│   ├── <span class="kw">serverParams.py</span>
+│   ├── <span class="kw">serverParams_stub.py</span>
+│   ├── <span class="kw">sharedParams.py</span>
+│   └── <span class="kw">wsgiConfig.ini</span>
+├── <span class="kw">data</span>
+│   ├── <span class="kw">Run123456</span>
+│   │   ├── <span class="kw">EMC</span>
+│   │   │   ├── <span class="kw">EMChists.*.root</span>
+│   │   │   ├── <span class="kw">EMCoutput.html</span>
+│   │   │   ├── <span class="kw">hists.combined.*.root</span>
+│   │   │   └── <span class="kw">img</span> [contains *.png]
+│   ├── <span class="kw">Run123457</span>
+│   │   ├── <span class="kw">EMC</span>
+│   │   │   ├── <span class="kw">EMChists.*.root</span>
+│   │   │   ├── <span class="kw">EMCoutput.html</span>
+│   │   │   ├── <span class="kw">hists.combined.*.root</span>
+│   │   │   ├── <span class="kw">img</span> [contains *.png]
+│   │   │   └── <span class="kw">timeSlices</span>
+│   │   │       ├── <span class="kw">timeSlice.*</span>
+│   │   │       │   ├── <span class="kw">EMCoutput.html</span>
+│   │   │       │   └── <span class="kw">img</span> [contains *.png]
+│   │   │       └── <span class="kw">timeSlice.*.root</span>
+│   │   └── <span class="kw">HLT</span>
+│   │       ├── <span class="kw">HLTROOTFiles.html</span>
+│   │       ├── <span class="kw">HLThists.*.root</span>
+│   │       ├── <span class="kw">HLToutput.html</span>
+│   │       ├── <span class="kw">hists.combined.*.root</span>
+│   │       ├── <span class="kw">img</span> [ contains *.png ]
+│   │       └── <span class="kw">timeSlices</span>
+│   │           ├── <span class="kw">timeSlice.*</span>
+│   │           │   ├── <span class="kw">HLToutput.html</span>
+│   │           │   └── <span class="kw">img</span> [ contains *.png ]
+│   │           └── <span class="kw">timeSlice.*.root</span>
+│   ├── <span class="kw">determineMedianSlope</span> [ Could be another QA function ]
+│   │   └── <span class="kw">medianSlope.png</span>
+│   ├── <span class="kw">runList.html</span>
+│   └── <span class="kw">testingDataArchive.zip</span>
+├── <span class="kw">doc</span>
+│   ├── <span class="kw">Makefile</span>
+│   └── <span class="kw">source</span>
+│       ├── <span class="kw">_static</span>
+│       ├── <span class="kw">_templates</span>
+│       ├── <span class="kw">conf.py</span>
+│       ├── <span class="kw">config.rst</span>
+│       ├── <span class="kw">fullStackServer.rst</span>
+│       ├── <span class="kw">index.rst</span>
+│       ├── <span class="kw">processRuns.rst</span>
+│       ├── <span class="kw">processRunsModules.detectors.rst</span>
+│       ├── <span class="kw">processRunsModules.rst</span>
+│       ├── <span class="kw">webApp.rst</span>
+│       └── <span class="kw">webAppModules.rst</span>
+├── <span class="kw">processRunsModules</span>
+│   ├── <span class="kw">__init__.py</span>
+│   ├── <span class="kw">detectors</span>
+│   │   ├── <span class="kw">EMC.py</span>
+│   │   ├── <span class="kw">HLT.py</span>
+│   │   ├── <span class="kw">__init__.py</span>
+│   ├── <span class="kw">generateHtml.py</span>
+│   ├── <span class="kw">generateWebPages.py</span>
+│   ├── <span class="kw">mergeFiles.py</span>
+│   ├── <span class="kw">qa.py</span>
+│   ├── <span class="kw">utilities.py</span>
+├── <span class="kw">static</span>
+│   ├── <span class="kw">cream-pixels.png</span>
+│   ├── <span class="kw">shared.js</span>
+│   └── <span class="kw">style.css</span>
+├── <span class="kw">templates</span>
+<span class="kw">|</span>   ├── <span class="kw">data</span>
+<span class="kw">|</span>   │   ├── <span class="kw">Run123456</span>
+<span class="kw">|</span>   │   │   └── <span class="kw">EMC</span>
+<span class="kw">|</span>   │   │       └── <span class="kw">EMCoutput.html</span>
+<span class="kw">|</span>   │   ├── <span class="kw">Run123457</span>
+<span class="kw">|</span>   │   │   ├── <span class="kw">EMC</span>
+<span class="kw">|</span>   │   │   │   ├── <span class="kw">EMCoutput.html</span>
+<span class="kw">|</span>   │   │   │   └── <span class="kw">timeSlices</span>
+<span class="kw">|</span>   │   │   │       └── <span class="kw">timeSlice.*</span>
+<span class="kw">|</span>   │   │   │           └── <span class="kw">EMCoutput.html</span>
+<span class="kw">|</span>   │   │   └── <span class="kw">HLT</span>
+<span class="kw">|</span>   │   │       ├── <span class="kw">HLTROOTFiles.html</span>
+<span class="kw">|</span>   │   │       ├── <span class="kw">HLToutput.html</span>
+<span class="kw">|</span>   │   │       └── <span class="kw">timeSlices</span>
+<span class="kw">|</span>   │   │           └── <span class="kw">timeSlice.*</span>
+<span class="kw">|</span>   │   │               └── <span class="kw">HLToutput.html</span>
+<span class="kw">|</span>   │   └── <span class="kw">runList.html</span>
+<span class="kw">|</span>   ├── <span class="kw">contact.html</span>
+<span class="kw">|</span>   ├── <span class="kw">error.html</span>
+<span class="kw">|</span>   ├── <span class="kw">layout.html</span>
+<span class="kw">|</span>   ├── <span class="kw">login.html</span>
+<span class="kw">|</span>   ├── <span class="kw">qa.html</span>
+<span class="kw">|</span>   └── <span class="kw">qaResult.html</span>
+└── <span class="kw">webAppModules</span>
+    ├── <span class="kw">__init__.py</span>
+    ├── <span class="kw">auth.py</span>
+    ├── <span class="kw">routing.py</span>
+    └── <span class="kw">validation.py</span></code></pre></div>
+<h2 id="development-note">Development Note</h2>
+<p>This project was originally developed in the <a href="https://gitlab.cern.ch/ALICEYale/alice-yale-dev">alice-yale-dev</a> repository. All older development history is available there.</p>
+<h2 id="authors">Authors</h2>
+<ul>
+<li><p><script type="text/javascript">
+<!--
+h='&#x63;&#x65;&#114;&#110;&#46;&#x63;&#104;';a='&#64;';n='&#114;&#x61;&#x79;&#x6d;&#x6f;&#110;&#100;&#46;&#x65;&#104;&#108;&#x65;&#114;&#x73;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'" clas'+'s="em' + 'ail">'+'&#82;&#x61;&#x79;&#x6d;&#x6f;&#110;&#100;&#32;&#x45;&#104;&#108;&#x65;&#114;&#x73;'+'<\/'+'a'+'>');
+// -->
+</script><noscript>Raymond Ehlers (raymond.ehlers at cern dot ch)</noscript>, Yale University</p></li>
+<li><p><script type="text/javascript">
+<!--
+h='&#x79;&#x61;&#108;&#x65;&#46;&#x65;&#100;&#x75;';a='&#64;';n='&#106;&#x61;&#x6d;&#x65;&#x73;&#46;&#x6d;&#x75;&#108;&#108;&#x69;&#x67;&#x61;&#110;';e=n+a+h;
+document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'" clas'+'s="em' + 'ail">'+'&#74;&#x61;&#x6d;&#x65;&#x73;&#32;&#x4d;&#x75;&#108;&#108;&#x69;&#x67;&#x61;&#110;'+'<\/'+'a'+'>');
+// -->
+</script><noscript>James Mulligan (james.mulligan at yale dot edu)</noscript>, Yale University</p></li>
+</ul>
+</body>
+</html>

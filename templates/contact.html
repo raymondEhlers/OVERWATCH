@@ -1,0 +1,30 @@
+{% extends "layout.html" %}
+{% block body %}
+    <h1>OVERWATCH Information</h1>
+    <div class="contentDivider">
+        <p style="text-align:center">ALICE <strong>OVERWATCH</strong>: <br> <strong>O</strong>nline <strong>V</strong>isualization of <strong>E</strong>merging t<strong>R</strong>ends and <strong>W</strong>eb <strong>A</strong>ccessible de<strong>T</strong>ector <strong>C</strong>onditions using the <strong>H</strong>LT</p>
+        <p>Comments, suggestions, and ideas are appreciated. Problems or bugs reports are also helpful. Contact: <a href="mailto:raymond.ehlers@yale.edu">Raymond Ehlers</a> and <a href="mailto:james.mulligan@yale.edu">James Mulligan</a>.</p>
+        {% if current_user.is_authenticated %}
+            <p>QA function testing data is available <a href="/testingDataArchive">here</a></p>
+        {% endif %}
+        <p>QA and Website created by:</p>
+        <table>
+            <tr>
+                <td>Salvatore Aiola</td>
+                <td>Yale University</td>
+            </tr>
+            <tr>
+                <td>Raymond Ehlers</td>
+                <td>Yale University</td>
+            </tr>
+            <tr>
+                <td>Markus Fasel</td>
+                <td>LBNL</td>
+            </tr>
+            <tr>
+                <td>James Mulligan</td>
+                <td>Yale University</td>
+            </tr>
+        </table>
+    </div>
+{% endblock %}
