@@ -312,11 +312,12 @@ def testingDataArchive():
     for i in xrange(0, numberOfFilesToDownload):
         for subsystem in serverParameters.subsystemList:
             # Get the combined file
-            combinedFile = next(name for name in os.listdir(os.path.join(serverParameters.protectedFolder, runList[i], subsystem)) if "combined" in name)
-            print os.path.join(serverParameters.protectedFolder, runList[i], subsystem, combinedFile)
+            if os.path.exists(os.path.join(serverParameters.protectedFolder, runList[i], subsystem)):
+                combinedFile = next(name for name in os.listdir(os.path.join(serverParameters.protectedFolder, runList[i], subsystem)) if "combined" in name)
+                print os.path.join(serverParameters.protectedFolder, runList[i], subsystem, combinedFile)
 
-            # Write it to the zip file
-            zipFile.write(os.path.join(serverParameters.protectedFolder, runList[i], subsystem, combinedFile))
+                # Write it to the zip file
+                zipFile.write(os.path.join(serverParameters.protectedFolder, runList[i], subsystem, combinedFile))
 
     # Finish with the zip file
     zipFile.close()
