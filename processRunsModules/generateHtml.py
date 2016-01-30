@@ -123,7 +123,7 @@ def generateHtmlForHistOnRunPage(listOfHists, outputFormatting, startOfName):
     return returnText
 
 ###################################################
-def interactiveFormText(runNumber, subsystem, maxTime, minTimeRequested = -1, maxTimeRequested = -1, actualTimeBetween = -1):
+def interactiveFormText(partialMergeActionUrl, runNumber, subsystem, maxTime, minTimeRequested = -1, maxTimeRequested = -1, actualTimeBetween = -1):
     """ Generates the form that provides time dependent merge capabilities.
 
     Used to create the time dependent merge header. The function generates a complicated HTML form,
@@ -145,6 +145,9 @@ def interactiveFormText(runNumber, subsystem, maxTime, minTimeRequested = -1, ma
         line with timing information with be written to the header.
 
     Args:
+        partialMergeActionUrl (str): The URL to put into the action field in the HTML form. In the case of static
+            pages, this is just the direct URL with the proper relative path. In the case of dynamic pages, it is
+            simply the ``url_for()`` for the partial merge.
         runNumber (int): The current run number.
         subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
         maxTime (int): The length of the run in minutes from the start of the run. This is the maximum
@@ -159,7 +162,7 @@ def interactiveFormText(runNumber, subsystem, maxTime, minTimeRequested = -1, ma
 
     """
 
-    interactiveForm = """<form class="timeDependentMergeControls" id="timeDependentMergeControls" action="/partialMerge" method="post">
+    interactiveForm = """<form class="timeDependentMergeControls" id="timeDependentMergeControls" action="%s" method="post">
     <input type="hidden" name="runNumber" value="%i"/>
     <input type="hidden" name="subsystem" value="%s"/>
     <input type="hidden" name="scrollAmount" id="scrollAmount" value=0 />
@@ -177,7 +180,7 @@ def interactiveFormText(runNumber, subsystem, maxTime, minTimeRequested = -1, ma
     if minTimeRequested > -1 and maxTimeRequested > -1 and actualTimeBetween > -1:
         interactiveForm += "<p class=\"headerParagraph\" id=\"timeSliceResults\">Requested data between %i and %i minutes. Actual time due to data constraints is <strong>%i minutes</strong></p>\n" % (minTimeRequested, maxTimeRequested, actualTimeBetween)
 
-    return interactiveForm % (runNumber, subsystem, maxTime, maxTime, maxTime, maxTime)
+    return interactiveForm % (partialMergeActionUrl, runNumber, subsystem, maxTime, maxTime, maxTime, maxTime)
 
 ###################################################
 def generateHtmlForStaticHeader(runNumberString, relativePath, secondDivText):
@@ -224,11 +227,11 @@ def generateHtmlForStaticHeader(runNumberString, relativePath, secondDivText):
             <div id="firstLineOfHeader">
                 <p class="headerParagraph">
                     <span style="padding-left:5px;"></span>
-                    <a href="/monitoring">Return to Run List</a>
+                    <a href="%s/monitoring">Return to Run List</a>
                     <span style="padding-left:1em;padding-right:1em;">-</span>
                     <a href="#topOfPage">Top of Page</a>
                     <span style="float:right;padding-right:5px;">
-                        <a href="/logout">Logout</a>
+                        <a href="%s/logout">Logout</a>
                     </span>
                 </p>
             </div>
@@ -244,5 +247,5 @@ def generateHtmlForStaticHeader(runNumberString, relativePath, secondDivText):
     # on the web page.
     if secondDivText == None:
         secondDivText = ""
-    return htmlText % (runNumberString, relativePath, relativePath, secondDivText)
+    return htmlText % (runNumberString, relativePath, relativePath, relativePath, relativePath, secondDivText)
 

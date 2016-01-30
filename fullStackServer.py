@@ -26,7 +26,7 @@ if __name__ == "__main__":
         appLogged = TransLogger(app)
     
     # Setup cherrypy to serve the flask app
-    cherrypy.tree.graft(app, "/")
+    cherrypy.tree.graft(app, "/hello")
 
     # THe mount documentation is unclear, so it is explained here:
     # cherrypy.tree.mount(app - usually a cherrypy app but we will start it later, location to mount, configuration)

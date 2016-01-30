@@ -74,14 +74,19 @@ def writeToWebPage(dirPrefix, runDir, subsystem, outputHistNames, outputFormatti
         if actualTimeBetween != -1:
             relativePath = "../../../../../.."
 
+        partialMergeActionUrl = "%s/partialMerge" % relativePath
+
         # This leaves us with an open content container div!
-        htmlText = generateHtml.generateHtmlForStaticHeader("Run " + str(runNumber), relativePath, generateHtml.interactiveFormText(runNumber, subsystem, maxTime, minTimeRequested, maxTimeRequested, actualTimeBetween))
+        htmlText = generateHtml.generateHtmlForStaticHeader("Run " + str(runNumber), relativePath, generateHtml.interactiveFormText(partialMergeActionUrl, runNumber, subsystem, maxTime, minTimeRequested, maxTimeRequested, actualTimeBetween))
     else:
+        # Set the url that should be request for a partial merge.
+        partialMergeActionUrl = "{{ url_for(\"partialMerge\") }}"
+
         # Setting up the scrollIfHashExists value here ensures that we scroll to the right part of the page on load.
         htmlText = """{% extends "layout.html" %}
         {% block onLoad %}scrollIfHashExists({{ scrollAmount }});setScrollValueInForm();{% endblock %}
         {% block secondLineInHeader %}"""
-        htmlText += generateHtml.interactiveFormText(runNumber, subsystem, maxTime, minTimeRequested, maxTimeRequested, actualTimeBetween)
+        htmlText += generateHtml.interactiveFormText(partialMergeActionUrl, runNumber, subsystem, maxTime, minTimeRequested, maxTimeRequested, actualTimeBetween)
         htmlText +="""{% endblock %}
         {% block body %}\n"""
 
@@ -245,9 +250,18 @@ def writeRootWebPage(writeDirs, subsystemRunDirDict, dirPrefix, subsystemsWithRo
 
     # Text at the top of the page. Includes a link to the QA.
     htmlText += """
-    <a class="anchor" name="topOfPage"></a>
-    <h1> OVERWATCH Run List <span style="float:right"><a class="basicQALink" href="/processQA">Basic QA</a></span></h1>\n"""
+    <a class="anchor" name="topOfPage"></a>"""
 
+    # Handle the processQA link in the title
+    titleLine = """<h1> OVERWATCH Run List <span style="float:right"><a class="basicQALink" href="%s">Basic QA</a></span></h1>\n"""
+    if generateTemplate == False:
+        additionalText = "%s/processQA"
+        additionalText = additionalText % relativePath
+        htmlText += titleLine % additionalText
+    else:
+        htmlText += titleLine % "{{ url_for(\"processQA\") }}"
+
+    # Start the container div
     htmlText += """<div class="contentDivider">\n"""
 
     # Write runList with newest runs at top
@@ -289,7 +303,7 @@ def writeRootWebPage(writeDirs, subsystemRunDirDict, dirPrefix, subsystemsWithRo
 
     # Close up html page
     if generateTemplate == False:
-        htmlText += """<p id="contactLink"><a href="/contact">Information, contact, and suggestions</a></p></div></body></html>"""
+        htmlText += """<p id="contactLink"><a href="%s/contact">Information, contact, and suggestions</a></p></div></body></html>""" % relativePath
     else:
         htmlText += "{% endblock %}"
 
