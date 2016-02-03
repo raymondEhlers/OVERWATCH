@@ -14,6 +14,8 @@ data quality in real time (for example, seeing the evolution of a noisy channel 
 
 Please see the README_ for information about the project, and how to use it.
 
+.. include:: linksBackToApp.rst
+
 .. _README: README.html
 
 Process Runs
@@ -92,6 +94,11 @@ are developed.
    :maxdepth: 2
 
    fullStackServer
+
+Back to the Web App
+===================
+
+.. include:: linksBackToApp.rst
 
 ---------------------
 

@@ -213,8 +213,9 @@ def rebuildDocs():
 
     The link is only available to the admin user.
     """
-    if current_user.id == "admin":
+    if current_user.id == "emcalAdmin":
         # Cannot get the actual output, as it seems to often crash the process
+        # I think this is related to the auto-reload in debug mode
         #buildResult = subprocess.check_output(["make", "-C", serverParameters.docsFolder, "html"])
         #print buildResult
         #flash("Doc build output: " + buildResult)
