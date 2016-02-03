@@ -12,9 +12,10 @@ Welcome to OVERWATCH, an online monitoring framework utilizing detector histogra
 
 The framework also features the ability to automate QA functions to identify detector performance problems, as well as the ability to examine detector behavior during user-specified time ranges within a run. Moreover, the framework provides long-term trending info, i.e. the ability to plot detector quantities as a function of run number. OVERWATCH complements the DQM framework, allowing remote monitoring and easily implementable user customization. We provide extensive documentation for any detector system to be easily added to OVERWATCH, and encourage more subsystems to take advantage of the framework. For more information, see `detector modules`_.
 
-Please see the README_ for information about the project, and how to use it.
+Please see the README_ for information about the project, and how to use it. The code is available at `raymondEhlers/OVERWATCH`_.
 
 .. _README: README.html
+.. _raymondEhlers/OVERWATCH: https://github.com/raymondEhlers/OVERWATCH
 
 .. include:: linksBackToApp.rst
 
