@@ -2,7 +2,9 @@
 
 **OVERWATCH**: **O**nline **V**isualization of **E**merging t**R**ends and **W**eb **A**ccessible de**T**ector **C**onditions using the **H**LT.
 
-This project encompasses functionality to handle everything from initial processing of files received from the HLT to a dynamic website providing basic QA functionality and everything in between. While this project was created for the purposes of EMCal real time monitoring, it can provide this functionality to any detector which utilizes the HLT by modifying only a few lines of code ([see below](#adding-a-detector)). It is highly configurable, allowing the user wide freedom to look at the data in nearly any way that can be imagined. 
+Welcome to OVERWATCH, an online monitoring framework utilizing detector histograms provided by the HLT. The OVERWATCH framework processes these histograms and displays them minute-by-minute on this website; this allows for real-time monitoring of detector performance, effortlessly available to any ALICE member at any location. For example, a collaborator in the US can monitor the EMCal trigger patch ADC spectrum for noisy readout units in the comfort of daylight hours, while the CERN-based detector expert sleeps.
+
+The framework also features the ability to automate QA functions to identify detector performance problems, as well as the ability to examine detector behavior during user-specified time ranges within a run. Moreover, the framework provides long-term trending info, i.e. the ability to plot detector quantities as a function of run number. OVERWATCH complements the DQM framework, allowing remote monitoring and easily implementable user customization. We provide extensive documentation for any detector system to be easily added to OVERWATCH, and encourage more subsystems to take advantage of the framework. For more information, [see below](#adding-a-detector).
 
 If you accessed this page via the _Web App_ and want to return back, either use the back button or <a href="javascript:history.back()">click here</a>.
 
@@ -10,9 +12,9 @@ If you accessed this page via the _Web App_ and want to return back, either use 
 
 This project utilizes data from the HLT. Histograms are received and should be saved out at a fixed time interval (outside of the scope of this project). _Process Runs_  will move, classify, and process the files. This includes printing the histograms, and transferring to the files to PDSF for wider access to the data. This data is then served by the _Web App_. It also handles calls to _Process Runs_ for dynamic features, including stepping through the data in time, both within a run and by run, as well as basic QA.
 
-#### Technical Description
+The rest of this README is intended for **technical users**, such as those adding detector functionality. Any general users will likely want to return back to the _Web App_.
 
-General audiences may skip this section.
+#### Technical Description
 
 This project utilizes data from the HLT (although it could be from any source of histograms if they were saved properly). Access to the HLT must be handled and is outside the scope of this package - our current setup uses a number of systems at CERN. The histograms are received from the HLT, and then saved to a file at a fixed time interval (this is currently performed every minute). A cron job is then setup to run _Process Runs_ at some short time interval. It is generally best to run _Process Runs_ less frequently than the interval between writes of the HLT files. _Process Runs_ will move, classify, and process the files. This includes printing the histograms, and transferring to the files to PDSF for wider access to the data. _Process Runs_ also contains functions to allow more dynamic processing of the data, including stepping through the data in time, both within a run and by run, as well as basic QA.
 

@@ -65,7 +65,7 @@ class processingParameters:
     qaFunctionsList = sharedParameters.qaFunctionsList
 
     qaFunctionsToAlwaysApply = sharedParameters.qaFunctionsToAlwaysApply
-    """ QA-like functions that are always applied when processing
+    """ Automated QA functions that are always applied when processing
 
     See Also: 
         :attr:`config.sharedParams.sharedParameters.qaFunctionsToAlwaysApply`

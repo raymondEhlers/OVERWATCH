@@ -1,6 +1,6 @@
 """ EMC detector specific sorting for monitoring, and QA
 
-The EMCal has substantial sorting for online monitoring. It also has QA-like monitoring functions that apply
+The EMCal has substantial sorting for online monitoring. It also has automated QA monitoring functions that apply
 every run and true QA functions that only run at selected times.
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University

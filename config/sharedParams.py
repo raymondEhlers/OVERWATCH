@@ -35,7 +35,7 @@ class sharedParameters:
     qaFunctionsToAlwaysApply = ["properlyPlotPatchSpectra", "addEnergyAxisToPatches"]
     """ These are functions that should always be applied when processing ROOT files.
 
-    These functions are often only QA-like, in that they can improve or help check the data quality,
+    These functions are often only automated QA functions, in that they can improve or help check the data quality,
     but they do it on a histogram by histogram level, without extracting represenative values. Examples
     include checking particular histograms for outliers, or improving the quality of presenation of a
     histogram by adding an axis or a grid.

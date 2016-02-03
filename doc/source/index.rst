@@ -8,15 +8,15 @@ Welcome to OVERWATCH documentation!
 
 ALICE **OVERWATCH**: Online Visualization of Emerging tRends and Web Accessible deTector Conditions using the HLT.
 
-This project provides real time detector monitoring, as well as basic QA, using histograms received from the HLT.
-It is a very powerful tool for detecting issues (for example, noise in an EMCal Trigger Readout Unit) and checking
-data quality in real time (for example, seeing the evolution of a noisy channel both over runs and within a run).
+Welcome to OVERWATCH, an online monitoring framework utilizing detector histograms provided by the HLT. The OVERWATCH framework processes these histograms and displays them minute-by-minute on this website; this allows for real-time monitoring of detector performance, effortlessly available to any ALICE member at any location. For example, a collaborator in the US can monitor the EMCal trigger patch ADC spectrum for noisy readout units in the comfort of daylight hours, while the CERN-based detector expert sleeps.
+
+The framework also features the ability to automate QA functions to identify detector performance problems, as well as the ability to examine detector behavior during user-specified time ranges within a run. Moreover, the framework provides long-term trending info, i.e. the ability to plot detector quantities as a function of run number. OVERWATCH complements the DQM framework, allowing remote monitoring and easily implementable user customization. We provide extensive documentation for any detector system to be easily added to OVERWATCH, and encourage more subsystems to take advantage of the framework. For more information, see `detector modules`_.
 
 Please see the README_ for information about the project, and how to use it.
 
-.. include:: linksBackToApp.rst
-
 .. _README: README.html
+
+.. include:: linksBackToApp.rst
 
 Process Runs
 ============

@@ -5,16 +5,16 @@ Each ALICE detector can add a file named the respective three letter detector na
 Addding a New Detector
 ======================
 
-Adding a new detector is a fairly straightforward process. It involves just a few steps, and
-encompases a few possible options:
+Adding a new detector is a fairly straightforward process. There are several available
+options:
 
-1.  Adding histograms to the HLT, wihch will then be accessible through the *Web App*.
-    For moreinformation on this approach, contact the HLT. Work in progress.
+1.  Adding histograms to the HLT, which will then be accessible through the *Web App*.
+    For more information on this approach, contact the HLT. Work in progress.
 
 2.  Creating a subpage that splits out a detectors histograms. The histograms avialable to be
     split out are the ones that are shown on the web site.
 
-3.  Creating a QA or QA-like (ie one that always runs) function to process the some or all of
+3.  Creating a QA or automated QA (ie one that always runs) function to process the some or all of
     the available histograms. The histograms availabe to be processed are the ones shown on
     the web site.
 
@@ -70,7 +70,7 @@ Create a QA function
 
 1.  Be sure to follow the directions in `Getting Started`_ if they have not already been performed.
 
-2.  Create the new QA or QA-like function in the detector file created in `Getting Started`_. It will be
+2.  Create the new QA or automated QA function in the detector file created in `Getting Started`_. It will be
     called for every histogram processed with two arguments:
 
     >>> functionName(hist, qaContainer)
@@ -91,7 +91,7 @@ Create a QA function
         For an example of a QA function that should be run on request from the web app, see,
         see :func:`~processRunsModules.detectors.EMC.determineMedianSlope()`.
         
-        For an example of a QA-like function that runs for every single histogram,
+        For an example of an automated QA function that runs for every single histogram,
         see :func:`~processRunsModules.detectors.EMC.checkForOutliers()`.
 
     Note:
@@ -105,7 +105,7 @@ Create a QA function
     of the function to :attr:`config.sharedParams.sharedParameters.qaFunctionsList` in the config file
     "config/sharedParams.py".
 
-    If it is a QA-like function that runs for every single histogram, add the three letter detector name
+    If it is an automated QA function that runs for every single histogram, add the three letter detector name
     and the name of the function to :attr:`config.sharedParams.sharedParameters.qaFunctionsToAlwaysApply` in
     the config file "config/sharedParams.py".
 
