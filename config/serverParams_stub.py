@@ -89,6 +89,12 @@ class serverParameters:
     #: templateFolder is the disk location of the template folder
     templateFolder = os.path.join(basePath, sharedParameters.templateFolderName)
 
+    #: docsFolder is the disk location of the docs folder
+    docsFolder = "doc"
+
+    #: docsBuildFolder is the disk location of the docs html folder
+    docsBuildFolder = os.path.join(docsFolder, "build/html")
+
     # Can set alternative values here if necessary, but it does not seem very likely that this will be needed.
     #if "pdsf" in socket.gethostname():
     #    staticURLPath = "/../site_media/aliemcalmonitor"
