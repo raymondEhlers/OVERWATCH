@@ -4,6 +4,8 @@
 
 This project encompasses functionality to handle everything from initial processing of files received from the HLT to a dynamic website providing basic QA functionality and everything in between. While this project was created for the purposes of EMCal real time monitoring, it can provide this functionality to any detector which utilizes the HLT by modifying only a few lines of code ([see below](#adding-a-detector)). It is highly configurable, allowing the user wide freedom to look at the data in nearly any way that can be imagined. 
 
+If you accessed this page via the _Web App_ and want to return back, either use the back button or <a href="javascript:history.back()">click here</a>.
+
 ## Introduction
 
 This project utilizes data from the HLT. Histograms are received and should be saved out at a fixed time interval (outside of the scope of this project). _Process Runs_  will move, classify, and process the files. This includes printing the histograms, and transferring to the files to PDSF for wider access to the data. This data is then served by the _Web App_. It also handles calls to _Process Runs_ for dynamic features, including stepping through the data in time, both within a run and by run, as well as basic QA.
@@ -16,7 +18,7 @@ This project utilizes data from the HLT (although it could be from any source of
 
 To handle viewing of the data, the server _Web App_ is used. It serves up the processed and printed data. This also handles stepping through time slices (both within runs as well as by run using the QA features) of the data by hooking into functions defined in _Process Runs_. It can also be configured to provide direct access to the underlying ROOT files. The _Web App_ can serve run pages based on Jinja2 templates (preferred) or fully static web pages, as both are written out. See [here](#directory-structure) for more information about the files that are written out. 
 
-The _Web App_ is configured to work as both a full web server or a WSGI server. Since authenticated is required for all of the data, Flask must serve all files. (/static could be served by a traditional server, since no authentication is needed for those files, but there are only a few small files, so it does not seem worthwhile to add the complicated when Flask seems to work fine, if not at the best performance). 
+The _Web App_ is configured to work as both a full web server or a WSGI server. Since authentication is required for all of the data, Flask must serve all files. (/static could be served by a traditional server, since no authentication is needed for those files, but there are only a few small files, so it does not seem worthwhile to add the complicated when Flask seems to work fine, if not at the best performance). 
 
 A full, high performance web server is available in _Full Stack Server_. It is extremely simple, but it can act as a front end to the Flask server, which is a task usually performed by a more traditional web server such as Apache or Nginx. When the _Full Stack Server_ is used, the _Web App_ is used as a WSGI server and it will automatically be loaded by the _Full Stack Server_.
 
@@ -24,7 +26,9 @@ This package has not been tested against python 3.
 
 ## Setup and Usage
 
- 1. Install dependencies: `flask Flask-Login Flask-Bcrypt bcrypt numpy`. Pip is the recommended install method. If using the _Web App_ as a WSGI server on PDSF, then `uwsgi` is also needed. It is not needed for a normal user.
+This is a `python` based project, so pip (ie `pip install <packageName>`) is the recommended way to install dependencies.
+
+ 1. Install dependencies: `flask Flask-Login Flask-Bcrypt bcrypt numpy`. If using the _Web App_ as a WSGI server on PDSF, then `uwsgi` is also needed. It is not needed for a normal user.
 
  2. Optional, but recommended: Build the documentation. See [here](#documentation).
 

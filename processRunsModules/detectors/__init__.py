@@ -5,7 +5,18 @@ Each ALICE detector can add a file named the respective three letter detector na
 Addding a New Detector
 ======================
 
-Adding a new detector is a fairly straightforward process. It involves just a few steps.
+Adding a new detector is a fairly straightforward process. It involves just a few steps, and
+encompases a few possible options:
+
+1.  Adding histograms to the HLT, wihch will then be accessible through the *Web App*.
+    For moreinformation on this approach, contact the HLT. Work in progress.
+
+2.  Creating a subpage that splits out a detectors histograms. The histograms avialable to be
+    split out are the ones that are shown on the web site.
+
+3.  Creating a QA or QA-like (ie one that always runs) function to process the some or all of
+    the available histograms. The histograms availabe to be processed are the ones shown on
+    the web site.
 
 Getting Started
 ---------------
