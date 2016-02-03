@@ -41,7 +41,7 @@
                 {% if messages %}
                     <div class=flashes id="flashes">
                         {% for message in messages %}
-                        <p>{{ message }}</p>
+                        <p>{{ message.replace("\n", "<br />") | safe }}</p>
                         {% endfor %}
                     </div>
                 {% endif %}

@@ -14,7 +14,7 @@ data quality in real time (for example, seeing the evolution of a noisy channel 
 
 Please see the README_ for information about the project, and how to use it.
 
-.. _README: ../../../README.html
+.. _README: README.html
 
 Process Runs
 ============

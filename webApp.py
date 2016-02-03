@@ -9,6 +9,7 @@ import os
 import socket
 import time
 import zipfile
+import subprocess
 
 # Flask
 from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, Markup
@@ -123,7 +124,7 @@ def favicon():
     return ""
 
 ######################################################################################################
-# Unauthenticated Routes
+# Authenticated Routes
 ######################################################################################################
 
 ###################################################
@@ -188,6 +189,48 @@ def protected(filename):
     #if request.args.get("time"):
     #    print "timeParameter:", request.args.get("time")
     return send_from_directory(os.path.realpath(serverParameters.protectedFolder), filename)
+
+###################################################
+@app.route("/docs/<path:filename>")
+@login_required
+def docs(filename):
+    """ Serve the documentation.
+
+    """
+    if os.path.isfile(os.path.join(serverParameters.docsBuildFolder, filename)):
+        # Serve the docs
+        return send_from_directory(os.path.realpath(serverParameters.docsBuildFolder), filename)
+    else:
+        # If it isn't built for some reason, tell the user what happened
+        flash(filename + " not available! Docs are probably not built. Contact the admins!")
+        return redirect(url_for("contact"))
+
+###################################################
+@app.route("/doc/rebuild")
+@login_required
+def rebuildDocs():
+    """ Rebuild the docs based on the most recent source files.
+
+    The link is only available to the admin user.
+    """
+    if current_user.id == "admin":
+        # Cannot get the actual output, as it seems to often crash the process
+        #buildResult = subprocess.check_output(["make", "-C", serverParameters.docsFolder, "html"])
+        #print buildResult
+        #flash("Doc build output: " + buildResult)
+
+        # Run the build command 
+        subprocess.call(["make", "-C", serverParameters.docsFolder, "html"])
+
+        # Flash the result
+        flash("Docs rebuilt")
+
+    else:
+        # Flash to inform the user
+        flash("Regular users are not allowed to rebuild the docs.")
+
+    # Return to where the build command was called
+    return redirect(url_for("contact"))
 
 ###################################################
 @app.route("/partialMerge", methods=["GET", "POST"])
