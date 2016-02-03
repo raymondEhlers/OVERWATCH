@@ -115,7 +115,7 @@ def writeToWebPage(dirPrefix, runDir, subsystem, outputHistNames, outputFormatti
        
     # Close up html page
     if generateTemplate == False:
-        htmlText += """<p id="contactLink"><a href="%s/contact">Information, contact, documentation, and suggestions</a></p></div></body></html>""" % relativePath
+        htmlText += """<div id="contactLink"><p><a href="%s/contact">Information, documentation, contact, and suggestions</a></p></div></div></body></html>""" % relativePath
     else:
         htmlText += "{% endblock %}"
 
@@ -209,7 +209,7 @@ def createPageForRootFileAccess(dirPrefix, dirName, subsystem, generateTemplate 
 
     # Close up html page
     if generateTemplate == False:
-        htmlText += """<p id="contactLink"><a href="%s/contact">Information, contact, documentation, and suggestions</a></p></div></body></html>""" % relativePath
+        htmlText += """<div id="contactLink"><p><a href="%s/contact">Information, documentation, contact, and suggestions</a></p></div></div></body></html>""" % relativePath
     else:
         htmlText += "{% endblock %}"
 
@@ -303,7 +303,7 @@ def writeRootWebPage(writeDirs, subsystemRunDirDict, dirPrefix, subsystemsWithRo
 
     # Close up html page
     if generateTemplate == False:
-        htmlText += """<p id="contactLink"><a href="%s/contact">Information, contact, documentation, and suggestions</a></p></div></body></html>""" % relativePath
+        htmlText += """<div id="contactLink"><p><a href="%s/contact">Information, documentation, contact, and suggestions</a></p></div></div></body></html>""" % relativePath
     else:
         htmlText += "{% endblock %}"
 
