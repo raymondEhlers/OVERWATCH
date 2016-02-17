@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """ WSGI server for hists and interactive features with HLT histograms.
 
-.. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University 
+.. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
 
 # General includes
@@ -15,6 +15,7 @@ import subprocess
 from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, Markup
 from flask.ext.login import LoginManager, login_user, logout_user, login_required, current_user
 from flask.ext.bcrypt import Bcrypt
+from flup.server.fcgi import WSGIServer
 
 # Server configuration
 from config.serverParams import serverParameters
@@ -69,6 +70,7 @@ def login():
     Unauthenticated users are also redirected here if they try to access something restricted.
     After logging in, it should then forward them to resource they requested.
     """
+    print "Login called"
 
     errorValue = None
     nextValue = routing.getRedirectTarget()
@@ -131,7 +133,7 @@ def favicon():
 @app.route("/monitoring")
 @login_required
 def index():
-    """ This is the main page for logged in users. It always redirect to the run list. 
+    """ This is the main page for logged in users. It always redirects to the run list.
     
     In the case of dynamicContent being enabled, it renders the runList template. Otherwise, it will
     redirect to the static page.
@@ -154,7 +156,7 @@ def showRuns(runPath):
     call url_for("protected").
 
     Note:
-        This function ensures that the user is logged in before it serves the file. 
+        This function ensures that the user is logged in before it serves the file.
     """
     # Hnaldes partial merges and rendering templates that are accessed by path.
     if serverParameters.dynamicContent and ".root" not in runPath:
@@ -167,7 +169,7 @@ def showRuns(runPath):
         print "runPath:", runPath
         return render_template(os.path.join("data",runPath))
     else:
-        # This handles ROOT files. It also hanldes static html files if dynamicContent is false. 
+        # This handles ROOT files. It also handles static html files if dynamicContent is false.
         return redirect(url_for("protected", filename=runPath))
 
 ###################################################
@@ -372,6 +374,12 @@ def testingDataArchive():
 if __name__ == "__main__":
     # Support both the WSGI server mode, as well as standalone
     #app.run(host="0.0.0.0")
-    print "Starting hist server"
-
-    app.run(host=serverParameters.ipAddress, port=serverParameters.port)
+    if "pdsf" in socket.gethostname():
+        print "Starting flup WSGI app"
+        WSGIServer(app, bindAddress=("127.0.0.1",8851)).run()
+    elif "sgn" in socket.gethostname():
+        print "Starting flup WSGI app on sciece gateway"
+        WSGIServer(app, bindAddress=("127.0.0.1",8851)).run()
+    else:
+        print "Starting flask app"
+        app.run(host=serverParameters.ipAddress, port=serverParameters.port)
