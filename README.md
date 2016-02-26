@@ -40,7 +40,7 @@ This is a `python` based project, so pip (ie `pip install <packageName>`) is the
 
  5. Run _Process Runs_ to process the available data. `python processRuns.py`
 
- 6. Run the _Web App_ to look at the data in a better organized way. `python webApp.py`
+ 6. Run the _Web App_ to look at the data in a better organized way. `python webApp.py`. It can then be accessed at `http://localhost:portNumber`, where `portNumber` is the port defined in the `serverParams` file.
 
 ## Documentation
 
