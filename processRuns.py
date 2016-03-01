@@ -429,7 +429,7 @@ def processAllRuns():
 
     # Send data to pdsf via rsync
     if sendData == True:
-        sendDataToPDSF(dirPrefix, pdsfUsername)
+        utilities.sendDataToPDSF(dirPrefix, pdsfUsername)
         
 # Allows the function to be invoked automatically when run with python while not invoked when loaded as a module
 if __name__ == "__main__":
