@@ -4,6 +4,7 @@ serverParams.py
 # Directories to ignore
 build/
 bak/
+bin/
 
 # Generated files to ignore
 Run*/
