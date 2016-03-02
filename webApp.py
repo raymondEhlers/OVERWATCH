@@ -362,8 +362,20 @@ def testingDataArchive():
                 combinedFile = next(name for name in os.listdir(os.path.join(serverParameters.protectedFolder, runList[i], subsystem)) if "combined" in name)
                 print os.path.join(serverParameters.protectedFolder, runList[i], subsystem, combinedFile)
 
-                # Write it to the zip file
+                # Find the file that the combined file is derived from. This is needed because processRuns expects at least the combined file and one other file
+                # This will work in cumulative mode just fine. This will also be fine in REQ mode too, since the number of files in the dir is less than the
+                # number of combined files, so it will not remerge
+                numberOfCombinedFiles = combinedFile.split(".")[2]
+                # - is included to remove leading 0's in the time string.
+                # It apparently only works on Mac OS X and Linux
+                # See: https://stackoverflow.com/a/2073189
+                fileTime = time.strftime("%Y_%-m_%-d_%-H_%-M_%-S", time.gmtime(int(combinedFile.split(".")[3])))
+                uncombinedFile = subsystem + "hists." + fileTime + ".root"
+                print os.path.join(serverParameters.protectedFolder, runList[i], subsystem, uncombinedFile)
+
+                # Write files to the zip file
                 zipFile.write(os.path.join(serverParameters.protectedFolder, runList[i], subsystem, combinedFile))
+                zipFile.write(os.path.join(serverParameters.protectedFolder, runList[i], subsystem, uncombinedFile))
 
     # Finish with the zip file
     zipFile.close()
