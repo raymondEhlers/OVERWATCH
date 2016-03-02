@@ -7,25 +7,29 @@ trap ctrl_c INT
 function ctrl_c() {
 # Return to the cursor position saved in printStatus
 echo "Closing HLT receivers"
-kill $emcReceiver
-kill $hltReceiver
+kill -INT $emcReceiver
+kill -INT $hltReceiver
+#echo $emcReceiver
+#echo $hltReceiver
 exit
 }
 
 echo $PWD
 
 # EMC receiver
-#./runREQ.sh $internalPort $externalPort $receiverType
-./runREQ.sh 40321 60321 "EMC" &
+#./runReceiver.sh $internalPort $externalPort $receiverType
+./runReceiver.sh 40321 60321 "EMC" &
 emcReceiver=$!
+echo "emcPID: $emcReceiver"
 
 # Ensure that the output is still readable and that the EMC is able to start.
 sleep 1
 
 # HLT receiver
-#./runREQ.sh $internalPort $externalPort $receiverType
-./runREQ.sh 40322 60322 "HLT" &
+#./runReceiver.sh $internalPort $externalPort $receiverType
+./runReceiver.sh 40322 60322 "HLT" &
 hltReceiver=$!
+echo "hltPID: $hltReceiver"
 
 while [[ true ]];
 do

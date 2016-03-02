@@ -4,4 +4,14 @@ These scripts are used on a particular system to receive data from the HLT. If y
 
 This requires the `feature-hltdev` branch in AliRoot, as well as `autossh`. This code has not been written to be portable, since it is only used on one system for one purpose.
 
-These scripts should be symlinked form the data directory.
+`runReceiver.sh` and `startReceivers.sh` should be symlinked to the OVERWATCH data directory so that they can be executed there.
+
+The data flow is:
+
+```
+      ssh           ssh
+     tunnel        tunnel          rsync
+HLT -------> lbl5 --------> lbl3 --------> OVERWATCH data dir
+```
+
+These scripts are executed on `lbl3`.
