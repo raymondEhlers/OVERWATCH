@@ -63,7 +63,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <h2 id="setup-and-usage">Setup and Usage</h2>
 <p>This is a <code>python</code> based project, so pip (ie <code>pip install &lt;packageName&gt;</code>) is the recommended way to install dependencies.</p>
 <ol style="list-style-type: decimal">
-<li><p>Install dependencies: <code>flask Flask-Login Flask-Bcrypt bcrypt numpy</code>. If using the <em>Web App</em> as a WSGI server on PDSF, then <code>uwsgi</code> is also needed. It is not needed for a normal user.</p></li>
+<li><p>Install dependencies: <code>flask Flask-Login Flask-Bcrypt bcrypt numpy flup</code>. If using the <em>Web App</em> as a WSGI server on PDSF, then <code>uwsgi</code> is also needed. It is not needed for a normal user.</p></li>
 <li><p>Optional, but recommended: Build the documentation. See <a href="#documentation">here</a>.</p></li>
 <li><p>Configure <em>Process Runs</em> and the <em>Web App</em> with files in the <code>config</code> directory. Copy <code>serverParams_stub</code> to <code>serverParams</code> so that it is usable. Begin configuring with the options in <code>sharedParams</code> file, and then configure <code>processingParams</code> and <code>serverParams</code> as necessary. Most defaults should be fine but at minimum, the <code>users</code> and <code>secretKey</code> must be configured in <code>serverParams</code>. Each option is extensively documented, which can be viewed in the source file or the documentation.</p></li>
 <li><p>Configure the directory structure. See <a href="#directory-structure">here</a>.</p></li>
