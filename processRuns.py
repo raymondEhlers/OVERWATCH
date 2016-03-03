@@ -162,21 +162,29 @@ def processQA(firstRun, lastRun, subsystem, qaFunctionName):
     # Formatting
     outputFormatting = os.path.join(dataDir, "%s.png")
 
+    # Determine whether the subsystem has it's own folder or if it is in the HLT
+    if exists(os.path.join(dirPrefix, runDir, subsystem)):
+        fileLocationSubsystem = subsystem
+    else:
+        fileLocationSubsystem = "HLT"
+    print "fileLocationSubsystem: ", fileLocationSubsystem
+
     # Call processRootFile looping over all the runs found above
     for runDir in runDirs:
         # Update the QA container
         qaContainer.currentRun = runDir
         qaContainer.filledValueInRun = False
-        # Get lgnth of run and set the value
-        [mergeDict, runLength] = utilities.createFileDictionary(dirPrefix, runDir, subsystem)
+
+        # Get length of run and set the value
+        [mergeDict, runLength] = utilities.createFileDictionary(dirPrefix, runDir, fileLocationSubsystem)
         qaContainer.runLength = runLength
         
         # Print current progress
         print "Processing run", qaContainer.currentRun
 
         # Determine the proper combined file for input
-        combinedFile = next(name for name in os.listdir(os.path.join(dirPrefix, runDir, subsystem)) if "combined" in name)
-        inputFilename = os.path.join(dirPrefix, runDir, subsystem, combinedFile)
+        combinedFile = next(name for name in os.listdir(os.path.join(dirPrefix, runDir, fileLocationSubsystem)) if "combined" in name)
+        inputFilename = os.path.join(dirPrefix, runDir, fileLocationSubsystem, combinedFile)
         if beVerbose:
             print inputFilename
 
