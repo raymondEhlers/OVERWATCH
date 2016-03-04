@@ -220,7 +220,7 @@ for subsystem in subsystems:
                     functionDocstring = functionDocstring[:functionDocstring.find("\nArgs:")]
 
                     # Save the docstring
-                    qaFunctionDocstrings[funcName] = [subsystem, functionDocstring]
+                    qaFunctionDocstrings[subsystem + funcName] = [subsystem, functionDocstring]
 
         # Print out the function names that have been loaded
         if functionNames != []:

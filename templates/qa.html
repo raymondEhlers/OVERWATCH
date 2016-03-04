@@ -64,8 +64,20 @@
             document.getElementById("qaFunction").addEventListener("change", function() {
                 /* Selects the first element, which is fine, since there should only be one visible */
                 var visibleElement = document.querySelector(".showFunctionDocstring");
-                /* this refers to the qaSelector */
-                var hiddenElementToShow = document.getElementById(this.value);
+
+                // Find the hidden element
+                /* this refers to the qaFunction */
+                var nameOfHiddenElementToShow = "";
+                if (this.value !== "noFunction")
+                {
+                    var subsystem = document.getElementById("subsystem").value;
+                    nameOfHiddenElementToShow = subsystem + this.value;
+                }
+                else
+                {
+                    nameOfHiddenElementToShow = this.value;
+                }
+                var hiddenElementToShow = document.getElementById(nameOfHiddenElementToShow);
                 /*console.log(this.value);
                 console.log(visibleElement);
                 console.log(hiddenElementToShow);*/
@@ -147,7 +159,7 @@
     <div class="contentDivider">
         {% for funcName, docStringList in docStrings.items() %}
             {# Replaces new lines with HTML new lines (ie <br>) and replaces groups of spaces with no break spaces #}
-            <p class="hideFunctionDocstring" id="{{ funcName }}"><strong>{{ funcName }} ({{ docStringList[0] }}):</strong><br />{{ docStringList[1].replace("\n","<br />").replace("    ","&nbsp&nbsp&nbsp&nbsp") | safe }}</p>
+            <p class="hideFunctionDocstring" id="{{ funcName }}"><strong>{{ funcName.replace(docStringList[0], "") }} ({{ docStringList[0] }}):</strong><br />{{ docStringList[1].replace("\n","<br />").replace("    ","&nbsp&nbsp&nbsp&nbsp") | safe }}</p>
         {% endfor %}
         <p class="hideFunctionDocstring" id="noFunction" >No functions are available in this subsystem! Please select another subsystem!</p>
     </div>
