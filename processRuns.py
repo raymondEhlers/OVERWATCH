@@ -162,18 +162,23 @@ def processQA(firstRun, lastRun, subsystem, qaFunctionName):
     # Formatting
     outputFormatting = os.path.join(dataDir, "%s.png")
 
-    # Determine whether the subsystem has it's own folder or if it is in the HLT
-    if exists(os.path.join(dirPrefix, runDir, subsystem)):
-        fileLocationSubsystem = subsystem
-    else:
-        fileLocationSubsystem = "HLT"
-    print "fileLocationSubsystem: ", fileLocationSubsystem
-
     # Call processRootFile looping over all the runs found above
     for runDir in runDirs:
         # Update the QA container
         qaContainer.currentRun = runDir
         qaContainer.filledValueInRun = False
+
+        # Determine whether the subsystem has it's own folder or if it is in the HLT
+        if exists(os.path.join(dirPrefix, runDir, subsystem)):
+            fileLocationSubsystem = subsystem
+        else:
+            fileLocationSubsystem = "HLT"
+
+            # If it is in the HLT, ensure that the HLT exists
+            if not exists(os.path.join(dirPrefix, runDir, fileLocationSubsystem)):
+                continue
+
+        print "fileLocationSubsystem: ", fileLocationSubsystem
 
         # Get length of run and set the value
         [mergeDict, runLength] = utilities.createFileDictionary(dirPrefix, runDir, fileLocationSubsystem)
@@ -358,6 +363,14 @@ def processAllRuns():
         for runDir in runDirs:
             if exists(os.path.join(dirPrefix, runDir, subsystem)):
                 subsystemRunDirDict[subsystem].append(runDir)
+
+    ## For loop is after the above to ensure that the HLT is processed first
+    #for subsystem in subsystemList:
+    #    # If the subsystemRunDirDict is empty at this point, it means that we have no files. This means that the files should be drawn from the HLT
+    #    if not subsystemRunDirDict[subsystem]:
+    #        subsystemRunDirDict[subsystem] = subsystemRunDirDict["HLT"]
+
+    #        # We need to flag of some sort to handle when the HLT is being used
 
     # Merge histograms over all runs, all subsystems if needed. Results in one combined file per subdir.
     mergedRuns = mergeFiles.mergeRootFiles(runDirs, subsystemRunDirDict, dirPrefix, subsystemList, forceNewMerge, cumulativeMode)

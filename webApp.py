@@ -316,12 +316,23 @@ def processQA():
                 histPaths[name] = histPath + "?time=" + str(time.time())
                 print "histPaths[", name, "]: ", histPaths[name]
 
-            return render_template("qaResult.html", firstRun=firstRun, lastRun=lastRun, qaFunctionName=qaFunction, hists=histPaths)
+            return render_template("qaResult.html", firstRun=firstRun, lastRun=lastRun, qaFunctionName=qaFunction, subsystem=subsystem, hists=histPaths)
         else:
             return render_template("error.html", errors=error)
 
     else:
-        return render_template("qa.html", runList=runList, qaFunctionsList=serverParameters.qaFunctionsList, subsystemList=serverParameters.subsystemList, docStrings=qa.qaFunctionDocstrings)
+        # We need to combine the available subsystems. subsystemList is not sufficient because we may want QA functions
+        # but now to split out the hists on the web page.
+        # Need to call list so that subsystemList is not modified.
+        # See: https://stackoverflow.com/a/2612815
+        subsystems = list(serverParameters.subsystemList)
+        for subsystem in serverParameters.qaFunctionsList:
+            subsystems.append(subsystem)
+
+        # Make sure that we have a unique list of subsystems.
+        subsystems = sorted(set(subsystems))
+
+        return render_template("qa.html", runList=runList, qaFunctionsList=serverParameters.qaFunctionsList, subsystemList=subsystems, docStrings=qa.qaFunctionDocstrings)
 
 ###################################################
 @app.route("/testingDataArchive")

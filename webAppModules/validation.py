@@ -86,7 +86,7 @@ def validatePartialMergePostRequest(request):
             error.setdefault("minTime", []).append("minTime " + str(minTime) + " is greater than maxTime " + str(maxTime))
         if runNumber < 0:
             error.setdefault("runNumber", []).append(str(runNumber) + "is less than 0 and not a valid run number!")
-        if subsystem not in serverParameters.qaFunctionsList:
+        if subsystem not in serverParameters.subsystemList:
             error.setdefault("qaFunction:", []).append("Subsystem " + subsystem + " not available in qa function list!")
         if scrollAmount < 0:
             error.setdefault("scrollAmount", []).append(str(scrollAmount) + "is less than 0 and not a valid scroll distance!")
@@ -140,12 +140,12 @@ def validateQAPostRequest(request, runList):
             error.setdefault("lastRun", []).append(lastRun + " not in run list!")
         if int(firstRun.replace("Run","")) > int(lastRun.replace("Run", "")):
             error.setdefault("runNumberOrder", []).append(firstRun + " is greater than " + lastRun)
-        if subsystem not in serverParameters.subsystemList:
-            error.setdefault("subsystem", []).append("subsystem " + subsystem + " is not valid")
-        if any(qaFunction not in funcNames for funcNames in serverParameters.qaFunctionsList.values()):
-            error.setdefault("qaFunction:", []).append(qaFunction + " is not a QA function defined for subsystem %s!" % subsystem)
+        #if subsystem not in serverParameters.subsystemList:
+        #    error.setdefault("subsystem", []).append("subsystem " + subsystem + " is not valid")
+        #if any(qaFunction not in funcNames for funcNames in serverParameters.qaFunctionsList.values()):
+        #    error.setdefault("qaFunction:", []).append(qaFunction + " is not a QA function defined for subsystem %s!" % subsystem)
         if subsystem not in serverParameters.qaFunctionsList:
-            error.setdefault("qaFunction:", []).append("Subsystem " + subsystem + " not available in qa function list!")
+            error.setdefault("qaFunction:", []).append("Subsystem " + subsystem + " not available in the QA function list!")
         else:
             if qaFunction not in serverParameters.qaFunctionsList[subsystem]:
                 error.setdefault("qaFunction:", []).append(qaFunction + " not usable with subsystem " + subsystem)

@@ -172,7 +172,20 @@ print "\nLoading modules for detectors:"
 
 # For saving and show the docstrings on the QA page.
 qaFunctionDocstrings = {}
-for subsystem in processingParameters.subsystemList:
+
+# We need to combine the available subsystems. subsystemList is not sufficient because we may want QA functions
+# but now to split out the hists on the web page.
+# Need to call list so that subsystemList is not modified.
+# See: https://stackoverflow.com/a/2612815
+subsystems = list(processingParameters.subsystemList)
+for subsystem in processingParameters.qaFunctionsList:
+    subsystems.append(subsystem)
+
+# Make sure that we have a unique list of subsystems.
+subsystems = list(set(subsystems))
+
+# Load functions
+for subsystem in subsystems:
     print "Subsystem", subsystem, "Functions loaded:", 
 
     # Ensure that the module exists before trying to load it
@@ -214,3 +227,5 @@ for subsystem in processingParameters.subsystemList:
             print ", ".join(functionNames)
         else:
             print ""
+    else:
+        print ""

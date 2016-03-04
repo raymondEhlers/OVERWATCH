@@ -250,11 +250,11 @@ def mergeRootFiles(runDirs, subsystemRunDirDict, dirPrefix, subsystemList, force
                     print "numberOfFilesInDir = " + `numberOfFilesInDir`
                     needRemerge = (`numberOfFilesInDir` > numberOfFilesPreviouslyMerged)
                 if needRemerge or forceNewMerge:
-                    print("Need to merge %s again" % runDir)
+                    print("Need to merge %s, %s again" % (runDir, subsystem))
                     print("Removing previous merged file %s" % combinedFile)
                     os.remove(os.path.join(filenamePrefix, combinedFile))
                 else:
-                    print("No need to merge %s again" % runDir)
+                    print("No need to merge %s, %s again" % (runDir, subsystem))
                     continue
                     
             # Perform the actual merge
