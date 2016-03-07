@@ -207,8 +207,6 @@ def moveRootFiles(dirPrefix, subsystemList):
 
     """
 
-    beVerbose = True
-
     subsystemDict = {}
     for subsystem in subsystemList:
         subsystemDict[subsystem] = enumerateFiles(dirPrefix, subsystem)

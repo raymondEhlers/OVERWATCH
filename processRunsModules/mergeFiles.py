@@ -215,7 +215,12 @@ def mergeRootFiles(runDirs, subsystemRunDirDict, dirPrefix, subsystemList, force
     else:
         currentDir = os.path.abspath(dirPrefix)
 
-    mergedRuns = []
+    # Setup mergedRuns output
+    mergedRuns = {}
+    for subsystem in subsystemList:
+        mergedRuns[subsystem] = []
+
+    # Process runs
     for runDir in runDirs:
         for subsystem in subsystemList:
             # Check if the run exists for that subsystem
@@ -262,8 +267,8 @@ def mergeRootFiles(runDirs, subsystemRunDirDict, dirPrefix, subsystemList, force
 
             # Track the runs which have been merged to allow for reprocessing
             # We have successfully merged, so add this to the list
-            if runDir not in mergedRuns:
-                mergedRuns.append(runDir)
+            if runDir not in mergedRuns[subsystem]:
+                mergedRuns[subsystem].append(runDir)
 
     return mergedRuns
 

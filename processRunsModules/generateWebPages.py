@@ -135,7 +135,7 @@ def createPageForRootFileAccess(dirPrefix, dirName, subsystem, generateTemplate 
             For a run, this should be roughly of the form "path"/Run#/subsytem (ex "path"/Run123/EMC)
             where "path" is the path of get to where the data will actually be stored
         dirName (str): String of the form "Run#". Ex: "Run123"
-        subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
+        subsystem (:class:`~subsystemProperties`): Contains information about the current subsystem.
         generateTemplate (Optional[bool]): Whether to generate a link for a templated page instead
             of a static page. Default: False.
 
@@ -144,12 +144,12 @@ def createPageForRootFileAccess(dirPrefix, dirName, subsystem, generateTemplate 
 
     """
     # Make sure that the dir exists before trying to create the file
-    if not os.path.exists(os.path.join(dirPrefix, subsystem)):
-        os.makedirs(os.path.join(dirPrefix, subsystem))
+    if not os.path.exists(os.path.join(dirPrefix, subsystem.fileLocationSubsystem)):
+        os.makedirs(os.path.join(dirPrefix, subsystem.fileLocationSubsystem))
 
     # Create file
-    f = open(os.path.join(dirPrefix, subsystem + "ROOTFiles.html"), "wb")
-    #print "Writing page:", os.path.join(dirPrefix, subsystem + "ROOTFiles.html")
+    f = open(os.path.join(dirPrefix, subsystem.subsystem + "ROOTFiles.html"), "wb")
+    #print "Writing page:", os.path.join(dirPrefix, subsystem.subsystem + "ROOTFiles.html")
 
     # Well formatted text containing the run
     runText = "Run " + dirName.replace("Run", "")
@@ -162,9 +162,14 @@ def createPageForRootFileAccess(dirPrefix, dirName, subsystem, generateTemplate 
         htmlText = """{% extends "layout.html" %}
         {% block body %}\n"""
 
+    # Make a note if the subsystem does not have it's own data
+    additionalFileLocationInformation = ""
+    if subsystem.subsystem != subsystem.fileLocationSubsystem:
+        additionalFileLocationInformation = " (stored in %s files)" % subsystem.fileLocationSubsystem
+
     # Setup the page
     htmlText += "<a class=\"anchor\" name=\"topOfPage\"></a>\n"
-    htmlText += "<h1>" + runText + " " + subsystem + " ROOT Files</h1>\n"
+    htmlText += "<h1>" + runText + " " + subsystem.subsystem + " ROOT Files%s</h1>\n" % additionalFileLocationInformation
     htmlText += "<p>All times recorded in the CERN time zone.</p>"
     htmlText += """<div class="contentDivider">\n"""
     htmlText += "<ul class=\"listColumns\">\n"
@@ -190,7 +195,7 @@ def createPageForRootFileAccess(dirPrefix, dirName, subsystem, generateTemplate 
 
     #print "dirPrefix:", dirPrefix
     #print "dirName:", dirName
-    #print "subsystem:", subsystem
+    #print "subsystem.subsystem:", subsystem.subsystem
     #print "generateTemplate:", generateTemplate
 
     # Add all of the files to the web page
@@ -201,7 +206,7 @@ def createPageForRootFileAccess(dirPrefix, dirName, subsystem, generateTemplate 
         
         htmlText += generateHtml.generateHtmlForRootFileAccessPage(filenameTimes[unixTime], timeString)
         #print "filename:", filename
-        #print "path:", os.path.join(dirName, subsystem, filename)
+        #print "path:", os.path.join(dirName, subsystem.fileLocationSubsystem, filename)
 
     # Close listColumns ul and contentContainer div opened above
     htmlText += "</ul>"
@@ -217,19 +222,18 @@ def createPageForRootFileAccess(dirPrefix, dirName, subsystem, generateTemplate 
     f.close()
 
 ###################################################
-def writeRootWebPage(writeDirs, subsystemRunDirDict, dirPrefix, subsystemsWithRootFilesToShow, generateTemplate = False):
+def writeRootWebPage(dirPrefix, subsystems, generateTemplate = False):
     """ Write the root web page given a list of the valid directories (ie dirs with images).
 
     The file is written out as runList.html in dirPrefix
     (or at the proper template dir structure, usually dirPrefix/templates/)
 
     Args:
-        writeDirs (list): List of all runs, with entries in the form of "Run#" (str). 
-        subsystemRunDirDict (dict): Contains the name of each valid run for each subsystem. The keys are the three letter subsystem names,
-            and there is a list at each key which contains all of the valid runs, with entries of the form "Run#" (str).
-        dirPrefix (str): The directory prefix for a given run. It should always contain the value of root path for data for the function.
+        dirPrefix (str): The directory prefix for a given run. It should always contain the value of root path
+            for data for the function.
             For a run, this should be roughly of the form "path"/Run#/subsytem (ex "path"/Run123/EMC)
             where "path" is the path of get to where the data will actually be stored
+        subsystems (list): List of subsystemProperties that conatining all of the subsystems to write to the page.
         generateTemplate (Optional[bool]): Whether to generate a link for a templated page instead
             of a static page. Default: False.
 
@@ -264,6 +268,15 @@ def writeRootWebPage(writeDirs, subsystemRunDirDict, dirPrefix, subsystemsWithRo
     # Start the container div
     htmlText += """<div class="contentDivider">\n"""
 
+    # Determine all possible write dirs so that we can loop through them below
+    # By looping through all writeDirs, we are able to write all of the subsystems links for a given run
+    # inside of one paragraph
+    writeDirs = []
+    for subsystem in subsystems:
+        for runDir in subsystem.runDirs:
+            if runDir not in writeDirs:
+                writeDirs.append(runDir)
+
     # Write runList with newest runs at top
     writeDirs.sort(reverse=True)
     for dirName in writeDirs:
@@ -276,10 +289,10 @@ def writeRootWebPage(writeDirs, subsystemRunDirDict, dirPrefix, subsystemsWithRo
         paddingLength = 1
 
         # Write out the various subsystems
-        for subsystem in processingParameters.subsystemList:
-            subsystemLabel = subsystem + " Histograms"
-            if dirName in subsystemRunDirDict[subsystem]:
-                subsystemPath = os.path.join(dirName, subsystem, subsystem + "output.html")
+        for subsystem in subsystems:
+            subsystemLabel = subsystem.subsystem + " Histograms"
+            if dirName in subsystem.runDirs:
+                subsystemPath = os.path.join(dirName, subsystem.fileLocationSubsystem, subsystem.subsystem + "output.html")
 
                 # Generate the link
                 htmlText += generateHtml.generateHtmlForRootWebPage(paddingLength, subsystemPath, subsystemLabel)
@@ -291,9 +304,9 @@ def writeRootWebPage(writeDirs, subsystemRunDirDict, dirPrefix, subsystemsWithRo
                     firstSubsystem = False
 
                 # Write out the ROOT file access page and link to it if selected
-                if subsystem in subsystemsWithRootFilesToShow:
-                    createPageForRootFileAccess(os.path.join(dirPrefix, dirName, subsystem), dirName, subsystem, generateTemplate)
-                    htmlText += generateHtml.generateHtmlForRootWebPage(paddingLength, os.path.join(dirName, subsystem, "%sROOTFiles.html" % subsystem), "%s ROOT Files" % subsystem)
+                if subsystem.showRootFiles == True:
+                    createPageForRootFileAccess(os.path.join(dirPrefix, dirName, subsystem.fileLocationSubsystem), dirName, subsystem, generateTemplate)
+                    htmlText += generateHtml.generateHtmlForRootWebPage(paddingLength, os.path.join(dirName, subsystem.fileLocationSubsystem, "%sROOTFiles.html" % subsystem.subsystem), "%s ROOT Files" % subsystem.subsystem)
 
         # Finish the paragraph started with the run number
         htmlText += "</p>\n"

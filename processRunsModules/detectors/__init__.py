@@ -150,7 +150,7 @@ files by hand!).
 Addding the Code
 ----------------
 
-Once the code has been tested, please create a pull request for the project on github at `raymondEhlers/OVERWATCH`_ .
+Once the code has been tested, please create a pull request for the project on github at `raymondEhlers/OVERWATCH`_ . Note that the code will only be accepted if it is properly documented! For it to show up when the documentation is rebuilt, the entry must be added in ``doc/source/processRunsModules.detectors.rst``.
 
 .. _raymondEhlers/OVERWATCH: https://github.com/raymondEhlers/OVERWATCH
 

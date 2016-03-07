@@ -41,7 +41,60 @@ from processRunsModules import mergeFiles
 from processRunsModules import qa
 
 ###################################################
-def processRootFile(filename, outputFormatting, qaContainer=None):
+class subsystemProperties:
+    """ Subsystem Property container class.
+
+    Defines properties of each subsystem in a consistent place.
+
+     Args:
+        subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
+        runDirs (dict): Contains list of valid runDirs for each subsystem, indexed by subsystem.
+        mergeDirs (Optional[dict]): Contains list of valid mergeDirs for each subsystem, indexed by subsystem.
+            Defaults to ``None``.
+        showRootFiles (Optional[bool]): Determines whether to create a page to make the ROOT files available.
+            Defaults to ``False``.
+
+    Available attributes include:
+
+    Attributes:
+        fileLocationSubsystem (str): Subsystem name of where the files are actually located. If a subsystem has
+            specific data files than this is just equal to the `subsystem`. However, if it relies on files inside
+            of another subsystem, then this variable is equal to that subsystem name.
+        runDirs (list): List of runs with entries in the form of "Run#" (str).
+        mergeDirs (list): List of merged runs with entries in the form of "Run#" (str).
+
+    """
+
+    def __init__(self, subsystem, runDirs, mergeDirs = None, showRootFiles = False):
+        """ Initializes subsystem properties.
+
+        It does safety and sanity checks on a number of variables.
+        """
+        self.subsystem = subsystem
+        self.showRootFiles = showRootFiles
+        self.writeDirs = []
+
+        # If data does not exist for this subsystem then it is dependent on HLT data
+        subsystemDataExistsFlag = False
+        for runDir in runDirs[subsystem]:
+            if exists(os.path.join(processingParameters.dirPrefix, runDir, subsystem)):
+                subsystemDataExistsFlag = True
+
+        if subsystemDataExistsFlag == True:
+            self.fileLocationSubsystem = subsystem
+        else:
+            self.fileLocationSubsystem = "HLT"
+            if showRootFiles == True:
+                print "\tWARNING! It is requested to show ROOT files for subsystem %s, but the subsystem does have specific data files" % subsystem
+
+        # Complete variable assignment now that we know where the data is located.
+        self.runDirs = runDirs[self.fileLocationSubsystem]
+        self.mergeDirs = []
+        if mergeDirs != None:
+            self.mergeDirs = mergeDirs[self.fileLocationSubsystem]
+
+###################################################
+def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
     """ Process a given root file, printing out all histograms.
 
     The function also applies QA as appropriate (either always applied or from a particular QA request) via
@@ -54,6 +107,7 @@ def processRootFile(filename, outputFormatting, qaContainer=None):
         outputFormatting (str): Specially formatted string which contains a generic path to the printed histograms.
             The string contains "%s" to print the filename contained in listOfHists. It also includes the file
             extension. Ex: "img/%s.png".
+        subsystem (:class:`~subsystemProperties`): Contains information about the current subsystem.
         qaContainer (Optional[:class:`~processRunsModules.qa.qaFunctionContainer`]): Contains information
             about the QA function and histograms, as well as the run being processed.
 
@@ -103,6 +157,11 @@ def processRootFile(filename, outputFormatting, qaContainer=None):
             if skipPrinting == True:
                 continue
 
+            # Filter here for hists in the subsystem if subsystem != fileLocationSubsystem
+            # Thus, we can filter the proper subsystems for subsystems that don't have their own data files
+            if subsystem.subsystem != subsystem.fileLocationSubsystem and subsystem.subsystem not in hist.GetName():
+                continue
+
             # Add to our list for printing to the webpage later
             # We only want to do this if we are actually printing the histogram
             outputHistNames.append(hist.GetName())
@@ -120,7 +179,7 @@ def processRootFile(filename, outputFormatting, qaContainer=None):
     return outputHistNames 
 
 ###################################################
-def processQA(firstRun, lastRun, subsystem, qaFunctionName):
+def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
     """ Processes a particular QA function over a set of runs.
 
     Usually invoked via the web app.
@@ -128,7 +187,7 @@ def processQA(firstRun, lastRun, subsystem, qaFunctionName):
     Args:
         firstRun (str): The first (ie: lowest) run in the form "Run#". Ex: "Run123"
         lastRun (str): The last (ie: highest) run in the form "Run#". Ex: "Run123"
-        subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
+        subsystemName (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
         qaFunction (str): Name of the QA function to be executed.
 
     Returns:
@@ -150,12 +209,23 @@ def processQA(firstRun, lastRun, subsystem, qaFunctionName):
     # Reassign for clarity since that is the name used in other functions.
     runDirs = tempDirs
 
+    # Find directories that exist for each subsystem
+    subsystemRunDirDict = {}
+    for subsystem in [subsystemName, "HLT"]:
+        subsystemRunDirDict[subsystem] = []
+        for runDir in runDirs:
+            if exists(os.path.join(dirPrefix, runDir, subsystem)):
+                subsystemRunDirDict[subsystem].append(runDir)
+
+    # Create subsystem object
+    subsystem = subsystemProperties(subsystem = subsystemName, runDirs = subsystemRunDirDict)
+
     # Create necessary dirs
     dataDir = os.path.join(dirPrefix, qaFunctionName)
     if not exists(dataDir):
         makedirs(dataDir)
 
-    # Create objectsto setup for processRootFile() call
+    # Create objects to setup for processRootFile() call
     # QA class
     qaContainer = qa.qaFunctionContainer(firstRun, lastRun, runDirs, qaFunctionName)
 
@@ -163,38 +233,26 @@ def processQA(firstRun, lastRun, subsystem, qaFunctionName):
     outputFormatting = os.path.join(dataDir, "%s.png")
 
     # Call processRootFile looping over all the runs found above
-    for runDir in runDirs:
+    for runDir in subsystem.runDirs:
         # Update the QA container
         qaContainer.currentRun = runDir
         qaContainer.filledValueInRun = False
 
-        # Determine whether the subsystem has it's own folder or if it is in the HLT
-        if exists(os.path.join(dirPrefix, runDir, subsystem)):
-            fileLocationSubsystem = subsystem
-        else:
-            fileLocationSubsystem = "HLT"
-
-            # If it is in the HLT, ensure that the HLT exists
-            if not exists(os.path.join(dirPrefix, runDir, fileLocationSubsystem)):
-                continue
-
-        print "fileLocationSubsystem: ", fileLocationSubsystem
-
         # Get length of run and set the value
-        [mergeDict, runLength] = utilities.createFileDictionary(dirPrefix, runDir, fileLocationSubsystem)
+        [mergeDict, runLength] = utilities.createFileDictionary(dirPrefix, runDir, subsystem.fileLocationSubsystem)
         qaContainer.runLength = runLength
         
         # Print current progress
         print "Processing run", qaContainer.currentRun
 
         # Determine the proper combined file for input
-        combinedFile = next(name for name in os.listdir(os.path.join(dirPrefix, runDir, fileLocationSubsystem)) if "combined" in name)
-        inputFilename = os.path.join(dirPrefix, runDir, fileLocationSubsystem, combinedFile)
+        combinedFile = next(name for name in os.listdir(os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem)) if "combined" in name)
+        inputFilename = os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem, combinedFile)
         if beVerbose:
             print inputFilename
 
         # Process the file
-        outputHistNames = processRootFile(inputFilename, outputFormatting, qaContainer)
+        outputHistNames = processRootFile(inputFilename, outputFormatting, subsystem = subsystem, qaContainer = qaContainer)
 
     # Need to remove the dirPrefix to get the proper URL
     # pathToRemove must end with a slash to ensure that the img path set below is valid
@@ -224,7 +282,7 @@ def processQA(firstRun, lastRun, subsystem, qaFunctionName):
     return returnValues
 
 ###################################################
-def processPartialRun(timeSliceRunNumber, minTimeRequested, maxTimeRequested, subsystem):
+def processPartialRun(timeSliceRunNumber, minTimeRequested, maxTimeRequested, subsystemName):
     """ Processes a given run using only data in a given time range.
 
     Usually invoked via the web app on a particular run page.
@@ -233,7 +291,7 @@ def processPartialRun(timeSliceRunNumber, minTimeRequested, maxTimeRequested, su
         timeSliceRunNumber (int): The run number to be processed.
         minTimeRequested (int): The requested start time of the merge in minutes.
         maxTimeRequested (int): The requested end time of the merge in minutes.
-        subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
+        subsystemName (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
 
     Returns:
         str: Path to the run page that was generated.
@@ -251,8 +309,19 @@ def processPartialRun(timeSliceRunNumber, minTimeRequested, maxTimeRequested, su
     runDir = "Run" + str(timeSliceRunNumber)
     print "Processing %s" % runDir
 
+    # Create run dir dict structure necessary for the subsystem properties class
+    # Find directories that exist for each subsystem
+    subsystemRunDirDict = {}
+    for subsystem in [subsystemName, "HLT"]:
+        subsystemRunDirDict[subsystem] = []
+        if exists(os.path.join(dirPrefix, runDir, subsystem)):
+            subsystemRunDirDict[subsystem].append(runDir)
+
+    # Setup subsystem properties
+    subsystem = subsystemProperties(subsystem = subsystemName, runDirs = subsystemRunDirDict)
+
     # Merge only the partial run.
-    (actualTimeBetween, inputFilename) = mergeFiles.merge(dirPrefix, runDir, subsystem, cumulativeMode, minTimeRequested, maxTimeRequested)
+    (actualTimeBetween, inputFilename) = mergeFiles.merge(dirPrefix, runDir, subsystem.fileLocationSubsystem, cumulativeMode, minTimeRequested, maxTimeRequested)
 
     # Setup necessary directories
     baseDirName = inputFilename.replace(".root", "")
@@ -279,16 +348,18 @@ def processPartialRun(timeSliceRunNumber, minTimeRequested, maxTimeRequested, su
     if beVerbose:
         print "minTimeRequested: %d" % minTimeRequested
         print "maxTimeRequested: %d" % maxTimeRequested
+        print "subsystem.subsystem: %s" % subsystem.subsystem
+        print "subsystem.fileLocationSubsystem: %s" % subsystem.fileLocationSubsystem
 
     # Generate the histograms
     outputFormattingSave = os.path.join(imgDir, "%s") + fileExtension
     if beVerbose:
         print "outputFormattingSave: %s" % outputFormattingSave
-    outputHistNames = processRootFile(inputFilename, outputFormattingSave)
+    outputHistNames = processRootFile(inputFilename, outputFormattingSave, subsystem)
 
     # This func is mostly used just for the properties of the output
     # We do not need the precise files that are being merged.
-    [mergeDict, maxTimeMinutes] = utilities.createFileDictionary(dirPrefix, runDir, subsystem)
+    [mergeDict, maxTimeMinutes] = utilities.createFileDictionary(dirPrefix, runDir, subsystem.fileLocationSubsystem)
 
     # Setup to write output page
     outputFormattingWeb =  os.path.join("img", "%s") + fileExtension
@@ -296,17 +367,17 @@ def processPartialRun(timeSliceRunNumber, minTimeRequested, maxTimeRequested, su
     timeKeys = sorted(mergeDict.keys())
 
     # Generate the output html, writing out how long was merged
-    generateWebPages.writeToWebPage(baseDirName, runDir, subsystem, outputHistNames, outputFormattingWeb, timeKeys[0], maxTimeMinutes, minTimeRequested, maxTimeRequested, actualTimeBetween)
+    generateWebPages.writeToWebPage(baseDirName, runDir, subsystem.subsystem, outputHistNames, outputFormattingWeb, timeKeys[0], maxTimeMinutes, minTimeRequested, maxTimeRequested, actualTimeBetween)
     if templateDataDirName != None:
         # templateDataDirPrefix is already set to the time slice dir, so we can just use it.
         if not exists(templateDataDirPrefix):
             makedirs(templateDataDirPrefix)
-        generateWebPages.writeToWebPage(templateDataDirPrefix, runDir, subsystem, outputHistNames, outputFormattingWeb, timeKeys[0], maxTimeMinutes, minTimeRequested, maxTimeRequested, actualTimeBetween, generateTemplate = True)
+        generateWebPages.writeToWebPage(templateDataDirPrefix, runDir, subsystem.subsystem, outputHistNames, outputFormattingWeb, timeKeys[0], maxTimeMinutes, minTimeRequested, maxTimeRequested, actualTimeBetween, generateTemplate = True)
 
     # We don't need to write to the main webpage since this is an inner page that would not show up there anyway
 
     # Return the path to the file
-    returnPath = os.path.join(baseDirName, subsystem + "output.html")
+    returnPath = os.path.join(baseDirName, subsystem.subsystem + "output.html")
     returnPath = returnPath[returnPath.find(dirPrefix) + len(dirPrefix):]
     # Remove leading slash if it is present
     if returnPath[0] == "/":
@@ -350,6 +421,16 @@ def processAllRuns():
     # Load general configuration options
     (fileExtension, beVerbose, forceReprocessing, forceNewMerge, sendData, pdsfUsername, cumulativeMode, templateDataDirName, dirPrefix, subsystemList, subsystemsWithRootFilesToShow) = processingParameters.defineRunProperties()
 
+    # Setup before processing data
+    # Determine templateDataDirPrefix
+    if templateDataDirName != None:
+        templateDataDirPrefix = os.path.join(os.path.dirname(dirPrefix), templateDataDirName)
+        print "templateDataDirPrefix:", templateDataDirPrefix
+        # Create directory to store the templates if necessary
+        if not exists(templateDataDirPrefix):
+            makedirs(templateDataDirPrefix)
+
+    # Start of processing data
     # Takes histos from dirPrefix and moves them into Run dir structure, with a subdir for each subsystem
     utilities.moveRootFiles(dirPrefix, subsystemList)
 
@@ -364,76 +445,74 @@ def processAllRuns():
             if exists(os.path.join(dirPrefix, runDir, subsystem)):
                 subsystemRunDirDict[subsystem].append(runDir)
 
-    ## For loop is after the above to ensure that the HLT is processed first
-    #for subsystem in subsystemList:
-    #    # If the subsystemRunDirDict is empty at this point, it means that we have no files. This means that the files should be drawn from the HLT
-    #    if not subsystemRunDirDict[subsystem]:
-    #        subsystemRunDirDict[subsystem] = subsystemRunDirDict["HLT"]
-
-    #        # We need to flag of some sort to handle when the HLT is being used
-
     # Merge histograms over all runs, all subsystems if needed. Results in one combined file per subdir.
     mergedRuns = mergeFiles.mergeRootFiles(runDirs, subsystemRunDirDict, dirPrefix, subsystemList, forceNewMerge, cumulativeMode)
+
+    # Construct subsystems
+    # Up to this point, the files have just been setup and merged.
+    # Analysis below requires additional information, so it will be collected in subsystemProperties classes
+    subsystems = []
+    for subsystem in subsystemList:
+        showRootFiles = False
+        if subsystem in subsystemsWithRootFilesToShow:
+            showRootFiles = True
+
+        subsystems.append(subsystemProperties(subsystem = subsystem,
+                                              runDirs = subsystemRunDirDict,
+                                              mergeDirs = mergedRuns,
+                                              showRootFiles = showRootFiles))
 
     # Contains which directories to write out on the main page
     writeDirs = []
 
-    # Determine templateDataDirPrefix
-    if templateDataDirName != None:
-        templateDataDirPrefix = os.path.join(os.path.dirname(dirPrefix), templateDataDirName)
-        print "templateDataDirPrefix:", templateDataDirPrefix
-        # Create directory to store the templates if necessary
-        if not exists(templateDataDirPrefix):
-            makedirs(templateDataDirPrefix)
-
     # Determine which runs to process
     for runDir in runDirs:
-        for subsystem in subsystemList:
+        for subsystem in subsystems:
             # Check if the run exists for that subsystem
             # If it does not exist, continue on to the next run
-            if runDir not in subsystemRunDirDict[subsystem]:
+            if runDir not in subsystem.runDirs:
                 continue
 
             # Determine img dir and input file
-            imgDir = os.path.join(dirPrefix, runDir, subsystem, "img")
-            combinedFile = next(name for name in os.listdir(os.path.join(dirPrefix, runDir, subsystem)) if "combined" in name)
-            inputFilename = os.path.join(dirPrefix, runDir, subsystem, combinedFile)
+            imgDir = os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem, "img")
+            combinedFile = next(name for name in os.listdir(os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem)) if "combined" in name)
+            inputFilename = os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem, combinedFile)
 
             if exists(inputFilename):
                 # Does not always append, since a run number could come up multiple times when processing
                 # different subsystems. This is not necessarily a problem since it is not new information,
                 # but it could become confusing.
-                if runDir not in writeDirs:
-                    writeDirs.append(runDir)
+                if runDir not in subsystem.writeDirs:
+                    subsystem.writeDirs.append(runDir)
             else:
                 print "File %s does not seem to exist! Skipping!" % inputFilename
                 continue
 
             # Process if imgDir doesn't exist, or if forceReprocessing, or if runDir has been merged recently
-            if not exists(imgDir) or forceReprocessing == True or runDir in mergedRuns:
+            if not exists(imgDir) or forceReprocessing == True or runDir in subsystem.mergeDirs:
                 if not exists(imgDir): # check in case forceReprocessing
                     makedirs(imgDir)
 
                 # Process combined root file: plot histos and save in imgDir
-                print "About to process %s, %s" % (runDir, subsystem)
+                print "About to process %s, %s" % (runDir, subsystem.subsystem)
                 outputFormattingSave = os.path.join(imgDir, "%s") + fileExtension
-                outputHistNames = processRootFile(inputFilename, outputFormattingSave)
+                outputHistNames = processRootFile(inputFilename, outputFormattingSave, subsystem)
 
                 # Store filenames and timestamps in dictionary, for sorting by time
-                [mergeDict, maxTimeMinutes] = utilities.createFileDictionary(dirPrefix, runDir, subsystem)
+                [mergeDict, maxTimeMinutes] = utilities.createFileDictionary(dirPrefix, runDir, subsystem.fileLocationSubsystem)
                 outputFormattingWeb =  os.path.join("img","%s") + fileExtension
                 # timeKeys[0] is the start time of the run in unix time
                 timeKeys = sorted(mergeDict.keys())
 
                 # Write subsystem html page
                 # Write static page
-                generateWebPages.writeToWebPage(os.path.join(dirPrefix, runDir, subsystem), runDir, subsystem, outputHistNames, outputFormattingWeb, timeKeys[0], maxTimeMinutes)
+                generateWebPages.writeToWebPage(os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem), runDir, subsystem.subsystem, outputHistNames, outputFormattingWeb, timeKeys[0], maxTimeMinutes)
                 if templateDataDirName != None:
                     # Write template page
-                    templateFolderForRunPage = os.path.join(templateDataDirPrefix, runDir, subsystem)
+                    templateFolderForRunPage = os.path.join(templateDataDirPrefix, runDir, subsystem.fileLocationSubsystem)
                     if not exists(templateFolderForRunPage):
                         makedirs(templateFolderForRunPage)
-                    generateWebPages.writeToWebPage(templateFolderForRunPage, runDir, subsystem, outputHistNames, outputFormattingWeb, timeKeys[0], maxTimeMinutes, generateTemplate = True)
+                    generateWebPages.writeToWebPage(templateFolderForRunPage, runDir, subsystem.subsystem, outputHistNames, outputFormattingWeb, timeKeys[0], maxTimeMinutes, generateTemplate = True)
             else:
                 # We often want to skip this point since most runs will not need to be processed most times
                 if beVerbose:
@@ -441,10 +520,10 @@ def processAllRuns():
 
     # Now write the webpage in the root directory
     # Static page
-    generateWebPages.writeRootWebPage(writeDirs, subsystemRunDirDict, dirPrefix, subsystemsWithRootFilesToShow)
+    generateWebPages.writeRootWebPage(dirPrefix, subsystems)
     if templateDataDirName != None:
         # Templated page
-        generateWebPages.writeRootWebPage(writeDirs, subsystemRunDirDict, templateDataDirPrefix, subsystemsWithRootFilesToShow, generateTemplate = True)
+        generateWebPages.writeRootWebPage(templateDataDirPrefix, subsystems, generateTemplate = True)
 
     print "Finished processing! Webpage available at: %s/runList.html" % os.path.abspath(dirPrefix)
 
