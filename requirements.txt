@@ -15,6 +15,6 @@ numpy
 # ROOT (required, but cannot be installed by pip)
 
 # WSGI
-flup
+flup6
 # Not necessarily required
 #uwsgi

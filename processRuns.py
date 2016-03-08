@@ -9,7 +9,6 @@ then writes out histograms to webpage
 
 """
 from __future__ import print_function
-#from builtins import object
 
 # ROOT includes
 from ROOT import gROOT, TFile, TCanvas, TClass, TH1, TLegend, SetOwnership, TFileMerger, TList, gPad, TGaxis, gStyle, TProfile, TF1, TH1F

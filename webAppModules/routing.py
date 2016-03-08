@@ -10,7 +10,12 @@ under particular circumstances.
 """
 
 from flask import request, url_for, redirect
-from urlparse import urlparse, urljoin
+
+# Handle python 2/3
+try:
+    from urllib.parse import urlparse, urljoin
+except ImportError:
+    from urlparse import urlparse, urljoin
 
 ###################################################
 def isSafeUrl(target):
