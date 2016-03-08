@@ -30,7 +30,7 @@ This package has only had basic testing against python 3.
 
 This is a `python` based project, so pip (ie `pip install <packageName>`) is the recommended way to install dependencies.
 
- 1. Install dependencies: `flask Flask-Login Flask-Bcrypt bcrypt numpy flup`. If using the _Web App_ as a WSGI server on PDSF, then `uwsgi` is also needed. It is not needed for a normal user.
+ 1. Install dependencies: `flask Flask-Login Flask-Bcrypt bcrypt numpy flup future`. This can be accomplished by running `pip install -r requirements.txt`. If using the _Web App_ as a WSGI server on PDSF, then `uwsgi` is also needed. It is not needed for a normal user.
 
  2. Optional, but recommended: Build the documentation. See [here](#documentation).
 
