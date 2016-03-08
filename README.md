@@ -24,7 +24,7 @@ The _Web App_ is configured to work as both a full web server or a WSGI server. 
 
 A full, high performance web server is available in _Full Stack Server_. It is extremely simple, but it can act as a front end to the Flask server, which is a task usually performed by a more traditional web server such as Apache or Nginx. When the _Full Stack Server_ is used, the _Web App_ is used as a WSGI server and it will automatically be loaded by the _Full Stack Server_.
 
-This package has not been tested against python 3.
+This package has only had basic testing against python 3.
 
 ## Setup and Usage
 
