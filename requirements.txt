@@ -1,0 +1,20 @@
+### Requirements for OVERWATCH ###
+# Required
+
+# For Python 2/3 support
+future
+
+# Flask
+flask
+Flask-Login
+Flask-Bcrypt
+bcrypt
+
+# Processing
+numpy
+# ROOT (required, but cannot be installed by pip)
+
+# WSGI
+flup
+# Not necessarily required
+#uwsgi
