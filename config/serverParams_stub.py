@@ -1,5 +1,8 @@
 # Holds all of the server parameters
 
+# Python 2/3 support
+from __future__ import print_function
+
 # General
 import socket
 import os
@@ -8,9 +11,9 @@ import os
 from flask.ext.bcrypt import generate_password_hash
 
 # Config
-from sharedParams import sharedParameters
+from .sharedParams import sharedParameters
 
-class serverParameters:
+class serverParameters(object):
     """ Contains the parameters used to configure the server.
 
     Draws a number of settings from :class:`~config.sharedParams.sharedParameters`.
@@ -113,15 +116,15 @@ class serverParameters:
         :attr:`config.sharedParams.sharedParameters.qaFunctionsList`
     """
 
-print "\nServer Parameters:"
-print "ipAddress:", serverParameters.ipAddress
-print "port:", serverParameters.port
-print "bcryptLogRounds:", serverParameters.bcryptLogRounds
-print "basePath:", serverParameters.basePath
-print "staticFolder:", serverParameters.staticFolder
-print "staticURLPath:", serverParameters.staticURLPath
-print "protectedFolder:", serverParameters.protectedFolder
-print "templateFolder:", serverParameters.templateFolder
-print "debug:", serverParameters.debug
-print "subsystemList:", serverParameters.subsystemList
-print "qaFunctionsList:", serverParameters.qaFunctionsList
+print("\nServer Parameters:")
+print("ipAddress:", serverParameters.ipAddress)
+print("port:", serverParameters.port)
+print("bcryptLogRounds:", serverParameters.bcryptLogRounds)
+print("basePath:", serverParameters.basePath)
+print("staticFolder:", serverParameters.staticFolder)
+print("staticURLPath:", serverParameters.staticURLPath)
+print("protectedFolder:", serverParameters.protectedFolder)
+print("templateFolder:", serverParameters.templateFolder)
+print("debug:", serverParameters.debug)
+print("subsystemList:", serverParameters.subsystemList)
+print("qaFunctionsList:", serverParameters.qaFunctionsList)

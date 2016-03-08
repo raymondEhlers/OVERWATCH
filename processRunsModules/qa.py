@@ -3,6 +3,9 @@
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
 
+# Python 2/3 support
+from __future__ import print_function
+
 # General includes
 import os
 import sys
@@ -19,7 +22,7 @@ from config.processingParams import processingParameters
 currentModule = sys.modules[__name__]
 
 ###################################################
-class qaFunctionContainer:
+class qaFunctionContainer(object):
     """ QA Container class
 
     Args:
@@ -168,7 +171,7 @@ def checkHist(hist, qaContainer):
 # For more details on how this is possible, see: https://stackoverflow.com/a/3664396
 detectorsPath = processingParameters.detectorsPath
 modulesPath = processingParameters.modulesPath
-print "\nLoading modules for detectors:"
+print("\nLoading modules for detectors:")
 
 # For saving and show the docstrings on the QA page.
 qaFunctionDocstrings = {}
@@ -186,7 +189,7 @@ subsystems = list(set(subsystems))
 
 # Load functions
 for subsystem in subsystems:
-    print "Subsystem", subsystem, "Functions loaded:", 
+    print("Subsystem", subsystem, "Functions loaded:", end=' ') 
 
     # Ensure that the module exists before trying to load it
     if os.path.exists(os.path.join(modulesPath, detectorsPath, "%s.py" % subsystem)):
@@ -224,8 +227,8 @@ for subsystem in subsystems:
 
         # Print out the function names that have been loaded
         if functionNames != []:
-            print ", ".join(functionNames)
+            print(", ".join(functionNames))
         else:
-            print ""
+            print("")
     else:
-        print ""
+        print("")

@@ -8,6 +8,7 @@ Heavily relied on (to get logging right): https://fgimian.github.io/blog/2012/12
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
+from __future__ import print_function
 
 # General
 import os
@@ -35,7 +36,7 @@ if __name__ == "__main__":
     # absoluteStaticPath must be an absolute path. This will adapt to wherever the file is located.
     staticPath = os.path.join("/", serverParameters.staticFolder)
     absoluteStaticPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), serverParameters.staticFolder)
-    print "staticPath = \"%s\", absoluteStaticPath = \"%s\"" % (staticPath, absoluteStaticPath)
+    print("staticPath = \"%s\", absoluteStaticPath = \"%s\"" % (staticPath, absoluteStaticPath))
     # This serves the url "/static". The "/" is mounted at absoluteStaticPath, 
     # so whenever "/static" is hit, then it goes to files in absoluteStaticPath.
     cherrypy.tree.mount(None, "/static", {

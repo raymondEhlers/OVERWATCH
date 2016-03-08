@@ -1,6 +1,6 @@
 ## Containers parameters shared between processingParameters and serverParameters
 
-class sharedParameters:
+class sharedParameters(object):
     """ Containers parameters shared between processingParameters and serverParameters.
 
     They often just take the value and reuse the variable name so that variables are available
@@ -12,12 +12,12 @@ class sharedParameters:
 
     #: List of subsystems.
     #: Each subsystem listed here will have an individual page for their respective histograms.
-    subsystemList = ["EMC", "HLT"]
+    subsystemList = ["EMC", "HLT", "TPC"]
 
     #: Each of these subsystems will also get an individual page for access to their respective ROOT files.
     subsystemsWithRootFilesToShow = ["HLT"]
 
-    qaFunctionsList = {"EMC": ["determineMedianSlope", "checkForOutliers"]}
+    qaFunctionsList = {"EMC": ["determineMedianSlope", "checkForOutliers"], "TPC" : ["checkForOutliers"]}
     #qaFunctionsList = {"EMC": ["determineMedianSlope", "checkForOutliers"], "HLT" : ["determineValue"]}
     """ These are the QA functions that should be displayed as options on the QA page.
     

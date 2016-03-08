@@ -5,7 +5,10 @@ Shared utility functions used for organizing file structure, merging histograms,
 .. codeauthor:: James Mulligan <james.mulligan@yale.edu>, Yale University
 
 """
+# Python 2/3 support
+from __future__ import print_function
 
+# General
 import os
 import time
 from calendar import timegm
@@ -25,7 +28,7 @@ def extractTimeStampFromFilename(filename):
 
     """
     if "combined" in filename:
-        print "Error: cannot extract a time stamp for a combined file"
+        print("Error: cannot extract a time stamp for a combined file")
 
     timeString = filename.split(".")[1]
     timeStamp = time.strptime(timeString, "%Y_%m_%d_%H_%M_%S")
@@ -62,7 +65,8 @@ def createFileDictionary(currentDir, runDir, subsystem):
 
     # Max time range in minutes (60s added to make sure we don't undershoot)
     keys = sorted(mergeDict.keys())
-    maxTimeMinutes = (keys[-1] - keys[0] + 60)/60 
+    # // is integer division
+    maxTimeMinutes = (keys[-1] - keys[0] + 60)//60 
 
     return [mergeDict, maxTimeMinutes]
 
@@ -165,7 +169,7 @@ def moveFiles(subsystemDict, dirPrefix):
     for key in subsystemDict.keys():
         filesToMove = subsystemDict[key]
         if len(filesToMove) == 0:
-            print "No files to move in %s" % key
+            print("No files to move in %s" % key)
         for filename in filesToMove:
             # Extract time stamp and run number
             #print("filename: %s" % filename)
@@ -194,7 +198,7 @@ def moveFiles(subsystemDict, dirPrefix):
 
             oldPath = os.path.join(dirPrefix, tempFilename)
             newPath = os.path.join(dirPrefix, "Run" + str(runNumber), key, newFilename)
-            print "Moving %s to %s" % (oldPath, newPath)
+            print("Moving %s to %s" % (oldPath, newPath))
             # DON"T IMPORT MOVE. BAD CONSEQUENCES!!
             shutil.move(oldPath, newPath)
 

@@ -3,6 +3,9 @@
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
+# For python 3 support
+from __future__ import print_function
+from builtins import range
 
 # General includes
 import os
@@ -70,7 +73,7 @@ def login():
     Unauthenticated users are also redirected here if they try to access something restricted.
     After logging in, it should then forward them to resource they requested.
     """
-    print "Login called"
+    print("Login called")
 
     errorValue = None
     nextValue = routing.getRedirectTarget()
@@ -163,10 +166,10 @@ def showRuns(runPath):
         # Handle anchor. Should only occur for timeSlices
         if "#" in runPath:
             anchor = runPath[runPath.find("#"):]
-            print "anchor:", anchor
+            print("anchor:", anchor)
             return render_template(os.path.join("data",runPath), scrollAmount=anchor)
 
-        print "runPath:", runPath
+        print("runPath:", runPath)
         return render_template(os.path.join("data",runPath))
     else:
         # This handles ROOT files. It also handles static html files if dynamicContent is false.
@@ -186,7 +189,7 @@ def protected(filename):
         being served.
 
     """
-    print "filename", filename
+    print("filename", filename)
     # Ignore the time GET parameter that is sometimes passed- just to avoid the cache when required
     #if request.args.get("time"):
     #    print "timeParameter:", request.args.get("time")
@@ -255,22 +258,22 @@ def partialMerge():
             scrollAmount = "scrollTo" + str(scrollAmount)
 
             # Print input values
-            print "minTime", minTime
-            print "maxTime", maxTime
-            print "runNumber", runNumber
-            print "subsystem", subsystem
-            print "scrollAmount", scrollAmount
+            print("minTime", minTime)
+            print("maxTime", maxTime)
+            print("runNumber", runNumber)
+            print("subsystem", subsystem)
+            print("scrollAmount", scrollAmount)
 
             # Process the partial merge
             returnPath = processRuns.processPartialRun(runNumber, minTime, maxTime, subsystem)
 
-            print "returnPath", returnPath
+            print("returnPath", returnPath)
 
             # Passes what usually goes into the anchor as an argument to the template.
             # This is because render_template does not work with an anchor.
             return redirect(url_for("showRuns", runPath=returnPath, _anchor=scrollAmount))
         else:
-            print "Error:", error
+            print("Error:", error)
             return render_template("error.html", errors=error)
     else:
         return render_template("error.html", errors={"error": ["Need to access through other web page"]})
@@ -301,10 +304,10 @@ def processQA():
         # Process
         if error == {}:
             # Print input values
-            print "firstRun:", firstRun
-            print "lastRun:", lastRun
-            print "subsystem:", subsystem
-            print "qaFunction:", qaFunction
+            print("firstRun:", firstRun)
+            print("lastRun:", lastRun)
+            print("subsystem:", subsystem)
+            print("qaFunction:", qaFunction)
 
             # Process the QA
             returnValues = processRuns.processQA(firstRun, lastRun, subsystem, qaFunction)
@@ -314,7 +317,7 @@ def processQA():
             for name, histPath in returnValues.items():
                 # Can add an argument with "&arg=value" if desired
                 histPaths[name] = histPath + "?time=" + str(time.time())
-                print "histPaths[", name, "]: ", histPaths[name]
+                print("histPaths[", name, "]: ", histPaths[name])
 
             return render_template("qaResult.html", firstRun=firstRun, lastRun=lastRun, qaFunctionName=qaFunction, subsystem=subsystem, hists=histPaths)
         else:
@@ -363,15 +366,15 @@ def testingDataArchive():
     # Create zip file. It is stored in the root of the data directory
     zipFilename = "testingDataArchive.zip"
     zipFile = zipfile.ZipFile(os.path.join(serverParameters.protectedFolder, zipFilename), "w")
-    print "Creating zipFile at %s" % os.path.join(serverParameters.protectedFolder, zipFilename)
+    print("Creating zipFile at %s" % os.path.join(serverParameters.protectedFolder, zipFilename))
 
     # Add files to the zip file
-    for i in xrange(0, numberOfFilesToDownload):
+    for i in range(0, numberOfFilesToDownload):
         for subsystem in serverParameters.subsystemList:
             # Get the combined file
             if os.path.exists(os.path.join(serverParameters.protectedFolder, runList[i], subsystem)):
                 combinedFile = next(name for name in os.listdir(os.path.join(serverParameters.protectedFolder, runList[i], subsystem)) if "combined" in name)
-                print os.path.join(serverParameters.protectedFolder, runList[i], subsystem, combinedFile)
+                print(os.path.join(serverParameters.protectedFolder, runList[i], subsystem, combinedFile))
 
                 # Find the file that the combined file is derived from. This is needed because processRuns expects at least the combined file and one other file
                 # This will work in cumulative mode just fine. This will also be fine in REQ mode too, since the number of files in the dir is less than the
@@ -382,7 +385,7 @@ def testingDataArchive():
                 # See: https://stackoverflow.com/a/2073189
                 fileTime = time.strftime("%Y_%-m_%-d_%-H_%-M_%-S", time.gmtime(int(combinedFile.split(".")[3])))
                 uncombinedFile = subsystem + "hists." + fileTime + ".root"
-                print os.path.join(serverParameters.protectedFolder, runList[i], subsystem, uncombinedFile)
+                print(os.path.join(serverParameters.protectedFolder, runList[i], subsystem, uncombinedFile))
 
                 # Write files to the zip file
                 zipFile.write(os.path.join(serverParameters.protectedFolder, runList[i], subsystem, combinedFile))
@@ -398,11 +401,11 @@ if __name__ == "__main__":
     # Support both the WSGI server mode, as well as standalone
     #app.run(host="0.0.0.0")
     if "pdsf" in socket.gethostname():
-        print "Starting flup WSGI app"
+        print("Starting flup WSGI app")
         WSGIServer(app, bindAddress=("127.0.0.1",8851)).run()
     elif "sgn" in socket.gethostname():
-        print "Starting flup WSGI app on sciece gateway"
+        print("Starting flup WSGI app on sciece gateway")
         WSGIServer(app, bindAddress=("127.0.0.1",8851)).run()
     else:
-        print "Starting flask app"
+        print("Starting flask app")
         app.run(host=serverParameters.ipAddress, port=serverParameters.port)

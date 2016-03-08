@@ -7,6 +7,9 @@ and each individual run direct ROOT files access page.
 .. codeauthor:: James Mulligan <james.mulligan@yale.edu>, Yale University
 """
 
+# Python 2/3 support
+from __future__ import print_function
+
 # General includes
 import os
 import sys
@@ -17,8 +20,8 @@ import inspect
 import importlib
 
 # Module includes
-import utilities
-import generateHtml
+from . import utilities
+from . import generateHtml
 
 # Configuration
 from config.processingParams import processingParameters
@@ -61,7 +64,7 @@ def writeToWebPage(dirPrefix, runDir, subsystem, outputHistNames, outputFormatti
     """
     # Open the particular file
     f = open(os.path.join(dirPrefix, subsystem + "output.html"), "wb")
-    print "Writing page:", os.path.join(dirPrefix, subsystem + "output.html")
+    print("Writing page:", os.path.join(dirPrefix, subsystem + "output.html"))
 
     # Contains just the number as an int
     runNumber = int(runDir.replace("Run",""))
@@ -98,7 +101,7 @@ def writeToWebPage(dirPrefix, runDir, subsystem, outputHistNames, outputFormatti
         #print "outputFormatting", outputFormatting
         #print "dirPrefix", dirPrefix
         outputFormatting = """{{ url_for("protected", filename="%s") }}""" % os.path.join(dirPrefix[dirPrefix.find("Run"):], outputFormatting)
-        print "outputFormatting", outputFormatting
+        print("outputFormatting", outputFormatting)
 
     # Setup at top of page.
     htmlText += "<a class=\"anchor\" name=\"topOfPage\"></a>\n"

@@ -6,10 +6,17 @@ This module contains functions used to merge histograms, including the principal
 
 """
 
+# Python 2/3 support
+from __future__ import print_function
+from __future__ import absolute_import
+
+# ROOT
 from ROOT import gROOT, TH1, TFile, TFileMerger
+
+# General
 import os
 
-import utilities
+from . import utilities
 
 ###################################################
 def merge(currentDir, runDir, subsystem, cumulativeMode = True, minTimeMinutes = -1, maxTimeMinutes = -1):
@@ -72,18 +79,18 @@ def merge(currentDir, runDir, subsystem, cumulativeMode = True, minTimeMinutes =
     # If max filter time is greater than max file time, merge up to and including last file
     if maxTimeCutUnix > maxFileTime:
         maxTimeCutUnix = maxFileTime
-        print "Input max time exceeds data! It has been reset to the maximum allowed."
+        print("Input max time exceeds data! It has been reset to the maximum allowed.")
 
     # If input time range out of range, return 0
     if isTimeSlice:
-        print "Filtering time window! Min: " + `minTimeMinutes` + ", Max: " + `maxTimeMinutes` 
+        print("Filtering time window! Min: " + repr(minTimeMinutes) + ", Max: " + repr(maxTimeMinutes)) 
         if not os.path.exists(timeSliceDir):
             os.makedirs(timeSliceDir)
         if minTimeMinutes < 0:
-            print "Input time range exceeds time range of data!"
+            print("Input time range exceeds time range of data!")
             return 0
         if minTimeCutUnix > maxTimeCutUnix:
-            print "Max time must be greater than Min time!"
+            print("Max time must be greater than Min time!")
             return 0
 
     # Filter mergeDict by input time range
@@ -99,7 +106,8 @@ def merge(currentDir, runDir, subsystem, cumulativeMode = True, minTimeMinutes =
     maxFilteredTimeStamp = keys[-1]
     if isTimeSlice:
         mergedFile = os.path.join(timeSliceDir, "timeSlice.%i.%i.%i.%i.root" % (minTimeMinutes, maxTimeMinutes, minFilteredTimeStamp, maxFilteredTimeStamp))
-    actualFilterTimeMin = (maxFilteredTimeStamp - minFilteredTimeStamp)/60
+    # // means integer division
+    actualFilterTimeMin = (maxFilteredTimeStamp - minFilteredTimeStamp)//60
 
     # If in cumulativeMode, we subtract the earliest file from the latest file, unless 
     # minTimeMinutes=-1 or 0, in which case we don't subtract anything from the most recent
@@ -241,19 +249,19 @@ def mergeRootFiles(runDirs, subsystemRunDirDict, dirPrefix, subsystemList, force
                 uncombinedFiles = [name for name in os.listdir(filenamePrefix) if "combined" not in name and ".root" in name ]
                 if cumulativeMode: 
                     # In SUB, compare combined file timestamp with latest timestamp of uncombined file
-                    print "Checking time stamps to determine if we need to merge..."
+                    print("Checking time stamps to determine if we need to merge...")
                     timeStamps = []
                     for name in uncombinedFiles:
                         timeStamps.append( utilities.extractTimeStampFromFilename(name) )
                     combinedTimeStamp = combinedFile.split(".")[3]
-                    needRemerge = (`max(timeStamps)` != combinedTimeStamp)
+                    needRemerge = (repr(max(timeStamps)) != combinedTimeStamp)
                 else: # In REQ mode, compare combined file merge count with number of uncombined files
-                    print "Checking if we have any new files to merge..."
+                    print("Checking if we have any new files to merge...")
                     numberOfFilesPreviouslyMerged = combinedFile.split(".")[2]
-                    print "numberOfFilesPreviouslyMerged = " + numberOfFilesPreviouslyMerged
+                    print("numberOfFilesPreviouslyMerged = " + numberOfFilesPreviouslyMerged)
                     numberOfFilesInDir = len(uncombinedFiles)
-                    print "numberOfFilesInDir = " + `numberOfFilesInDir`
-                    needRemerge = (`numberOfFilesInDir` > numberOfFilesPreviouslyMerged)
+                    print("numberOfFilesInDir = " + repr(numberOfFilesInDir))
+                    needRemerge = (repr(numberOfFilesInDir) > numberOfFilesPreviouslyMerged)
                 if needRemerge or forceNewMerge:
                     print("Need to merge %s, %s again" % (runDir, subsystem))
                     print("Removing previous merged file %s" % combinedFile)

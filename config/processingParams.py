@@ -1,12 +1,15 @@
 ## Holds all of the processing parameters
 
+# Python 2/3 support
+from __future__ import print_function
+
 # General
 import os
 
 # Config
-from sharedParams import sharedParameters
+from .sharedParams import sharedParameters
 
-class processingParameters:
+class processingParameters(object):
     """ Contains the parameters used to configure the server.
 
     Draws a number of settings from :class:`~config.sharedParams.sharedParameters`.
@@ -100,21 +103,21 @@ class processingParameters:
         return (cls.fileExtension, cls.beVerbose, cls.forceReprocessing, cls.forceNewMerge, cls.sendData, cls.remoteUsername, cls.cumulativeMode, cls.templateDataDirName, cls.dirPrefix, cls.subsystemList, cls.subsystemsWithRootFilesToShow)
 
 # Print settings
-print "\nProcessing Parameters:"
-print "fileExtension:", processingParameters.fileExtension
-print "beVerbose:", processingParameters.beVerbose
-print "debug:", processingParameters.debug
-print "forceReprocessing:", processingParameters.forceReprocessing
-print "forceNewMerge:", processingParameters.forceNewMerge
-print "sendData:", processingParameters.sendData
-print "remoteUsername:", processingParameters.remoteUsername
-print "remoteSystem:", processingParameters.remoteSystem
-print "remoteFileLocation:", processingParameters.remoteFileLocation
-print "cumulativeMode:", processingParameters.cumulativeMode
-print "templateDataDirName:", processingParameters.templateDataDirName
-print "dirPrefix:", processingParameters.dirPrefix
-print "modulesPath:", processingParameters.modulesPath
-print "detectorsPath:", processingParameters.detectorsPath
-print "subsystemList:", processingParameters.subsystemList
-print "subsystemsWithRootFilesToShow:", processingParameters.subsystemsWithRootFilesToShow
-print "qaFunctionsToAlwaysApply:", processingParameters.qaFunctionsToAlwaysApply
+print("\nProcessing Parameters:")
+print("fileExtension:", processingParameters.fileExtension)
+print("beVerbose:", processingParameters.beVerbose)
+print("debug:", processingParameters.debug)
+print("forceReprocessing:", processingParameters.forceReprocessing)
+print("forceNewMerge:", processingParameters.forceNewMerge)
+print("sendData:", processingParameters.sendData)
+print("remoteUsername:", processingParameters.remoteUsername)
+print("remoteSystem:", processingParameters.remoteSystem)
+print("remoteFileLocation:", processingParameters.remoteFileLocation)
+print("cumulativeMode:", processingParameters.cumulativeMode)
+print("templateDataDirName:", processingParameters.templateDataDirName)
+print("dirPrefix:", processingParameters.dirPrefix)
+print("modulesPath:", processingParameters.modulesPath)
+print("detectorsPath:", processingParameters.detectorsPath)
+print("subsystemList:", processingParameters.subsystemList)
+print("subsystemsWithRootFilesToShow:", processingParameters.subsystemsWithRootFilesToShow)
+print("qaFunctionsToAlwaysApply:", processingParameters.qaFunctionsToAlwaysApply)

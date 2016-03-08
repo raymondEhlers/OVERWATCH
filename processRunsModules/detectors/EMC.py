@@ -7,6 +7,9 @@ every run and true QA functions that only run at selected times.
 .. codeauthor:: James Mulligan <james.mulligan@yale.edu>, Yale University
 
 """
+# Python 2/3 support
+from __future__ import print_function
+from builtins import range
 
 # Used for QA functions
 from ROOT import TH1, TH1F, TProfile, TF1, TAxis, gPad, TAxis, TGaxis, SetOwnership
@@ -200,7 +203,7 @@ def hasSignalOutlier(hist):
             amp = signal[(binX-1) + (binY-1)*xbins]
             if(amp > threshUp or amp < threshDown):
                 if not ignoreEmptyBins or amp > 0: 
-                    print "bin (" + `binX` + "," + `binY` + ") has amplitude " + `amp` + "! This is outside of threshold, [" + '%.2f'%threshDown + "," + '%.2f'%threshUp + "]"
+                    print("bin (" + repr(binX) + "," + repr(binY) + ") has amplitude " + repr(amp) + "! This is outside of threshold, [" + '%.2f'%threshDown + "," + '%.2f'%threshUp + "]")
                     outlierList.append((binX-1) + (binY-1)*xbins)
     
     # Exclude outliers and recalculate
@@ -240,21 +243,21 @@ def determineMedianSlope(hist, qaContainer):
         #print hist.GetName()
         medianHistName = "medianSlope"
         if hist.GetName() == "EMCTRQA_histEMCalMedianVsDCalMedianRecalc":
-            print "qaContainer.currentRun:", qaContainer.currentRun
+            print("qaContainer.currentRun:", qaContainer.currentRun)
             # Create histogram if it is the first run
             #if qaContainer.currentRun == qaContainer.firstRun:
             # Can check for the first run as in the commented line above, but this will not work if the first run does not contain
             # the deisred histogram. This could also be achieved by creating the necessary histogram before checking the passed
             # hists name and then setting a flag (could also override the filledValueInRun flag) to note that it is created.
             if qaContainer.getHists() is not []:
-                print "Creating hist", medianHistName
+                print("Creating hist", medianHistName)
                 medianHist = TH1F(medianHistName, "Median vs Median Slope", len(qaContainer.runDirs), 0, len(qaContainer.runDirs))
                 # Ensures that the created histogram does not get destroyed after going out of scope.
                 medianHist.SetDirectory(0)
                 qaContainer.addHist(medianHist, medianHist.GetName())
 
                 # Set bin labels
-                for i in xrange(0, len(qaContainer.runDirs)):
+                for i in range(0, len(qaContainer.runDirs)):
                     medianHist.GetXaxis().SetBinLabel(i+1, qaContainer.runDirs[i].replace("Run",""))
 
             # Fill profile hist and perform a linear fit
@@ -264,9 +267,9 @@ def determineMedianSlope(hist, qaContainer):
             linearFit.SetParameter(1, float(0))
             prof.Fit(linearFit)
 
-            print "qaContainer.hists:", qaContainer.getHists()
-            print "medianHist.GetEntries():", medianHist.GetEntries()
-            print "Entries:", qaContainer.getHist(medianHistName).GetEntries()
+            print("qaContainer.hists:", qaContainer.getHists())
+            print("medianHist.GetEntries():", medianHist.GetEntries())
+            print("Entries:", qaContainer.getHist(medianHistName).GetEntries())
             #medianHist.SetBinContent(qaContainer.runDirs.index(qaContainer.currentRun) + 1, linearFit.GetParameter("0"))
             # Extract the slope and fill it into the histogram
             qaContainer.getHist(medianHistName).SetBinContent(qaContainer.runDirs.index(qaContainer.currentRun) + 1, linearFit.GetParameter(0))
@@ -278,7 +281,7 @@ def determineMedianSlope(hist, qaContainer):
         # Always want to skip printing the normal histograms when processing.
         return True
     else:
-        print "qaContainer must exist to determine the median slope."
+        print("qaContainer must exist to determine the median slope.")
 
 ###################################################
 # Plot Patch Spectra with logy and grad 
