@@ -92,25 +92,30 @@ def findCurrentRunDirs(dirPrefix = ""):
     return runDirs
 
 ###################################################
-def sendDataToPDSF(dirPrefix, pdsfUsername):
-    """ Syncs local working directory to PDSF, sending all new data. 
+def rsyncData(dirPrefix, username, remoteSystem, remoteFileLocation):
+    """ Syncs data directory to a remote system using rsync.
 
     Args:
-        dirPrefix (str): Directory prefix used to get to all of the folders.
-        pdsfUsername (str): Username of your PDSF account. 
+        dirPrefix (str): Directory prefix used to get to all of the data.
+        username (str): Username to use with rsync.
+        remoteSystem (str): Hostname of the remote system.
+        remoteFileLocation (str): Directory to store files on the remote system.
        
     Returns:
         None.
 
     """
 
-    print("Sending files to pdsf!")
+    print("Utilizing user %s to send data files to %s on %s " % (username, remoteFileLocation, remoteSystem))
     sendDirectory = dirPrefix
     if not sendDirectory.endswith("/"):
         sendDirectory = sendDirectory + "/"
 
-    #rsync -rvltph test/ rehlers@pdsf.nersc.gov:/project/projectdirs/alice/www/emcalMonitoring/2015/
-    rsyncCall = ["rsync", "-rvltph", sendDirectory, pdsfUsername + "@pdsf.nersc.gov:/project/projectdirs/alice/www/emcalMonitoring/data/2015/"]
+    if not remoteFileLocation.endswith("/"):
+        remoteFileLocation = remoteFileLocation + "/"
+
+    #rsync -rvltph data/ rehlers@pdsf.nersc.gov:/project/projectdirs/alice/www/emcalMonitoring/data/2015/
+    rsyncCall = ["rsync", "-rvltph", sendDirectory, username + "@" + remoteSystem + ":" + remoteFileLocation]
     print(rsyncCall)
     call(rsyncCall)
 

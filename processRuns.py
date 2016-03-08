@@ -46,7 +46,7 @@ class subsystemProperties:
 
     Defines properties of each subsystem in a consistent place.
 
-     Args:
+    Args:
         subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
         runDirs (dict): Contains list of valid runDirs for each subsystem, indexed by subsystem.
         mergeDirs (Optional[dict]): Contains list of valid mergeDirs for each subsystem, indexed by subsystem.
@@ -197,7 +197,7 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
     """
 
     # Load general configuration options
-    (fileExtension, beVerbose, forceReprocessing, forceNewMerge, sendData, pdsfUsername, cumulativeMode, templateDataDirName, dirPrefix, subsystemList, subsystemsWithRootFilesToShow) = processingParameters.defineRunProperties()
+    (fileExtension, beVerbose, forceReprocessing, forceNewMerge, sendData, remoteUsername, cumulativeMode, templateDataDirName, dirPrefix, subsystemList, subsystemsWithRootFilesToShow) = processingParameters.defineRunProperties()
 
     # Find all possible runs, and then select the runs between [firstRun, lastRun] (inclusive)
     runDirs = utilities.findCurrentRunDirs(dirPrefix)
@@ -298,7 +298,7 @@ def processPartialRun(timeSliceRunNumber, minTimeRequested, maxTimeRequested, su
 
     """
     # Load general configuration options
-    (fileExtension, beVerbose, forceReprocessing, forceNewMerge, sendData, pdsfUsername, cumulativeMode, templateDataDirName, dirPrefix, subsystemList, subsystemsWithRootFilesToShow) = processingParameters.defineRunProperties()
+    (fileExtension, beVerbose, forceReprocessing, forceNewMerge, sendData, remoteUsername, cumulativeMode, templateDataDirName, dirPrefix, subsystemList, subsystemsWithRootFilesToShow) = processingParameters.defineRunProperties()
 
     # Takes histos from dirPrefix and moves them into Run dir structure, with a subdir for each subsystem
     # While this function should be fast, we want this to run to ensure that time slices use the most recent data
@@ -419,7 +419,7 @@ def processAllRuns():
 
     """
     # Load general configuration options
-    (fileExtension, beVerbose, forceReprocessing, forceNewMerge, sendData, pdsfUsername, cumulativeMode, templateDataDirName, dirPrefix, subsystemList, subsystemsWithRootFilesToShow) = processingParameters.defineRunProperties()
+    (fileExtension, beVerbose, forceReprocessing, forceNewMerge, sendData, remoteUsername, cumulativeMode, templateDataDirName, dirPrefix, subsystemList, subsystemsWithRootFilesToShow) = processingParameters.defineRunProperties()
 
     # Setup before processing data
     # Determine templateDataDirPrefix
@@ -529,7 +529,7 @@ def processAllRuns():
 
     # Send data to pdsf via rsync
     if sendData == True:
-        utilities.sendDataToPDSF(dirPrefix, pdsfUsername)
+        utilities.rsyncData(dirPrefix, remoteUsername, processingParameters.remoteSystem, processingParameters.remoteFileLocation)
         
 # Allows the function to be invoked automatically when run with python while not invoked when loaded as a module
 if __name__ == "__main__":

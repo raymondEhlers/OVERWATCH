@@ -28,7 +28,7 @@ class processingParameters:
     #: Note that this can change the merging if new information has arrived since the last merge.
     forceNewMerge = False
 
-    #: Transfer data to PDSF
+    #: Transfer data to the remote system
     sendData = True
 
     #: Set the type of merging based on the data we are receiving. If set to true, that means we are receiving
@@ -72,15 +72,21 @@ class processingParameters:
 
     """
 
-    #: Username at PDSF for sending data
-    pdsfUsername = ""
+    #: Username at remote system for sending data
+    remoteUsername = ""
 
-    # Determine proper pdsf username
+    # Determine proper remote username
     _localUser = os.getenv("USER")
     if _localUser == "re239" or _localUser == "rehlers":
-        pdsfUsername = "rehlers"
+        remoteUsername = "rehlers"
     else:
-        pdsfUsername = "jdmull"
+        remoteUsername = "jdmull"
+
+    #: Remote system hostname
+    remoteSystem = "pdsf.nersc.gov"
+
+    #: Remote location where to store the data files
+    remoteFileLocation = "/project/projectdirs/alice/www/emcalMonitoring/data/2015/"
 
     # Set variables for testing
     if True:
@@ -91,7 +97,7 @@ class processingParameters:
     @classmethod
     def defineRunProperties(cls):
         """ Useful function to return all of the parameters in a compact way """
-        return (cls.fileExtension, cls.beVerbose, cls.forceReprocessing, cls.forceNewMerge, cls.sendData, cls.pdsfUsername, cls.cumulativeMode, cls.templateDataDirName, cls.dirPrefix, cls.subsystemList, cls.subsystemsWithRootFilesToShow)
+        return (cls.fileExtension, cls.beVerbose, cls.forceReprocessing, cls.forceNewMerge, cls.sendData, cls.remoteUsername, cls.cumulativeMode, cls.templateDataDirName, cls.dirPrefix, cls.subsystemList, cls.subsystemsWithRootFilesToShow)
 
 # Print settings
 print "\nProcessing Parameters:"
@@ -101,7 +107,9 @@ print "debug:", processingParameters.debug
 print "forceReprocessing:", processingParameters.forceReprocessing
 print "forceNewMerge:", processingParameters.forceNewMerge
 print "sendData:", processingParameters.sendData
-print "pdsfUsername:", processingParameters.pdsfUsername
+print "remoteUsername:", processingParameters.remoteUsername
+print "remoteSystem:", processingParameters.remoteSystem
+print "remoteFileLocation:", processingParameters.remoteFileLocation
 print "cumulativeMode:", processingParameters.cumulativeMode
 print "templateDataDirName:", processingParameters.templateDataDirName
 print "dirPrefix:", processingParameters.dirPrefix
