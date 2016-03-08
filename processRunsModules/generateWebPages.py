@@ -285,11 +285,10 @@ def writeRootWebPage(dirPrefix, subsystems, generateTemplate = False):
     for dirName in writeDirs:
         # Get the run number for better presentation
         runText = "Run " + dirName.replace("Run", "")
-        htmlText += "<p>" + runText
+        htmlText += "<table class=\"rootPageRunListTable\">\n<tr><td>" + runText + "</td>"
 
-        # We need different padding for the first line and the later lines.
+        # We need different table entries for the first line and the later lines.
         firstSubsystem = True
-        paddingLength = 1
 
         # Write out the various subsystems
         for subsystem in subsystems:
@@ -298,21 +297,19 @@ def writeRootWebPage(dirPrefix, subsystems, generateTemplate = False):
                 subsystemPath = os.path.join(dirName, subsystem.fileLocationSubsystem, subsystem.subsystem + "output.html")
 
                 # Generate the link
-                htmlText += generateHtml.generateHtmlForRootWebPage(paddingLength, subsystemPath, subsystemLabel)
+                htmlText += generateHtml.generateHtmlForRootWebPage(firstSubsystem, subsystemPath, subsystemLabel)
 
-                # Change the padding size if we have written out the first subsystem
+                # The first column should be empty if we have written out the first subsystem
                 if firstSubsystem:
-                    # Need wider pading for all further subsysytems
-                    paddingLength = 6
                     firstSubsystem = False
 
                 # Write out the ROOT file access page and link to it if selected
                 if subsystem.showRootFiles == True:
                     createPageForRootFileAccess(os.path.join(dirPrefix, dirName, subsystem.fileLocationSubsystem), dirName, subsystem, generateTemplate)
-                    htmlText += generateHtml.generateHtmlForRootWebPage(paddingLength, os.path.join(dirName, subsystem.fileLocationSubsystem, "%sROOTFiles.html" % subsystem.subsystem), "%s ROOT Files" % subsystem.subsystem)
+                    htmlText += generateHtml.generateHtmlForRootWebPage(firstSubsystem, os.path.join(dirName, subsystem.fileLocationSubsystem, "%sROOTFiles.html" % subsystem.subsystem), "%s ROOT Files" % subsystem.subsystem)
 
-        # Finish the paragraph started with the run number
-        htmlText += "</p>\n"
+        # Finish the table for this run number
+        htmlText += "</table>\n"
 
     # Close link container div
     htmlText += "</div>"

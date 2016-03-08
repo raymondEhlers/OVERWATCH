@@ -100,21 +100,32 @@ img {
     padding-top: 20px;
 }
 
+/* Sets the styling on the tables shown on the root page */
+.rootPageRunListTable {
+    padding-top: 18px;
+    padding-left: 25px;
+}
+
 /* Fixes anchors showing too low. This shifts them up so they are not blocked by the header. See: https://stackoverflow.com/a/13184714 */
 a.anchor {
     display: block;
     position: relative;
     top: -60px;
 }
+
+/* Changes the table displayed on the contact page. */
 td {
     padding-right: 30px;
 }
+
+/* Contact page link location */
 #contactLink {
     width: 450px;
     margin: 0 auto;
     margin-top: 2cm;
     margin-bottom: 1cm;
 }
+
 /* Created at: http://css3buttongenerator.com/ */
 .submitButton {
     background: #3498db;

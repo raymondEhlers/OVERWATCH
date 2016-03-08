@@ -13,13 +13,14 @@ which would be impossible without templates.
 """
 
 ###################################################
-def generateHtmlForRootWebPage(paddingLength, path, label):
+def generateHtmlForRootWebPage(firstSubsystem, path, label):
     """ Generates HTML for links on the main runList page.
 
     Used for links to individual runs on the run list page. 
 
     Args:
-        paddingLength (int): Number of em to indent the particular line
+        firstSubsystem (bool): True if this is the first subsystem being printed in the table.
+            The run number is the first data element in that row, so we should only add one element here.
         path (str): Path (ie URL) of the page to link
         label (str): Label for the link
 
@@ -29,7 +30,13 @@ def generateHtmlForRootWebPage(paddingLength, path, label):
     """
 
     # The spans are for alignment
-    htmlText = "<span style=\"padding-left:%iem\"></span><a href=\"" % paddingLength  + path + "\">" + label + "</a></br>\n"
+    htmlText = ""
+    if firstSubsystem == False:
+        # Need to start a new row
+        # The first column should be empty
+        htmlText += "<tr><td></td>"
+
+    htmlText += "<td><a href=\"" + path + "\">" + label + "</a></td></tr>\n"
     return htmlText
 
 ###################################################
