@@ -214,6 +214,8 @@ This project was originally developed in the [alice-yale-dev](https://gitlab.cer
 
 While this project currently works, there are a number of possible improvements.
 
+ - Allow QA to draw on other histograms
+
  - Split out the QA and partial merge functions to use worker pools using something such as `celery`. This would require asynchronus loading of the images once the process is completed. One solution for 
 
  - Processing relies heavily on metadata. These operations can be very slow, particularly on slows disks. To resolve this, a database should be created (likely built using MongoDB) which caches and manages such metadata, thereby reducing the load on the disk. A longer term approach could store the data directly there, creating ROOT histograms (or some other visualization tool) on the fly.

@@ -73,7 +73,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <h2 id="documentation">Documentation</h2>
 <p>Based on <code>sphinx-autodoc</code> generation, the documentation is generated from the docstrings in the code. While they can be viewed in the source files or via python, sphinx compiles them into HTML, facilitating a cleaner view of the information. To build the documentation,</p>
 <ol style="list-style-type: decimal">
-<li><p>Install the dependencies. The documentation requires the python packages <code>sphinx sphinxcontrib-napoleon sphinx-autodoc recommonmark</code>. Pip is the recommended install method.</p></li>
+<li><p>Install the dependencies. The documentation requires the python packages <code>sphinx sphinxcontrib-napoleon recommonmark</code>. Pip is the recommended install method.</p></li>
 <li><p>Build the documentation using:</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">cd</span> doc
 <span class="kw">make</span> html
@@ -87,7 +87,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul>
 <li><p><code>processRuns.py</code> - Moves, classifies, and processes files from the HLT. It will drive functions to produce html and images to display the data for arbitrary times and runs. This file and the associated modules contains functions that provide a large majority of the overall functionality.</p></li>
 <li><p><code>webApp.py</code> - A Flask application which handles serving either dynamic (template) or static (simple html pages) run pages to display the QA data. It handles authentication, as well as allowing dynamic features, such as viewing time slices of the data within and between runs.</p></li>
-<li><p><code>fullStackServer.py</code> - A higher performance front-end server for use with <code>webApp.py</code>. Not necessary at PDSF, but useful for testing, and it allows for deployment at other places without additional infrastructure setup.</p></li>
+<li><p><code>fullStackServer.py</code> - A higher performance front-end server for use with <code>webApp.py</code>. Not necessary at PDSF, but useful for testing, and it allows for deployment at other places without additional infrastructure setup. It requires the python modules <code>cherrypy</code> and <code>paste</code>.</p></li>
 </ul>
 <p>Inside of the data folder, there are a few main HTML files. <code>(subsystem)output.html</code> displays images from the run. <code>(subsystem)ROOTFiles.html</code> links to the raw ROOT files that are saved out for each write of histograms from the HLT. In both cases, <code>(subsystem)</code> is the three letter name of a detector in all caps.</p>
 <h3 id="directory-structure">Directory Structure</h3>
@@ -139,6 +139,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 │   │       ├── <span class="kw">HLTROOTFiles.html</span>
 │   │       ├── <span class="kw">HLThists.*.root</span>
 │   │       ├── <span class="kw">HLToutput.html</span>
+│   │       ├── <span class="kw">TPCoutput.html</span>
 │   │       ├── <span class="kw">hists.combined.*.root</span>
 │   │       ├── <span class="kw">img</span> [ contains *.png ]
 │   │       └── <span class="kw">timeSlices</span>
@@ -193,6 +194,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <span class="kw">|</span>   │   │   └── <span class="kw">HLT</span>
 <span class="kw">|</span>   │   │       ├── <span class="kw">HLTROOTFiles.html</span>
 <span class="kw">|</span>   │   │       ├── <span class="kw">HLToutput.html</span>
+<span class="kw">|</span>   │   │       ├── <span class="kw">TPCoutput.html</span>
 <span class="kw">|</span>   │   │       └── <span class="kw">timeSlices</span>
 <span class="kw">|</span>   │   │           └── <span class="kw">timeSlice.*</span>
 <span class="kw">|</span>   │   │               └── <span class="kw">HLToutput.html</span>
@@ -210,6 +212,12 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
     └── <span class="kw">validation.py</span></code></pre></div>
 <h2 id="development-note">Development Note</h2>
 <p>This project was originally developed in the <a href="https://gitlab.cern.ch/ALICEYale/alice-yale-dev">alice-yale-dev</a> repository. All older development history is available there.</p>
+<h2 id="to-do">To do</h2>
+<p>While this project currently works, there are a number of possible improvements.</p>
+<ul>
+<li><p>Split out the QA and partial merge functions to use worker pools using something such as <code>celery</code>. This would require asynchronus loading of the images once the process is completed. One solution for</p></li>
+<li><p>Processing relies heavily on metadata. These operations can be very slow, particularly on slows disks. To resolve this, a database should be created (likely built using MongoDB) which caches and manages such metadata, thereby reducing the load on the disk. A longer term approach could store the data directly there, creating ROOT histograms (or some other visualization tool) on the fly.</p></li>
+</ul>
 <h2 id="authors">Authors</h2>
 <ul>
 <li><p><script type="text/javascript">
