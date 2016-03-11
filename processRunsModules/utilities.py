@@ -97,7 +97,7 @@ def findCurrentRunDirs(dirPrefix = ""):
     return runDirs
 
 ###################################################
-def rsyncData(dirPrefix, username, remoteSystem, remoteFileLocation):
+def rsyncData(dirPrefix, username, remoteSystems, remoteFileLocations):
     """ Syncs data directory to a remote system using rsync.
 
     Args:
@@ -111,18 +111,23 @@ def rsyncData(dirPrefix, username, remoteSystem, remoteFileLocation):
 
     """
 
-    print("Utilizing user %s to send data files to %s on %s " % (username, remoteFileLocation, remoteSystem))
     sendDirectory = dirPrefix
     if not sendDirectory.endswith("/"):
         sendDirectory = sendDirectory + "/"
 
-    if not remoteFileLocation.endswith("/"):
-        remoteFileLocation = remoteFileLocation + "/"
+    if len(remoteSystems) != len(remoteFileLocations):
+        print("Number of remote systems is not equal to number of remote file locations. Skipping rsync operations!")
+    else:
+        for remoteSystem, remoteFileLocation in zip(remoteSystems, remoteFileLocations):
+            if not remoteFileLocation.endswith("/"):
+                remoteFileLocation = remoteFileLocation + "/"
 
-    #rsync -rvltph data/ rehlers@pdsf.nersc.gov:/project/projectdirs/alice/www/emcalMonitoring/data/2015/
-    rsyncCall = ["rsync", "-rvltph", sendDirectory, username + "@" + remoteSystem + ":" + remoteFileLocation]
-    print(rsyncCall)
-    call(rsyncCall)
+            print("Utilizing user %s to send data files to %s on %s " % (username, remoteFileLocation, remoteSystem))
+
+            #rsync -rvltph data/ rehlers@pdsf.nersc.gov:/project/projectdirs/alice/www/emcalMonitoring/data/2015/
+            rsyncCall = ["rsync", "-rvltph", sendDirectory, username + "@" + remoteSystem + ":" + remoteFileLocation]
+            print(rsyncCall)
+            call(rsyncCall)
 
 ###################################################
 # File moving utilites
@@ -152,6 +157,7 @@ def enumerateFiles(dirPrefix, subsystem):
         
     return filesToMove
 
+###################################################
 def moveFiles(subsystemDict, dirPrefix):
     """ For each subsystem, Moves ROOT files that need to be moved from directory that receives HLT histograms into appropriate file structure for processing. 
 
@@ -203,6 +209,7 @@ def moveFiles(subsystemDict, dirPrefix):
             # DON"T IMPORT MOVE. BAD CONSEQUENCES!!
             shutil.move(oldPath, newPath)
 
+###################################################
 def moveRootFiles(dirPrefix, subsystemList):
     """ Orchestrates the enumeration of files to be moved as they are read in from the HLT, the creation the appropriate directory structure for processing, and the moving of these files to these directories.  
 

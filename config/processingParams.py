@@ -85,11 +85,13 @@ class processingParameters(object):
     else:
         remoteUsername = "jdmull"
 
-    #: Remote system hostname
-    remoteSystem = "pdsf.nersc.gov"
+    #: Remote system hostnames
+    #: The number of entries in remoteSystems must match remoteFileLocations!
+    remoteSystems = ["pdsf.nersc.gov", "aliceoverwatch.physics.yale.edu" ]
 
-    #: Remote location where to store the data files
-    remoteFileLocation = "/project/projectdirs/alice/www/emcalMonitoring/data/2015/"
+    #: Remote locations where to store the data files
+    #: The number of entries in remoteFileLocations must match remoteSystems!
+    remoteFileLocations = ["/project/projectdirs/alice/www/emcalMonitoring/data/2015/", "/opt/www/aliceoverwatch/data/" ]
 
     # Set variables for testing
     if True:
@@ -111,8 +113,8 @@ print("forceReprocessing:", processingParameters.forceReprocessing)
 print("forceNewMerge:", processingParameters.forceNewMerge)
 print("sendData:", processingParameters.sendData)
 print("remoteUsername:", processingParameters.remoteUsername)
-print("remoteSystem:", processingParameters.remoteSystem)
-print("remoteFileLocation:", processingParameters.remoteFileLocation)
+print("remoteSystems:", processingParameters.remoteSystems)
+print("remoteFileLocations:", processingParameters.remoteFileLocations)
 print("cumulativeMode:", processingParameters.cumulativeMode)
 print("templateDataDirName:", processingParameters.templateDataDirName)
 print("dirPrefix:", processingParameters.dirPrefix)
