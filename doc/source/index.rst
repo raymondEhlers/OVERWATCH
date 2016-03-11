@@ -22,8 +22,8 @@ Please see the README_ for information about the project, and how to use it. The
 Process Runs
 ============
 
-The main processing function, taking ROOT files from the HLT viewer and organzing them into run
-directory and subsystem structure, then writes out histograms to webpage  
+The main processing function: takes ROOT files from the HLT viewer and organizes them into a run
+directory and subsystem structure, then writes out histograms to the webpage.  
 
 .. toctree::
    :maxdepth: 2
@@ -34,7 +34,7 @@ Modules
 -------
 
 These powerful modules provide much of the processing functionality for Process Runs. They also
-provide a number of helper functions for detectors specific processing.
+provide a number of helper functions for detector-specific processing.
 
 .. toctree::
    :maxdepth: 2
@@ -44,7 +44,7 @@ provide a number of helper functions for detectors specific processing.
 Detector Modules
 ----------------
 
-These modules provide detector specific functionality, allowing organization of histograms, as
+These modules provide detector-specific functionality, allowing organization of histograms, as
 well as functions to check QA, among many other possible features.
 
 .. toctree::
@@ -55,7 +55,7 @@ well as functions to check QA, among many other possible features.
 Web App
 =======
 
-The web app provides interactive access to the processing cabilities and output from Process Runs.
+The web app provides interactive access to the processing capabilities and output from Process Runs.
 It can work both through WSGI, as well as a standalone server.
 
 .. toctree::
@@ -88,7 +88,7 @@ Testing Tools
 =============
 
 These tools allow convenient testing of the various components of this project, including providing
-a full server stack to test the WSGI capbilities of the Web App. More tools will be added as they
+a full server stack to test the WSGI capabilities of the Web App. More tools will be added as they
 are developed.
 
 .. toctree::
