@@ -2,7 +2,7 @@
 
 """
 Takes root files from the HLT viewer and organizes them into run directory and subsystem structure, 
-then writes out histograms to webpage  
+then writes out histograms to webpage.  
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 .. codeauthor:: James Mulligan <james.mulligan@yale.edu>, Yale University
@@ -59,7 +59,7 @@ class subsystemProperties(object):
 
     Attributes:
         fileLocationSubsystem (str): Subsystem name of where the files are actually located. If a subsystem has
-            specific data files than this is just equal to the `subsystem`. However, if it relies on files inside
+            specific data files then this is just equal to the `subsystem`. However, if it relies on files inside
             of another subsystem, then this variable is equal to that subsystem name.
         runDirs (list): List of runs with entries in the form of "Run#" (str).
         mergeDirs (list): List of merged runs with entries in the form of "Run#" (str).
@@ -113,7 +113,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             about the QA function and histograms, as well as the run being processed.
 
     Returns:
-        list: Contains all of the names of the histograms that were printed
+        list: Contains all of the names of the histograms that were printed.
 
     """
     # Seems to be required for pyroot?
@@ -394,13 +394,13 @@ def processPartialRun(timeSliceRunNumber, minTimeRequested, maxTimeRequested, su
 def processAllRuns():
     """ Process all available data and write out individual run pages and a run list.
 
-    This function moves all data that has been received by the HLT, catagorizes the data by subsystem
-    and putting it into a directory structure, prints it out applying the proper always applied QA
+    This function moves all data that has been received by the HLT, categorizes the data by subsystem
+    and puts it into a directory structure, prints it out applying the proper always applied QA
     functions, and then writes out web pages for each individual run, as well as a run list index
     which allows access to all runs.
-    Each runs will only be processed if necessary (for example, if there is new data) or if it is
+    Each run will only be processed if necessary (for example, if there is new data) or if it is
     specifically set to reprocess in the configuration files.
-    This function drives the all of the processing, except for functions that are specifically
+    This function drives all of the processing, except for functions that are specifically
     requested by a user through the web app (ie. QA and time slices).
 
     This is the main function to process data, and should be run repeatedly with a short period
