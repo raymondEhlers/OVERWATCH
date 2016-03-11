@@ -242,7 +242,7 @@ def rebuildDocs():
 @app.route("/partialMerge", methods=["GET", "POST"])
 @login_required
 def partialMerge():
-    """ Handles partial merges (time slices)
+    """ Handles partial merges (time slices).
 
     In the case of a GET request, it will throw an error, since the interface is built into the header of each
     individual run page. In the case of a POST request, it handles, validates, and processes the timing request,

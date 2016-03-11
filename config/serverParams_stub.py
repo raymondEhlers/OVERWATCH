@@ -29,13 +29,13 @@ class serverParameters(object):
         see (for example): https://stackoverflow.com/a/18746493
 
     """
-    #: Sets the ip address
+    #: Sets the ip address.
     ipAddress = "127.0.0.1"
 
-    #: Sets the port
+    #: Sets the port.
     port = 8850
 
-    #: Setup Bcrypt
+    #: Setup Bcrypt.
     bcryptLogRounds = 12
 
     dynamicContent = True
@@ -72,12 +72,12 @@ class serverParameters(object):
     #: all in the same dir.
     basePath = ""
 
-    #: staticFolder is the disk location of the static folder
+    #: staticFolder is the disk location of the static folder.
     #: It is a flask defined variable.
     #: To check if the static files are from the front-end webserver, use:
     #: https://stackoverflow.com/questions/16595691/static-files-with-flask-in-production
     #:
-    #: (ie. add + "CHANGE" to the staticFolder location specified here)
+    #: (ie. add + "CHANGE" to the staticFolder location specified here).
     staticFolder = os.path.join(basePath, sharedParameters.staticFolderName) 
 
     #: staticURLPath is the URL of the static folder.
@@ -85,24 +85,24 @@ class serverParameters(object):
     #: It is a flask defined variable.
     staticURLPath = "/static"
 
-    #: protectedFolder is the disk location of the protected folder
-    #: This folder holds the experimental data
+    #: protectedFolder is the disk location of the protected folder.
+    #: This folder holds the experimental data.
     protectedFolder = os.path.join(basePath, sharedParameters.dataFolderName)
 
-    #: templateFolder is the disk location of the template folder
+    #: templateFolder is the disk location of the template folder.
     templateFolder = os.path.join(basePath, sharedParameters.templateFolderName)
 
-    #: docsFolder is the disk location of the docs folder
+    #: docsFolder is the disk location of the docs folder.
     docsFolder = "doc"
 
-    #: docsBuildFolder is the disk location of the docs html folder
+    #: docsBuildFolder is the disk location of the docs html folder.
     docsBuildFolder = os.path.join(docsFolder, "build/html")
 
     # Can set alternative values here if necessary, but it does not seem very likely that this will be needed.
     #if "pdsf" in socket.gethostname():
     #    staticURLPath = "/../site_media/aliemcalmonitor"
 
-    #: Enable debugging information
+    #: Enable debugging information.
     debug = sharedParameters.debug
 
     #: List of subsystems.
@@ -110,7 +110,7 @@ class serverParameters(object):
     subsystemList = sharedParameters.subsystemList
 
     qaFunctionsList = sharedParameters.qaFunctionsList
-    """ Define which functions are accessible from the QA page
+    """ Define which functions are accessible from the QA page.
 
     See Also: 
         :attr:`config.sharedParams.sharedParameters.qaFunctionsList`

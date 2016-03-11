@@ -1,7 +1,7 @@
-""" Contains routing functions
+""" Contains routing functions.
 
 Contains functions to ensure safe routing and redirection of the next URL. These functions are from
-http://flask.pocoo.org/snippets/62/ , and were written by the author of Flask.
+http://flask.pocoo.org/snippets/62/, and were written by the author of Flask.
 
 Slight modifications were made to :func:`redirectBack` to ensure that a login-logout loop was avoided
 under particular circumstances.
@@ -34,7 +34,7 @@ def isSafeUrl(target):
 
 ###################################################
 def getRedirectTarget():
-    """ Extracts the Next target and checks it's safety.
+    """ Extracts the Next target and checks its safety.
 
     Note:
         Extracts the input from flask.request

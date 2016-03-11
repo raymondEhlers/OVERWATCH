@@ -1,4 +1,4 @@
-""" Contains auth functions
+""" Contains auth functions.
 
 For user authentication, https://exploreflask.com/users.html was extensively used as a guide.
 
@@ -16,7 +16,7 @@ from config.serverParams import serverParameters
 class User(UserMixin):
     """ A basic user class to manage authentication.
 
-    Inherits from UserMixin, which implements a basic class for use with login_manger()
+    Inherits from UserMixin, which implements a basic class for use with login_manger().
 
     New users should be added into the external config file. This class provides no ability to store new users dynamically
     and assumes that passwords passed to it are already hashed by ``bcrypt.generate_password_hash(password, BCRYPT_LOG_ROUNDS)``.
@@ -53,23 +53,23 @@ class User(UserMixin):
             plainTextPassword (str): The plain text password to test.
 
         Returns:
-            bool: True if the password matches the instance of the User.
+            bool: True if the password matches the instance of the user.
             
         """
         return check_password_hash(self.password, plainTextPassword)
 
     # Static objects and methods
-    #: List of valid users, loaded from an external file
+    #: List of valid users, loaded from an external file.
     users = serverParameters._users
 
     @classmethod
     def getUser(cls, id):
-        """ Retreive the username and password of a user.
+        """ Retrieve the username and password of a user.
 
         Used by ``load_user()`` to maintain a logged in user session.
 
         Args:
-            id (str): Username to retreive
+            id (str): Username to retrieve
 
         Returns:
             :class:`.User`: Returns an instance of the :class:`.User` class if the user exists. Otherwise, it
@@ -90,8 +90,7 @@ def authenticateUser(username, password):
         password (str): plain text password of the attempted user.
 
     Returns:
-        :class:`.User`: If the credentials were valid, an instance of the :class:`.User` class is
-            returned so that the login_manager can store that object and track which user is logged in.
+        :class:`.User`: If the credentials were valid, an instance of the :class:`.User` class is returned so that the login_manager can store that object and track which user is logged in.
             Otherwise, it returns None.
 
     """

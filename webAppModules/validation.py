@@ -1,4 +1,4 @@
-""" Contains validation functions
+""" Contains validation functions.
 
 These functions are important to ensure that only valid values are passed to the processing functions.
 
