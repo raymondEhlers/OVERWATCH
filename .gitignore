@@ -7,10 +7,11 @@ bak/
 bin/
 # Virtualenv
 .env/
-data
+.env3/
 
 # Generated files to ignore
 Run*/
+data
 runList.html
 
 # Ignore notes
