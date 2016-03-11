@@ -93,6 +93,7 @@ def findCurrentRunDirs(dirPrefix = ""):
         if os.path.isdir(os.path.join(currentDir, name)) and "Run" in name:
             runDirs.append(name)
 
+    runDirs.sort()
     return runDirs
 
 ###################################################
