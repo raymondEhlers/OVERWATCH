@@ -87,11 +87,11 @@ class processingParameters(object):
 
     #: Remote system hostnames
     #: The number of entries in remoteSystems must match remoteFileLocations!
-    remoteSystems = ["pdsf.nersc.gov", "aliceoverwatch.physics.yale.edu" ]
+    remoteSystems = ["aliceoverwatch.physics.yale.edu", "pdsf.nersc.gov"]
 
     #: Remote locations where to store the data files
     #: The number of entries in remoteFileLocations must match remoteSystems!
-    remoteFileLocations = ["/project/projectdirs/alice/www/emcalMonitoring/data/2015/", "/opt/www/aliceoverwatch/data/" ]
+    remoteFileLocations = ["/opt/www/aliceoverwatch/data/", "/project/projectdirs/alice/www/emcalMonitoring/data/2015/"]
 
     # Set variables for testing
     if True:

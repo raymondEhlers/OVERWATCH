@@ -125,7 +125,7 @@ def rsyncData(dirPrefix, username, remoteSystems, remoteFileLocations):
             print("Utilizing user %s to send data files to %s on %s " % (username, remoteFileLocation, remoteSystem))
 
             #rsync -rvltph data/ rehlers@pdsf.nersc.gov:/project/projectdirs/alice/www/emcalMonitoring/data/2015/
-            rsyncCall = ["rsync", "-rvltph", sendDirectory, username + "@" + remoteSystem + ":" + remoteFileLocation]
+            rsyncCall = ["rsync", "-rvlth","--chmod=ugo=rwX", "--omit-dir-times", sendDirectory, username + "@" + remoteSystem + ":" + remoteFileLocation]
             print(rsyncCall)
             call(rsyncCall)
 
