@@ -159,7 +159,7 @@ def enumerateFiles(dirPrefix, subsystem):
 
 ###################################################
 def moveFiles(subsystemDict, dirPrefix):
-    """ For each subsystem, Moves ROOT files that need to be moved from directory that receives HLT histograms into appropriate file structure for processing. 
+    """ For each subsystem, moves ROOT files that need to be moved from directory that receives HLT histograms into appropriate file structure for processing. 
 
     Creates run directory and subsystem directories as needed. Renames files to convention that is later used for extracting timestamps. 
 

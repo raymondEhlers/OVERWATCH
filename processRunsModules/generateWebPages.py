@@ -1,4 +1,4 @@
-""" Main driver functions to genreate web pages.
+""" Main driver functions to generate web pages.
 
 Contains functions to create the main run list page, each individual run page,
 and each individual run direct ROOT files access page.
@@ -34,8 +34,8 @@ currentModule = sys.modules[__name__]
 def writeToWebPage(dirPrefix, runDir, subsystem, outputHistNames, outputFormatting, runStartTime, maxTime, minTimeRequested = -1, maxTimeRequested = -1, actualTimeBetween = -1, generateTemplate = False):
     """ Writes the web page for a given run.
 
-    The file is written out as ${subsystem}output.html (ex: EMCoutput.html) at dirPrefix/subsystem.
-    (or at the proper template dir structure)
+    The file is written out as ${subsystem}output.html (ex: EMCoutput.html) at dirPrefix/subsystem
+    (or at the proper template dir structure).
 
     Args:
         dirPrefix (str): The directory prefix for a given run. It should always contain the value of root path for data for the function.
@@ -50,10 +50,10 @@ def writeToWebPage(dirPrefix, runDir, subsystem, outputHistNames, outputFormatti
             extension. Ex: "img/%s.png"
         runStartTime (int): Start time of the run in unix time.
         maxTime (int): The length of the run in minutes from the start of the run. This is the maximum
-            possible merge time. It is set as the limits and a initial value in the form.
+            possible merge time. It is set as the limit and an initial value in the form.
         minTimeRequested (Optional[int]): The requested start time of the merge in minutes. Default: -1.
         maxTimeRequested (Optional[int]): The requested end time of the merge in minutes. Default: -1.
-        actualTimeBetween (Optional[int]): The lenght of time that was merged together (ie. earliest time - latest time).
+        actualTimeBetween (Optional[int]): The length of time that was merged together (ie. earliest time - latest time).
             This value must always be less than or equal to maxTimeRequested - minTimeRequested. Default: -1.
         generateTemplate (Optional[bool]): Whether to generate a link for a templated page instead
             of a static page. Default: False.

@@ -1,11 +1,11 @@
-""" Generators of HTML for various page.
+""" Generators of HTML for various pages.
 
 Contains all of the functions to generate html for various web pages. Pages include
 the main runList, each run page, and the root hists page.
 
 This likely would have been easier to develop using templates, but is this way for
 historical reasons. In addition, this allows the creation of entirely static pages,
-which would be impossible without templates.
+which would be impossible with templates.
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 .. codeauthor:: James Mulligan <james.mulligan@yale.edu>, Yale University
@@ -84,8 +84,7 @@ def generateHtmlForHistLinkOnRunPage(listOfHists, startOfName):
             use startOfName = 3 to get "histName".
     
     Returns:
-        str: HTML containing links to **all** of the histograms in the list. All of the links go to anchors
-            labeled by the histogram name.
+        str: HTML containing links to **all** of the histograms in the list. All of the links go to anchors labeled by the histogram name.
 
     """
 
@@ -114,8 +113,7 @@ def generateHtmlForHistOnRunPage(listOfHists, outputFormatting, startOfName):
             use startOfName = 3 to get "histName".
     
     Returns:
-        str: HTML containing names and images tags of **all** of the histograms in the list.
-            Anchors are also included so that each image can be linked to individually.
+        str: HTML containing names and image tags of **all** of the histograms in the list. Anchors are also included so that each image can be linked to individually.
 
     """
 
@@ -134,14 +132,14 @@ def interactiveFormText(partialMergeActionUrl, runNumber, subsystem, maxTime, mi
     """ Generates the form that provides time dependent merge capabilities.
 
     Used to create the time dependent merge header. The function generates a complicated HTML form,
-    with the intial values set properly based on the arguments passed to the function. 
+    with the initial values set properly based on the arguments passed to the function. 
 
     Note:
         This form will generate a POST request. Consequently, this form requires at least a WSGI web server
         to function properly. Thus, this form is fairly useless on totally static pages, but this form will
         be shown because we cannot know at the time of this function whether the page will be dynamic or static.
-        If the pages are dynamic, but backed with a low load WSGI server (ie no templates available), this form
-        will still operatre properly.
+        If the pages are dynamic, but backed with a low load WSGI server (i.e. no templates available), this form
+        will still operate properly.
     
     Notes:
         ``actualTimeBetween`` can be less than ``maxTimeRequested - minTimeRequested`` if there is not enough
@@ -149,7 +147,7 @@ def interactiveFormText(partialMergeActionUrl, runNumber, subsystem, maxTime, mi
 
         ``minTimeRequested``, ``maxTimeRequested``, and ``actualTimeBetween`` will only be displayed on the
         web page if all values are set. They should always be set in pairs. If they are all set, an additional
-        line with timing information with be written to the header.
+        line with timing information will be written to the header.
 
     Args:
         partialMergeActionUrl (str): The URL to put into the action field in the HTML form. In the case of static
@@ -161,7 +159,7 @@ def interactiveFormText(partialMergeActionUrl, runNumber, subsystem, maxTime, mi
             possible merge time. It is set as the limits and a initial value in the form.
         minTimeRequested (Optional[int]): The requested start time of the merge in minutes. Default: -1.
         maxTimeRequested (Optional[int]): The requested end time of the merge in minutes. Default: -1.
-        actualTimeBetween (Optional[int]): The lenght of time that was merged together (ie. earliest time - latest time).
+        actualTimeBetween (Optional[int]): The length of time that was merged together (i.e. earliest time - latest time).
             This value must always be less than or equal to maxTimeRequested - minTimeRequested. Default: -1.
 
     Returns:
@@ -208,8 +206,7 @@ def generateHtmlForStaticHeader(runNumberString, relativePath, secondDivText):
             This is often used in conjunction with :func:`interactiveFormText()`.
         
     Returns:
-        str: HTML for the header tag and the beginning of the body. The returned string covers all setup
-            of a page, such that content can be added directly after this string.
+        str: HTML for the header tag and the beginning of the body. The returned string covers all setup of a page, such that content can be added directly after this string.
 
     """
 

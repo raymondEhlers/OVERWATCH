@@ -133,7 +133,7 @@ class qaFunctionContainer(object):
 
 ###################################################
 def checkHist(hist, qaContainer):
-    """ Selects and calls the proper qa function based on the input
+    """ Selects and calls the proper qa function based on the input.
 
     Args:
         hist (TH1): The histogram to be processed.

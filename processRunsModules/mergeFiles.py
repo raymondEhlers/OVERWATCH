@@ -22,7 +22,7 @@ from . import utilities
 def merge(currentDir, runDir, subsystem, cumulativeMode = True, minTimeMinutes = -1, maxTimeMinutes = -1):
     """ Merge function: for a given run and subsystem, merges files appropriately into a combined file.  
 
-    Merge is only performed if we have received new files in specificed run.
+    Merge is only performed if we have received new files in the specificed run.
     Merges according to "cumulativeMode": See below.
     If minTimeMinutes and maxTimeMinutes are specified, merges only a fixed time range. Otherwise, merges all acquired ROOT files.
 
