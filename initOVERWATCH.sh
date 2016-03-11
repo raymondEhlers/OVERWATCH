@@ -34,7 +34,12 @@ else
         # None!
     else
         echo "Cannot run on hostname $HOSTNAME. You need to define the necessary variables."
-        exit 0
+        if [[ "$sourcedScript" == true ]];
+        then
+            return
+        else
+            exit 0
+        fi
     fi
 fi
 
