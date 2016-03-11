@@ -46,7 +46,7 @@ This is a `python` based project, so pip (ie `pip install <packageName>`) is the
 
 Based on `sphinx-autodoc` generation, the documentation is generated from the docstrings in the code. While they can be viewed in the source files or via python, sphinx compiles them into HTML, facilitating a cleaner view of the information. To build the documentation,
 
- 1. Install the dependencies. The documentation requires the python packages `sphinx sphinxcontrib-napoleon sphinx-autodoc recommonmark`. Pip is the recommended install method.
+ 1. Install the dependencies. The documentation requires the python packages `sphinx sphinxcontrib-napoleon recommonmark`. Pip is the recommended install method.
  
  2. Build the documentation using:
 
@@ -70,7 +70,7 @@ Adding a new detector to the project is well documented in the `processRunsModul
 
  - `webApp.py` - A Flask application which handles serving either dynamic (template) or static (simple html pages) run pages to display the QA data. It handles authentication, as well as allowing dynamic features, such as viewing time slices of the data within and between runs.
 
- - `fullStackServer.py` - A higher performance front-end server for use with `webApp.py`. Not necessary at PDSF, but useful for testing, and it allows for deployment at other places without additional infrastructure setup.
+ - `fullStackServer.py` - A higher performance front-end server for use with `webApp.py`. Not necessary at PDSF, but useful for testing, and it allows for deployment at other places without additional infrastructure setup. It requires the python modules `cherrypy` and `paste`.
 
 Inside of the data folder, there are a few main HTML files. `(subsystem)output.html` displays images from the run. `(subsystem)ROOTFiles.html` links to the raw ROOT files that are saved out for each write of histograms from the HLT. In both cases, `(subsystem)` is the three letter name of a detector in all caps.
 
@@ -133,6 +133,7 @@ For reference, an example file structure is shown below.
 │   │       ├── HLTROOTFiles.html
 │   │       ├── HLThists.*.root
 │   │       ├── HLToutput.html
+│   │       ├── TPCoutput.html
 │   │       ├── hists.combined.*.root
 │   │       ├── img [ contains *.png ]
 │   │       └── timeSlices
@@ -187,6 +188,7 @@ For reference, an example file structure is shown below.
 |   │   │   └── HLT
 |   │   │       ├── HLTROOTFiles.html
 |   │   │       ├── HLToutput.html
+|   │   │       ├── TPCoutput.html
 |   │   │       └── timeSlices
 |   │   │           └── timeSlice.*
 |   │   │               └── HLToutput.html
@@ -207,6 +209,14 @@ For reference, an example file structure is shown below.
 ## Development Note
 
 This project was originally developed in the [alice-yale-dev](https://gitlab.cern.ch/ALICEYale/alice-yale-dev) repository. All older development history is available there.
+
+## To do
+
+While this project currently works, there are a number of possible improvements.
+
+ - Split out the QA and partial merge functions to use worker pools using something such as `celery`. This would require asynchronus loading of the images once the process is completed. One solution for 
+
+ - Processing relies heavily on metadata. These operations can be very slow, particularly on slows disks. To resolve this, a database should be created (likely built using MongoDB) which caches and manages such metadata, thereby reducing the load on the disk. A longer term approach could store the data directly there, creating ROOT histograms (or some other visualization tool) on the fly.
 
 ## Authors
 

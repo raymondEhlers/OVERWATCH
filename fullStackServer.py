@@ -34,17 +34,17 @@ if __name__ == "__main__":
     #
     # staticPath here must start with a slash
     # absoluteStaticPath must be an absolute path. This will adapt to wherever the file is located.
-    staticPath = os.path.join("/", serverParameters.staticFolder)
-    absoluteStaticPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), serverParameters.staticFolder)
-    print("staticPath = \"%s\", absoluteStaticPath = \"%s\"" % (staticPath, absoluteStaticPath))
+    #staticPath = os.path.join("/", serverParameters.staticFolder)
+    #absoluteStaticPath = os.path.join(os.path.dirname(os.path.realpath(__file__)), serverParameters.staticFolder)
+    #print("staticPath = \"%s\", absoluteStaticPath = \"%s\"" % (staticPath, absoluteStaticPath))
     # This serves the url "/static". The "/" is mounted at absoluteStaticPath, 
     # so whenever "/static" is hit, then it goes to files in absoluteStaticPath.
-    cherrypy.tree.mount(None, "/static", {
-                     "/" : {
-                        "tools.staticdir.on": True,
-                        "tools.staticdir.dir": absoluteStaticPath
-                     }
-                })
+    #cherrypy.tree.mount(None, "/static", {
+    #                 "/" : {
+    #                    "tools.staticdir.on": True,
+    #                    "tools.staticdir.dir": absoluteStaticPath
+    #                 }
+    #            })
 
     # Configure the server properties
     serverConfig = {

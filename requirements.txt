@@ -17,4 +17,13 @@ numpy
 # WSGI
 flup6
 # Not necessarily required
-#uwsgi
+uwsgi
+
+# Documentation
+sphinx
+sphinxcontrib-napoleon
+recommonmark
+
+# For full stack server
+cherrypy
+paste
