@@ -1,4 +1,4 @@
-Detectors modules for Process Runs
+Detector modules for Process Runs
 ==================================
 
 .. automodule:: processRunsModules.detectors

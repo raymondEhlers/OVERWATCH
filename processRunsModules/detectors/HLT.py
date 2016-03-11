@@ -1,4 +1,4 @@
-""" HLT subsystem specific functions
+""" HLT subsystem specific functions.
 
 This currently serves as a catch all for unsorted histograms. No additional QA functions are applied.
 
@@ -29,12 +29,11 @@ def sortAndGenerateHtmlForHLTHists(outputHistNames, outputFormatting, subsystem 
         outputFormatting (str): Specially formatted string which contains a generic path to the printed histograms.
             The string contains "%s" to print the filename contained in listOfHists. It also includes the file
             extension. Ex: "img/%s.png"
-        subsystem (str): The current subsystem by three letter, all capital name .Here it should always be ``HLT``.
+        subsystem (str): The current subsystem by three letter, all capital name. Here it should always be ``HLT``.
             Default: "HLT"
 
     Returns:
-        str: HTML containing all of the HLT histograms, with proper formatting and links from the top of the page
-            to the named images.
+        str: HTML containing all of the HLT histograms, with proper formatting and links from the top of the page to the named images.
 
     """
     # Generate links to histograms below

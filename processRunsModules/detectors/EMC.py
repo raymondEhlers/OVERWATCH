@@ -1,4 +1,4 @@
-""" EMC detector specific sorting for monitoring, and QA
+""" EMC detector specific sorting for monitoring, and QA.
 
 The EMCal has substantial sorting for online monitoring. It also has automated QA monitoring functions that apply
 every run and true QA functions that only run at selected times.
@@ -40,12 +40,11 @@ def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem 
         outputFormatting (str): Specially formatted string which contains a generic path to the printed histograms.
             The string contains "%s" to print the filename contained in listOfHists. It also includes the file
             extension. Ex: "img/%s.png"
-        subsystem (str): The current subsystem by three letter, all capital name .Here it should always be ``EMC``.
+        subsystem (str): The current subsystem by three letter, all capital name. Here it should always be ``EMC``.
             Default: "EMC"
 
     Returns:
-        str: HTML containing all of the EMC histograms, with proper formatting and links from the top of the page
-            to the named images.
+        str: HTML containing all of the EMC histograms, with proper formatting and links from the top of the page to the named images.
 
     """
 
@@ -113,7 +112,7 @@ def checkForOutliers(hist, qaContainer):
     This function is mainly a proof of concept, but could become more viable with a bit more work.
 
     Note:
-        This function will add a large TLegend to the histogarm noting the mean and the number of
+        This function will add a large TLegend to the histogram noting the mean and the number of
         outliers. It will also display the recalculated mean excluding the outlier(s).
 
     Args:
@@ -292,7 +291,7 @@ def properlyPlotPatchSpectra(hist):
     These conditions are set for "{EMCal,DCal}Patch{Energy,Amp}" (4 total histograms).
 
     Since ROOT creates gPad as a globally available variable, we do not need to pass it into this function.
-    However, this does mean that it needs to be reset when we are not ineterested in thise plots.
+    However, this does mean that it needs to be reset when we are not interested in these plots.
 
     Args:
         hist (TH1): The histogram to be processed.

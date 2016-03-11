@@ -1,8 +1,8 @@
-""" Documentation for adding new detectors
+""" Documentation for adding new detectors.
 
 Each ALICE detector can add a file named the respective three letter detector name.
 
-Addding a New Detector
+Adding a New Detector
 ======================
 
 Adding a new detector is a fairly straightforward process. There are several available
@@ -11,11 +11,11 @@ options:
 1.  Adding histograms to the HLT, which will then be accessible through the *Web App*.
     For more information on this approach, contact the HLT. Work in progress.
 
-2.  Creating a subpage that splits out a detectors histograms. The histograms avialable to be
-    split out are the ones that are shown on the web site.
+2.  Creating a subpage that splits out a detector's histograms. The histograms available to be
+    split out are the ones shown on the web site.
 
-3.  Creating a QA or automated QA (ie one that always runs) function to process the some or all of
-    the available histograms. The histograms availabe to be processed are the ones shown on
+3.  Creating a QA or automated QA (ie one that always runs) function to process some or all of
+    the available histograms. The histograms available to be processed are the ones shown on
     the web site.
 
 Getting Started
@@ -26,7 +26,7 @@ Getting Started
     name, in all caps (ex: "EMC.py"). If it has already been created, then simply edit the
     existing file.
 
-    The next steps depend on the desired used case. One can `Create a Detector Page`_, which
+    The next steps depend on the desired use case. One can `Create a Detector Page`_, which
     will handle sorting histograms to be shown on a dedicated page for the detector. Alternatively,
     one can `Create a QA function`_, which will allow the creation of a QA function for a particular
     detector.
@@ -117,7 +117,7 @@ Test the Function Locally
 -------------------------
 
 Now that a new function is created, it is important to test it before making a pull request. Data is needed
-to test the function. Fortunately, it is straightfoward to download (and does not require downloading many individual
+to test the function. Fortunately, it is straightforward to download (and does not require downloading many individual
 files by hand!).
 
 1.  To download test data to use, go to the contact page (``/contact``), and click on the link to the test data. It will
@@ -142,7 +142,7 @@ files by hand!).
 
     Note:
         It is highly recommended to enable debugging! Change the setting at
-        :attr:`config.sharedParams.sharedParameters.debug` to ``True``. This should never be done in production, it the debug
+        :attr:`config.sharedParams.sharedParameters.debug` to ``True``. This should never be done in production, but the debug
         information is extremely useful when testing, and it provides comprehensive debugging in the browser!
 
 5.  When done testing, close the web app using ``ctrl-c``.
