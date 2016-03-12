@@ -2,7 +2,10 @@
 {% block body %}
     <a class="anchor" name="topOfPage"></a>
     <h1>QA Using HLT Histograms</h1>
+    {# Cannot escape html encoding using url_for, so have to manually replace "?", "=", and "&" #}
+    {# See: https://stackoverflow.com/a/27304735 #}
     <p>Ran QA function "{{ qaFunctionName }}" for Subsystem "{{ subsystem }}" from {{ firstRun }} to {{ lastRun }}.</p>
+    <p>ROOT file containing all QA histograms from this function are <a href="{{ url_for("protected", filename=rootFilePath) | replace("%3F", "?") | replace("%3D", "=") | replace("%26", "&") }}">available here</a>.</p>
     {% if hists != {} %}
         <div class="contentDivider">
             <h2>Results</h2>

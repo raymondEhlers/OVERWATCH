@@ -265,10 +265,16 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
     returnValues = {}
     canvas = TCanvas("canvas", "canvas")
 
+    # Create root file to save out
+    fOut = TFile(os.path.join(dataDir, qaContainer.qaFunctionName + ".root"), "RECREATE")
+
     for label, hist in qaContainer.getHistsDict().items():
         # Print the histogram
         hist.Draw()
         canvas.SaveAs(outputFormatting % label)
+
+        # Write histogram to file
+        hist.Write()
 
         # Set img path in the return value
         # Need to remove the pathToRemove defined above to ensure that the url doesn't include the directory
@@ -277,6 +283,9 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
             print(outputFormatting)
             print(pathToRemove)
         returnValues[label] = outputFormatting.replace(pathToRemove, "") % label
+
+    # Write root file
+    fOut.Close()
 
     print("returnValues:", returnValues)
 

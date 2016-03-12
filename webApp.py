@@ -319,7 +319,11 @@ def processQA():
                 histPaths[name] = histPath + "?time=" + str(time.time())
                 print("histPaths[", name, "]: ", histPaths[name])
 
-            return render_template("qaResult.html", firstRun=firstRun, lastRun=lastRun, qaFunctionName=qaFunction, subsystem=subsystem, hists=histPaths)
+            # Ensures that the root file is not cached by adding a meaningless but unique argument.
+            rootFilePath = os.path.join(qaFunction, qaFunction + ".root")
+            rootFilePath += "?time=" + str(time.time())
+
+            return render_template("qaResult.html", firstRun=firstRun, lastRun=lastRun, qaFunctionName=qaFunction, subsystem=subsystem, hists=histPaths, rootFilePath=rootFilePath)
         else:
             return render_template("error.html", errors=error)
 
