@@ -69,6 +69,8 @@ class qaFunctionContainer(object):
         Returns:
             None
         """
+        # Ensures that the created histogram does not get destroyed after going out of scope.
+        hist.SetDirectory(0)
         self.hists[label] = hist
 
     def addHists(self, hists):
@@ -82,7 +84,7 @@ class qaFunctionContainer(object):
         """
 
         for hist, label in zip(hists, labels):
-            self.hists[label] = hist
+            self.addHist(hist, label)
 
     def getHist(self, histName):
         """ Gets a histogram labeled by name.

@@ -80,7 +80,9 @@ Create a QA function
     about the QA function and stored histograms, as well as the run being processed.
 
     This function can be anything the user desires, and histograms to show derived quantities can be stored in the
-    ``qaContainer`` class.
+    ``qaContainer`` class. Remember that ``SetDirectory(0)`` must be called on any ROOT object that you want to
+    keep to show derived quantities before that object goes out of scope! This is applied automatically for any
+    histograms that are stored in the ``qaContainer``.
 
     Warning:
         Be sure to document your class fully using docstrings and that the last two items ars "Args"
@@ -107,7 +109,8 @@ Create a QA function
 
     If it is an automated QA function that runs for every single histogram, add the three letter detector name
     and the name of the function to :attr:`config.sharedParams.sharedParameters.qaFunctionsToAlwaysApply` in
-    the config file "config/sharedParams.py".
+    the config file "config/sharedParams.py". Note that you can draw on the canvas of the histogram that you
+    have selected and processed by calling ``Draw()`` with the ``"same"`` option.
 
     See the documentation for the attributes for the precise format of how it should be added.
 

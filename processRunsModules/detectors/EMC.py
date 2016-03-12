@@ -251,8 +251,7 @@ def determineMedianSlope(hist, qaContainer):
             if qaContainer.getHists() is not []:
                 print("Creating hist", medianHistName)
                 medianHist = TH1F(medianHistName, "Median vs Median Slope", len(qaContainer.runDirs), 0, len(qaContainer.runDirs))
-                # Ensures that the created histogram does not get destroyed after going out of scope.
-                medianHist.SetDirectory(0)
+                # Save the histogram to the qaContainer.
                 qaContainer.addHist(medianHist, medianHist.GetName())
 
                 # Set bin labels
