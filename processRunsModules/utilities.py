@@ -111,20 +111,29 @@ def rsyncData(dirPrefix, username, remoteSystems, remoteFileLocations):
 
     """
 
+    # Determine which type of file we are transfering
+    fileDestinationLabel = "data"
+    if "templates" in dirPrefix:
+        fileDestinationLabel = "templates"
+
+    # An ending slash is needed so that rsync transfers the proper files (and not just the directory)
     sendDirectory = dirPrefix
     if not sendDirectory.endswith("/"):
         sendDirectory = sendDirectory + "/"
 
-    if len(remoteSystems) != len(remoteFileLocations):
+    if len(remoteSystems) != len(remoteFileLocations[fileDestinationLabel]):
         print("Number of remote systems is not equal to number of remote file locations. Skipping rsync operations!")
     else:
-        for remoteSystem, remoteFileLocation in zip(remoteSystems, remoteFileLocations):
+        for remoteSystem, remoteFileLocation in zip(remoteSystems, remoteFileLocations[fileDestinationLabel]):
             if not remoteFileLocation.endswith("/"):
                 remoteFileLocation = remoteFileLocation + "/"
 
-            print("Utilizing user %s to send data files to %s on %s " % (username, remoteFileLocation, remoteSystem))
+            print("Utilizing user %s to send %s files to %s on %s " % (username, fileDestinationLabel, remoteFileLocation, remoteSystem))
 
-            #rsync -rvltph data/ rehlers@pdsf.nersc.gov:/project/projectdirs/alice/www/emcalMonitoring/data/2015/
+            # The chmod argument is explained here: https://unix.stackexchange.com/a/218165
+            # The omit-dir-times does not update the timestamps on dirs (but still does on files in those dirs),
+            # which fixes a number of errors thrown when transfering to PDSF
+            #rsync -rvlth --chmod=ugo=rwX --omit-dir-times data/ rehlers@pdsf.nersc.gov:/project/projectdirs/alice/www/emcalMonitoring/data/2015/
             rsyncCall = ["rsync", "-rvlth","--chmod=ugo=rwX", "--omit-dir-times", sendDirectory, username + "@" + remoteSystem + ":" + remoteFileLocation]
             print(rsyncCall)
             call(rsyncCall)
