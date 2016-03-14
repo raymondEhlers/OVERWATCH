@@ -46,6 +46,9 @@ class qaFunctionContainer(object):
         Arguments listed above are also available to be called as members. However, it is greatly preferred to access
         hists through the methods listed below.
 
+    Note:
+        You can draw on the histogram that you are processing by passing ``"same"`` as a parameter to the ``Draw()``.
+
     """
 
     def __init__(self, firstRun, lastRun, runDirs, qaFunctionName):
@@ -61,6 +64,10 @@ class qaFunctionContainer(object):
 
     def addHist(self, hist, label):
         """ Add a histogram at a given label.
+
+        Note:
+            This function calls ``SetDirectory(0)`` on the passed histogram to make sure that it is not
+            removed when it goes out of scope.
 
         Args:
             hist (TH1): The histogram to be added.

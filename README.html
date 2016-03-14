@@ -213,8 +213,10 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <h2 id="development-note">Development Note</h2>
 <p>This project was originally developed in the <a href="https://gitlab.cern.ch/ALICEYale/alice-yale-dev">alice-yale-dev</a> repository. All older development history is available there.</p>
 <h2 id="to-do">To do</h2>
-<p>While this project currently works, there are a number of possible improvements.</p>
+<p>There are a number of possible improvements for this project</p>
 <ul>
+<li><p>Mobile support. The website will display on mobile, but the presentation is not very consistent. Some work on the mobile CSS would improve it dramatically.</p></li>
+<li><p>Implement better logging and error notification. It is all explained <a href="http://flask.pocoo.org/docs/0.10/errorhandling/">here</a>.</p></li>
 <li><p>Split out the QA and partial merge functions to use worker pools using something such as <code>celery</code>. This would require asynchronus loading of the images once the process is completed. One solution for</p></li>
 <li><p>Processing relies heavily on metadata. These operations can be very slow, particularly on slows disks. To resolve this, a database should be created (likely built using MongoDB) which caches and manages such metadata, thereby reducing the load on the disk. A longer term approach could store the data directly there, creating ROOT histograms (or some other visualization tool) on the fly.</p></li>
 </ul>
