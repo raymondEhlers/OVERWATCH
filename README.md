@@ -221,6 +221,8 @@ There are a number of possible improvements for this project
  - Split out the QA and partial merge functions to use worker pools using something such as `celery`. This would require asynchronus loading of the images once the process is completed. One solution for 
 
  - Processing relies heavily on metadata. These operations can be very slow, particularly on slows disks. To resolve this, a database should be created (likely built using MongoDB) which caches and manages such metadata, thereby reducing the load on the disk. A longer term approach could store the data directly there, creating ROOT histograms (or some other visualization tool) on the fly.
+ 
+ - CERN Single Sign On (SSO) support. This would require a reworking of the authentication system. For more information, see [here](https://alexpearce.me/2014/10/setting-up-flask-with-apache-and-shibboleth/). This appears to be a very involved process. It may be simpler to implement using `SAML2`. See the CERN SSO page for more information.
 
 ## Authors
 
