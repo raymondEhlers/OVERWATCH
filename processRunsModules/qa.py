@@ -100,10 +100,10 @@ class qaFunctionContainer(object):
             histName (str): Label of the desired histogram. Often the hist name.
 
         Returns:
-            TH1: The requested histogram or KeyError if it doesn't exist.
+            TH1: The requested histogram or None if it doesn't exist.
 
         """
-        return self.hists[histName]
+        return self.hists.get(histName, None)
 
     def getHists(self):
         """ Gets all histograms and returns them in a list.

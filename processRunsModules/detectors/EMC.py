@@ -248,7 +248,7 @@ def determineMedianSlope(hist, qaContainer):
             # Can check for the first run as in the commented line above, but this will not work if the first run does not contain
             # the deisred histogram. This could also be achieved by creating the necessary histogram before checking the passed
             # hists name and then setting a flag (could also override the filledValueInRun flag) to note that it is created.
-            if qaContainer.getHists() is not []:
+            if qaContainer.getHist(medianHistName) is None:
                 print("Creating hist", medianHistName)
                 medianHist = TH1F(medianHistName, "Median vs Median Slope", len(qaContainer.runDirs), 0, len(qaContainer.runDirs))
                 # Save the histogram to the qaContainer.
