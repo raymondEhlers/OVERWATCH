@@ -248,6 +248,7 @@ def determineMedianSlope(hist, qaContainer):
             # Can check for the first run as in the commented line above, but this will not work if the first run does not contain
             # the deisred histogram. This could also be achieved by creating the necessary histogram before checking the passed
             # hists name and then setting a flag (could also override the filledValueInRun flag) to note that it is created.
+            print("getHist:", qaContainer.getHist(medianHistName))
             if qaContainer.getHist(medianHistName) is None:
                 print("Creating hist", medianHistName)
                 medianHist = TH1F(medianHistName, "Median vs Median Slope", len(qaContainer.runDirs), 0, len(qaContainer.runDirs))
@@ -266,7 +267,6 @@ def determineMedianSlope(hist, qaContainer):
             prof.Fit(linearFit)
 
             print("qaContainer.hists:", qaContainer.getHists())
-            print("medianHist.GetEntries():", medianHist.GetEntries())
             print("Entries:", qaContainer.getHist(medianHistName).GetEntries())
             #medianHist.SetBinContent(qaContainer.runDirs.index(qaContainer.currentRun) + 1, linearFit.GetParameter("0"))
             # Extract the slope and fill it into the histogram
