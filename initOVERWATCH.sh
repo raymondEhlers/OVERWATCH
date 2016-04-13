@@ -13,14 +13,14 @@ fi
 if [[ $HOSTNAME == *"pdsf"* || $HOSTNAME == *"sgn"* ]];
 then
     # Define necessary variables
-    projectPath="/project/projectdirs/alice/aliprodweb/aliemcalmonitor"
+    projectPath="/project/projectdirs/alice/aliprodweb/overwatch"
     rootSysPath="/project/projectdirs/alice/aliprodweb/ROOT/"
     virtualEnvPath="/project/projectdirs/alice/aliprodweb/virtualenv/python_2_7_11/bin/activate"
     location="PDSF"
 
     # Additional settings
     # Sets the library path for both python and libffi
-    export LD_LIBRARY_PATH="$LD_LIBRARY_PATH:/project/projectdirs/alice/aliprodweb/python_bin/v2.7.11/lib:/project/projectdirs/alice/aliprodweb/essentials/install/lib64"
+    export LD_LIBRARY_PATH="/project/projectdirs/alice/aliprodweb/python_bin/v2.7.11/lib:/project/projectdirs/alice/aliprodweb/essentials/install/lib64:$LD_LIBRARY_PATH"
 else
     if [[ "$HOSTNAME" == "aliceoverwatch" ]];
     then
