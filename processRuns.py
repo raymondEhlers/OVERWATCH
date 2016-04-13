@@ -86,7 +86,7 @@ class subsystemProperties(object):
         else:
             self.fileLocationSubsystem = "HLT"
             if showRootFiles == True:
-                print("\tWARNING! It is requested to show ROOT files for subsystem %s, but the subsystem does have specific data files" % subsystem)
+                print("\tWARNING! It is requested to show ROOT files for subsystem %s, but the subsystem does not have specific data files. Using HLT data files!" % subsystem)
 
         # Complete variable assignment now that we know where the data is located.
         self.runDirs = runDirs[self.fileLocationSubsystem]
