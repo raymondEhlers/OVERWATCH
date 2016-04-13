@@ -18,7 +18,8 @@ echo $PWD
 
 # EMC receiver
 #./runReceiver.sh $internalPort $externalPort $receiverType
-./runReceiver.sh 40321 60321 "EMC" &
+./runReceiver.sh 60321 60321 "EMC" &
+#./runReceiver.sh 40321 60321 "EMC" &
 emcReceiver=$!
 echo "emcPID: $emcReceiver"
 
@@ -27,7 +28,8 @@ sleep 1
 
 # HLT receiver
 #./runReceiver.sh $internalPort $externalPort $receiverType
-./runReceiver.sh 40322 60322 "HLT" &
+./runReceiver.sh 60322 60322 "HLT" &
+#./runReceiver.sh 40322 60322 "HLT" &
 hltReceiver=$!
 echo "hltPID: $hltReceiver"
 

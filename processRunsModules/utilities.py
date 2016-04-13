@@ -100,6 +100,10 @@ def findCurrentRunDirs(dirPrefix = ""):
 def rsyncData(dirPrefix, username, remoteSystems, remoteFileLocations):
     """ Syncs data directory to a remote system using rsync.
 
+    Note:
+        Filenames of the form "*histos_*.root" are excluded from transfer! These are
+        unprocessed files from the HLT and should not be transfered!
+
     Args:
         dirPrefix (str): Directory prefix used to get to all of the data.
         username (str): Username to use with rsync.
@@ -133,8 +137,9 @@ def rsyncData(dirPrefix, username, remoteSystems, remoteFileLocations):
             # The chmod argument is explained here: https://unix.stackexchange.com/a/218165
             # The omit-dir-times does not update the timestamps on dirs (but still does on files in those dirs),
             # which fixes a number of errors thrown when transfering to PDSF
-            #rsync -rvlth --chmod=ugo=rwX --omit-dir-times data/ rehlers@pdsf.nersc.gov:/project/projectdirs/alice/www/emcalMonitoring/data/2015/
-            rsyncCall = ["rsync", "-rvlth","--chmod=ugo=rwX", "--omit-dir-times", sendDirectory, username + "@" + remoteSystem + ":" + remoteFileLocation]
+            # NOTE: Filenames of the form "*histos_*.root" are excluded from transfer! These are unprocessed files from the HLT and should not be transfered!
+            #rsync -rvlth --chmod=ugo=rwX --omit-dir-times --exclude="*histos_*.root" data/ rehlers@pdsf.nersc.gov:/project/projectdirs/alice/www/emcalMonitoring/data/2015/
+            rsyncCall = ["rsync", "-rvlth","--chmod=ugo=rwX", "--omit-dir-times", "--exclude=\"*histos_*.root\"", sendDirectory, username + "@" + remoteSystem + ":" + remoteFileLocation]
             print(rsyncCall)
             call(rsyncCall)
 
