@@ -287,7 +287,7 @@ def determineMedianSlope(hist, qaContainer):
 def properlyPlotPatchSpectra(hist):
     """ Sets logy and a grid to gPad for particular histograms.
 
-    These conditions are set for "{EMCal,DCal}Patch{Energy,Amp}" (4 total histograms).
+    These conditions are set for "{EMCal,DCal}(Max)Patch{Energy,Amp}".
 
     Since ROOT creates gPad as a globally available variable, we do not need to pass it into this function.
     However, this does mean that it needs to be reset when we are not interested in these plots.
@@ -299,7 +299,7 @@ def properlyPlotPatchSpectra(hist):
         None
 
     """
-    if "EMCalPatchEnergy" in hist.GetName() or "EMCalPatchAmp" in hist.GetName() or "DCalPatchAmp" in hist.GetName() or "DCalPatchEnergy" in hist.GetName():
+    if any(substring in hist.GetName() for substring in ["EMCalPatchEnergy", "EMCalPatchAmp", "EMCalMaxPatchAmp", "DCalPatchAmp", "DCalPatchEnergy", "DCalMaxPatchAmp"]):
         gPad.SetLogy()
         gPad.SetGrid(1,1)
         hist.SetStats(False)
@@ -313,7 +313,7 @@ def properlyPlotPatchSpectra(hist):
 def addEnergyAxisToPatches(hist):
     """ Adds an additional axis showing the conversion from ADC counts to Energy.
 
-    These conditions are set for "{EMCal,DCal}PatchAmp" (2 total histograms).
+    These conditions are set for "{EMCal,DCal}(Max)PatchAmp".
     It creates a new TGaxis that shows the ADC to Energy conversion. It then draws it on selected
     histogram. 
 
@@ -331,7 +331,7 @@ def addEnergyAxisToPatches(hist):
         None
 
     """
-    if "EMCalPatchAmp" in hist.GetName() or "DCalPatchAmp" in hist.GetName():
+    if any(substring in hist.GetName() for substring in ["EMCalPatchAmp", "EMCalMaxPatchAmp", "DCalPatchAmp", "DCalMaxPatchAmp"]):
         kEMCL1ADCtoGeV = 0.07874   # Conversion from EMCAL Level1 ADC to energy
         adcMin = hist.GetXaxis().GetXmin()
         adcMax = hist.GetXaxis().GetXmax()
