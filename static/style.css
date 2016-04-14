@@ -71,8 +71,8 @@ body {
 
 img {
     /* Help mobile? */
-    max-width: 100%
-    border:1px solid;
+    max-width: 100%;
+    /*border:1px solid;*/
     border-color: #BCE8F1;
     -webkit-border-radius: 5;
     -moz-border-radius: 5;
@@ -84,7 +84,8 @@ img {
 #contentContainer {
     /*background-color: #CAE4F1;*/
     padding-top: 60px;
-    width:800px;
+    /*width: 800px;*/
+    width: 92vw;
     margin: 0 auto;
     height: 100vh;
 }
@@ -114,7 +115,7 @@ a.anchor {
 }
 
 /* Changes the table displayed on the contact page. */
-td {
+.contactTableData {
     padding-right: 30px;
 }
 
