@@ -27,6 +27,52 @@ from processRunsModules import generateHtml
 ######################################################################################################
 
 ###################################################
+def generateHtmlForTableLinks(groupName):
+    returnText = '<a href="#' + groupName.replace(" ","") + '">' + groupName + '</a><br>\n'
+
+    return returnText
+
+###################################################
+def generateHtmlForTable(listOfHists, groupName, outputFormatting, nColumns):
+    """ Generates a html table for a group of histograms
+    
+    """
+    # Needed to count our position in the table
+    index = 0
+
+    # Label
+    returnText = "<a class=\"anchor\" name=\"" + groupName.replace(" ","") + "\"></a>\n"
+    returnText += "<h2>%s</h2>\n" % groupName
+
+    # Start table
+    returnText += "<table>\n"
+    #returnText += "<table width=\"100%\">\n"
+    for filename in listOfHists:
+        # Open row if necessary
+        if index % nColumns == 0:
+            returnText += "<tr>\n"
+
+        # Add image
+        outputFilename = outputFormatting % filename
+        returnText += """<td>
+            <img width="100%%" src="%s" alt="%s">
+        </td>
+        """ % (outputFilename, outputFilename)
+
+        # Increment counter
+        index += 1
+
+        # Close row if necessary
+        # We increment before checking since we have now added an element
+        if index % nColumns == 0:
+            returnText += "</tr>\n"
+
+    # Close table
+    returnText += "</table>\n"
+
+    return returnText
+
+###################################################
 def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem = "EMC"):
     """ Sorts and displays EMC histograms.
 
@@ -49,9 +95,22 @@ def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem 
     """
 
     # Sort the filenames of the histograms into catagories for better presentation
+    # Trigger classes
     gammaHistNames = []
     jetHistNames = []
     bkgHistNames = []
+
+    # Hists to plot by SM
+    feeVsTRUHistNames = []
+    feeVsSTUHistNames = []
+    fastORL0HistNames = []
+    fastORL0AmpHistNames = []
+    fastORL0LargeAmpHistNames = []
+    fastORL1HistNames = []
+    fastORL1AmpHistNames = []
+    fostORL1LargeAmpHistNames = []
+
+    # Others
     otherEMCHistNames = []
     nonEMCHistNames = []
     for filename in outputHistNames:
@@ -61,11 +120,19 @@ def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem 
             jetHistNames.append(filename)
         elif "BKG" in filename:
             bkgHistNames.append(filename)
+        elif "FEEvsTRU_SM" in filename:
+            feeVsTRUHistNames.append(filename)
+        elif "FEEvsSTU_SM" in filename:
+            feeVsSTUHistNames.append(filename)
         elif "EMCal" in filename or "Fast" in filename:
             otherEMCHistNames.append(filename)
         else:
             nonEMCHistNames.append(filename)
     gammaHistNames.sort()
+    # If we do not sort more carefully, then it will go 1, 10, 11, .., 2, 3, 4,..
+    # since the numbers are contained in strings.
+    feeVsTRUHistNames = sorted(feeVsTRUHistNames, key=lambda x: int(x[x.find("_SM")+3:]))
+    feeVsSTUHistNames = sorted(feeVsSTUHistNames, key=lambda x: int(x[x.find("_SM")+3:]))
     jetHistNames.sort()
     bkgHistNames.sort()
     otherEMCHistNames.sort()
@@ -73,7 +140,12 @@ def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem 
 
     # Generate links to histograms below
     htmlText = ""
-    htmlText += "<div class=\"contentDivider\">"
+    htmlText += "<div class=\"contentDivider\">\n"
+    htmlText += "<h3>" + "Hists by SM" + "</h3>\n"
+    if feeVsTRUHistNames != []:
+        htmlText += generateHtmlForTableLinks("FEE vs TRU By SM")
+    if feeVsSTUHistNames != []:
+        htmlText += generateHtmlForTableLinks("FEE vs STU By SM")
     htmlText += "<h3>" + "Gamma Trigger" + "</h3>\n"
     htmlText += generateHtml.generateHtmlForHistLinkOnRunPage(gammaHistNames, 12)
     htmlText += "<h3>" + "Jet Trigger" + "</h3>\n"
@@ -84,9 +156,13 @@ def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem 
     htmlText += generateHtml.generateHtmlForHistLinkOnRunPage(otherEMCHistNames, 12)
     htmlText += "<h3>" + "Non-EMC" + "</h3>\n"
     htmlText += generateHtml.generateHtmlForHistLinkOnRunPage(nonEMCHistNames, 0)
-    htmlText += "</div>"
+    htmlText += "</div>\n"
 
     # Plot histograms in same order as anchors
+    if feeVsTRUHistNames != []:
+        htmlText += generateHtmlForTable(feeVsTRUHistNames, "FEE vs TRU By SM", outputFormatting, nColumns = 2)
+    if feeVsSTUHistNames != []:
+        htmlText += generateHtmlForTable(feeVsSTUHistNames, "FEE vs STU By SM", outputFormatting, nColumns = 2)
     htmlText += generateHtml.generateHtmlForHistOnRunPage(gammaHistNames, outputFormatting, 12)
     htmlText += generateHtml.generateHtmlForHistOnRunPage(jetHistNames, outputFormatting, 12)
     htmlText += generateHtml.generateHtmlForHistOnRunPage(bkgHistNames, outputFormatting, 12)
@@ -343,3 +419,11 @@ def addEnergyAxisToPatches(hist):
         SetOwnership(energyAxis, False)
         energyAxis.SetTitle("Energy (GeV)")
         energyAxis.Draw()
+
+###################################################
+# Label each individual super module (SM) plot
+###################################################
+def labelSupermodules(hist):
+    if "_SM" in hist.GetName()[-5:]:
+        smNumber = hist.GetName()[hist.GetName().find("_SM")+3:]
+        hist.SetTitle("SM {0}".format(smNumber))
