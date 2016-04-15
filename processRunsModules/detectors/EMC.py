@@ -427,3 +427,86 @@ def labelSupermodules(hist):
     if "_SM" in hist.GetName()[-5:]:
         smNumber = hist.GetName()[hist.GetName().find("_SM")+3:]
         hist.SetTitle("SM {0}".format(smNumber))
+
+###################################################
+# Add drawing options to plots
+# Plots come in 4 types: PlotbySM, Plot2D, Plot1D, PlotMaxMatch
+###################################################
+def setDrawOptions(hist):
+    # somehow need to get the number of events; it is stored in the below histogram
+    #if hist.GetName() == "EMCTRQA_histEvents":
+    #    events = hist.GetBinContent(1)
+
+    # PlotbySM plots
+    if "SM" in hist.GetName():
+        #pad.SetLogz(logz)
+        #hist.Scale(1. / events)
+        
+        # for FEE plots, set a different range
+        #if "FEE" in hist.GetName():
+        #    hist.GetXaxis().SetRangeUser(0, 250)
+        #    hist.GetYaxis().SetRangeUser(0, 20)
+            
+        #hist.Draw("colz")
+        
+    # Plot2D plots
+    if "EdgePos" in hist.GetName():
+        #hist.Scale(1./events)
+        #hist.GetZaxis().SetTitle("entries / events")
+        #hist.Draw("colz")
+
+    # Plot1D plots
+    if "EMCTRQA_histFastORL" in hist.GetName() and "SM" not in hist.GetName(): 
+        #hist.Sumw2()
+        #hist.Scale(1. / events)
+        
+        #hist.SetMarkerStyle(ROOT.kFullCircle)
+        #hist.SetMarkerSize(0.8)
+        #hist.SetMarkerColor(ROOT.kBlue+1)
+        #hist.SetLineColor(ROOT.kBlue+1)
+        
+        #absIdList = []
+        
+        #for ibin in range(1, hist.GetXaxis().GetNbins()+1):
+        #    if hist.GetBinContent(ibin) > th:
+        #        absIdList.append(ibin-1)
+            
+        #pave = ROOT.TPaveText(0.1, 0.7, 0.9, 0.2, "NB NDC")
+        #pave.SetTextAlign(13)
+        #pave.SetTextFont(43)
+        #pave.SetTextSize(12)
+        #pave.SetFillStyle(0)
+        #pave.SetTextColor(ROOT.kRed)
+        #pave.SetBorderSize(0)
+        
+        #absIdText = ""
+        
+        #for absId in absIdList:
+        #    if absIdText:
+        #        absIdText = "{0}, {1}".format(absIdText, absId)
+        #    else:
+        #        absIdText = "{0}".format(absId)
+        #    if len(absIdText) > 110:
+        #        pave.AddText(absIdText)
+        #        print absIdText
+        #        absIdText = ""
+        #pave.Draw()
+    
+    # PlotMaxPatch plots
+    # Ideally EMCal and DCal histos should be plot on the same plot
+    if "MaxPatch" in hist.GetName():
+        #canvas.SetLogy(True)
+        
+        #legend = ROOT.TLegend(0.6, 0.9, 0.9, 0.7)
+        #legend.SetBorderSize(0)
+        #legend.SetFillStyle(0)
+        #for det,col,marker,opt in zip(detectors,colors,markers,options):
+        #    hist.Sumw2()
+        #    hist.SetMarkerSize(0.8)
+        #    hist.SetMarkerStyle(marker)
+        #    hist.SetLineColor(col)
+        #    hist.SetMarkerColor(col)
+        #    hist.Scale(1./events)
+        #    hist.GetYaxis().SetTitle("entries / events")
+        #    legend.AddEntry(hist, det, "pe")
+        #legend->Draw()
