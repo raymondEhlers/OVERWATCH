@@ -27,52 +27,6 @@ from processRunsModules import generateHtml
 ######################################################################################################
 
 ###################################################
-def generateHtmlForTableLinks(groupName):
-    returnText = '<a href="#' + groupName.replace(" ","") + '">' + groupName + '</a><br>\n'
-
-    return returnText
-
-###################################################
-def generateHtmlForTable(listOfHists, groupName, outputFormatting, nColumns):
-    """ Generates a html table for a group of histograms
-    
-    """
-    # Needed to count our position in the table
-    index = 0
-
-    # Label
-    returnText = "<a class=\"anchor\" name=\"" + groupName.replace(" ","") + "\"></a>\n"
-    returnText += "<h2>%s</h2>\n" % groupName
-
-    # Start table
-    returnText += "<table>\n"
-    #returnText += "<table width=\"100%\">\n"
-    for filename in listOfHists:
-        # Open row if necessary
-        if index % nColumns == 0:
-            returnText += "<tr>\n"
-
-        # Add image
-        outputFilename = outputFormatting % filename
-        returnText += """<td>
-            <img width="100%%" src="%s" alt="%s">
-        </td>
-        """ % (outputFilename, outputFilename)
-
-        # Increment counter
-        index += 1
-
-        # Close row if necessary
-        # We increment before checking since we have now added an element
-        if index % nColumns == 0:
-            returnText += "</tr>\n"
-
-    # Close table
-    returnText += "</table>\n"
-
-    return returnText
-
-###################################################
 def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem = "EMC"):
     """ Sorts and displays EMC histograms.
 
@@ -95,79 +49,96 @@ def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem 
     """
 
     # Sort the filenames of the histograms into catagories for better presentation
+    groupedHists = []
+    # The order in which these are added is the order in which they are processed!
+    # Plot by SM
+    groupedHists.append(generateHtml.sortingGroup("FEE vs TRU", "FEEvsTRU_SM", "_SM"))
+    groupedHists.append(generateHtml.sortingGroup("FEE vs STU", "FEEvsSTU_SM", "_SM"))
+    groupedHists.append(generateHtml.sortingGroup("FastOR L0", "FastORL0_SM", "_SM"))
+    groupedHists.append(generateHtml.sortingGroup("FastOR L0 Amp", "FastORL0Amp_SM", "_SM"))
+    groupedHists.append(generateHtml.sortingGroup("FastOR L0 Large Amp", "FastORL0LargeAmp_SM", "_SM"))
+    groupedHists.append(generateHtml.sortingGroup("FastOR L1", "FastORL1_SM", "_SM"))
+    groupedHists.append(generateHtml.sortingGroup("FastOR L1 Amp", "FastORL1Amp_SM", "_SM"))
+    groupedHists.append(generateHtml.sortingGroup("FastOR L1 Large Amp", "FastORL1LargeAmp_SM", "_SM"))
     # Trigger classes
-    gammaHistNames = []
-    jetHistNames = []
-    bkgHistNames = []
+    groupedHists.append(generateHtml.sortingGroup("Gamma Trigger", "GA"))
+    groupedHists.append(generateHtml.sortingGroup("Jet Trigger", "JE"))
+    groupedHists.append(generateHtml.sortingGroup("Background", "BKG"))
+    # Other EMC
+    groupedHists.append(generateHtml.sortingGroup("FastOR", "FastOR"))
+    groupedHists.append(generateHtml.sortingGroup("Other EMC", "EMC"))
+    # Catch all of the other hists
+    groupedHists.append(generateHtml.sortingGroup("Non EMC", ""))
 
-    # Hists to plot by SM
-    feeVsTRUHistNames = []
-    feeVsSTUHistNames = []
-    fastORL0HistNames = []
-    fastORL0AmpHistNames = []
-    fastORL0LargeAmpHistNames = []
-    fastORL1HistNames = []
-    fastORL1AmpHistNames = []
-    fostORL1LargeAmpHistNames = []
-
-    # Others
-    otherEMCHistNames = []
-    nonEMCHistNames = []
+    # Group filenames
     for filename in outputHistNames:
-        if "GA" in filename:
-            gammaHistNames.append(filename)
-        elif "JE" in filename:
-            jetHistNames.append(filename)
-        elif "BKG" in filename:
-            bkgHistNames.append(filename)
-        elif "FEEvsTRU_SM" in filename:
-            feeVsTRUHistNames.append(filename)
-        elif "FEEvsSTU_SM" in filename:
-            feeVsSTUHistNames.append(filename)
-        elif "EMCal" in filename or "Fast" in filename:
-            otherEMCHistNames.append(filename)
-        else:
-            nonEMCHistNames.append(filename)
-    gammaHistNames.sort()
-    # If we do not sort more carefully, then it will go 1, 10, 11, .., 2, 3, 4,..
-    # since the numbers are contained in strings.
-    feeVsTRUHistNames = sorted(feeVsTRUHistNames, key=lambda x: int(x[x.find("_SM")+3:]))
-    feeVsSTUHistNames = sorted(feeVsSTUHistNames, key=lambda x: int(x[x.find("_SM")+3:]))
-    jetHistNames.sort()
-    bkgHistNames.sort()
-    otherEMCHistNames.sort()
-    nonEMCHistNames.sort()
+        for group in groupedHists:
+            if group.selectionPattern in filename:
+                group.histList.append(filename)
+                # Break so that we don't have multiple copies of hists!
+                break
 
-    # Generate links to histograms below
+    # Sort
+    for group in groupedHists:
+        if group.histList == []:
+            continue
+        if group.plotInGrid == True:
+            # If we do not sort more carefully, then it will go 1, 10, 11, .., 2, 3, 4,..
+            # since the numbers are contained in strings.
+            # NOTE: This find could cause sorting problems if plotInGridSelectionPattern is not in the hist names!
+            group.histList = sorted(group.histList, key=lambda x: int(x[x.find(group.plotInGridSelectionPattern) + len(group.plotInGridSelectionPattern):]))
+        else:
+            # Sort hists
+            group.histList.sort()
+
+    # Links to histograms
     htmlText = ""
     htmlText += "<div class=\"contentDivider\">\n"
-    htmlText += "<h3>" + "Hists by SM" + "</h3>\n"
-    if feeVsTRUHistNames != []:
-        htmlText += generateHtmlForTableLinks("FEE vs TRU By SM")
-    if feeVsSTUHistNames != []:
-        htmlText += generateHtmlForTableLinks("FEE vs STU By SM")
-    htmlText += "<h3>" + "Gamma Trigger" + "</h3>\n"
-    htmlText += generateHtml.generateHtmlForHistLinkOnRunPage(gammaHistNames, 12)
-    htmlText += "<h3>" + "Jet Trigger" + "</h3>\n"
-    htmlText += generateHtml.generateHtmlForHistLinkOnRunPage(jetHistNames, 12)
-    htmlText += "<h3>" + "Background" + "</h3>\n"
-    htmlText += generateHtml.generateHtmlForHistLinkOnRunPage(bkgHistNames, 12)
-    htmlText += "<h3>" + "Other EMC" + "</h3>\n"
-    htmlText += generateHtml.generateHtmlForHistLinkOnRunPage(otherEMCHistNames, 12)
-    htmlText += "<h3>" + "Non-EMC" + "</h3>\n"
-    htmlText += generateHtml.generateHtmlForHistLinkOnRunPage(nonEMCHistNames, 0)
+    # Get the proper label for the plots by SM section
+    # This depends on all SM plots being processed first
+    for group in groupedHists:
+        if group.plotInGrid == True and group.histList != []:
+            htmlText += "<h3>Plots By SM</h3>\n"
+            # We only want to make the label once
+            break
+
+    # Generate the actual links
+    for group in groupedHists:
+        # We don't want to generate any links if there are no hists in the category
+        if group.histList == []:
+            continue
+
+        if group.plotInGrid == True:
+            # Create a link to the group that will be displayed in a grid
+            htmlText += generateHtml.generateHtmlForPlotInGridLinks(group.name)
+        else:
+            # Create label for group
+            htmlText += "<h3>" + group.name + "</h3>\n"
+            startOfName = 12
+            if group.selectionPattern == "":
+                startOfName = 0
+            # Create links to all hists in the group
+            htmlText += generateHtml.generateHtmlForHistLinkOnRunPage(group.histList, startOfName)
+
+    # Close the div
     htmlText += "</div>\n"
 
-    # Plot histograms in same order as anchors
-    if feeVsTRUHistNames != []:
-        htmlText += generateHtmlForTable(feeVsTRUHistNames, "FEE vs TRU By SM", outputFormatting, nColumns = 2)
-    if feeVsSTUHistNames != []:
-        htmlText += generateHtmlForTable(feeVsSTUHistNames, "FEE vs STU By SM", outputFormatting, nColumns = 2)
-    htmlText += generateHtml.generateHtmlForHistOnRunPage(gammaHistNames, outputFormatting, 12)
-    htmlText += generateHtml.generateHtmlForHistOnRunPage(jetHistNames, outputFormatting, 12)
-    htmlText += generateHtml.generateHtmlForHistOnRunPage(bkgHistNames, outputFormatting, 12)
-    htmlText += generateHtml.generateHtmlForHistOnRunPage(otherEMCHistNames, outputFormatting, 12)
-    htmlText += generateHtml.generateHtmlForHistOnRunPage(nonEMCHistNames, outputFormatting, 0)
+    # Display histograms in the same order as anchors
+    for group in groupedHists:
+        # We don't want to add any images if there are no hists in the category
+        if group.histList == []:
+            continue
+
+        if group.plotInGrid == True:
+            # Add images in a grid
+            htmlText += generateHtml.generateHtmlForPlotInGrid(group.histList, group.name, outputFormatting, nColumns = 2)
+        else:
+            # This ensures that we don't cut the names of the non-EMC hists
+            startOfName = 12
+            if group.selectionPattern == "":
+                startOfName = 0
+            # Add images for this group
+            htmlText += generateHtml.generateHtmlForHistOnRunPage(group.histList, outputFormatting, startOfName)
 
     return htmlText
 
@@ -439,6 +410,7 @@ def setDrawOptions(hist):
 
     # PlotbySM plots
     if "SM" in hist.GetName():
+        pass
         #pad.SetLogz(logz)
         #hist.Scale(1. / events)
         
@@ -451,12 +423,14 @@ def setDrawOptions(hist):
         
     # Plot2D plots
     if "EdgePos" in hist.GetName():
+        pass
         #hist.Scale(1./events)
         #hist.GetZaxis().SetTitle("entries / events")
         #hist.Draw("colz")
 
     # Plot1D plots
     if "EMCTRQA_histFastORL" in hist.GetName() and "SM" not in hist.GetName(): 
+        pass
         #hist.Sumw2()
         #hist.Scale(1. / events)
         
@@ -495,6 +469,7 @@ def setDrawOptions(hist):
     # PlotMaxPatch plots
     # Ideally EMCal and DCal histos should be plot on the same plot
     if "MaxPatch" in hist.GetName():
+        pass
         #canvas.SetLogy(True)
         
         #legend = ROOT.TLegend(0.6, 0.9, 0.9, 0.7)

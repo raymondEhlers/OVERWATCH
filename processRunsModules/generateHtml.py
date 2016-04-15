@@ -128,6 +128,87 @@ def generateHtmlForHistOnRunPage(listOfHists, outputFormatting, startOfName):
     return returnText
 
 ###################################################
+class sortingGroup(object):
+    """ Class to handle sorting of objects
+    
+    """
+
+    def __init__(self, groupName, groupSelectionPattern, plotInGridSelectionPattern = "DO NOT PLOT IN GRID"):
+        """ Init """
+        self.name = groupName
+        self.selectionPattern = groupSelectionPattern
+        self.plotInGridSelectionPattern = plotInGridSelectionPattern
+        self.histList = []
+
+        # So that it is not necessary to check the list every time
+        if self.plotInGridSelectionPattern in self.selectionPattern:
+            self.plotInGrid = True
+        else:
+            self.plotInGrid = False
+
+###################################################
+def generateHtmlForPlotInGridLinks(groupName):
+    """ Generate a link to the grid for a gien group name.
+
+    """
+    returnText = '<a href="#' + groupName.replace(" ","") + '">' + groupName + '</a><br>\n'
+
+    return returnText
+
+###################################################
+def generateHtmlForPlotInGrid(listOfHists, groupName, outputFormatting, nColumns):
+    """ Generates a html table for a group of histograms
+
+    Args:
+        listOfHists (list): List of histogram filenames. Does not contain the path to the file. That is contained
+            in outputFormatting.
+        groupName (str): Name of the group of hists that are being plotted in the grid.
+        outputFormatting (str): Specially formatted string which contains a generic path to the printed histograms.
+            The string contains "%s" to print the filename contained in listOfHists. It also includes the file
+            extension. Ex: "img/%s.png"
+
+    Returns:
+        str: HTML containing names and image tags of **all** of the histograms in the list. An anchor is also included so that the grid can be linked.
+    
+    """
+
+    # Needed to count our position in the table
+    index = 0
+
+    # Label
+    returnText = "<a class=\"anchor\" name=\"" + groupName.replace(" ","") + "\"></a>\n"
+    returnText += "<h2>%s</h2>\n" % groupName
+
+    # Start table
+    returnText += "<table>\n"
+    # Loop over hists
+    for filename in listOfHists:
+        # Open row tag if necessary
+        if index % nColumns == 0:
+            returnText += "<tr>\n"
+
+        # Add image
+        outputFilename = outputFormatting % filename
+        # Setting the image width is important so that it fills all available space!
+        returnText += """<td>
+            <img width="100%%" src="%s" alt="%s">
+        </td>
+        """ % (outputFilename, outputFilename)
+
+        # Increment counter
+        index += 1
+
+        # Close row if necessary
+        # We increment before checking since we have now added an element
+        if index % nColumns == 0:
+            returnText += "</tr>\n"
+
+    # Close table
+    returnText += "</table>\n"
+
+    return returnText
+
+###################################################
 def interactiveFormText(partialMergeActionUrl, runNumber, subsystem, maxTime, minTimeRequested = -1, maxTimeRequested = -1, actualTimeBetween = -1):
     """ Generates the form that provides time dependent merge capabilities.
 
