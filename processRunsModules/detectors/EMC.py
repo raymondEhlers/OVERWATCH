@@ -54,12 +54,12 @@ def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem 
     # Plot by SM
     groupedHists.append(generateHtml.sortingGroup("FEE vs TRU", "FEEvsTRU_SM", "_SM"))
     groupedHists.append(generateHtml.sortingGroup("FEE vs STU", "FEEvsSTU_SM", "_SM"))
-    groupedHists.append(generateHtml.sortingGroup("FastOR L0", "FastORL0_SM", "_SM"))
-    groupedHists.append(generateHtml.sortingGroup("FastOR L0 Amp", "FastORL0Amp_SM", "_SM"))
-    groupedHists.append(generateHtml.sortingGroup("FastOR L0 Large Amp", "FastORL0LargeAmp_SM", "_SM"))
-    groupedHists.append(generateHtml.sortingGroup("FastOR L1", "FastORL1_SM", "_SM"))
-    groupedHists.append(generateHtml.sortingGroup("FastOR L1 Amp", "FastORL1Amp_SM", "_SM"))
-    groupedHists.append(generateHtml.sortingGroup("FastOR L1 Large Amp", "FastORL1LargeAmp_SM", "_SM"))
+    groupedHists.append(generateHtml.sortingGroup("FastOR L0 (hits with ADC > 0)", "FastORL0_SM", "_SM"))
+    groupedHists.append(generateHtml.sortingGroup("FastOR L0 Amp (hits weighted with ADC value)", "FastORL0Amp_SM", "_SM"))
+    groupedHists.append(generateHtml.sortingGroup("FastOR L0 Large Amp (hits above 400 ADC)", "FastORL0LargeAmp_SM", "_SM"))
+    groupedHists.append(generateHtml.sortingGroup("FastOR L1 (hits with ADC > 0)", "FastORL1_SM", "_SM"))
+    groupedHists.append(generateHtml.sortingGroup("FastOR L1 Amp (hits weighted with ADC value)", "FastORL1Amp_SM", "_SM"))
+    groupedHists.append(generateHtml.sortingGroup("FastOR L1 Large Amp (hits above 400 ADC)", "FastORL1LargeAmp_SM", "_SM"))
     # Trigger classes
     groupedHists.append(generateHtml.sortingGroup("Gamma Trigger", "GA"))
     groupedHists.append(generateHtml.sortingGroup("Jet Trigger", "JE"))
