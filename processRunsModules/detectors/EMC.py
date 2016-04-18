@@ -20,6 +20,9 @@ import numpy
 # Used for sorting and generating html
 from processRunsModules import generateHtml
 
+# For retrieving debug configuration
+from config.processingParams import processingParameters
+
 ######################################################################################################
 ######################################################################################################
 # Sorting
@@ -86,7 +89,10 @@ def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem 
             # If we do not sort more carefully, then it will go 1, 10, 11, .., 2, 3, 4,..
             # since the numbers are contained in strings.
             # NOTE: This find could cause sorting problems if plotInGridSelectionPattern is not in the hist names!
+            # However, this would mean that the object has been set up incorrectly
             group.histList = sorted(group.histList, key=lambda x: int(x[x.find(group.plotInGridSelectionPattern) + len(group.plotInGridSelectionPattern):]))
+            # NOTE: Reverse so that we plot SMs in descending order
+            group.histList.reverse()
         else:
             # Sort hists
             group.histList.sort()
@@ -110,7 +116,9 @@ def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem 
 
         if group.plotInGrid == True:
             # Create a link to the group that will be displayed in a grid
-            htmlText += generateHtml.generateHtmlForPlotInGridLinks(group.name)
+            # Seperate out into EMCal and DCal
+            htmlText += generateHtml.generateHtmlForPlotInGridLinks(group.name + " - EMCal")
+            htmlText += generateHtml.generateHtmlForPlotInGridLinks(group.name + " -  DCal")
         else:
             # Create label for group
             htmlText += "<h3>" + group.name + "</h3>\n"
@@ -131,7 +139,8 @@ def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem 
 
         if group.plotInGrid == True:
             # Add images in a grid
-            htmlText += generateHtml.generateHtmlForPlotInGrid(group.histList, group.name, outputFormatting, nColumns = 2)
+            htmlText += generateHtml.generateHtmlForPlotInGrid(group.histList[8:], group.name + " - EMCal", outputFormatting, nColumns = 2)
+            htmlText += generateHtml.generateHtmlForPlotInGrid(group.histList[:8], group.name + " -  DCal", outputFormatting, nColumns = 2)
         else:
             # This ensures that we don't cut the names of the non-EMC hists
             startOfName = 12
@@ -349,8 +358,9 @@ def properlyPlotPatchSpectra(hist):
     if any(substring in hist.GetName() for substring in ["EMCalPatchEnergy", "EMCalPatchAmp", "EMCalMaxPatchAmp", "DCalPatchAmp", "DCalPatchEnergy", "DCalMaxPatchAmp"]):
         gPad.SetLogy()
         gPad.SetGrid(1,1)
-        hist.SetStats(False)
     else:
+        if processingParameters.debug == False:
+            hist.SetStats(False)
         gPad.SetLogy(0)
         gPad.SetGrid(0,0)
 
