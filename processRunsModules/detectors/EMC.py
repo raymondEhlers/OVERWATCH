@@ -90,9 +90,8 @@ def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem 
             # since the numbers are contained in strings.
             # NOTE: This find could cause sorting problems if plotInGridSelectionPattern is not in the hist names!
             # However, this would mean that the object has been set up incorrectly
-            group.histList = sorted(group.histList, key=lambda x: int(x[x.find(group.plotInGridSelectionPattern) + len(group.plotInGridSelectionPattern):]))
             # NOTE: Reverse so that we plot SMs in descending order
-            group.histList.reverse()
+            group.histList = sorted(group.histList, key=lambda x: int(x[x.find(group.plotInGridSelectionPattern) + len(group.plotInGridSelectionPattern):]), reverse=True)
         else:
             # Sort hists
             group.histList.sort()

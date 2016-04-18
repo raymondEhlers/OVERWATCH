@@ -81,6 +81,17 @@ img {
     -moz-box-shadow: 1px 2px 1px #d1d1d1;
     box-shadow: 1px 2px 1px #d1d1d1;
 }
+
+/*The "overflow: auto;" is a hack to keep the container div from collapsing to 0 height
+See: https://stackoverflow.com/q/218760 */
+.gridContainer {
+    overflow: auto;
+}
+.gridImageContainer {
+    float: left;
+    padding: 0px 1%;
+}
+
 #contentContainer {
     /*background-color: #CAE4F1;*/
     padding-top: 60px;

@@ -173,38 +173,28 @@ def generateHtmlForPlotInGrid(listOfHists, groupName, outputFormatting, nColumns
     """
 
     # Needed to count our position in the table
-    index = 0
+    maxImageWidth = 100/nColumns
+    # Give a 4% margin (1% on left and right -> 2% between the images)
+    maxImageWidth = maxImageWidth - maxImageWidth*.04
 
     # Label
     returnText = "<a class=\"anchor\" name=\"" + groupName.replace(" ","") + "\"></a>\n"
     returnText += "<h2>%s</h2>\n" % groupName
 
-    # Start table
-    returnText += "<table>\n"
+    # Start container div
+    returnText += "<div class=\"gridContainer\">\n"
     # Loop over hists
     for filename in listOfHists:
-        # Open row tag if necessary
-        if index % nColumns == 0:
-            returnText += "<tr>\n"
-
         # Add image
         outputFilename = outputFormatting % filename
         # Setting the image width is important so that it fills all available space!
-        returnText += """<td>
-            <img width="100%%" src="%s" alt="%s">
-        </td>
-        """ % (outputFilename, outputFilename)
+        returnText += """<div style="width: %f%%" class="gridImageContainer">
+            <img src="%s" alt="%s">
+        </div>
+        """ % (maxImageWidth, outputFilename, outputFilename)
 
-        # Increment counter
-        index += 1
-
-        # Close row if necessary
-        # We increment before checking since we have now added an element
-        if index % nColumns == 0:
-            returnText += "</tr>\n"
-
-    # Close table
-    returnText += "</table>\n"
+    # Close container div
+    returnText += "</div>\n"
 
     return returnText
 
