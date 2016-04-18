@@ -63,6 +63,11 @@ body {
     /* The url is calculated relative to the location of the css file. Since it is the same dir, it will work in both dynamic and static cases. */
     background-image: url("cream-pixels.png"), linear-gradient(90deg, #B2DCF1, #CAE4F1 15%, #CAE4F1 85%, #B2DCF1);
 }
+
+/* Ensures that headers do not overflow the width of the page */
+h2 {
+    word-wrap: break-word;
+}
 /* Handle the url in the case that static pages are used */
 /*.staticBody {
     background-color: #CAE4F1;
@@ -95,8 +100,7 @@ See: https://stackoverflow.com/q/218760 */
 #contentContainer {
     /*background-color: #CAE4F1;*/
     padding-top: 60px;
-    /*width: 800px;*/
-    width: 92vw;
+    width: 90vw;
     margin: 0 auto;
     height: 100vh;
 }
@@ -131,11 +135,13 @@ a.anchor {
 }
 
 /* Contact page link location */
-#contactLink {
-    width: 450px;
+.contactLinkContainer {
     margin: 0 auto;
     margin-top: 2cm;
     margin-bottom: 1cm;
+}
+.contactLinkParagraph {
+    text-align: center;
 }
 
 /* Created at: http://css3buttongenerator.com/ */

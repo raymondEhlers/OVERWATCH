@@ -118,7 +118,7 @@ def writeToWebPage(dirPrefix, runDir, subsystem, outputHistNames, outputFormatti
        
     # Close up html page
     if generateTemplate == False:
-        htmlText += """<div id="contactLink"><p><a href="%s/contact">Information, documentation, contact, and suggestions</a></p></div></div></body></html>""" % relativePath
+        htmlText += """<div class="contactLinkContainer"><p class="contactLinkParagraph"><a href="%s/contact">Information, documentation, contact, and suggestions</a></p></div></div></body></html>""" % relativePath
     else:
         htmlText += "{% endblock %}"
 
