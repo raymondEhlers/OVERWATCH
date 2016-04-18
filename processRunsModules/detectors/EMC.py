@@ -30,6 +30,42 @@ from config.processingParams import processingParameters
 ######################################################################################################
 
 ###################################################
+def sortSMsInPhysicalOrder(histList):
+    """ Sort the SMs according to their physical order in which they are constructed.
+
+    The order is bottom-top, left-right. It is as follows::
+
+        EMCal:
+        10 11
+        8  9
+        6  7
+        4  5
+        2  3
+        0  1
+
+        DCal:
+        18 19
+        16 17
+        14 15
+        12 13
+
+    Args:
+        histList (list): List of histogram names which are sorted in reversed order
+            (ie 19, 18, 17, ..).
+
+    Returns:
+        list: Contains the histogram names sorted according to the scheme specified above
+
+    """
+
+    tempList = []
+    for i in range(0, len(histList), 2):
+        tempList.append(histList[i+1])
+        tempList.append(histList[i])
+
+    return tempList
+
+###################################################
 def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem = "EMC"):
     """ Sorts and displays EMC histograms.
 
@@ -92,6 +128,7 @@ def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem 
             # However, this would mean that the object has been set up incorrectly
             # NOTE: Reverse so that we plot SMs in descending order
             group.histList = sorted(group.histList, key=lambda x: int(x[x.find(group.plotInGridSelectionPattern) + len(group.plotInGridSelectionPattern):]), reverse=True)
+            group.histList = sortSMsInPhysicalOrder(group.histList)
         else:
             # Sort hists
             group.histList.sort()
