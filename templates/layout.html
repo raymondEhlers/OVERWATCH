@@ -9,31 +9,36 @@
         {% block head %}{% endblock %}
     </head>
     <body onload="{% block onLoad %}{% endblock %}removeFlashes()">
-        <div class="header">
-            <div id="firstLineOfHeader">
-                <p class="headerParagraph">
-                    <span style="padding-left:5px;"></span>
-                {%- if current_user.is_authenticated -%}
-                    <a href="{{ url_for("index") }}">Return to Run List</a>
-                {%- else -%}
-                    <a href="{{ url_for("login") }}">Home</a>
-                {%- endif -%}
-                <span style="padding-left:1em;padding-right:1em;">-</span><a href="#topOfPage">Top of Page</a>
-                <span style="float:right;padding-right:5px;">
-                    {% if current_user.is_authenticated -%}
-                        Currently logged in as user {{ current_user.id }}. <a href="{{ url_for("logout") }}">Logout</a>
+        <header class="header">
+            <div class="firstLineOfHeader">
+                <div class="headerLinksLeft">
+                    {%- if current_user.is_authenticated -%}
+                        <a class="headerLink" href="{{ url_for("index") }}">Return to Run List</a>
                     {%- else -%}
-                        Not currently logged in. <a href="{{ url_for("login") }}">Please login</a>
-                    {%- endif %}
-                </span>
-                </p>
+                        <a class="headerLink" href="{{ url_for("login") }}">Home</a>
+                    {%- endif -%}
+                    <a class="headerLink" href="#topOfPage">Top of Page</a>
+                </div>
+                <div class="contentThatCanBeHidden">
+                    <a href="#" class="menuIcon"></a>
+                    <div class="userInformation">
+                        <p class="headerParagraph">
+                        {%- if current_user.is_authenticated -%}
+                            User: {{ current_user.id }} <a class="headerLink" href="{{ url_for("logout") }}">Logout</a>
+                        {%- else -%}
+                            Not logged in. <a class="headerLink" href="{{ url_for("login") }}">Please login</a>
+                        {%- endif %}
+                        </p>
+                        <!-- Need to add time dependent merge here somehow! -->
+                    </div>
+                </div>
             </div>
             <div id="timeDependentMergeContainer">
                 <div id="timeDependentMergeDiv">
                     {% block secondLineInHeader %}{% endblock %}
                 </div>
             </div>
-        </div>
+        </header>
         {# Defines the body block #}
         <div id="contentContainer">
             {# Flask flash based on: http://cssreset.com/creating-fixed-headers-with-css/ #}

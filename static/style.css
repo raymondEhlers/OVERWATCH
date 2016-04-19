@@ -2,38 +2,65 @@
 /* Most of these values are more or less hacks. It is usually easiest to understand each setting */
 /* from inspecdting elements when viewing the pages in the browser */
 .header {
-    background-color: #003E72;
-    /*background-color: #D9EDF7;*/
-    border:1px solid #CCC;
-    border-color: #BCE8F1;
-    border-radius: 4px;
-    /* 100% -> 98% to handle right most content being cut off */
-    width: 98%;
-    margin:0px auto;
-    position: fixed;
+    /* Position */
     top: 0px;
+    left: 0px;
+    position: fixed;
+    margin: 0px auto;
+    width: 100%;
     /* Help mobile? See: http://www.sitepoint.com/10-ways-make-website-mobile-friendly/ */
     max-width: 100%;
-    min-wdth: 800px;
-    word-wrap: break-word;
+    /*min-wdth: 800px;*/
+    /*word-wrap: break-word;*/
+    /* Appearance */
+    background-color: #003E72;
+    border-bottom: 1px solid #BCE8F1;
+    /*border-bottom-left-radius: 4px;
+    border-bottom-right-radius: 4px;*/
+    /* Set text color */
     color: white;
 }
-.header a:link {
-    color: white;
+.firstLineOfHeader {
+    /* The "overflow: auto;" is a hack to keep the container div from collapsing to 0 height
+     * See: https://stackoverflow.com/q/218760 */
+    overflow: auto;
 }
-.header a:visited {
+.headerLinksLeft {
+    float: left;
+    margin-left: 5px;
+}
+/* Contains content to the right of the header */
+.contentThatCanBeHidden {
+    float: right;
+    margin-right: 5px;
+}
+.headerLink {
     color: white;
+    padding: 0 8px;
+}
+.headerParagraph {
+    padding: 0;
+    margin: 0 auto;
+}
+/* Handle smaller screens */
+.menuIcon {
+    display: hidden;
+    width: 40px;
+    height: 40px;
+    background: #4C8FEC url("menuIcon.png") center;
+
+    /* The png is much larger than we need, so we have to scale it.
+     * See: https://stackoverflow.com/a/16080995 */
+    background-size: 100%;
 }
 
+
 /* Help mobile? */
-@media screen and (max-width: 500px) {
+/*@media screen and (max-width: 500px) {
     .header {
         position: static;
     }
-}
-.headerParagraph {
-    margin: 0 auto;
-}
+}*/
 #timeDependentMergeContainer {
     margin-top: 5px;
     background-color: #6AADE4;
@@ -64,15 +91,10 @@ body {
     background-image: url("cream-pixels.png"), linear-gradient(90deg, #B2DCF1, #CAE4F1 15%, #CAE4F1 85%, #B2DCF1);
 }
 
-/* Ensures that headers do not overflow the width of the page */
 h2 {
+    /* Ensures that headers do not overflow the width of the page */
     word-wrap: break-word;
 }
-/* Handle the url in the case that static pages are used */
-/*.staticBody {
-    background-color: #CAE4F1;
-    background-image: url("cream-pixels.png"), linear-gradient(90deg, #B2DCF1, #CAE4F1 15%, #CAE4F1 85%, #B2DCF1);
-}*/
 
 img {
     /* Help mobile? */
@@ -87,9 +109,9 @@ img {
     box-shadow: 1px 2px 1px #d1d1d1;
 }
 
-/*The "overflow: auto;" is a hack to keep the container div from collapsing to 0 height
-See: https://stackoverflow.com/q/218760 */
 .gridContainer {
+    /* The "overflow: auto;" is a hack to keep the container div from collapsing to 0 height
+     * See: https://stackoverflow.com/q/218760 */
     overflow: auto;
 }
 .gridImageContainer {
@@ -204,5 +226,49 @@ a.anchor {
 /* Used on the processQA page */
 .hideFunctionDocstring {
     display: none;
+}
+
+/* Media queries */
+@media screen and (max-width: 600px) {
+    /* Make the body wider */
+    #contentContainer {
+        width: 100vw;
+    }
+    /* Show the menu icon */
+    .menuIcon {
+        display: inline-block;
+    }
+    .contentThatCanBeHidden:hover .userInformation {
+        display: block;
+    }
+    /* Position the menu icon */
+    .contentThatCanBeHidden {
+        padding-right: 20px;
+        padding-top: 10px;
+    }
+    /* Hide user information links */
+    .userInformation {
+        display: none;
+        position: absolute;
+        padding: 20px;
+        border: 5px solid #444;
+        background: #000;
+        top: 60px;
+        right: 25px;
+    }
+    /*  Vertically center text on the left
+     *  See: https://stackoverflow.com/a/6490283 */
+    .headerLinksLeft {
+        position: absolute;
+        top: 50%;
+        transform: translate(0%, -50%)
+    }
+    /*.firstLineOfHeader {
+        display: flex;
+        justify-content: center;
+    }
+    .headerLinksLeft {
+        align-self: center;
+    }*/
 }
 
