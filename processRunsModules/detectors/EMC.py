@@ -12,10 +12,13 @@ from __future__ import print_function
 from builtins import range
 
 # Used for QA functions
-from ROOT import TH1, TH1F, TProfile, TF1, TAxis, gPad, TAxis, TGaxis, SetOwnership
+from ROOT import ROOT, TH1, TH1F, TProfile, TF1, TAxis, gPad, TAxis, TGaxis, SetOwnership, TPaveText
 
 # Used for the outlier detection function
 import numpy
+
+# Used to enumerate possible names in a list
+import itertools
 
 # Used for sorting and generating html
 from processRunsModules import generateHtml
@@ -153,7 +156,9 @@ def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem 
         if group.plotInGrid == True:
             # Create a link to the group that will be displayed in a grid
             # Seperate out into EMCal and DCal
+            # EMCal
             htmlText += generateHtml.generateHtmlForPlotInGridLinks(group.name + " - EMCal")
+            # DCal
             htmlText += generateHtml.generateHtmlForPlotInGridLinks(group.name + " -  DCal")
         else:
             # Create label for group
@@ -175,7 +180,10 @@ def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem 
 
         if group.plotInGrid == True:
             # Add images in a grid
+            # Seperate out into EMCal and DCal
+            # EMCal
             htmlText += generateHtml.generateHtmlForPlotInGrid(group.histList[8:], group.name + " - EMCal", outputFormatting, nColumns = 2)
+            # DCal
             htmlText += generateHtml.generateHtmlForPlotInGrid(group.histList[:8], group.name + " -  DCal", outputFormatting, nColumns = 2)
         else:
             # This ensures that we don't cut the names of the non-EMC hists
@@ -449,78 +457,94 @@ def labelSupermodules(hist):
 # Add drawing options to plots
 # Plots come in 4 types: PlotbySM, Plot2D, Plot1D, PlotMaxMatch
 ###################################################
-def setDrawOptions(hist):
+def setEMCDrawOptions(hist):
     # somehow need to get the number of events; it is stored in the below histogram
     #if hist.GetName() == "EMCTRQA_histEvents":
     #    events = hist.GetBinContent(1)
 
     # PlotbySM plots
     if "SM" in hist.GetName():
-        pass
         #pad.SetLogz(logz)
         #hist.Scale(1. / events)
+        labelSupermodules(hist)
         
         # for FEE plots, set a different range
-        #if "FEE" in hist.GetName():
-        #    hist.GetXaxis().SetRangeUser(0, 250)
-        #    hist.GetYaxis().SetRangeUser(0, 20)
-            
-        #hist.Draw("colz")
+        if "FEE" in hist.GetName():
+            hist.GetXaxis().SetRangeUser(0, 250)
+            hist.GetYaxis().SetRangeUser(0, 20)
         
     # Plot2D plots
     if "EdgePos" in hist.GetName():
-        pass
         #hist.Scale(1./events)
-        #hist.GetZaxis().SetTitle("entries / events")
-        #hist.Draw("colz")
+        hist.GetZaxis().SetTitle("entries / events")
 
-    # Plot1D plots
-    if "EMCTRQA_histFastORL" in hist.GetName() and "SM" not in hist.GetName(): 
-        pass
-        #hist.Sumw2()
+    # Check summary FastOR hists
+    # First determine possible fastOR names
+    fastORLevels = ["EMCTRQA_histFastORL0", "EMCTRQA_histFastORL1"]
+    fastORTypes = ["", "Amp", "LargeAmp"]
+    possibleFastORNames = [a + b for a,b in list(itertools.product(fastORLevels, fastORTypes))]
+    #print(possibleFastORNames)
+    #if "FastORL" in hist.GetName() and "SM" not in hist.GetName(): 
+    if any(substring == hist.GetName() for substring in possibleFastORNames):
+        # Set threshold for printing
+        threshold = 0
+        if "LargeAmp" in hist.GetName():
+            threshold = 7e-7
+        elif "Amp" in hist.GetName():
+            threshold = 10000
+        else:
+            #threshold = 3e-3
+            threshold = 50
+        
+        hist.Sumw2()
         #hist.Scale(1. / events)
+
+        # Set style
+        hist.SetMarkerStyle(ROOT.kFullCircle)
+        hist.SetMarkerSize(0.8)
+        hist.SetMarkerColor(ROOT.kBlue+1)
+        hist.SetLineColor(ROOT.kBlue+1)
         
-        #hist.SetMarkerStyle(ROOT.kFullCircle)
-        #hist.SetMarkerSize(0.8)
-        #hist.SetMarkerColor(ROOT.kBlue+1)
-        #hist.SetLineColor(ROOT.kBlue+1)
-        
-        #absIdList = []
-        
-        #for ibin in range(1, hist.GetXaxis().GetNbins()+1):
-        #    if hist.GetBinContent(ibin) > th:
-        #        absIdList.append(ibin-1)
+        # Find bins above the threshold
+        absIdList = []
+        for iBin in range(1, hist.GetXaxis().GetNbins()+1):
+            if hist.GetBinContent(iBin) > threshold:
+                # Translate back from bin number (1, Nbins() + 1) to fastOR ID (0, Nbins())
+                absIdList.append(iBin - 1)
             
-        #pave = ROOT.TPaveText(0.1, 0.7, 0.9, 0.2, "NB NDC")
-        #pave.SetTextAlign(13)
-        #pave.SetTextFont(43)
-        #pave.SetTextSize(12)
-        #pave.SetFillStyle(0)
-        #pave.SetTextColor(ROOT.kRed)
-        #pave.SetBorderSize(0)
+        # Create pave text to display above threshold values
+        pave = TPaveText(0.1, 0.7, 0.9, 0.2, "NB NDC")
+        pave.SetTextAlign(13)
+        pave.SetTextFont(43)
+        pave.SetTextSize(12)
+        pave.SetFillStyle(0)
+        pave.SetTextColor(ROOT.kRed)
+        pave.SetBorderSize(0)
+        SetOwnership(pave, False)
         
-        #absIdText = ""
-        
-        #for absId in absIdList:
-        #    if absIdText:
-        #        absIdText = "{0}, {1}".format(absIdText, absId)
-        #    else:
-        #        absIdText = "{0}".format(absId)
-        #    if len(absIdText) > 110:
-        #        pave.AddText(absIdText)
-        #        print absIdText
-        #        absIdText = ""
-        #pave.Draw()
+        # Add above threshold values to the pave text
+        absIdText = ""
+        for absId in absIdList:
+            if absIdText:
+                absIdText = "{0}, {1}".format(absIdText, absId)
+            else:
+                absIdText = "{0}".format(absId)
+            if len(absIdText) > 110:
+                pave.AddText(absIdText)
+                #print(absIdText)
+                absIdText = ""
+        print(hist.GetName())
+        pave.Draw("same")
     
     # PlotMaxPatch plots
     # Ideally EMCal and DCal histos should be plot on the same plot
     if "MaxPatch" in hist.GetName():
-        pass
-        #canvas.SetLogy(True)
+        gPad.SetLogy(True)
         
         #legend = ROOT.TLegend(0.6, 0.9, 0.9, 0.7)
         #legend.SetBorderSize(0)
         #legend.SetFillStyle(0)
+        #SetOwnership(legend, False)
         #for det,col,marker,opt in zip(detectors,colors,markers,options):
         #    hist.Sumw2()
         #    hist.SetMarkerSize(0.8)
