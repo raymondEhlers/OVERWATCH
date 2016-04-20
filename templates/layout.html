@@ -20,8 +20,9 @@
                     <a class="headerLink" href="#topOfPage">Top of Page</a>
                 </div>
                 <div class="contentThatCanBeHidden">
-                    <a href="#" class="menuIcon"></a>
-                    <div class="userInformation">
+                    <!-- "#/" prevents a jump when clicked. See: https://stackoverflow.com/a/21717034 -->
+                    <a href="#/" class="menuIcon"></a>
+                    <div class="userInformation thisCanBeHidden">
                         <p class="headerParagraph">
                         {%- if current_user.is_authenticated -%}
                             User: {{ current_user.id }} <a class="headerLink" href="{{ url_for("logout") }}">Logout</a>
@@ -29,10 +30,16 @@
                             Not logged in. <a class="headerLink" href="{{ url_for("login") }}">Please login</a>
                         {%- endif %}
                         </p>
-                        <!-- Need to add time dependent merge here somehow! -->
                     </div>
-                </div>
-            </div>
+                    <!-- Need to add time dependent merge here somehow! -->
+                    <div style="float:right;width:100%;clear:both;" class="thisCanBeHidden">
+                        <p class="headerParagraph">Time dependent controls would go here!</p>
+                    </div>
+                    <div style="float:right;width:200px;clear:both;" class="thisCanBeHidden">
+                        <p class="headerParagraph">Next element</p>
+                    </div>
+                 </div>
+             </div>
             <div id="timeDependentMergeContainer">
                 <div id="timeDependentMergeDiv">
                     {% block secondLineInHeader %}{% endblock %}

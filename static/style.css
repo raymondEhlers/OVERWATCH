@@ -31,6 +31,8 @@
 }
 /* Contains content to the right of the header */
 .contentThatCanBeHidden {
+}
+.userInformation {
     float: right;
     margin-right: 5px;
 }
@@ -237,7 +239,12 @@ a.anchor {
     /* Show the menu icon */
     .menuIcon {
         display: inline-block;
+        float: right;
     }
+    .menuIcon:hover {
+        background-color: #444;
+    }
+    /* Makes the class viewable when hover is active */
     .contentThatCanBeHidden:hover .userInformation {
         display: block;
     }
@@ -247,7 +254,7 @@ a.anchor {
         padding-top: 10px;
     }
     /* Hide user information links */
-    .userInformation {
+    .userInformation, .contentThatCanBeHidden:active .userInformation {
         display: none;
         position: absolute;
         padding: 20px;
