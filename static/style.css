@@ -30,19 +30,37 @@
     margin-left: 5px;
 }
 /* Contains content to the right of the header */
-.contentThatCanBeHidden {
+.responsiveContentContainer {
 }
-.userInformation {
+.responsiveContent {
+    /*float: right;*/
+    /*margin-right: 5px;*/
+}
+.responsiveElement {
     float: right;
-    margin-right: 5px;
+    clear: both;
+}
+.responsiveTimeDependentMerge {
+    width: 100%;
+    border-top: 3.5px solid #4588ba;
+    background-color: #6AADE4;
+    /* test */
+    text-align: center;
+}
+.responsiveQALinkContainer {
+    display: none;
 }
 .headerLink {
     color: white;
-    padding: 0 8px;
+    padding: 0px 10px;
 }
 .headerParagraph {
-    padding: 0;
-    margin: 0 auto;
+    padding: 0px;
+    margin-top: 0px;
+    margin-bottom: 0px;
+    /*margin: 0 5px;
+    margin-right: 5px;*/
+    clear: none;
 }
 /* Handle smaller screens */
 .menuIcon {
@@ -55,6 +73,13 @@
      * See: https://stackoverflow.com/a/16080995 */
     background-size: 100%;
 }
+label {
+    cursor: pointer;
+}
+#menuToggle {
+    /* Hide the checkbox */
+    display: none;
+}
 
 
 /* Help mobile? */
@@ -63,24 +88,19 @@
         position: static;
     }
 }*/
-#timeDependentMergeContainer {
+/*#timeDependentMergeContainer {
     margin-top: 5px;
     background-color: #6AADE4;
     border-top: 3px solid #4588ba;
     border-bottom-left-radius: 4px;
     border-bottom-right-radius: 4px;
-}
-#timeDependentMergeDiv {
-    width: 760px;
-    margin: 0 auto;
-    /* Help mobile? */
+}*/
+#timeDependentMergeControls {
+    /* To center the controls */
+    display: inline-block;
+    margin: 0px auto;
     max-width: 100%;
     word-wrap: break-word;
-}
-#timeDependentMergeControls {
-    margin: auto;
-    margin-top: 0px;
-    margin-bottom: 0px;
 }
 #timeSliceResults {
     margin-top: 2px;
@@ -234,48 +254,68 @@ a.anchor {
 @media screen and (max-width: 600px) {
     /* Make the body wider */
     #contentContainer {
-        width: 100vw;
+        width: 95vw;
     }
     /* Show the menu icon */
     .menuIcon {
         display: inline-block;
         float: right;
+        margin-top: 10px;
+        margin-right: 20px;
+        margin-bottom: 10px;
     }
-    .menuIcon:hover {
+    /* Selects the sibling element (menuIcon) located after the checkbox */
+    #menuToggle:checked + .menuIcon {
         background-color: #444;
     }
-    /* Makes the class viewable when hover is active */
-    .contentThatCanBeHidden:hover .userInformation {
+    /* Selects responsiveContent class after menuToggle */
+    #menuToggle:checked ~ .responsiveContent {
+        /* Makes responsive content visible when clicked */
         display: block;
     }
     /* Position the menu icon */
-    .contentThatCanBeHidden {
-        padding-right: 20px;
-        padding-top: 10px;
+    .responsiveContentContainer {
+        /*padding-right: 20px;
+        padding-top: 10px;*/
     }
-    /* Hide user information links */
-    .userInformation, .contentThatCanBeHidden:active .userInformation {
+    /* Hides responsive links until the menu is opened */
+    .responsiveContent {
         display: none;
         position: absolute;
         padding: 20px;
         border: 5px solid #444;
         background: #000;
-        top: 60px;
-        right: 25px;
+        top: 50px;
+        right: 20px;
+        max-width: 75%;
     }
     /*  Vertically center text on the left
      *  See: https://stackoverflow.com/a/6490283 */
     .headerLinksLeft {
         position: absolute;
         top: 50%;
-        transform: translate(0%, -50%)
+        transform: translate(0%, -50%);
     }
-    /*.firstLineOfHeader {
-        display: flex;
-        justify-content: center;
+    .responsiveElement {
+        float: none;
+        clear: none;
     }
-    .headerLinksLeft {
-        align-self: center;
-    }*/
+    .responsiveQALinkContainer {
+        display: block;
+        text-align: center;
+    }
+    .headerParagraph {
+        text-align: center;
+    }
+    .responsiveTimeDependentMerge {
+        background-color: #444;
+        border: 3px solid #4588ba;
+    }
+    .basicQALink {
+        display: none;
+    }
+    .firstLineOfHeader {
+        border-bottom: 3px solid #4588ba;
+    }
 }
 

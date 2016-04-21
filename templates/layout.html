@@ -19,32 +19,42 @@
                     {%- endif -%}
                     <a class="headerLink" href="#topOfPage">Top of Page</a>
                 </div>
-                <div class="contentThatCanBeHidden">
+                <div class="responsiveContentContainer">
+                    {# Based on http://www.outofscope.com/css-only-menu-toggle-no-javascript-required/ #}
+                    <input type="checkbox" id="menuToggle"/>
+                    {# onclick hack from: http://stackoverflow.com/a/6472181 #}
+                    <label class="menuIcon" for="menuToggle" onclick=""><div></div></label>
                     <!-- "#/" prevents a jump when clicked. See: https://stackoverflow.com/a/21717034 -->
-                    <a href="#/" class="menuIcon"></a>
-                    <div class="userInformation thisCanBeHidden">
-                        <p class="headerParagraph">
+                    <!--<a href="#/" class="menuIcon"></a>-->
+                    {# Adapted from http://blog.teamtreehouse.com/create-an-absolute-basic-mobile-css-responsive-navigation-menu #}
+                    <div class="responsiveContent">
+                        <p class="headerParagraph responsiveElement">
                         {%- if current_user.is_authenticated -%}
                             User: {{ current_user.id }} <a class="headerLink" href="{{ url_for("logout") }}">Logout</a>
                         {%- else -%}
                             Not logged in. <a class="headerLink" href="{{ url_for("login") }}">Please login</a>
                         {%- endif %}
                         </p>
-                    </div>
-                    <!-- Need to add time dependent merge here somehow! -->
-                    <div style="float:right;width:100%;clear:both;" class="thisCanBeHidden">
-                        <p class="headerParagraph">Time dependent controls would go here!</p>
-                    </div>
-                    <div style="float:right;width:200px;clear:both;" class="thisCanBeHidden">
-                        <p class="headerParagraph">Next element</p>
+                        <!-- Need to add time dependent merge here somehow! -->
+                        <!--<div style="width:100%;" class="responsiveElement">-->
+                        <div class="responsiveTimeDependentMerge responsiveElement">
+                            <!--<p class="headerParagraph">Time dependent controls would go exactly right here!</p>-->
+                            {# Centered via: https://stackoverflow.com/a/6353345 #}
+                            {% block secondLineInHeader %}{% endblock %}
+                        </div>
+             
+                        <!--<div style="float:right;width:200px;clear:both;" class="responsiveQALink responsiveElement">-->
+                        <div class="responsiveQALinkContainer responsiveElement">
+                            <a class="headerLink" href="{{ url_for("processQA") }}">Basic QA</a>
+                        </div>
                     </div>
                  </div>
              </div>
-            <div id="timeDependentMergeContainer">
-                <div id="timeDependentMergeDiv">
-                    {% block secondLineInHeader %}{% endblock %}
-                </div>
-            </div>
+             <!--<div id="timeDependentMergeContainer">
+                 <div id="timeDependentMergeDiv">
+                     {# block secondLineInHeader %}{% endblock #}
+                 </div>
+             </div>-->
         </header>
         {# Defines the body block #}
         <div id="contentContainer">
