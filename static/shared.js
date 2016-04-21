@@ -38,6 +38,18 @@ function scrollIfHashExists(inputValue) {
         console.log("Scrolling to " + scrollValue);
         /* scrollTo(x, y) */
         window.scrollTo(0, scrollValue);
+
+        /* Display the merge information if on mobile by showing the menu. */
+        /* The menu icon will be floating right if we are on mobile. */
+        /* NOTE: There should only be one menuIcon, so we should be okay directly accessing it. */
+        var menuIcon = document.getElementsByClassName("menuIcon");
+        if (menuIcon.length === 1 && menuIcon[0] !== null && window.getComputedStyle(menuIcon[0]).float === "right")
+        {
+            /* Show the menu by checking the checkmark so that the partial merge information is shown */
+            console.log("Showing menu!");
+            var menuToggle = document.getElementById("menuToggle");
+            menuToggle.checked = true;
+        }
     }
 }
 

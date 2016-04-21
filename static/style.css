@@ -44,8 +44,9 @@
     width: 100%;
     border-top: 3.5px solid #4588ba;
     background-color: #6AADE4;
-    /* test */
     text-align: center;
+    /* Create some spacing below the links in the header */
+    margin-top: 3px;
 }
 .responsiveQALinkContainer {
     display: none;
@@ -64,7 +65,7 @@
 }
 /* Handle smaller screens */
 .menuIcon {
-    display: hidden;
+    /*display: hidden;*/
     width: 40px;
     height: 40px;
     background: #4C8FEC url("menuIcon.png") center;
@@ -102,7 +103,7 @@ label {
     max-width: 100%;
     word-wrap: break-word;
 }
-#timeSliceResults {
+.timeSliceResults {
     margin-top: 2px;
     text-align: center;
 }
@@ -244,10 +245,19 @@ a.anchor {
 .centerTableElement {
     text-align: center;
 }
+.qaControlsContainer {
+    /* Determined by measuring the size when displaying a four digit time next to the control */
+    min-width: 180px;
+    /* Ensures the the elements are shown side by side */
+    display: inline-block;
+}
 
 /* Used on the processQA page */
 .hideFunctionDocstring {
     display: none;
+}
+.showFunctionDocstring {
+    word-wrap: break-word;
 }
 
 /* Media queries */
@@ -310,6 +320,9 @@ a.anchor {
     .responsiveTimeDependentMerge {
         background-color: #444;
         border: 3px solid #4588ba;
+    }
+    .timeSliceResults {
+        border-top: 3px solid #4588ba;
     }
     .basicQALink {
         display: none;

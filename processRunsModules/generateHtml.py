@@ -270,10 +270,10 @@ def interactiveFormText(partialMergeActionUrl, runNumber, subsystem, maxTime, mi
     <input type="hidden" name="runNumber" value="%i"/>
     <input type="hidden" name="subsystem" value="%s"/>
     <input type="hidden" name="scrollAmount" id="scrollAmount" value=0 />
-    Min Time: <input name="minTime" id="minTimeID" type="range" min="0" max="%f" value="0" oninput="minTimeOutputId.value= minTimeID.value"/>
-    <output name="minTimeOutput" id="minTimeOutputId">0</output>
-    Max Time: <input name="maxTime" id="maxTimeID" type="range" min="0" max="%f" value="%f" oninput="maxTimeOutputId.value= maxTimeID.value"/>
-    <output name="maxTimeOutput" id="maxTimeOutputId">%.0f</output>
+    <div class="qaControlsContainer">Min Time: <input name="minTime" id="minTimeID" type="range" min="0" max="%f" value="0" oninput="minTimeOutputId.value= minTimeID.value"/>
+    <output name="minTimeOutput" id="minTimeOutputId">0</output></div>
+    <div class="qaControlsContainer">Max Time: <input name="maxTime" id="maxTimeID" type="range" min="0" max="%f" value="%f" oninput="maxTimeOutputId.value= maxTimeID.value"/>
+    <output name="maxTimeOutput" id="maxTimeOutputId">%.0f</output></div>
     (minutes)
     <input value="Time Dependent Merge" class="submitButton" type="submit" />
     </form>\n"""
@@ -282,7 +282,7 @@ def interactiveFormText(partialMergeActionUrl, runNumber, subsystem, maxTime, mi
     # Only include this if the request actually restricted the time. If all of these values are greater than -1
     # then it means we have a time slice request, and this line should be included
     if minTimeRequested > -1 and maxTimeRequested > -1 and actualTimeBetween > -1:
-        interactiveForm += "<p class=\"headerParagraph\" id=\"timeSliceResults\">Requested data between %i and %i minutes. Actual time due to data constraints is <strong>%i minutes</strong></p>\n" % (minTimeRequested, maxTimeRequested, actualTimeBetween)
+        interactiveForm += "<p class=\"headerParagraph timeSliceResults\">Requested data between %i and %i minutes. Actual time due to data constraints is <strong>%i minutes</strong></p>\n" % (minTimeRequested, maxTimeRequested, actualTimeBetween)
 
     return interactiveForm % (partialMergeActionUrl, runNumber, subsystem, maxTime, maxTime, maxTime, maxTime)
 
