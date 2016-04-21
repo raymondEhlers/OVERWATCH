@@ -332,3 +332,9 @@ a.anchor {
     }
 }
 
+@media screen and (max-width: 350px) {
+    /* Support iPhone by narrowing the space between links so that nothing overlaps. */
+    .headerLink {
+        padding: 0px 2px;
+    }
+}
