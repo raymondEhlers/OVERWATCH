@@ -1,177 +1,232 @@
-/* Using: http://cssreset.com/creating-fixed-headers-with-css/ */
+/* Started from: http://cssreset.com/creating-fixed-headers-with-css/ */
 /* Most of these values are more or less hacks. It is usually easiest to understand each setting */
-/* from inspecdting elements when viewing the pages in the browser */
+/* from inspecting elements when viewing the pages in the browser */
+
+/* General header elements */
+/* A fixed header for both desktop and mobile */
 .header {
-    /* Position */
+    /* Position and size */
+    position: fixed;
     top: 0px;
     left: 0px;
-    position: fixed;
     margin: 0px auto;
     width: 100%;
-    /* Help mobile? See: http://www.sitepoint.com/10-ways-make-website-mobile-friendly/ */
+    /* Ensure the header stays on the screen */
     max-width: 100%;
-    /*min-wdth: 800px;*/
-    /*word-wrap: break-word;*/
     /* Appearance */
     background-color: #003E72;
     border-bottom: 1px solid #BCE8F1;
-    /*border-bottom-left-radius: 4px;
-    border-bottom-right-radius: 4px;*/
     /* Set text color */
     color: white;
 }
-.firstLineOfHeader {
+/* General container for the header that ensures the proper alignment of header elements */
+.headerContainer {
     /* The "overflow: auto;" is a hack to keep the container div from collapsing to 0 height
      * See: https://stackoverflow.com/q/218760 */
     overflow: auto;
 }
-.headerLinksLeft {
-    float: left;
-    margin-left: 5px;
-}
-/* Contains content to the right of the header */
-.responsiveContentContainer {
-}
-.responsiveContent {
-    /*float: right;*/
-    /*margin-right: 5px;*/
-}
-.responsiveElement {
-    float: right;
-    clear: both;
-}
-.responsiveTimeDependentMerge {
-    width: 100%;
-    border-top: 3.5px solid #4588ba;
-    background-color: #6AADE4;
-    text-align: center;
-    /* Create some spacing below the links in the header */
-    margin-top: 3px;
-}
-.responsiveQALinkContainer {
-    display: none;
-}
+/* Styles all links in the header */
 .headerLink {
     color: white;
+    /* Provides sufficient spacing between links
+     * The spacing is slightly off when mixed with text, but it is close enough */
     padding: 0px 10px;
 }
-.headerParagraph {
+/* Styles the return to run list and top of page links. These should always be visible. */
+.headerMainLinks {
+    /* Should be displayed on the left of the header */
+    float: left;
+    /* Ensures sufficient spacing from the side of the page */
+    margin-left: 5px;
+}
+/* Ensures that the elements that could go in the menu (ie. "responsive elements") are displayed correctly. */
+.responsiveElement {
+    /* Should be displayed on the right of the header */
+    float: right;
+    /* Allows each element to be on a new line and to be displayed as ordered in the html */
+    clear: both;
+}
+
+/* Responsive elements */
+/* Contains the time dependent merge. */
+.responsiveTimeDependentMerge {
+    /* Position and size */
+    width: 100%;
+    /* Create some spacing below the links in the header */
+    margin-top: 3px;
+    /* Provides the border between the header links and the controls
+     * When there are no controls, it appears as bottom border for the header between the header and the page */
+    border-top: 3.5px solid #4588ba;
+    background-color: #6AADE4;
+    /* Allows child content to be centered */
+    text-align: center;
+}
+/* Allows for a link to basic QA in the mobile menu */
+.responsiveQALinkContainer {
+    /* It is hidden on the desktop */
+    display: none;
+}
+/* Styles the username and login/logout information in the header */
+.responsiveHeaderParagraph {
     padding: 0px;
     margin-top: 0px;
     margin-bottom: 0px;
-    /*margin: 0 5px;
-    margin-right: 5px;*/
     clear: none;
 }
+
+/* Time dependent merge elements */
+/* The form that controls the time dependent merge */
+#timeDependentMergeControls {
+    /* Ensures the controls do not overflow the page */
+    max-width: 100%;
+    word-wrap: break-word;
+    /* To center the controls */
+    margin: 0px auto;
+    /* To center the controls - perhaps not necessary? */
+    display: inline-block;
+}
+/* Contains the timing information (ie info about what data was actually used) from the time dependent merge */
+.timeSliceResults {
+    margin-top: 2px;
+    /* Center the text */
+    text-align: center;
+}
+
 /* Handle smaller screens */
+/* The check box is used to show or hide the menu. This way, we do not need to rely on hover, which may not work on mobile. */
+#menuToggle {
+    /* Always hide the checkbox */
+    display: none;
+}
+/* The icon which is clicked to show the menu */
 .menuIcon {
     /*display: hidden;*/
     width: 40px;
     height: 40px;
     background: #4C8FEC url("menuIcon.png") center;
-
     /* The png is much larger than we need, so we have to scale it.
      * See: https://stackoverflow.com/a/16080995 */
     background-size: 100%;
 }
+/* The label of the check box (ie. the menu icon) */
 label {
+    /* Show the cursor when over the menu icon */
     cursor: pointer;
 }
-#menuToggle {
-    /* Hide the checkbox */
-    display: none;
-}
 
-
-/* Help mobile? */
-/*@media screen and (max-width: 500px) {
-    .header {
-        position: static;
-    }
-}*/
-/*#timeDependentMergeContainer {
-    margin-top: 5px;
-    background-color: #6AADE4;
-    border-top: 3px solid #4588ba;
-    border-bottom-left-radius: 4px;
-    border-bottom-right-radius: 4px;
-}*/
-#timeDependentMergeControls {
-    /* To center the controls */
-    display: inline-block;
-    margin: 0px auto;
-    max-width: 100%;
-    word-wrap: break-word;
-}
-.timeSliceResults {
-    margin-top: 2px;
-    text-align: center;
-}
-
+/* Main body elements */
 body {
     background-color: #CAE4F1;
     /* The url is calculated relative to the location of the css file. Since it is the same dir, it will work in both dynamic and static cases. */
     background-image: url("cream-pixels.png"), linear-gradient(90deg, #B2DCF1, #CAE4F1 15%, #CAE4F1 85%, #B2DCF1);
 }
-
 h2 {
     /* Ensures that headers do not overflow the width of the page */
     word-wrap: break-word;
 }
-
 img {
-    /* Help mobile? */
+    /* Ensure images fit on the screen */
     max-width: 100%;
-    /*border:1px solid;*/
-    border-color: #BCE8F1;
-    -webkit-border-radius: 5;
-    -moz-border-radius: 5;
+    /* Create a drop shadow-like effect for the image */
+    -webkit-border-radius: 5px;
+    -moz-border-radius: 5px;
     border-radius: 5px;
     -webkit-box-shadow: 1px 2px 1px #d1d1d1;
     -moz-box-shadow: 1px 2px 1px #d1d1d1;
     box-shadow: 1px 2px 1px #d1d1d1;
 }
+/* Fixes anchors showing too low. This shifts them up so they are not blocked by the header. See: https://stackoverflow.com/a/13184714 */
+a.anchor {
+    display: block;
+    /* The "top" position is relative to where it would be, so we are effectively shifting 60px up.
+     * This number should be equal to the shift down that we do on the contentContainer to
+     * stay below the header */
+    position: relative;
+    top: -60px;
+}
 
+/* Container for all content */
+#contentContainer {
+    /* Narrowing the width a bit makes the page more viewable.
+     * The width is set relative to the viewport */
+    width: 90vw;
+    /* Ensures the div reaches to the end of the content */
+    height: 100vh;
+    /* Ensures that it stays below the header */
+    padding-top: 60px;
+    /* Allows the div to be centered. */
+    margin: 0px auto;
+}
+/* Creates a border around content to divide up the page */
+.contentDivider {
+    /* Ensure some reasonable spacing */
+    margin-top: 24px;
+    padding-bottom: 15px;
+    /* Create the border on the top and bottom to divide.
+     * This is perhaps not the most scalable because putting two of these
+     * next to each other does not work well (it creates two borders), but
+     * it is sufficient for our purposes */
+    border-top: 3px solid #4588ba;
+    border-bottom: 3px solid #4588ba;
+}
+
+/* Styles the QA Link on the main run page of the desktop. */
+.basicQALink {
+    /* Remove the underline to make the display more similar to the run list header */
+    text-decoration: none;
+}
+.basicQALink:hover {
+    /* Show the underline when hovering to make clear that it is a link */
+    text-decoration: underline;
+}
+
+/* Sets the styling on the tables containing the run information shown on the main run page */
+.rootPageRunListTable {
+    /* Makes it easier to view */
+    padding-top: 18px;
+    padding-left: 25px;
+}
+
+/* Creates a 2 column display to link to the underlying ROOT files */
+.listColumns {
+    /* Hides the bullet point next to each item */
+    list-style-type: none;
+    /* Allows the list to be broken into two columns
+     * See: https://stackoverflow.com/a/6509239 */
+    -moz-column-count: 2;
+    -moz-column-gap: 20px;
+    -webkit-column-count: 2;
+    -webkit-column-gap: 20px;
+    column-count: 2;
+    column-gap: 20px;
+}
+
+/* Contains grid of images on each run page */
 .gridContainer {
     /* The "overflow: auto;" is a hack to keep the container div from collapsing to 0 height
      * See: https://stackoverflow.com/q/218760 */
     overflow: auto;
 }
+/* Container for each image in the grid */
 .gridImageContainer {
+    /* Allows the images for be in a grid without using a table
+     * This grid using floats performs much better than a table. */
     float: left;
+    /* Ensures sufficient spacing to make the images easier to view */
     padding: 0px 1%;
 }
 
-#contentContainer {
-    /*background-color: #CAE4F1;*/
-    padding-top: 60px;
-    width: 90vw;
-    margin: 0 auto;
-    height: 100vh;
+/* Sets the location of the contact link shown on all pages */
+.contactLinkContainer {
+    margin: 0px auto;
+    margin-top: 1.5cm;
+    margin-bottom: 1cm;
 }
-.contentDivider {
-    margin-top: 24px;
-    padding-bottom: 15px;
-    border-top: 3px solid #4588ba;
-    border-bottom: 3px solid #4588ba;
-}
-.qaFunctions {
-    margin-top: 24px;
-    border-top: 3px solid #4588ba;
-    padding-top: 20px;
-}
-
-/* Sets the styling on the tables shown on the root page */
-.rootPageRunListTable {
-    padding-top: 18px;
-    padding-left: 25px;
-}
-
-/* Fixes anchors showing too low. This shifts them up so they are not blocked by the header. See: https://stackoverflow.com/a/13184714 */
-a.anchor {
-    display: block;
-    position: relative;
-    top: -60px;
+/* Styles the paragraph around the link to the contact page */
+.contactLinkParagraph {
+    /* Ensures that the link is centered */
+    text-align: center;
+    margin: 0px;
 }
 
 /* Changes the table displayed on the contact page. */
@@ -179,17 +234,8 @@ a.anchor {
     padding-right: 30px;
 }
 
-/* Contact page link location */
-.contactLinkContainer {
-    margin: 0 auto;
-    margin-top: 2cm;
-    margin-bottom: 1cm;
-}
-.contactLinkParagraph {
-    text-align: center;
-}
-
-/* Created at: http://css3buttongenerator.com/ */
+/* Button to submit a time dependent merge
+ * Created at: http://css3buttongenerator.com/ */
 .submitButton {
     background: #3498db;
     background-image: -webkit-linear-gradient(top, #3498db, #2980b9);
@@ -197,8 +243,8 @@ a.anchor {
     background-image: -ms-linear-gradient(top, #3498db, #2980b9);
     background-image: -o-linear-gradient(top, #3498db, #2980b9);
     background-image: linear-gradient(to bottom, #3498db, #2980b9);
-    -webkit-border-radius: 28;
-    -moz-border-radius: 28;
+    -webkit-border-radius: 28px;
+    -moz-border-radius: 28px;
     border-radius: 28px;
     /*font-family: Arial;*/
     color: #ffffff;
@@ -212,6 +258,7 @@ a.anchor {
     vertical-align: top;
     margin-top: 1px;
 }
+/* Change the style on hover to make the button clear */
 .submitButton:hover {
     background: #3cb0fd;
     background-image: -webkit-linear-gradient(top, #3cb0fd, #3498db);
@@ -222,60 +269,64 @@ a.anchor {
     text-decoration: none;
 }
 
-/* See: https://stackoverflow.com/a/6509239 */
-.listColumns {
-    list-style-type: none;
-    -moz-column-count: 2;
-    -moz-column-gap: 20px;
-    -webkit-column-count: 2;
-    -webkit-column-gap: 20px;
-    column-count: 2;
-    column-gap: 20px;
-}
-
-.basicQALink {
-    text-decoration: none;
-}
-.basicQALink:hover {
-    text-decoration: underline;
-}
+/* Table to display the QA controls on the basic QA page */
 .processQATable {
+    /* Ensures that the overall table is centered */
     margin: 0 auto;
 }
 .centerTableElement {
+    /* Centers the elements */
     text-align: center;
 }
+/* Styling of the form that holds the qa controls */
 .qaControlsContainer {
     /* Determined by measuring the size when displaying a four digit time next to the control */
     min-width: 180px;
     /* Ensures the the elements are shown side by side */
     display: inline-block;
 }
-
-/* Used on the processQA page */
+/* Hides doc strings on the processQA page that are not currently being shown */
 .hideFunctionDocstring {
     display: none;
 }
+/* Applies to the doc string on the processQA page corresponding to the currently selected function.
+ * In doing so, it shows the description of the function. */
 .showFunctionDocstring {
+    /* Ensures that the description doesn't go over the edge of the page */
     word-wrap: break-word;
 }
 
-/* Media queries */
+/* Media queries to handle different screen sizes.
+ * 600px is selected arbitrarily */
 @media screen and (max-width: 600px) {
-    /* Make the body wider */
+    /* Make the body wider on mobile since space is more limited. */
     #contentContainer {
         width: 95vw;
     }
+
+    /*  Vertically center text on the left
+     *  See: https://stackoverflow.com/a/6490283 */
+    .headerMainLinks {
+        position: absolute;
+        top: 50%;
+        transform: translate(0%, -50%);
+    }
+
     /* Show the menu icon */
     .menuIcon {
+        /* Ensures that the icon is shown on the same line as the other links in the header */
         display: inline-block;
+        /* Should be on the right side of the screen */
         float: right;
+        /* Comfortable spacing around the icon */
         margin-top: 10px;
         margin-right: 20px;
         margin-bottom: 10px;
     }
     /* Selects the sibling element (menuIcon) located after the checkbox */
     #menuToggle:checked + .menuIcon {
+        /* Changes the menu background color to make it clear that it is selected.
+         * The color is selected to match the border of the menu */
         background-color: #444;
     }
     /* Selects responsiveContent class after menuToggle */
@@ -283,57 +334,70 @@ a.anchor {
         /* Makes responsive content visible when clicked */
         display: block;
     }
-    /* Position the menu icon */
-    .responsiveContentContainer {
-        /*padding-right: 20px;
-        padding-top: 10px;*/
-    }
-    /* Hides responsive links until the menu is opened */
+
+    /* Styles the menu that pops up when the menu icon is selected */
     .responsiveContent {
+        /* Hides the content when the menu is not selected */
         display: none;
+        /* Sets the position of the menu */
         position: absolute;
-        padding: 20px;
-        border: 5px solid #444;
-        background: #000;
+        /* We set the position of the upper right corner
+         * The icon is 40px + 10px margin on the top = 50px from the top
+         * The icon has a margin of 20px from the right */
         top: 50px;
         right: 20px;
+        /* Gives some spacing around the content */
+        padding: 20px;
+        /* The border differentiates the menu from the rest of the page */
+        border: 5px solid #444;
+        /* The menu also differentiates the menu from the rest of the page */
+        background: #000;
+        /* Ensures that the menu maintains a reasonable width */
         max-width: 75%;
     }
-    /*  Vertically center text on the left
-     *  See: https://stackoverflow.com/a/6490283 */
-    .headerLinksLeft {
-        position: absolute;
-        top: 50%;
-        transform: translate(0%, -50%);
-    }
+    /* Applies to all responsive elements */
     .responsiveElement {
+        /* Prevents elements from floating */
         float: none;
+        /* Restore normal alignment behavior - perhaps not necessary? */
         clear: none;
+        /* Center content in the menu */
+        text-align: center;
     }
+    /* Show a link to basic QA in the menu */
     .responsiveQALinkContainer {
         display: block;
-        text-align: center;
     }
-    .headerParagraph {
-        text-align: center;
-    }
+    /* Styles the time dependent merge controls to make them stand out */
     .responsiveTimeDependentMerge {
+        /* Repeats color from the border, but this should be fine */
         background-color: #444;
+        /* Puts a border around the entire element to ensure it is not confused with other links.
+         * When the controls do no exist (ie on the main run page), it creates a divider that is 6px wide.
+         * This is a bit of a hack, but it seems to look reasonable */
         border: 3px solid #4588ba;
     }
+    /* Contains the timing information (ie info about what data was actually used) from the time dependent merge */
     .timeSliceResults {
+        /* Adds a divider between the controls and the information in the menu */
         border-top: 3px solid #4588ba;
     }
     .basicQALink {
+        /* Remove the basic QA link from the run list header.
+         * It is instead shown in the menu (using a different element). */
         display: none;
     }
-    .firstLineOfHeader {
+    /* Replaces the bottom border of the header that is provided by responsiveTimeDependentMerge in
+     * the desktop version. This is necessary since responsiveTimeDependentMerge is in the menu on mobile */
+    .headerContainer {
         border-bottom: 3px solid #4588ba;
     }
 }
 
+/* NOTE: The site is not really usable below approximately this size. */
 @media screen and (max-width: 350px) {
-    /* Support iPhone by narrowing the space between links so that nothing overlaps. */
+    /* Support iPhone by narrowing the space between links so that nothing overlaps.
+     * This is really just a hack, but it should be sufficient */
     .headerLink {
         padding: 0px 2px;
     }

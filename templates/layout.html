@@ -10,8 +10,8 @@
     </head>
     <body onload="{% block onLoad %}{% endblock %}removeFlashes()">
         <header class="header">
-            <div class="firstLineOfHeader">
-                <div class="headerLinksLeft">
+            <div class="headerContainer">
+                <div class="headerMainLinks">
                     {%- if current_user.is_authenticated -%}
                         <a class="headerLink" href="{{ url_for("index") }}">Return to Run List</a>
                     {%- else -%}
@@ -25,7 +25,7 @@
                     {# onclick hack from: http://stackoverflow.com/a/6472181 #}
                     <label class="menuIcon" for="menuToggle" onclick=""><div></div></label>
                     <div class="responsiveContent">
-                        <p class="headerParagraph responsiveElement">
+                        <p class="responsiveHeaderParagraph responsiveElement">
                         {%- if current_user.is_authenticated -%}
                             User: {{ current_user.id }} <a class="headerLink" href="{{ url_for("logout") }}">Logout</a>
                         {%- else -%}

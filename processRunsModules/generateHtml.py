@@ -274,15 +274,15 @@ def interactiveFormText(partialMergeActionUrl, runNumber, subsystem, maxTime, mi
     <output name="minTimeOutput" id="minTimeOutputId">0</output></div>
     <div class="qaControlsContainer">Max Time: <input name="maxTime" id="maxTimeID" type="range" min="0" max="%f" value="%f" oninput="maxTimeOutputId.value= maxTimeID.value"/>
     <output name="maxTimeOutput" id="maxTimeOutputId">%.0f</output></div>
-    (minutes)
-    <input value="Time Dependent Merge" class="submitButton" type="submit" />
+    <div class="qaControlsContainer">(minutes)
+    <input value="Time Dependent Merge" class="submitButton" type="submit" /></div>
     </form>\n"""
     #print "minTimeRequested", minTimeRequested, "maxTimeRequested", maxTimeRequested, "actualTimeBetween", actualTimeBetween
 
     # Only include this if the request actually restricted the time. If all of these values are greater than -1
     # then it means we have a time slice request, and this line should be included
     if minTimeRequested > -1 and maxTimeRequested > -1 and actualTimeBetween > -1:
-        interactiveForm += "<p class=\"headerParagraph timeSliceResults\">Requested data between %i and %i minutes. Actual time due to data constraints is <strong>%i minutes</strong></p>\n" % (minTimeRequested, maxTimeRequested, actualTimeBetween)
+        interactiveForm += "<p class=\"responsiveHeaderParagraph timeSliceResults\">Requested data between %i and %i minutes. Actual time due to data constraints is <strong>%i minutes</strong></p>\n" % (minTimeRequested, maxTimeRequested, actualTimeBetween)
 
     return interactiveForm % (partialMergeActionUrl, runNumber, subsystem, maxTime, maxTime, maxTime, maxTime)
 
@@ -328,7 +328,7 @@ def generateHtmlForStaticHeader(runNumberString, relativePath, secondDivText):
     <body onload="scrollIfHashExists();setScrollValueInForm()" class="staticBody">
         <div class="header">
             <div id="firstLineOfHeader">
-                <p class="headerParagraph">
+                <p class="responsiveHeaderParagraph">
                     <span style="padding-left:5px;"></span>
                     <a href="%s/monitoring">Return to Run List</a>
                     <span style="padding-left:1em;padding-right:1em;">-</span>
