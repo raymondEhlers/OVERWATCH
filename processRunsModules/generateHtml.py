@@ -270,11 +270,11 @@ def interactiveFormText(partialMergeActionUrl, runNumber, subsystem, maxTime, mi
     <input type="hidden" name="runNumber" value="%i"/>
     <input type="hidden" name="subsystem" value="%s"/>
     <input type="hidden" name="scrollAmount" id="scrollAmount" value=0 />
-    <div class="qaControlsContainer">Min Time: <input name="minTime" id="minTimeID" type="range" min="0" max="%f" value="0" oninput="minTimeOutputId.value= minTimeID.value"/>
+    <div class="mergeControlsContainer">Min Time: <input name="minTime" id="minTimeID" type="range" min="0" max="%f" value="0" oninput="minTimeOutputId.value= minTimeID.value"/>
     <output name="minTimeOutput" id="minTimeOutputId">0</output></div>
-    <div class="qaControlsContainer">Max Time: <input name="maxTime" id="maxTimeID" type="range" min="0" max="%f" value="%f" oninput="maxTimeOutputId.value= maxTimeID.value"/>
+    <div class="mergeControlsContainer">Max Time: <input name="maxTime" id="maxTimeID" type="range" min="0" max="%f" value="%f" oninput="maxTimeOutputId.value= maxTimeID.value"/>
     <output name="maxTimeOutput" id="maxTimeOutputId">%.0f</output></div>
-    <div class="qaControlsContainer">(minutes)
+    <div class="mergeControlsContainer">(minutes)
     <input value="Time Dependent Merge" class="submitButton" type="submit" /></div>
     </form>\n"""
     #print "minTimeRequested", minTimeRequested, "maxTimeRequested", maxTimeRequested, "actualTimeBetween", actualTimeBetween

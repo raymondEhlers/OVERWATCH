@@ -107,37 +107,38 @@
 {% block body %}
     <a class="anchor" name="topOfPage"></a>
     <h1>OVERWATCH Basic QA</h1>
-    <form class="qaSelector" id="qaSelector" action"/processQA" method="post">
-        <table class="processQATable">
-            <tr>
-                <td class="centerTableElement">First run</td>
-                <td class="centerTableElement">Last run</td>
-                <td class="centerTableElement">Subsystem</td>
-                <td class="centerTableElement">QA Function</td>
-            </tr>
-            <tr>
-                <td class="centerTableElement">
+    <!-- div is just to manage placement -->
+    <div style="overflow: auto; text-align: center;">
+        <form class="qaSelector" id="qaSelector" action"/processQA" method="post">
+            <div class="qaControlsGroup">
+                <div class="qaControlsElement">
+                    <p style="margin: 0px;">First run</p>
                     <select name="firstRun">
                         {% for run in runList %}
                         <option value="{{ run }}">Run {{ run.replace("Run","")}}</option>
                         {% endfor %}
                     </select>
-                </td>
-                <td class="centerTableElement">
+                </div>
+                <div class="qaControlsElement">
+                    <p style="margin: 0px;">Last run</p>
                     <select name="lastRun">
                         {% for run in runList %}
-                        <option value="{{ run }}">Run {{ run.replace("Run","") }}</option>
+                        <option value="{{ run }}">Run {{ run.replace("Run","")}}</option>
                         {% endfor %}
                     </select>
-                </td>
-                <td class="centerTableElement">
+                </div>
+            </div>
+            <div class="qaControlsGroup">
+                <div class="qaControlsElement">
+                    <p style="margin: 0px;">Subsystem</p>
                     <select name="subsystem" id="subsystem">
                         {% for subsystem in subsystemList %}
                         <option value="{{ subsystem }}">{{ subsystem }}</option>
                         {% endfor %}
                     </select>
-                </td>
-                <td class="centerTableElement">
+                </div>
+                <div class="qaControlsElement">
+                    <p style="margin: 0px;">QA Function</p>
                     <select name="qaFunction" id="qaFunction">
                         {% for subsystem in qaFunctionsList %}
                             {% for funcName in qaFunctionsList[subsystem] %}
@@ -146,15 +147,15 @@
                         {% endfor %}
                         <option class="noSelector" value="noFunction" hidden="hidden">No fuctions available!</option>
                     </select>
-                </td>
-            </tr>
-        </table>
-        <br />
-        <!-- div is just to manage placement -->
-        <div style="text-align:center;">
-            <input style="display: inline-block;" value="Process QA" class="submitButton" type="submit" />
-        </div>
-    </form>
+                </div>
+            </div>
+            <br />
+            <!-- div is just to manage placement -->
+            <div style="text-align:center; margin-top: 5px;">
+                <input style="display: inline-block;" value="Process QA" class="submitButton" type="submit" />
+            </div>
+        </form>
+    </div>
     <!-- QA function descriptions -->
     <div class="contentDivider">
         {% for funcName, docStringList in docStrings.items() %}

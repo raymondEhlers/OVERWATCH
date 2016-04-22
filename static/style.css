@@ -85,6 +85,13 @@
     /* To center the controls - perhaps not necessary? */
     display: inline-block;
 }
+/* Styling of the form that holds the merge controls */
+.mergeControlsContainer {
+    /* Determined by measuring the size when displaying a four digit time next to the control */
+    min-width: 180px;
+    /* Ensures the the elements are shown side by side */
+    display: inline-block;
+}
 /* Contains the timing information (ie info about what data was actually used) from the time dependent merge */
 .timeSliceResults {
     margin-top: 2px;
@@ -269,21 +276,36 @@ a.anchor {
     text-decoration: none;
 }
 
+/* Form for basic QA controls */
+#qaSelector {
+    /* Ensures that it is a non-zero size - perhaps not needed */
+    overflow: auto;
+    /* Center items */
+    text-align: center;
+}
+/* Groups of basic QA controls to ensure that the page responds properly to resizing. */
+.qaControlsGroup {
+    /* Display the elements in one line */
+    display: inline-block;
+    /* Center items */
+    text-align: center;
+}
+/* Each element in the basic QA controls */
+.qaControlsElement {
+    /* Display all the elements inside in a line */
+    display: inline-block;
+    /* Separation between each element.
+     * NOTE: Cannot be a percentage! */
+    padding: 0px 10px;
+}
 /* Table to display the QA controls on the basic QA page */
 .processQATable {
     /* Ensures that the overall table is centered */
-    margin: 0 auto;
+    margin: 0px auto;
 }
 .centerTableElement {
     /* Centers the elements */
     text-align: center;
-}
-/* Styling of the form that holds the qa controls */
-.qaControlsContainer {
-    /* Determined by measuring the size when displaying a four digit time next to the control */
-    min-width: 180px;
-    /* Ensures the the elements are shown side by side */
-    display: inline-block;
 }
 /* Hides doc strings on the processQA page that are not currently being shown */
 .hideFunctionDocstring {
