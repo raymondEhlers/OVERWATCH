@@ -103,8 +103,10 @@ def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem 
     groupedHists.append(generateHtml.sortingGroup("FastOR L1 Amp (hits weighted with ADC value)", "FastORL1Amp_SM", "_SM"))
     groupedHists.append(generateHtml.sortingGroup("FastOR L1 Large Amp (hits above 400 ADC)", "FastORL1LargeAmp_SM", "_SM"))
     # Trigger classes
-    groupedHists.append(generateHtml.sortingGroup("Gamma Trigger", "GA"))
-    groupedHists.append(generateHtml.sortingGroup("Jet Trigger", "JE"))
+    groupedHists.append(generateHtml.sortingGroup("Gamma Trigger Low", "GAL"))
+    groupedHists.append(generateHtml.sortingGroup("Gamma Trigger High", "GAH"))
+    groupedHists.append(generateHtml.sortingGroup("Jet Trigger Low", "JEL"))
+    groupedHists.append(generateHtml.sortingGroup("Jet Trigger High", "JEH"))
     groupedHists.append(generateHtml.sortingGroup("Background", "BKG"))
     # Other EMC
     groupedHists.append(generateHtml.sortingGroup("FastOR", "FastOR"))

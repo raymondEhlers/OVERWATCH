@@ -125,7 +125,8 @@ label {
 body {
     background-color: #C6E2FF;
     /* The url is calculated relative to the location of the css file. Since it is the same dir, it will work in both dynamic and static cases. */
-    background-image: url("absurdity.png"), linear-gradient(90deg, #B2CBE5, #C6E2FF 15%, #C6E2FF 85%, #B2CBE5);
+    /* Background pattern is "Absurdity" from http://www.transparenttextures.com/
+    background-image: url("absurdity.png"), linear-gradient(90deg, #B2CBE5, #C6E2FF 10%, #C6E2FF 90%, #B2CBE5);
     /* Set font */
     font-family: Geneva, Candara, Tahoma, sans-serif;
 }
