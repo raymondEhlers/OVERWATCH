@@ -123,9 +123,19 @@ label {
 
 /* Main body elements */
 body {
-    background-color: #CAE4F1;
+    background-color: #C6E2FF;
     /* The url is calculated relative to the location of the css file. Since it is the same dir, it will work in both dynamic and static cases. */
-    background-image: url("cream-pixels.png"), linear-gradient(90deg, #B2DCF1, #CAE4F1 15%, #CAE4F1 85%, #B2DCF1);
+    background-image: url("absurdity.png"), linear-gradient(90deg, #B2CBE5, #C6E2FF 15%, #C6E2FF 85%, #B2CBE5);
+    /* Set font */
+    font-family: Geneva, Candara, Tahoma, sans-serif;
+}
+h1 {
+    /* Allow left and right floated elements (such as div) in a given header */
+    overflow: auto;
+}
+h1 > div {
+    /* Set font size such that the h1 on the run page shrinks dynamically and does not overlap with the basic QA link. */
+    font-size: 5.5vw;
 }
 h2 {
     /* Ensures that headers do not overflow the width of the page */
@@ -192,6 +202,10 @@ a.anchor {
     /* Makes it easier to view */
     padding-top: 18px;
     padding-left: 25px;
+}
+.rootPageRunListTable > tbody > tr > td {
+    /* Separate the run list table elements slightly to make them easier to view */
+    padding-right: 5px;
 }
 
 /* Creates a 2 column display to link to the underlying ROOT files */
@@ -324,6 +338,10 @@ a.anchor {
     /* Make the body wider on mobile since space is more limited. */
     #contentContainer {
         width: 95vw;
+    }
+    h1 > div {
+        /* Reset font size when on mobile to ensure that it stays large enough */
+        font-size: 100%;
     }
 
     /*  Vertically center text on the left

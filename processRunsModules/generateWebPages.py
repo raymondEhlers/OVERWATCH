@@ -260,7 +260,7 @@ def writeRootWebPage(dirPrefix, subsystems, generateTemplate = False):
     <a class="anchor" name="topOfPage"></a>"""
 
     # Handle the processQA link in the title
-    titleLine = """<h1> OVERWATCH Run List <span style="float:right"><a class="basicQALink" href="%s">Basic QA</a></span></h1>\n"""
+    titleLine = """<h1><div style="float: left;">OVERWATCH Run List</div><div style="float: right;"><a class="basicQALink" href="%s">Basic QA</a></div></h1>\n"""
     if generateTemplate == False:
         additionalText = "%s/processQA"
         additionalText = additionalText % relativePath
