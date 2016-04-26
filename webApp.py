@@ -73,7 +73,7 @@ def login():
     Unauthenticated users are also redirected here if they try to access something restricted.
     After logging in, it should then forward them to resource they requested.
     """
-    print("Login called")
+    #print("Login called")
 
     errorValue = None
     nextValue = routing.getRedirectTarget()

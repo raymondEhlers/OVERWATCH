@@ -91,7 +91,7 @@ def generateHtmlForHistLinkOnRunPage(listOfHists, startOfName):
     returnText = ""
     for filename in listOfHists:
         histName = filename[startOfName:]
-        returnText += '<a href="#' + histName + '">' + histName + '</a><br>\n'
+        returnText += '<a href="#' + histName + '">' + histName + '</a><br />\n'
 
     return returnText
 
