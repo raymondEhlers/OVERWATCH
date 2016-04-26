@@ -131,6 +131,28 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
     # Save output names for writing to webpage later
     outputHistNames = [ ]
 
+    # If a qaContainer does not exist, then create one, but do not specify the function
+    # By not specifying the function, it denotes that this container is just being used to hold
+    # histograms.
+    # TODO: A better approach should be taken!
+    if qaContainer is None:
+        qaContainer = qa.qaFunctionContainer("Run000000", "Run000000", ["Run000000"], "")
+
+    # Find the histogram containing the number of events (if it exists)
+    for key in keysInFile:
+        if "histEvents" in key.GetName():
+            nEventsFromFile = key.ReadObj()
+            # Need to create a new hist to avoid a memory leak!
+            nEvents = TH1F("nEvents", "nEvents", 1, 0, 1)
+            nEvents.Fill(0.5, nEventsFromFile.GetBinContent(1))
+            #print("NEvents Hist name: {0}".format(key.GetName()))
+            #print("NEvents from file: {0}".format(nEventsFromFile.GetBinContent(1)))
+            print("NEvents: {0}".format(nEvents.GetBinContent(1)))
+            qaContainer.addHist(nEvents, "NEvents")
+
+    # Sorts keys so that we can have consistency when histograms are processed.
+    keysInFile.Sort()
+
     # Useful information: https://root.cern.ch/phpBB3/viewtopic.php?t=11049
     for key in keysInFile:
         classOfObject = gROOT.GetClass(key.GetClassName())
@@ -156,6 +178,8 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
 
             # Skips printing out the histogram
             if skipPrinting == True:
+                if processingParameters.beVerbose == True and qaContainer.qaFunctionName == "":
+                    print("Skip printing histogram {0}".format(hist.GetName()))
                 continue
 
             # Filter here for hists in the subsystem if subsystem != fileLocationSubsystem
@@ -171,11 +195,19 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             outputFilename = outputFormatting % hist.GetName()
             canvas.SaveAs(outputFilename)
 
+    # Remove NEvents so that it doesn't get printed
+    if qaContainer.getHist("NEvents") is not None:
+        if processingParameters.beVerbose == True:
+            print("Removing NEvents QA hist!")
+        qaContainer.removeHist("NEvents")
+
     # Add to output names if hists are created
-    if qaContainer is not None:
+    if qaContainer.getHists() != []:
         print("hists:", qaContainer.getHists())
-        for hist in qaContainer.getHists():
-            outputHistNames.append(hist.GetName())
+        # Only print QA hists if we are specifically using a QA function
+        if qaContainer.qaFunctionName is not "":
+            for hist in qaContainer.getHists():
+                outputHistNames.append(hist.GetName())
 
     return outputHistNames 
 

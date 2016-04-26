@@ -33,7 +33,7 @@ class sharedParameters(object):
     >>> qaFunctionsList = { "det": [ "functions" ], "det": [ "functions" ] }
     """
 
-    qaFunctionsToAlwaysApply = ["properlyPlotPatchSpectra", "addEnergyAxisToPatches", "setEMCDrawOptions"]
+    qaFunctionsToAlwaysApply = ["setEMCDrawOptions"]
     """ These are functions that should always be applied when processing ROOT files.
 
     These functions are often only automated QA functions, in that they can improve or help check the data quality,

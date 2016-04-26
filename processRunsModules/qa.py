@@ -78,6 +78,8 @@ class qaFunctionContainer(object):
         """
         # Ensures that the created histogram does not get destroyed after going out of scope.
         hist.SetDirectory(0)
+        if label in self.hists:
+            Print("WARNING: Replacing histogram %s in QA Container!" % label)
         self.hists[label] = hist
 
     def addHists(self, hists):
@@ -140,6 +142,21 @@ class qaFunctionContainer(object):
         """
         return self.hists
 
+    def removeHist(self, histName):
+        """ Remove histogram from container.
+
+        Args:
+            histName (str): Label of the desired histogram. Often the hist name.
+
+        Returns:
+            None
+        """
+        if histName in self.hists:
+            del self.hists[histName]
+        else:
+            print("WARNING: histName {0} not in qa container, so it could not be removed!".format(histName))
+
+
 ###################################################
 def checkHist(hist, qaContainer):
     """ Selects and calls the proper qa function based on the input.
@@ -157,7 +174,7 @@ def checkHist(hist, qaContainer):
     """
     #print "called checkHist()"
     skipPrinting = False
-    if qaContainer is not None:
+    if qaContainer.qaFunctionName is not "":
         # Python functions to apply for processing a particular QA function
         # Only a single function is selected on the QA page, so no loop is necessary
         # (ie only one call can be made).
@@ -169,7 +186,11 @@ def checkHist(hist, qaContainer):
         # the return value is ignored.
         for functionName in processingParameters.qaFunctionsToAlwaysApply:
             #print dir(currentModule)
-            getattr(currentModule, functionName)(hist)
+            returnValue = False
+            returnValue = getattr(currentModule, functionName)(hist, qaContainer)
+            # If we get one return to skip printing, then must skip printing regardless of the other functions
+            if returnValue == True:
+                skipPrinting = True
 
     return skipPrinting
 

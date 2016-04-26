@@ -12,7 +12,7 @@ from __future__ import print_function
 from builtins import range
 
 # Used for QA functions
-from ROOT import ROOT, TH1, TH1F, TProfile, TF1, TAxis, gPad, TAxis, TGaxis, SetOwnership, TPaveText
+from ROOT import ROOT, TH1, TH1F, TProfile, TF1, TAxis, gPad, TAxis, TGaxis, SetOwnership, TPaveText, TLegend
 
 # Used for the outlier detection function
 import numpy
@@ -107,6 +107,7 @@ def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem 
     groupedHists.append(generateHtml.sortingGroup("Gamma Trigger High", "GAH"))
     groupedHists.append(generateHtml.sortingGroup("Jet Trigger Low", "JEL"))
     groupedHists.append(generateHtml.sortingGroup("Jet Trigger High", "JEH"))
+    groupedHists.append(generateHtml.sortingGroup("L0", "EMCL0"))
     groupedHists.append(generateHtml.sortingGroup("Background", "BKG"))
     # Other EMC
     groupedHists.append(generateHtml.sortingGroup("FastOR", "FastOR"))
@@ -459,25 +460,35 @@ def labelSupermodules(hist):
 # Add drawing options to plots
 # Plots come in 4 types: PlotbySM, Plot2D, Plot1D, PlotMaxMatch
 ###################################################
-def setEMCDrawOptions(hist):
-    # somehow need to get the number of events; it is stored in the below histogram
-    #if hist.GetName() == "EMCTRQA_histEvents":
-    #    events = hist.GetBinContent(1)
+def setEMCDrawOptions(hist, qaContainer):
+    # Get NEvents
+    nEvents = 1
+    nEventsHist = qaContainer.getHist("NEvents")
+    if nEventsHist is not None:
+        nEvents = nEventsHist.GetBinContent(1)
+        #print("NEvents: {0}".format(nEvents))
 
-    # PlotbySM plots
+    # Reset gPad incase it was changed by any functions
+    if processingParameters.debug == False:
+                hist.SetStats(False)
+    gPad.SetLogy(0)
+    gPad.SetGrid(0,0)
+
+    # Plot by SM
     if "SM" in hist.GetName():
-        #pad.SetLogz(logz)
-        #hist.Scale(1. / events)
+        #canvas.SetLogz(logz)
+        hist.Scale(1. / nEvents)
         labelSupermodules(hist)
         
-        # for FEE plots, set a different range
+        # For FEE plots, set a different range
         if "FEE" in hist.GetName():
+            gPad.SetLogz(True)
             hist.GetXaxis().SetRangeUser(0, 250)
             hist.GetYaxis().SetRangeUser(0, 20)
         
-    # Plot2D plots
+    # EdgePos plots
     if "EdgePos" in hist.GetName():
-        #hist.Scale(1./events)
+        hist.Scale(1./nEvents)
         hist.GetZaxis().SetTitle("entries / events")
 
     # Check summary FastOR hists
@@ -490,16 +501,17 @@ def setEMCDrawOptions(hist):
     if any(substring == hist.GetName() for substring in possibleFastORNames):
         # Set threshold for printing
         threshold = 0
+        # TODO: These thresholds probably need to be tuned
         if "LargeAmp" in hist.GetName():
             threshold = 7e-7
         elif "Amp" in hist.GetName():
             threshold = 10000
         else:
-            #threshold = 3e-3
-            threshold = 50
+            threshold = 3e-3
         
+        # Set hist options
         hist.Sumw2()
-        #hist.Scale(1. / events)
+        hist.Scale(1. / nEvents)
 
         # Set style
         hist.SetMarkerStyle(ROOT.kFullCircle)
@@ -515,6 +527,8 @@ def setEMCDrawOptions(hist):
                 absIdList.append(iBin - 1)
             
         # Create pave text to display above threshold values
+        # TODO: This should be saved with the element and written to the page rather than the image.
+        #        Such a change will require a change in architecture.
         pave = TPaveText(0.1, 0.7, 0.9, 0.2, "NB NDC")
         pave.SetTextAlign(13)
         pave.SetTextFont(43)
@@ -535,25 +549,108 @@ def setEMCDrawOptions(hist):
                 pave.AddText(absIdText)
                 #print(absIdText)
                 absIdText = ""
-        print(hist.GetName())
-        pave.Draw("same")
+        #print(hist.GetName())
+
+        # Only draw if we have enough statistics!
+        if nEvents > 10000: 
+            #print("Drawing hot fastORs!")
+            pave.Draw("same")
     
     # PlotMaxPatch plots
     # Ideally EMCal and DCal histos should be plot on the same plot
-    if "MaxPatch" in hist.GetName():
+    # However, sometimes they are unpaired and must be printed individually
+    # Subtracted ensures that unpaired subtracted histograms are still printed
+    # "EMCRE" ensures that early unpaired histograms are still printed
+    if "PatchAmp" in hist.GetName() and "Subtracted" not in hist.GetName() and "EMCRE" not in hist.GetName():
+        # Setup canvas as desired
         gPad.SetLogy(True)
-        
-        #legend = ROOT.TLegend(0.6, 0.9, 0.9, 0.7)
-        #legend.SetBorderSize(0)
-        #legend.SetFillStyle(0)
-        #SetOwnership(legend, False)
-        #for det,col,marker,opt in zip(detectors,colors,markers,options):
-        #    hist.Sumw2()
-        #    hist.SetMarkerSize(0.8)
-        #    hist.SetMarkerStyle(marker)
-        #    hist.SetLineColor(col)
-        #    hist.SetMarkerColor(col)
-        #    hist.Scale(1./events)
-        #    hist.GetYaxis().SetTitle("entries / events")
-        #    legend.AddEntry(hist, det, "pe")
-        #legend->Draw()
+        gPad.SetGrid(1,1)
+
+        # Check for the corresponding hist
+        if "DCal" in hist.GetName():
+            nameToCheck = hist.GetName().replace("DCal", "EMCal")
+        else:
+            nameToCheck = hist.GetName().replace("EMCal", "DCal")
+        otherHist = qaContainer.getHist(nameToCheck)
+
+        # Plot both on the same canvas if they both exist
+        if otherHist is not None:
+
+            # List of hists to plot
+            hists = []
+
+            # Ensure that the EMCal is plotted first for consistency
+            if "DCal" in hist.GetName():
+                # Plot EMCal first
+                hists.append(otherHist)
+                hists.append(hist)
+            else:
+                # Plot EMCal first
+                hists.append(hist)
+                hists.append(otherHist)
+
+            #print(hists)
+
+            # Add legend
+            legend = TLegend(0.6, 0.9, 0.9, 0.7)
+            legend.SetBorderSize(0)
+            legend.SetFillStyle(0)
+            SetOwnership(legend, False)
+
+            # Lists to use to plot
+            detectors = ["EMCal", "DCal"]
+            colors = [ROOT.kRed+1, ROOT.kBlue+1]
+            markers = [ROOT.kFullCircle, ROOT.kOpenCircle]
+            options = ["", "same"]
+
+            # Plot elements
+            for tempHist, detector, color, marker, option in zip(hists, detectors, colors, markers, options):
+                tempHist.Sumw2()
+                tempHist.SetMarkerSize(0.8)
+                tempHist.SetMarkerStyle(marker)
+                tempHist.SetLineColor(color)
+                tempHist.SetMarkerColor(color)
+
+                tempHist.Scale(1./nEvents)
+                tempHist.GetYaxis().SetTitle("entries / events")
+
+                # Draw hists
+                # This is not the usual philosophy. We are clearing the canvas and then plotting
+                # the second hist on it
+                tempHist.Draw(option)
+                legend.AddEntry(tempHist, detector, "pe")
+
+            # Add legend
+            legend.Draw()
+
+            # Add energy axis
+            addEnergyAxisToPatches(hists[0])
+
+            # Remove from QA container! (Not currently possible)
+
+            # NOTE: the histogram is named after the EMCal (we have sorted the order of hists so that DCal comes before EMCal)
+        else:
+            if processingParameters.beVerbose == True:
+                print("Adding hist {0} for PatchAmp".format(hist.GetName()))
+            # Add histogram to save for later
+            # We clone to ensure there are no memory issues
+            qaContainer.addHist(hist.Clone(), hist.GetName())
+
+            if "EMCal" in hist.GetName():
+                # Needed to print EMC hist if the DCal equivalent does not exist
+                # Since the hists are sorted, the EMCal should never come up before the DCal one.
+                print("Keeping EMCal hist {0} since it seems to be unpaired with a DCal hist".format(hist.GetName()))
+
+                # Add energy axis
+                addEnergyAxisToPatches(hist)
+
+                # Still print the hist
+                return False
+            else:
+                # Don't print the individual histogram
+                # WARNING: This could cause unpaired DCal hists to disappear!
+                return True
+
+    # Essentially only for legacy support. Newer instances of this plot are handled above
+    properlyPlotPatchSpectra(hist)
+    addEnergyAxisToPatches(hist)
