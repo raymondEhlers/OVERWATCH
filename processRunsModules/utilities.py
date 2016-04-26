@@ -137,9 +137,13 @@ def rsyncData(dirPrefix, username, remoteSystems, remoteFileLocations):
             # The chmod argument is explained here: https://unix.stackexchange.com/a/218165
             # The omit-dir-times does not update the timestamps on dirs (but still does on files in those dirs),
             # which fixes a number of errors thrown when transfering to PDSF
-            # NOTE: Filenames of the form "*histos_*.root" are excluded from transfer! These are unprocessed files from the HLT and should not be transfered!
-            #rsync -rvlth --chmod=ugo=rwX --omit-dir-times --exclude="*histos_*.root" data/ rehlers@pdsf.nersc.gov:/project/projectdirs/alice/www/emcalMonitoring/data/2015/
-            rsyncCall = ["rsync", "-rvlth","--chmod=ugo=rwX", "--omit-dir-times", "--exclude=\"*histos_*.root\"", sendDirectory, username + "@" + remoteSystem + ":" + remoteFileLocation]
+            # Information on determining the right globbing is explained here: https://unix.stackexchange.com/a/2503
+            # NOTE: Files in directories "Run*" and "ReplayData/*" are transfered, and all other files in those directries are deleted!
+            #        The exception to this is the timeSlice directory.
+            #        Otherwise, all files in the root of the data directory are not transfered.
+            # NOTE: The argument order matters! The first one always applies, and then subsequent includes or excludes only work with what is still available!
+            #rsync -rvlth --chmod=ugo=rwX --omit-dir-times --exclude="Run*/*/timeSlices" --include="Run*/***" --include="ReplayData/***" --include="runList.html" --exclude="*" --delete data/ rehlers@pdsf.nersc.gov:/project/projectdirs/alice/www/emcalMonitoring/data/2016/
+            rsyncCall = ["rsync", "-rvlth","--chmod=ugo=rwX", "--omit-dir-times", "--exclude=\"Run*/*/timeSlices\"", "--include=\"Run*/***\"", "--include=\"ReplayData/***\"", "--include=\"runList.html\"", "--exclude=\"*\"", "--delete", sendDirectory, username + "@" + remoteSystem + ":" + remoteFileLocation]
             print(rsyncCall)
             call(rsyncCall)
 
