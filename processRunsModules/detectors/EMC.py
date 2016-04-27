@@ -62,8 +62,11 @@ def sortSMsInPhysicalOrder(histList):
     """
 
     tempList = []
+    print(len(histList))
     for i in range(0, len(histList), 2):
-        tempList.append(histList[i+1])
+        # Protect against overflowing the list
+        if i != (len(histList)-1):
+            tempList.append(histList[i+1])
         tempList.append(histList[i])
 
     return tempList
