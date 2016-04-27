@@ -9,6 +9,13 @@ then
     sourcedScript=true
 fi
 
+calledFromSystemd=false
+if [[ -n "$1" && "$1" == "systemd" ]];
+then
+    echo "Script was called by systemd!"
+    calledFromSystemd=true
+fi
+
 # Determine variables
 if [[ $HOSTNAME == *"pdsf"* || $HOSTNAME == *"sgn"* ]];
 then
@@ -61,5 +68,10 @@ then
 else
     # Start web server
     echo "Starting uwsgi with config at $projectPath/config/wsgi${location}.ini"
-    nohup uwsgi "$projectPath/config/wsgi${location}.ini" &> "$projectPath/app.log" &
+    if [[ "$calledFromSystemd" == true ]];
+    then
+        uwsgi "$projectPath/config/wsgi${location}.ini" &> "$projectPath/app.log"
+    else
+        nohup uwsgi "$projectPath/config/wsgi${location}.ini" &> "$projectPath/app.log" &
+    fi
 fi

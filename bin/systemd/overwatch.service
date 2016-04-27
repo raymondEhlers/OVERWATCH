@@ -1,0 +1,12 @@
+[Unit]
+Description=Start OVERWATCH
+
+[Service]
+# Based on https://www.digitalocean.com/community/tutorials/how-to-serve-flask-applications-with-uwsgi-and-nginx-on-centos-7
+User=rehlers
+Group=www-data
+ExecStart=/opt/www/aliceoverwatch/initOVERWATCH.sh "systemd"
+ExecStop=/bin/bash -c "echo q > /tmp/wsgiMasterFifo"
+
+[Install]
+WantedBy=multi-user.target
