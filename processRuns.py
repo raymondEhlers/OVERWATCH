@@ -142,13 +142,16 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
     for key in keysInFile:
         if "histEvents" in key.GetName():
             nEventsFromFile = key.ReadObj()
-            # Need to create a new hist to avoid a memory leak!
-            nEvents = TH1F("nEvents", "nEvents", 1, 0, 1)
-            nEvents.Fill(0.5, nEventsFromFile.GetBinContent(1))
-            #print("NEvents Hist name: {0}".format(key.GetName()))
-            #print("NEvents from file: {0}".format(nEventsFromFile.GetBinContent(1)))
-            print("NEvents: {0}".format(nEvents.GetBinContent(1)))
-            qaContainer.addHist(nEvents, "NEvents")
+            # If we subtract two files with the same number of events, then we would divide by 0.
+            # So we require there to be more than 0 events.
+            if nEventsFromFile.GetBinContent(1) > 0:
+                # Need to create a new hist to avoid a memory leak!
+                nEvents = TH1F("nEvents", "nEvents", 1, 0, 1)
+                nEvents.Fill(0.5, nEventsFromFile.GetBinContent(1))
+                print("NEvents Hist name: {0}".format(key.GetName()))
+                print("NEvents from file: {0}".format(nEventsFromFile.GetBinContent(1)))
+                print("NEvents: {0}".format(nEvents.GetBinContent(1)))
+                qaContainer.addHist(nEvents, "NEvents")
 
     # Sorts keys so that we can have consistency when histograms are processed.
     keysInFile.Sort()
