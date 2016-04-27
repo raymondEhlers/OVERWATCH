@@ -142,8 +142,10 @@ def rsyncData(dirPrefix, username, remoteSystems, remoteFileLocations):
             #        The exception to this is the timeSlice directory.
             #        Otherwise, all files in the root of the data directory are not transfered.
             # NOTE: The argument order matters! The first one always applies, and then subsequent includes or excludes only work with what is still available!
+            # NOTE: When we pass the arguments via call(), they are sent directly to rsync. Thus, quotes around
+            # each glob are not necessary and do not work correctly. See: https://stackoverflow.com/a/12497246
             #rsync -rvlth --chmod=ugo=rwX --omit-dir-times --exclude="Run*/*/timeSlices" --include="Run*/***" --include="ReplayData/***" --include="runList.html" --exclude="*" --delete data/ rehlers@pdsf.nersc.gov:/project/projectdirs/alice/www/emcalMonitoring/data/2016/
-            rsyncCall = ["rsync", "-rvlth","--chmod=ugo=rwX", "--omit-dir-times", "--exclude=\"Run*/*/timeSlices\"", "--include=\"Run*/***\"", "--include=\"ReplayData/***\"", "--include=\"runList.html\"", "--exclude=\"*\"", "--delete", sendDirectory, username + "@" + remoteSystem + ":" + remoteFileLocation]
+            rsyncCall = ["rsync", "-rvlth", "--chmod=ugo=rwX", "--omit-dir-times", "--exclude=Run*/*/timeSlices", "--include=Run*/***", "--include=ReplayData/***", "--include=runList.html", "--exclude=*", "--delete", sendDirectory, username + "@" + remoteSystem + ":" + remoteFileLocation]
             print(rsyncCall)
             call(rsyncCall)
 
