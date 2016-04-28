@@ -8,7 +8,7 @@ class sharedParameters(object):
     """
 
     #: Enable debugging information.
-    debug = False
+    debug = True
 
     #: List of subsystems.
     #: Each subsystem listed here will have an individual page for their respective histograms.
