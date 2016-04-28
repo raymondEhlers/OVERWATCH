@@ -41,7 +41,7 @@ echo "sshProcesses: $sshProcesses"
 if [[ -z "$sshProcesses" ]];
 then
     echo "Did not find necessary $receiverType autossh tunnel. Starting a new one!"
-    autossh -M $monitorPort -f -N -L $internalPort:localhost:$externalPort emcguest@lbnl5core.cern.ch
+    autossh -M $monitorPort -f -N -L $internalPort:localhost:$externalPort emcalguest@lbnl5core.cern.ch
 else
     echo "$receiverType autossh tunnel already found with PID $sshProcesses. Not starting another one."
 fi

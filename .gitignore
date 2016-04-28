@@ -4,7 +4,6 @@ serverParams.py
 # Directories to ignore
 build/
 bak/
-bin/
 # Virtualenv
 .env/
 .env3/

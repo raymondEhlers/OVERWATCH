@@ -94,7 +94,7 @@ class processingParameters(object):
     remoteFileLocations = {"data" : ["/opt/www/aliceoverwatch/data/", "/project/projectdirs/alice/www/emcalMonitoring/data/2015/"], "templates" : ["/opt/www/aliceoverwatch/templates/data/", "/project/projectdirs/alice/aliprodweb/overwatch/templates/data/"]}
 
     # Set variables for testing
-    if True:
+    if False:
         forceReprocessing = True
         sendData = False
         
