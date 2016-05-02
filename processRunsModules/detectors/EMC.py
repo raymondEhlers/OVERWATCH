@@ -12,7 +12,7 @@ from __future__ import print_function
 from builtins import range
 
 # Used for QA functions
-from ROOT import ROOT, TH1, TH1F, TProfile, TF1, TAxis, gPad, TAxis, TGaxis, SetOwnership, TPaveText, TLegend
+from ROOT import ROOT, TH1, TH1F, TProfile, TF1, TAxis, gPad, TAxis, TGaxis, SetOwnership, TPaveText, TLegend, TLine
 
 # Used for the outlier detection function
 import numpy
@@ -455,9 +455,76 @@ def addEnergyAxisToPatches(hist):
 # Label each individual super module (SM) plot
 ###################################################
 def labelSupermodules(hist):
+    """ Label each individual super module (SM) plot.
+
+    The label is inserted in the title.
+
+    """
     if "_SM" in hist.GetName()[-5:]:
         smNumber = hist.GetName()[hist.GetName().find("_SM")+3:]
         hist.SetTitle("SM {0}".format(smNumber))
+
+###################################################
+# Add a grid representing the TRUs to a canvas.
+###################################################
+def addTRUGrid(hist):
+    """ Add a grid of TLines representing the TRU on a canvas.
+
+    Note:
+        Assumes that the canvas is already created.
+
+    Note:
+        Allocates a large number of TLines which have SetOwnership(obj, False),
+        so this could lead to memory problems.
+
+    """
+    # TEMP
+    print("TRU Grid histName: {0}".format(hist.GetName()))
+
+    # Draw grid for TRUs in full EMCal SMs
+    for x in range(8, 48, 8):
+        line = TLine(x, 0, x, 60)
+        SetOwnership(line, False)
+        line.Draw()
+    # 60 + 1 to ensure that 60 is plotted
+    for y in range(12, 60+1, 12):
+        line = TLine(0, y, 48, y)
+        SetOwnership(line, False)
+        line.Draw()
+
+    # Draw grid for TRUs in 1/3 EMCal SMs
+    line = TLine(0, 64, 48, 64)
+    SetOwnership(line, False)
+    line.Draw()
+    line = TLine(24, 60, 24, 64)
+    SetOwnership(line, False)
+    line.Draw()
+
+    # Draw grid for TRUs in 2/3 DCal SMs
+    for x in range(8, 48, 8):
+        if (x == 24):
+            # skip PHOS hole
+            continue
+        line = TLine(x, 64, x, 100);
+        SetOwnership(line, False)
+        line.Draw();
+    for y in range(76, 100, 12):
+        line = TLine(0, y, 16, y)
+        SetOwnership(line, False)
+        line.Draw()
+        # skip PHOS hole
+        line = TLine(32, y, 48, y)
+        SetOwnership(line, False)
+        line.Draw()
+
+    # Draw grid for TRUs in 1/3 DCal SMs
+    line = TLine(0, 100, 48, 100)
+    SetOwnership(line, False)
+    line.Draw()
+    line = TLine(24, 100, 24, 104)
+    SetOwnership(line, False)
+    line.Draw()
+
 
 ###################################################
 # Add drawing options to plots
@@ -494,6 +561,10 @@ def setEMCDrawOptions(hist, qaContainer):
         hist.Scale(1./nEvents)
         hist.GetZaxis().SetTitle("entries / events")
 
+        if hist.InheritsFrom("TH2"):
+            # Add grid of TRU boundaries
+            addTRUGrid(hist)
+
     # Check summary FastOR hists
     # First determine possible fastOR names
     fastORLevels = ["EMCTRQA_histFastORL0", "EMCTRQA_histFastORL1"]
@@ -502,62 +573,72 @@ def setEMCDrawOptions(hist, qaContainer):
     #print(possibleFastORNames)
     #if "FastORL" in hist.GetName() and "SM" not in hist.GetName(): 
     if any(substring == hist.GetName() for substring in possibleFastORNames):
-        # Set threshold for printing
-        threshold = 0
-        # TODO: These thresholds probably need to be tuned
-        if "LargeAmp" in hist.GetName():
-            threshold = 7e-7
-        elif "Amp" in hist.GetName():
-            threshold = 10000
+        # Handle the 2D hists
+        if hist.InheritsFrom("TH2"):
+            # Add grid of TRU boundaries
+            addTRUGrid(hist)
+
+            # Scale hist
+            hist.Scale(1. / nEvents)
+            hist.GetZaxis().SetTitle("entries / events")
         else:
-            threshold = 3e-3
-        
-        # Set hist options
-        hist.Sumw2()
-        hist.Scale(1. / nEvents)
-
-        # Set style
-        hist.SetMarkerStyle(ROOT.kFullCircle)
-        hist.SetMarkerSize(0.8)
-        hist.SetMarkerColor(ROOT.kBlue+1)
-        hist.SetLineColor(ROOT.kBlue+1)
-        
-        # Find bins above the threshold
-        absIdList = []
-        for iBin in range(1, hist.GetXaxis().GetNbins()+1):
-            if hist.GetBinContent(iBin) > threshold:
-                # Translate back from bin number (1, Nbins() + 1) to fastOR ID (0, Nbins())
-                absIdList.append(iBin - 1)
-            
-        # Create pave text to display above threshold values
-        # TODO: This should be saved with the element and written to the page rather than the image.
-        #        Such a change will require a change in architecture.
-        pave = TPaveText(0.1, 0.7, 0.9, 0.2, "NB NDC")
-        pave.SetTextAlign(13)
-        pave.SetTextFont(43)
-        pave.SetTextSize(12)
-        pave.SetFillStyle(0)
-        pave.SetTextColor(ROOT.kRed)
-        pave.SetBorderSize(0)
-        SetOwnership(pave, False)
-        
-        # Add above threshold values to the pave text
-        absIdText = ""
-        for absId in absIdList:
-            if absIdText:
-                absIdText = "{0}, {1}".format(absIdText, absId)
+            # Check thresholds for hot fastORs in 1D hists
+            # Set threshold for printing
+            threshold = 0
+            # TODO: These thresholds probably need to be tuned
+            if "LargeAmp" in hist.GetName():
+                threshold = 7e-7
+            elif "Amp" in hist.GetName():
+                threshold = 10000
             else:
-                absIdText = "{0}".format(absId)
-            if len(absIdText) > 110:
-                pave.AddText(absIdText)
-                #print(absIdText)
-                absIdText = ""
-        #print(hist.GetName())
+                threshold = 3e-3
 
-        # Only draw if we have enough statistics!
-        if nEvents > 10000: 
-            #print("Drawing hot fastORs!")
-            pave.Draw("same")
+            # Set hist options
+            hist.Sumw2()
+            hist.Scale(1. / nEvents)
+
+            # Set style
+            hist.SetMarkerStyle(ROOT.kFullCircle)
+            hist.SetMarkerSize(0.8)
+            hist.SetMarkerColor(ROOT.kBlue+1)
+            hist.SetLineColor(ROOT.kBlue+1)
+
+            # Find bins above the threshold
+            absIdList = []
+            for iBin in range(1, hist.GetXaxis().GetNbins()+1):
+                if hist.GetBinContent(iBin) > threshold:
+                    # Translate back from bin number (1, Nbins() + 1) to fastOR ID (0, Nbins())
+                    absIdList.append(iBin - 1)
+
+            # Create pave text to display above threshold values
+            # TODO: This should be saved with the element and written to the page rather than the image.
+            #        Such a change will require a change in architecture.
+            pave = TPaveText(0.1, 0.7, 0.9, 0.2, "NB NDC")
+            pave.SetTextAlign(13)
+            pave.SetTextFont(43)
+            pave.SetTextSize(12)
+            pave.SetFillStyle(0)
+            pave.SetTextColor(ROOT.kRed)
+            pave.SetBorderSize(0)
+            SetOwnership(pave, False)
+
+            # Add above threshold values to the pave text
+            absIdText = ""
+            for absId in absIdList:
+                if absIdText:
+                    absIdText = "{0}, {1}".format(absIdText, absId)
+                else:
+                    absIdText = "{0}".format(absId)
+                if len(absIdText) > 110:
+                    pave.AddText(absIdText)
+                    #print(absIdText)
+                    absIdText = ""
+            #print(hist.GetName())
+
+            # Only draw if we have enough statistics!
+            if nEvents > 10000:
+                #print("Drawing hot fastORs!")
+                pave.Draw("same")
     
     # PlotMaxPatch plots
     # Ideally EMCal and DCal histos should be plot on the same plot
