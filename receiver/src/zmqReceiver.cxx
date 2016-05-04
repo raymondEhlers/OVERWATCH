@@ -234,7 +234,7 @@ int zmqReceiver::ProcessOption(TString option, TString value)
   }
   else if (option.EqualTo("verbose"))
   {
-    fVerbose = value;
+    fVerbose = atoi(value);
   }
   else if (option.EqualTo("select"))
   {

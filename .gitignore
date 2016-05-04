@@ -4,6 +4,7 @@ serverParams.py
 # Directories to ignore
 build/
 bak/
+test/
 # Virtualenv
 .env/
 .env3/
@@ -12,6 +13,9 @@ bak/
 Run*/
 data
 runList.html
+
+# Ignore receiver executable
+zmqReceive
 
 # Ignore notes
 notes.md
