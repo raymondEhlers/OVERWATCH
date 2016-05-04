@@ -5,13 +5,9 @@
 //
 // Author: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 
-#include <map>
 #include <zmq.h>
 
 #include <TString.h>
-#include <TMap.h>
-#include <TFile.h>
-#include <TH1.h>
 
 class zmqReceiver 
 {
@@ -32,62 +28,33 @@ class zmqReceiver
  protected:
   // Types
   enum runNumberTypes { kUnknownRunNumber = 12345678 };
-  typedef std::map<std::string,std::string> stringMap;
 
   // Methods
   // Parsing
   int ProcessOption(TString option, TString value);
-  // Run setup
-  TFile * initializeNewRunFile(Bool_t endOfRun = kFALSE, Bool_t missedStartOfRun = kFALSE);
-  void writeFile(Bool_t endOfRun = kFALSE, Bool_t missedStartOfRun = kFALSE);
   // Data management
   void ReceiveData();
   void ClearData();
-  void writeToFile();
-  int HandleDataIn(zmq_msg_t* topicMsg, zmq_msg_t* dataMsg, void* /*socket*/=NULL);
-  void processReceivedHistogram(TH1 * object);
-  void mergeHists(TH1 * mergeInto, TList * mergingList);
-  void mergeAllHists();
-  // ZMQ data management
-  TObject * UnpackMessage(zmq_msg_t* message);
+  void WriteToFile();
   // ZMQ request
   void SendRequest();
 
   // configuration vars
-  int fVerbose;
-  int fRunNumber;
-  std::string fSubsystem;
-  std::string fHLTMode;
-  TString fZMQconfigIn;
-  //
-  Int_t fHistogramGroupCounter;
-  Double_t fPreviousObjectTime;
-  Double_t fMaxTimeBetweenObjects;
-  Double_t fMaxWaitTime;
-  //AliHLTDataTopic subscribeType = kAliHLTDataTypeHistogram;
-  //TString fZMQsubscriptionIN = subscribeType.Description().c_str();
-  TString fHistIdentifier;
-  TString fDirPrefix;
-  TString fPreviousObjectName;
-  TString fMergeAfterObjectName;
-  Bool_t fLockInMergeName;
-  Bool_t fJustWroteFile;
+  int fVerbose; // Sets verbosity in printing
+  int fRunNumber; // Contains the run number
+  std::string fSubsystem; // Contains the subsystem that this receiver should be interested in
+  std::string fHLTMode; // Contains the HLT mode
+  std::string fZMQconfigIn; // Contains the address for ZMQ
+  std::string fSelection; // Selection option that should be requested to the merger
+  int fPollInterval; // Time between each request for data in milliseconds
+  int fPollTimeout; // Time to wait for data after each request In milliseconds
 
+  // Received data
   std::vector <TObject *> fData; // Contains received objects
-  TString fSelection;
-  int fPollInterval; // In milliseconds
-  int fPollTimeout; // In milliseconds
 
-  // internal state
-  TMap fMergeObjectMap;        //map of the merged objects, all incoming stuff is merged into these
-  TMap fMergeListMap;          //map with the lists of objects to be merged in
-  int fMaxObjects;        //trigger merge after this many messages
-
-  //ZMQ stuff
+  // ZMQ context and socket
   void* fZMQcontext;    //ze zmq context
-
-  void* fZMQin;        //the in socket - entry point for the data to be merged.
-  void* fZMQinternal;   //the pair socket for thread communication
+  void* fZMQin;        //the in socket - entry point for the received data.
 };
 
 #endif /* zmqReceiver.h */

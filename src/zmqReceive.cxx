@@ -4,16 +4,18 @@
 
 #include "zmqReceiver.h"
 
+#include <string>
+
 #include <AliZMQhelpers.h>
 
-#include <TString.h>
+//#include <TString.h>
 
 //_______________________________________________________________________________________
 int main(int argc, char** argv)
 {
   int mainReturnCode = 0;
 
-  TString fUsage = "Use the proper options";
+  std::string fUsage = "Use the proper options";
   
   // Create receiver
   zmqReceiver receiver;
@@ -22,17 +24,18 @@ int main(int argc, char** argv)
   int nOptions = receiver.ProcessOptionString(AliOptionParser::GetFullArgString(argc,argv));
   if (nOptions <= 0) 
   {
-    Printf("%s", fUsage.Data());
+    Printf("%s", fUsage.c_str());
     return 1;
   }
 
-  //init stuff
+  // Init ZMQ
   if (receiver.InitZMQ() < 0) {
     Printf("failed init");
     return 1;
   }
 
   // Run zmq receiver
+  // TODO: Catch ctrl-c!
   receiver.Run();
 
   // destroy ZMQ sockets
