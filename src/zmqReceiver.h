@@ -26,7 +26,6 @@ class zmqReceiver
   void Cleanup();
 
  protected:
-  // Types
   enum runNumberTypes { kUnknownRunNumber = 12345678 };
 
   // Methods
@@ -39,15 +38,17 @@ class zmqReceiver
   // ZMQ request
   void SendRequest();
 
-  // configuration vars
+  // Configuration
+  // Receiver
   int fVerbose; // Sets verbosity in printing
   int fRunNumber; // Contains the run number
   std::string fSubsystem; // Contains the subsystem that this receiver should be interested in
   std::string fHLTMode; // Contains the HLT mode
-  std::string fZMQconfigIn; // Contains the address for ZMQ
   std::string fSelection; // Selection option that should be requested to the merger
+  // ZMQ
   int fPollInterval; // Time between each request for data in milliseconds
   int fPollTimeout; // Time to wait for data after each request In milliseconds
+  std::string fZMQconfigIn; // Contains the address for ZMQ
 
   // Received data
   std::vector <TObject *> fData; // Contains received objects

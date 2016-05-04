@@ -22,15 +22,15 @@
 //#include <TPRegexp.h>
 
 zmqReceiver::zmqReceiver():
-  fVerbose(1),
+  fVerbose(0),
   fRunNumber(kUnknownRunNumber),
-  fZMQconfigIn("SUB>tcp://localhost:60201"),
-  fSelection(""),
-  fHLTMode("B"),
   fSubsystem("EMC"),
-  fData(),
+  fHLTMode("B"),
+  fSelection(""),
   fPollInterval(60000),
   fPollTimeout(10000),
+  fZMQconfigIn("SUB>tcp://localhost:60201"),
+  fData(),
   fZMQcontext(NULL),
   fZMQin(NULL)
 {
@@ -54,19 +54,19 @@ int zmqReceiver::Run()
     // Request the data
     SendRequest();
 
-    // Wait for the data
+    // Define ZMQ sockets
     zmq_pollitem_t sockets[] = { 
       { fZMQin, 0, ZMQ_POLLIN, 0 },
     };
 
-    // poll sockets
+    // Wait for the data by polling sockets
     // The second argument denotes the number of sockets that are being polled
     // The third argument is the timeout
     rc = zmq_poll(sockets, 1, -1); 
     if (rc==-1 && errno == ETERM)
     {
       // This can only happen it the context was terminated, one of the sockets are
-      // not valid or operation was interrupted
+      // not valid, or operation was interrupted
       Printf("ZMQ context was terminated! Bailing out! rc = %i, %s", rc, zmq_strerror(errno));
       return -1;
     }
@@ -74,7 +74,7 @@ int zmqReceiver::Run()
     // Handle if server died
     if (!(sockets[0].revents & ZMQ_POLLIN))
     {
-      //server died
+      // Server died
       Printf("Connection timed out. Server %s died?", fZMQconfigIn.c_str());
       int fZMQsocketModeIn = alizmq_socket_init(fZMQin, fZMQcontext, fZMQconfigIn.c_str());
       if (fVerbose) { std::cout << fZMQsocketModeIn << std::endl; }
@@ -84,18 +84,19 @@ int zmqReceiver::Run()
         return -1;
       }
 
+      // If we managed to reinitialize the socket, then we start over again
       continue;
     }
-    // data present socket 0 - in
+    // Data present in socket 0 (ie fZMQin)
     else if (sockets[0].revents & ZMQ_POLLIN)
     {
       ReceiveData();
     }
 
-    // Set the sleep time here (equivalent to the poll interval)
+    // Sleep so that we are not constantly requesting data
     std::this_thread::sleep_for(std::chrono::milliseconds(fPollInterval));
 
-  }//main loop
+  }
 
   return 0;
 }
@@ -110,24 +111,29 @@ void zmqReceiver::ReceiveData()
   aliZMQmsg message;
   alizmq_msg_recv(&message, fZMQin, 0);
 
-  // Processing messages
+  // Processing message data
   for (aliZMQmsg::iterator i=message.begin(); i!=message.end(); ++i)
   {
+    // Check for information about the data
     if (alizmq_msg_iter_check(i, "INFO")==0)
     {
-      //check if we have a runnumber in the string
+      // Retrieve info about the data
       std::string info;
-      alizmq_msg_iter_data(i,info);
+      alizmq_msg_iter_data(i, info);
       if (fVerbose) { Printf("processing INFO %s", info.c_str()); }
       
+      // Parse the info string
       stringMap fInfoMap = ParseParamString(info);
 
       // Retrieve run number and HLT mode
       fRunNumber = atoi(fInfoMap["run"].c_str());
       fHLTMode = fInfoMap["HLTmode"];
+
+      // Now move onto processing the actual data
       continue;
     }
 
+    // Store the data to be written out
     TObject* object;
     alizmq_msg_iter_data(i, object);
     fData.push_back(object);
@@ -177,7 +183,7 @@ void zmqReceiver::SendRequest()
   }
   alizmq_msg_send("CONFIG", request, fZMQin, ZMQ_SNDMORE);
   //alizmq_msg_send("CONFIG", "select=EMC*", fZMQin, ZMQ_SNDMORE);
-  if (fVerbose) Printf("sending request CONFIG %s", request.c_str());
+  if (fVerbose) Printf("sending request CONFIG with request \"%s\"", request.c_str());
   alizmq_msg_send("", "", fZMQin, 0);
 }
 
@@ -191,40 +197,10 @@ void zmqReceiver::ClearData()
   fData.clear();
 }
 
-//______________________________________________________________________________
-int zmqReceiver::ProcessOption(TString option, TString value)
-{
-  //process option
-  //to be implemented by the user
-
-  if (option.EqualTo("ZMQconfigIN") || option.EqualTo("in"))
-  {
-    fZMQconfigIn = value;
-  }
-  else if (option.EqualTo("verbose"))
-  {
-    fVerbose = value.Atoi();
-  }
-  else if (option.EqualTo("select"))
-  {
-    fSelection = value;
-  }
-  else if (option.EqualTo("PollInterval") || option.EqualTo("sleep"))
-  {
-    fPollInterval = round(value.Atof()*1e3);
-  }
-  else if (option.EqualTo("PollTimeout") || option.EqualTo("timeout"))
-  {
-    fPollTimeout = round(value.Atof()*1e3);
-  }
-
-  return 1; 
-}
-
 //_______________________________________________________________________________________
 int zmqReceiver::InitZMQ()
 {
-  // Init or reinit stuff
+  // Init or reinit ZMQ socket
   int rc = 0;
   rc += alizmq_socket_init(fZMQin,  fZMQcontext, fZMQconfigIn.c_str());
 
@@ -243,18 +219,63 @@ void zmqReceiver::Cleanup()
 }
 
 ////////////////////////////////////////////////////////////////////////////////
+// Handle command line options
+////////////////////////////////////////////////////////////////////////////////
+
+//______________________________________________________________________________
+int zmqReceiver::ProcessOption(TString option, TString value)
+{
+  //process option
+  //to be implemented by the user
+
+  if (option.EqualTo("ZMQconfigIN") || option.EqualTo("in"))
+  {
+    fZMQconfigIn = value;
+  }
+  else if (option.EqualTo("verbose"))
+  {
+    fVerbose = value;
+  }
+  else if (option.EqualTo("select"))
+  {
+    fSelection = value;
+  }
+  else if (option.EqualTo("PollInterval") || option.EqualTo("sleep"))
+  {
+    fPollInterval = round(value.Atof()*1e3);
+  }
+  else if (option.EqualTo("PollTimeout") || option.EqualTo("timeout"))
+  {
+    fPollTimeout = round(value.Atof()*1e3);
+  }
+  else
+  {
+    return -1;
+  }
+
+  return 1; 
+}
 
 //______________________________________________________________________________
 int zmqReceiver::ProcessOptionString(TString arguments)
 {
-  //process passed options
+  // Process passed options
   aliStringVec* options = AliOptionParser::TokenizeOptionString(arguments);
+  int nOptions = 0;
   for (aliStringVec::iterator i=options->begin(); i!=options->end(); ++i)
   {
-    //Printf("  %s : %s", i->first.data(), i->second.data());
-    ProcessOption(i->first,i->second);
+    if (ProcessOption(i->first,i->second) < 0)
+    {
+      // If an option is not found, then print the help
+      nOptions = -1;
+      break;
+    }
+
+    // Keep track of number succssfully parsed
+    nOptions++;
   }
+
   delete options; //tidy up
 
-  return 1; 
+  return nOptions; 
 }
