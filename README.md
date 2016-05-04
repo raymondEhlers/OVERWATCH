@@ -214,6 +214,10 @@ This project was originally developed in the [alice-yale-dev](https://gitlab.cer
 
 There are a number of possible improvements for this project
 
+ - Allow additional user options for reprocessing via the time dependent merge. Additional options should include:
+     - Option to disable scaling by nEvents.
+     - Option to change the hot channel warning threshold. This should be done generally enough such that other values could be set in the future.
+
  - Implement better logging and error notification. It is all explained [here](http://flask.pocoo.org/docs/0.10/errorhandling/).
 
  - Split out the QA and partial merge functions to use worker pools using something such as `celery`. This would require asynchronus loading of the images once the process is completed. One solution for 
