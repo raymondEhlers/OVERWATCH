@@ -205,26 +205,33 @@ def moveFiles(subsystemDict, dirPrefix):
             splitFilename = tempFilename.replace(".root","").split("_")
             #print("tempFilename: %s" % tempFilename)
             #print("splitFilename: ", splitFilename)
-            if len(splitFilename) < 2:
+            if len(splitFilename) < 3:
                 continue
-            timeString = "_".join(splitFilename[2:])
+            timeString = "_".join(splitFilename[3:])
             #print("timeString: ", timeString)
 
             # How to parse the timeString if desired
             #timeStamp = time.strptime(timeString, "%Y_%m_%d_%H_%M_%S")
             runString = splitFilename[1]
             runNumber = int(runString)
+            hltMode = splitFilename[2]
+
+            # Determine the directory structure for each run
+            runDirectoryPath = "Run" + str(runNumber)
+            # Move replays of the data to a different directory
+            if hltMode == "E":
+                runDirectoryPath = os.path.join("replay", runDirectoryPath)
 
             # Create Run directory and subsystem directories as needed
-            if not os.path.exists(os.path.join(dirPrefix, "Run" + str(runNumber))):
-                os.makedirs( os.path.join(dirPrefix, "Run" + str(runNumber)) )
-            if len(filesToMove) != 0 and not os.path.exists(os.path.join(dirPrefix, "Run" + str(runNumber), key)):
-                os.makedirs(os.path.join(dirPrefix, "Run" + str(runNumber), key))
+            if not os.path.exists(os.path.join(dirPrefix, runDirectoryPath)):
+                os.makedirs( os.path.join(dirPrefix, runDirectoryPath) )
+            if len(filesToMove) != 0 and not os.path.exists(os.path.join(dirPrefix, runDirectoryPath, key)):
+                os.makedirs(os.path.join(dirPrefix, runDirectoryPath, key))
             
             newFilename = key + "hists." + timeString + ".root"
 
             oldPath = os.path.join(dirPrefix, tempFilename)
-            newPath = os.path.join(dirPrefix, "Run" + str(runNumber), key, newFilename)
+            newPath = os.path.join(dirPrefix, runDirectoryPath, key, newFilename)
             print("Moving %s to %s" % (oldPath, newPath))
             # DON"T IMPORT MOVE. BAD CONSEQUENCES!!
             shutil.move(oldPath, newPath)
