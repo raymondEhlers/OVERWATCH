@@ -4,6 +4,13 @@ set (CMAKE_MODULE_PATH "${zmqReceiver_SOURCE_DIR}/cmake")
      
 execute_process ( COMMAND root-config --etcdir WORKING_DIRECTORY /tmp OUTPUT_VARIABLE ROOT_ETCDIR OUTPUT_STRIP_TRAILING_WHITESPACE )
 set( CMAKE_MODULE_PATH "${CMAKE_MODULE_PATH};${ROOT_ETCDIR}/cmake" )
+
+# Ensure compilation with c++11
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std=c++11")
+if(CMAKE_CXX_COMPILER_ID EQUAL Clang)
+  SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -stdlib=libc++")
+endif(CMAKE_CXX_COMPILER_ID EQUAL Clang)
+
 find_package(ROOT REQUIRED)
 
 if (ROOT_FOUND)

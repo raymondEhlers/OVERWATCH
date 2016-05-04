@@ -160,6 +160,8 @@ void zmqReceiver::WriteToFile()
   // Create file
   TFile * fOut = new TFile(filename.Data(), "RECREATE");
 
+  if (fVerbose) { std::cout << "Writing " << fData.size() << " objects to " << filename.Data() << std::endl; }
+
   // Iterate over all objects and write them to the file
   for (std::vector<TObject *>::iterator it = fData.begin(); it != fData.end(); ++it)
   {
