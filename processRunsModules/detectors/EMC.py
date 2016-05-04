@@ -587,11 +587,11 @@ def setEMCDrawOptions(hist, qaContainer):
             threshold = 0
             # TODO: These thresholds probably need to be tuned
             if "LargeAmp" in hist.GetName():
-                threshold = 7e-7
+                threshold = 1e-7
             elif "Amp" in hist.GetName():
                 threshold = 10000
             else:
-                threshold = 3e-3
+                threshold = 1e-2
 
             # Set hist options
             hist.Sumw2()
