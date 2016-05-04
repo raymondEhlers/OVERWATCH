@@ -54,13 +54,16 @@ class zmqReceiver
   void SendRequest();
 
   // configuration vars
-  Int_t fVerbose;
+  int fVerbose;
+  int fRunNumber;
+  std::string fSubsystem;
+  std::string fHLTMode;
+  TString fZMQconfigIn;
+  //
   Int_t fHistogramGroupCounter;
   Double_t fPreviousObjectTime;
   Double_t fMaxTimeBetweenObjects;
   Double_t fMaxWaitTime;
-  Int_t fRunNumber;
-  TString fZMQconfigIn;
   //AliHLTDataTopic subscribeType = kAliHLTDataTypeHistogram;
   //TString fZMQsubscriptionIN = subscribeType.Description().c_str();
   TString fHistIdentifier;

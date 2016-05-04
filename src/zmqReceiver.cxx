@@ -7,7 +7,7 @@
 #include <zmq.h>
 #include <iostream>
 #include <string>
-//#include <ctime>
+#include <ctime>
 #include <cstdlib>
 
 // For timing
@@ -51,6 +51,8 @@ zmqReceiver::zmqReceiver():
   fJustWroteFile(kFALSE),
   fMaxObjects(10),
   fSelection(""),
+  fHLTMode("B"),
+  fSubsystem("EMC"),
   fData(),
   fPollInterval(60000),
   fPollTimeout(10000),
@@ -438,9 +440,9 @@ int zmqReceiver::HandleDataIn(zmq_msg_t* topicMsg, zmq_msg_t* dataMsg, void* soc
   {
     if (fVerbose > 1) { Printf("Histogram found!"); }
     // Process message
-    TObject* object = UnpackMessage(dataMsg );
+    //TObject* object = UnpackMessage(dataMsg );
 
-    processReceivedHistogram(static_cast<TH1*>(object));
+    //processReceivedHistogram(static_cast<TH1*>(object));
   }
   else
   {
@@ -458,7 +460,7 @@ int zmqReceiver::HandleDataIn(zmq_msg_t* topicMsg, zmq_msg_t* dataMsg, void* soc
 //_______________________________________________________________________________________
 void zmqReceiver::ClearData()
 {
-  for(std::vector<TObject *>::iterator it = fData.begin(); it != fData.end(); ++it)
+  for (std::vector<TObject *>::iterator it = fData.begin(); it != fData.end(); ++it)
   {
     delete *it;
   }
@@ -548,7 +550,7 @@ void zmqReceiver::ReceiveData()
 
       // Retrieve run number and HLT mode
       fRunNumber = atoi(fInfoMap["run"].c_str());
-      fHLTmode = fInfoMap["HLTmode"];
+      fHLTMode = fInfoMap["HLTmode"];
       continue;
     }
 
@@ -558,6 +560,7 @@ void zmqReceiver::ReceiveData()
     //HandleDataIn(i->first, i->second, fZMQin);
   }
 
+  // Close message
   alizmq_msg_close(&message);
 
   // Write Data
@@ -565,9 +568,29 @@ void zmqReceiver::ReceiveData()
 }
 
 //______________________________________________________________________________
-void writeToFile()
+void zmqReceiver::writeToFile()
 {
-  //
+  // Get current time
+  time_t now = time(NULL);
+  struct tm * timestamp = localtime(&now);
+
+  // Format is SUBSYSTEMhistos_runNumber_hltMode_time.root
+  // For example, EMChistos_123456_B_2015_3_14_2_3_5.root
+  TString filename = TString::Format("%shistos_%d_%s_%d_%d_%d_%d_%d_%d.root", fSubsystem.c_str(), fRunNumber, fHLTMode.c_str(), timestamp->tm_year+1900, timestamp->tm_mon+1, timestamp->tm_mday, timestamp->tm_hour, timestamp->tm_min, timestamp->tm_sec);
+
+  // Create file
+  TFile * fOut = new TFile(filename.Data(), "RECREATE");
+
+  // Iterate over all objects and write them to the file
+  for (std::vector<TObject *>::iterator it = fData.begin(); it != fData.end(); ++it)
+  {
+    if (fVerbose) Printf("writing object %s to %s",(*it)->GetName(), filename.Data());
+    (*it)->Write((*it)->GetName());
+  }
+
+  // Close file
+  fOut->Close();
+  delete fOut;
 }
 
 //______________________________________________________________________________
@@ -653,7 +676,7 @@ void zmqReceiver::Cleanup()
 }
 
 //_______________________________________________________________________________________
-TObject* zmqReceiver::UnpackMessage(zmq_msg_t* message)
+/*TObject* zmqReceiver::UnpackMessage(zmq_msg_t* message)
 {
   size_t size = zmq_msg_size(message);
   void* data = zmq_msg_data(message);
@@ -661,7 +684,7 @@ TObject* zmqReceiver::UnpackMessage(zmq_msg_t* message)
   TObject* object = NULL;
   object = AliHLTMessage::Extract(data, size);
   return object;
-}
+}*/
 
 ////////////////////////////////////////////////////////////////////////////////
 
