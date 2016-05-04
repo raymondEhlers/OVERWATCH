@@ -4,27 +4,27 @@
 
 #include "zmqReceiver.h"
 
-#include <TString.h>
-#include <TMessage.h>
+#include <AliZMQhelpers.h>
 
-TString GetFullArgString(int argc, char** argv);
+#include <TString.h>
 
 //_______________________________________________________________________________________
 int main(int argc, char** argv)
 {
   int mainReturnCode = 0;
 
+  TString fUsage = "Use the proper options";
+  
+  // Create receiver
   zmqReceiver receiver;
 
-  //process args
-  TString argString = GetFullArgString(argc,argv);
-  receiver.ProcessOptionString(argString);
-
-  //globally enable schema evolution for serializing ROOT objects
-  TMessage::EnableSchemaEvolutionForAll(kTRUE);
-
-  // The context
-  receiver.setZMQContext(zmq_ctx_new());
+  // Process args
+  int nOptions = receiver.ProcessOptionString(AliOptionParser::GetFullArgString(argc,argv));
+  if (nOptions <= 0) 
+  {
+    Printf("%s", fUsage.Data());
+    return 1;
+  }
 
   //init stuff
   if (receiver.InitZMQ() < 0) {
@@ -36,24 +36,8 @@ int main(int argc, char** argv)
   receiver.Run();
 
   // destroy ZMQ sockets
-  receiver.cleanup();
+  receiver.Cleanup();
 
   return mainReturnCode;
-}
-
-//_______________________________________________________________________________________
-TString GetFullArgString(int argc, char** argv)
-{
-  TString argString;
-  TString argument="";
-  if (argc>0) {
-    for (int i=1; i<argc; i++) {
-      argument=argv[i];
-      if (argument.IsNull()) continue;
-      if (!argString.IsNull()) argString+=" ";
-      argString+=argument;
-    }  
-  }
-  return argString;
 }
 
