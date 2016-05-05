@@ -1,15 +1,30 @@
 #!/usr/bin/env bash
 
-# Script to connect to HLT proxy, and restart it every 30 minutes
+# Script to connect to HLT proxy
 
+# Handle the user not passing the proper options
 if [[ "$#" -ne 3 ]];
 then
     echo "Did not define normal number of arguments. Gave $#, but expected 3"
     echo "Continuing using some defualt values."
 fi
 
-echo "Loading alice software"
-. /home/james/alice/alice-env.sh -n 1 -q
+# Determine current location of file
+# From: http://stackoverflow.com/a/246128 
+currentLocation="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
+# Add receiver to path
+# This script should be located at the same path as the receiver, so we will use that path
+echo "Adding ${currentLocation} to PATH for the zmqReceive executable!"
+PATH="$currentLocation:$PATH"
+
+echo "Loading configruation variables!"
+source "$currentLocation/hltReceiverConfiguration.sh"
+
+echo "Loading alice software from ${aliceSoftwarePath}"
+. ${aliceSoftwarePath}/alice-env.sh -n 1 -q
+
+exit 0
 
 internalPort=${1:-40321}
 externalPort=${2:-60321}
