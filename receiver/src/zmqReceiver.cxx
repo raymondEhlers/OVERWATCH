@@ -268,6 +268,10 @@ int zmqReceiver::ProcessOption(TString option, TString value)
   {
     fResetMerger = true;
   }
+  else if (option.EqualTo("subsystem"))
+  {
+    fSubsystem = value;
+  }
   else if (option.EqualTo("PollInterval") || option.EqualTo("sleep"))
   {
     fPollInterval = round(value.Atof()*1e3);
