@@ -11,7 +11,7 @@ set(ZEROMQ_FOUND FALSE)
 if(ZEROMQ)
     # ZeroMQ is installed in a custom place
     find_library(ZEROMQ_LIBRARIES NAMES zmq
-                PATHS ${ZEROMQ}/lib
+                PATHS ${ZEROMQ}/lib ${ZEROMQ}/lib/x86_64-linux-gnu
                 NO_DEFAULT_PATH
                 DOC "Path to libzmq)"
             )
