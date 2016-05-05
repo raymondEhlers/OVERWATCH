@@ -7,6 +7,7 @@
 #include <zmq.h>
 #include <iostream>
 #include <string>
+#include <sstream>
 #include <ctime>
 
 // For timing
@@ -24,6 +25,7 @@
 zmqReceiver::zmqReceiver():
   fVerbose(0),
   fRunNumber(kUnknownRunNumber),
+  fResetMerger(false),
   fSubsystem("EMC"),
   fHLTMode("B"),
   fSelection(""),
@@ -45,6 +47,8 @@ zmqReceiver::zmqReceiver():
 int zmqReceiver::Run()
 {
   int rc = 0;
+
+  std::cout << PrintConfiguration() << std::endl;
 
   //main loop
   while(1)
@@ -183,6 +187,10 @@ void zmqReceiver::SendRequest()
     request += " select=";
     request += fSelection.c_str();
   }
+  if (fResetMerger == true)
+  {
+    request += " ResetOnRequest";
+  }
   alizmq_msg_send("CONFIG", request, fZMQin, ZMQ_SNDMORE);
   //alizmq_msg_send("CONFIG", "select=EMC*", fZMQin, ZMQ_SNDMORE);
   if (fVerbose) Printf("sending request CONFIG with request \"%s\"", request.c_str());
@@ -220,6 +228,20 @@ void zmqReceiver::Cleanup()
   zmq_ctx_term(fZMQcontext);
 }
 
+//______________________________________________________________________________
+std::string zmqReceiver::PrintConfiguration()
+{
+  std::stringstream status;
+  status << "Running receiver with configuration:" << std::endl;
+  status << "\tVerbosity: " << fVerbose << std::endl;
+  status << "\tSelection: \"" << fSelection << "\"" << std::endl;
+  status << "\tResetMerger: " << fResetMerger << std::endl;
+  status << "\tSleep time between requests: " << fPollInterval/1e3 << " s" << std::endl;
+  status << "\tRequest timeout: " << fPollTimeout/1e3 << " s" << std::endl;
+
+  return status.str();
+}
+
 ////////////////////////////////////////////////////////////////////////////////
 // Handle command line options
 ////////////////////////////////////////////////////////////////////////////////
@@ -241,6 +263,10 @@ int zmqReceiver::ProcessOption(TString option, TString value)
   else if (option.EqualTo("select"))
   {
     fSelection = value;
+  }
+  else if (option.EqualTo("resetMerger"))
+  {
+    fResetMerger = true;
   }
   else if (option.EqualTo("PollInterval") || option.EqualTo("sleep"))
   {

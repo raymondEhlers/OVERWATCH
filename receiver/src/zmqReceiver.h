@@ -31,6 +31,8 @@ class zmqReceiver
   // Methods
   // Parsing
   int ProcessOption(TString option, TString value);
+  // Status
+  std::string PrintConfiguration();
   // Data management
   void ReceiveData();
   void ClearData();
@@ -42,6 +44,7 @@ class zmqReceiver
   // Receiver
   int fVerbose; // Sets verbosity in printing
   int fRunNumber; // Contains the run number
+  bool fResetMerger; // Request the merger to reset the data
   std::string fSubsystem; // Contains the subsystem that this receiver should be interested in
   std::string fHLTMode; // Contains the HLT mode
   std::string fSelection; // Selection option that should be requested to the merger
