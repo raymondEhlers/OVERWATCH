@@ -131,7 +131,9 @@ void zmqReceiver::ReceiveData()
 
       // Retrieve run number and HLT mode
       fRunNumber = atoi(fInfoMap["run"].c_str());
-      fHLTMode = fInfoMap["HLTmode"];
+      fHLTMode = fInfoMap["HLT_MODE"];
+
+      if (fVerbose) { Printf("Received:\n\tRun Number: %i\n\tHLT Mode: %s\n", fRunNumber, fHLTMode.c_str()); }
 
       // Now move onto processing the actual data
       continue;
@@ -193,7 +195,7 @@ void zmqReceiver::SendRequest()
   }
   alizmq_msg_send("CONFIG", request, fZMQin, ZMQ_SNDMORE);
   //alizmq_msg_send("CONFIG", "select=EMC*", fZMQin, ZMQ_SNDMORE);
-  if (fVerbose) Printf("sending request CONFIG with request \"%s\"", request.c_str());
+  if (fVerbose) Printf("\nsending request CONFIG with request \"%s\"", request.c_str());
   alizmq_msg_send("", "", fZMQin, 0);
 }
 
@@ -222,7 +224,7 @@ void zmqReceiver::Cleanup()
 {
   // Destory zmq sockets
   // TEMP
-  //alizmq_socket_close(fZMQin);
+  alizmq_socket_close(fZMQin);
 
   // Terminate the context
   zmq_ctx_term(fZMQcontext);
@@ -238,6 +240,7 @@ std::string zmqReceiver::PrintConfiguration()
   status << "\tResetMerger: " << fResetMerger << std::endl;
   status << "\tSleep time between requests: " << fPollInterval/1e3 << " s" << std::endl;
   status << "\tRequest timeout: " << fPollTimeout/1e3 << " s" << std::endl;
+  status << "\tZMQ In Configuration: " << fZMQconfigIn << std::endl;
 
   return status.str();
 }
