@@ -11,7 +11,7 @@ link_directories(
   ${ROOT_LIBRARY_DIR}
   )
 
-set(ALICE_LIBRARIES AliHLTGlobal AliHLTHOMER HLTbase)
+set(ALICE_LIBRARIES AliHLTGlobal HLTbase AliHLTUtil)
 
 add_executable(zmqReceive zmqReceiver.cxx zmqReceive.cxx)
 target_link_libraries(zmqReceive ${ROOT_LIBRARIES} ${ZEROMQ_LIBRARIES} ${ALICE_LIBRARIES})
