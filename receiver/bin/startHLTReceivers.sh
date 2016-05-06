@@ -5,7 +5,7 @@
 #############################
 
 # Determine current location of file
-# From: http://stackoverflow.com/a/246128 
+# From: http://stackoverflow.com/a/246128
 currentLocation="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Load configuration and shared functions

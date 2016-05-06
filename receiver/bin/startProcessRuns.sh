@@ -3,9 +3,13 @@
 # To use with crontab, use line:
 # * * * * * /home/rehlers/yaleDev/EMCalDev/qa/HLT/processFiles/startProcessRootFile.sh > /home/rehlers/yaleDev/EMCalDev/qa/HLT/processFiles/processRootFile.log 2>&1
 
+# Determine current location of file
+# From: http://stackoverflow.com/a/246128
+currentLocation="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+
 # Only process if we are not locked out.
 # Locking out allows changes to processing (for example, reprocessing) without having to disable the crontab
-if [[ -e "lockOut" ]];
+if [[ -e "${currentLocation}/lockOut" ]];
 then
     echo "ATTENTION: Processing locked out! Remove \"lockOut\" file to resume processing with this script!"
     echo "Exiting..."

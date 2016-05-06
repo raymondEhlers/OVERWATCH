@@ -220,7 +220,7 @@ def moveFiles(subsystemDict, dirPrefix):
             runDirectoryPath = "Run" + str(runNumber)
             # Move replays of the data to a different directory
             if hltMode == "E":
-                runDirectoryPath = os.path.join("replay", runDirectoryPath)
+                runDirectoryPath = os.path.join("ReplayData", runDirectoryPath)
 
             # Create Run directory and subsystem directories as needed
             if not os.path.exists(os.path.join(dirPrefix, runDirectoryPath)):
