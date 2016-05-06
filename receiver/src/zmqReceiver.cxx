@@ -223,7 +223,6 @@ int zmqReceiver::InitZMQ()
 void zmqReceiver::Cleanup()
 {
   // Destory zmq sockets
-  // TEMP
   alizmq_socket_close(fZMQin);
 
   // Terminate the context

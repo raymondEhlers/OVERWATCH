@@ -72,9 +72,5 @@ else
     echoInfoEscaped "Not using a SSH tunnel!"
 fi
 
-# TEMP
-sleep 10
-exit 0
-
 # select="" ensures that we get all histograms(?)
 zmqReceive --in="REQ>tcp://localhost:$internalPort" --verbose=1 --sleep=60 --timeout=100 --select="" --subsystem="${subsystem}" ${additionalOptions}
