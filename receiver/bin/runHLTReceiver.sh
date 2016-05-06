@@ -2,6 +2,7 @@
 
 # Script to setup ZMQ receiver
 
+
 # Determine current location of file
 # From: http://stackoverflow.com/a/246128 
 currentLocation="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -12,24 +13,24 @@ source "$currentLocation/hltReceiverConfiguration.sh"
 # Handle the user not passing the proper options
 if [[ "$#" -ne 3 ]];
 then
-    echoWarn "Did not define normal number of arguments. Gave $#, but expected 3"
-    echoWarn "Continuing using some defualt values."
+    echoWarnEscaped "Did not define normal number of arguments. Gave $#, but expected 3"
+    echoWarnEscaped "Continuing using some defualt values."
 fi
 
 # Setup for running receiver
 # Add receiver to path
 # This script should be located at the same path as the receiver, so we will use that path
-echoInfo "Adding ${currentLocation} to PATH for the zmqReceive executable!"
+echoInfoEscaped "Adding ${currentLocation} to PATH for the zmqReceive executable!"
 PATH="$currentLocation:$PATH"
 
 # Variable defined in hltReceiverConfiguration
-echoInfo "Loading alice software from \"${aliceSoftwarePath}\""
+echoInfoEscaped "Loading alice software from \"${aliceSoftwarePath}\""
 . ${aliceSoftwarePath}/alice-env.sh -n 1 -q
 
 # Variable defined in hltReceiverConfiguration
-echoInfo "Moving to data directory: \"${dataLocation}\""
+echoInfoEscaped "Moving to data directory: \"${dataLocation}\""
 cd "${dataLocation}"
-echoInfo "Now in directory: \"$PWD\""
+echoInfoEscaped "Now in directory: \"$PWD\""
 
 internalPort=${1:-40321}
 externalPort=${2:-60321}
@@ -44,31 +45,31 @@ fi
 
 additionalOptions=""
 
-echoInfo "Receiver Settings:"
-echoProperties "Subsystem: $subsystem"
-echoProperties "Receiver (interal) Port: $internalPort"
-echoProperties "Use SSH tunnel: $useSSHTunnel"
-echoProperties "Tunnel (external) Port: $externalPort"
-echoProperties "SSH Monitor Port: $monitorPort"
-echoProperties "Additional Options: $additionalOptions"
+echoInfoEscaped "Receiver Settings:"
+echoPropertiesEscaped "Subsystem: $subsystem"
+echoPropertiesEscaped "Receiver (interal) Port: $internalPort"
+echoPropertiesEscaped "Use SSH tunnel: $useSSHTunnel"
+echoPropertiesEscaped "Tunnel (external) Port: $externalPort"
+echoPropertiesEscaped "SSH Monitor Port: $monitorPort"
+echoPropertiesEscaped "Additional Options: $additionalOptions"
 
 if [[ "${useSSHTunnel}" == true ]];
 then
     # Find SSH process
     sshProcesses=$(pgrep -f "autossh -M $monitorPort")
-    echo "autossh PID: $sshProcesses"
+    echoInfoEscaped "autossh PID: $sshProcesses"
 
     # Determine if ssh tunnel is needed.
     # autossh should ensure that the connection never dies.
     if [[ -z "$sshProcesses" ]];
     then
-        echo "Did not find necessary $subsystem autossh tunnel. Starting a new one!"
+        echoInfoEscaped "Did not find necessary $subsystem autossh tunnel. Starting a new one!"
         autossh -M $monitorPort -f -N -L $internalPort:localhost:$externalPort emcalguest@lbnl5core.cern.ch
     else
-        echo "$subsystem autossh tunnel already found with PID $sshProcesses. Not starting another one."
+        echoInfoEscaped "$subsystem autossh tunnel already found with PID $sshProcesses. Not starting another one."
     fi
 else
-    echo "Not using a SSH tunnel!"
+    echoInfoEscaped "Not using a SSH tunnel!"
 fi
 
 # TEMP
