@@ -1,38 +1,41 @@
 #!/usr/bin/env bash
 
-# Script to setup proxy
-
-# Handle the user not passing the proper options
-if [[ "$#" -ne 4 ]];
-then
-    echo "Did not define normal number of arguments. Gave $#, but expected 4"
-    echo "Continuing using some defualt values."
-fi
+# Script to setup ZMQ receiver
 
 # Determine current location of file
 # From: http://stackoverflow.com/a/246128 
 currentLocation="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Add receiver to path
-# This script should be located at the same path as the receiver, so we will use that path
-echo "Adding ${currentLocation} to PATH for the zmqReceive executable!"
-PATH="$currentLocation:$PATH"
-
-echo "Loading configruation variables!"
+# Load configuration and shared functions
 source "$currentLocation/hltReceiverConfiguration.sh"
 
-echo "Loading alice software from \"${aliceSoftwarePath}\""
+# Handle the user not passing the proper options
+if [[ "$#" -ne 3 ]];
+then
+    echoWarn "Did not define normal number of arguments. Gave $#, but expected 3"
+    echoWarn "Continuing using some defualt values."
+fi
+
+# Setup for running receiver
+# Add receiver to path
+# This script should be located at the same path as the receiver, so we will use that path
+echoInfo "Adding ${currentLocation} to PATH for the zmqReceive executable!"
+PATH="$currentLocation:$PATH"
+
+# Variable defined in hltReceiverConfiguration
+echoInfo "Loading alice software from \"${aliceSoftwarePath}\""
 . ${aliceSoftwarePath}/alice-env.sh -n 1 -q
 
-echo "Moving to data directory: \"${dataLocation}\""
+# Variable defined in hltReceiverConfiguration
+echoInfo "Moving to data directory: \"${dataLocation}\""
 cd "${dataLocation}"
+echoInfo "Now in directory: \"$PWD\""
 
 internalPort=${1:-40321}
 externalPort=${2:-60321}
-receiverType=${3:-"EMC"}
-useSSHTunnel=${4:-true}
+subsystem=${3:-"EMC"}
 
-if [[ "$receiverType" == "HLT" ]];
+if [[ "$subsystem" == "HLT" ]];
 then
     monitorPort=25006
 else
@@ -41,16 +44,13 @@ fi
 
 additionalOptions=""
 
-echo -e "\nSettings:"
-echo "internalPort: $internalPort"
-echo "externalPort: $externalPort"
-echo "receiverType: $receiverType"
-echo "SSH Monitor Port: $monitorPort"
-echo "Use SSH tunnel: $useSSHTunnel"
-echo "additionalOptions: $additionalOptions"
-
-# TEMP
-exit 0
+echoInfo "Receiver Settings:"
+echoProperties "Subsystem: $subsystem"
+echoProperties "Receiver (interal) Port: $internalPort"
+echoProperties "Use SSH tunnel: $useSSHTunnel"
+echoProperties "Tunnel (external) Port: $externalPort"
+echoProperties "SSH Monitor Port: $monitorPort"
+echoProperties "Additional Options: $additionalOptions"
 
 if [[ "${useSSHTunnel}" == true ]];
 then
@@ -62,16 +62,18 @@ then
     # autossh should ensure that the connection never dies.
     if [[ -z "$sshProcesses" ]];
     then
-        echo "Did not find necessary $receiverType autossh tunnel. Starting a new one!"
+        echo "Did not find necessary $subsystem autossh tunnel. Starting a new one!"
         autossh -M $monitorPort -f -N -L $internalPort:localhost:$externalPort emcalguest@lbnl5core.cern.ch
     else
-        echo "$receiverType autossh tunnel already found with PID $sshProcesses. Not starting another one."
+        echo "$subsystem autossh tunnel already found with PID $sshProcesses. Not starting another one."
     fi
 else
-    echo "Not using an SSH tunnel!"
+    echo "Not using a SSH tunnel!"
 fi
 
-echo "$PWD"
+# TEMP
+sleep 10
+exit 0
 
-# select="" ensures that we get all histograms!
-zmqReceive --in="REQ>tcp://localhost:$internalPort" --verbose=1 --sleep=60 --timeout=100 --select="" --subsystem="${receiverType}" ${additionalOptions}
+# select="" ensures that we get all histograms(?)
+zmqReceive --in="REQ>tcp://localhost:$internalPort" --verbose=1 --sleep=60 --timeout=100 --select="" --subsystem="${subsystem}" ${additionalOptions}
