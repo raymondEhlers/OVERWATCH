@@ -12,7 +12,7 @@ from __future__ import print_function
 from builtins import range
 
 # Used for QA functions
-from ROOT import ROOT, TH1, TH1F, TProfile, TF1, TAxis, gPad, TAxis, TGaxis, SetOwnership, TPaveText, TLegend, TLine
+from ROOT import ROOT, TH1, TH1F, TF1, gPad, TAxis, TGaxis, SetOwnership, TPaveText, TLegend, TLine, kRed, kBlue, kOpenCircle, kFullCircle
 
 # Used for the outlier detection function
 import numpy
@@ -598,10 +598,10 @@ def setEMCDrawOptions(hist, qaContainer):
             hist.Scale(1. / nEvents)
 
             # Set style
-            hist.SetMarkerStyle(ROOT.kFullCircle)
+            hist.SetMarkerStyle(kFullCircle)
             hist.SetMarkerSize(0.8)
-            hist.SetMarkerColor(ROOT.kBlue+1)
-            hist.SetLineColor(ROOT.kBlue+1)
+            hist.SetMarkerColor(kBlue+1)
+            hist.SetLineColor(kBlue+1)
 
             # Find bins above the threshold
             absIdList = []
@@ -618,7 +618,7 @@ def setEMCDrawOptions(hist, qaContainer):
             pave.SetTextFont(43)
             pave.SetTextSize(12)
             pave.SetFillStyle(0)
-            pave.SetTextColor(ROOT.kRed)
+            pave.SetTextColor(kRed)
             pave.SetBorderSize(0)
             SetOwnership(pave, False)
 
@@ -683,8 +683,8 @@ def setEMCDrawOptions(hist, qaContainer):
 
             # Lists to use to plot
             detectors = ["EMCal", "DCal"]
-            colors = [ROOT.kRed+1, ROOT.kBlue+1]
-            markers = [ROOT.kFullCircle, ROOT.kOpenCircle]
+            colors = [kRed+1, kBlue+1]
+            markers = [kFullCircle, kOpenCircle]
             options = ["", "same"]
 
             # Plot elements
