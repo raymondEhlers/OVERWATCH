@@ -11,7 +11,7 @@ then writes out histograms to webpage.
 from __future__ import print_function
 
 # ROOT includes
-from ROOT import gROOT, gStyle, TFile, TCanvas, TClass, TH1, TLegend, SetOwnership, TFileMerger, TList, gPad, TGaxis, gStyle, TProfile, TF1, TH1F
+from ROOT import gROOT, TFile, TCanvas, TClass, TH1, TLegend, SetOwnership, TFileMerger, TList, gPad, TGaxis, gStyle, TProfile, TF1, TH1F, TBufferJSON
 
 # Allow ROOT to be compatiable with Flask reloading in debug mode
 # See: https://root.cern.ch/phpBB3/viewtopic.php?t=19594#p83968
@@ -31,6 +31,7 @@ import os
 from os import makedirs
 from os.path import exists
 import time
+import gzip
 
 # Config
 from config.processingParams import processingParameters
@@ -201,6 +202,12 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             # Save
             outputFilename = outputFormatting % outputName
             canvas.SaveAs(outputFilename)
+
+            # Write BufferJSON
+            jsonBufferFile = outputFilename.replace("img", "json").replace("png","json.gz")
+            print("jsonBufferFile: {0}".format(jsonBufferFile))
+            with gzip.open(jsonBufferFile, "wb") as f:
+                f.write(TBufferJSON.ConvertToJSON(canvas).Data())
 
     # Remove NEvents so that it doesn't get printed
     if qaContainer.getHist("NEvents") is not None:
@@ -541,6 +548,11 @@ def processAllRuns():
             if not exists(imgDir) or forceReprocessing == True or runDir in subsystem.mergeDirs:
                 if not exists(imgDir): # check in case forceReprocessing
                     makedirs(imgDir)
+                # json files
+                jsonPath = imgDir.replace("img", "json")
+                print("jsonPath: {0}".format(jsonPath))
+                if not exists(jsonPath):
+                    makedirs(jsonPath)
 
                 # Process combined root file: plot histos and save in imgDir
                 print("About to process %s, %s" % (runDir, subsystem.subsystem))
