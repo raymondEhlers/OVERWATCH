@@ -31,7 +31,6 @@ import os
 from os import makedirs
 from os.path import exists
 import time
-import gzip
 
 # Config
 from config.processingParams import processingParameters
@@ -204,9 +203,10 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             canvas.SaveAs(outputFilename)
 
             # Write BufferJSON
-            jsonBufferFile = outputFilename.replace("img", "json").replace("png","json.gz")
+            jsonBufferFile = outputFilename.replace("img", "json").replace("png","json")
             print("jsonBufferFile: {0}".format(jsonBufferFile))
-            with gzip.open(jsonBufferFile, "wb") as f:
+            # GZip is performed by the web server, not here!
+            with open(jsonBufferFile, "wb") as f:
                 f.write(TBufferJSON.ConvertToJSON(canvas).Data())
 
     # Remove NEvents so that it doesn't get printed
