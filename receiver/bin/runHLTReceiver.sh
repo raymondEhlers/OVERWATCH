@@ -27,8 +27,31 @@ echoInfoEscaped "Adding ${currentLocation} to PATH for the zmqReceive executable
 PATH="$currentLocation:$PATH"
 
 # Variable defined in hltReceiverConfiguration
-echoInfoEscaped "Loading alice software from \"${aliceSoftwarePath}\""
-. ${aliceSoftwarePath}/alice-env.sh -n 1 -q
+echoInfoEscaped "Loading alice software"
+if [[ "$buildType" == "aliBuild" ]];
+then
+    # Setup ROOT using aliBuild
+    # Need virtualenv
+    echoInfoEscaped "Loading virtualenv"
+    source "$virtualEnvPath"
+
+    # Setup aliBuild helper
+    eval "`alienv shell-helper`"
+
+    echoInfoEscaped "Loading AliRoot from AliBuild"
+    alienv load AliRoot/latest-aliMaster
+
+    # Setup python in root
+    export PYTHONPATH="$ROOTSYS/lib"
+elif [[ "$buildType" == "alice-env" ]];
+then
+    # Load the alice environment
+    echoInfoEscaped "Loading alice software from \"${aliceSoftwarePath}\""
+    source "$aliceSoftwarePath"/alice-env.sh -n 1 -q
+else
+    echo "ERROR: Unrecognized build type $buildType! Exiting"
+    exit 1
+fi
 
 # Variable defined in hltReceiverConfiguration
 echoInfoEscaped "Moving to data directory: \"${dataLocation}\""

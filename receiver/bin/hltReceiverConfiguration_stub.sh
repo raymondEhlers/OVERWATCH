@@ -1,5 +1,7 @@
 # Contains the configuration files for the HLT receiver
 aliceSoftwarePath=""
+virtualEnvPath=".env/bin/activate"
+buildType="aliBuild"
 dataLocation=""
 useSSHTunnel=false
 
@@ -70,7 +72,7 @@ echoInfoEscaped ()
         echoInfo "$1"
     else
         # Logging to file
-        echo "$1"
+        echo "INFO: $1"
     fi
 }
 # @info:    Avoid printing color codes when logging to file
