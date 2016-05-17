@@ -8,11 +8,16 @@
 # From: http://stackoverflow.com/a/246128
 currentLocation="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
-# Load configuration and shared functions
-source "$currentLocation/hltReceiverConfiguration.sh"
-
 # Move the directory of the script to ensure that the other files can be found
 cd "$currentLocation"
+
+# Load configuration and shared functions
+if [[ ! -e "hltReceiverConfiguration.sh" ]];
+then
+    echo "Must create hltReceiverConfiguration.sh!!"
+fi
+source "hltReceiverConfiguration.sh"
+
 echoInfoEscaped "Runnig `basename "$0"` at $(date) in \"$PWD\""
 
 # If the PID files exist, then attempt to kill them

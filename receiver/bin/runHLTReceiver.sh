@@ -2,12 +2,15 @@
 
 # Script to setup ZMQ receiver
 
-
 # Determine current location of file
 # From: http://stackoverflow.com/a/246128
 currentLocation="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 
 # Load configuration and shared functions
+if [[ ! -e "$currentLocation/hltReceiverConfiguration.sh" ]];
+then
+    echo "Must create hltReceiverConfiguration.sh!!"
+fi
 source "$currentLocation/hltReceiverConfiguration.sh"
 
 # Handle the user not passing the proper options
