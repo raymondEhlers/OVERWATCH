@@ -11,16 +11,20 @@ or read from file.
 
 from __future__ import print_function
 
+import os
+
 from processRunsModules import qa
+from processRunsModules import utilities
+from config.processingParams import processingParameters
 
 ###################################################
 class runContainer(object):
     """ Contains an individual run
 
     """
-    def __init__(self, runNumber, fileMode):
-        self.runNumber = runNumber
-        self.runNumberString = "Run{0}".format(runNumber)
+    def __init__(self, runDir, fileMode):
+        self.runDir = runDir
+        self.runNumber = int(runDir.replace("Run", ""))
         # Need to rework the qa container 
         #self.qaContainer = qa.qaFunctionContainer
         self.mode = fileMode
@@ -51,21 +55,21 @@ class subsystemContainer(object):
 
     """
 
-    def __init__(self, subsystem, runDirs, mergeDirs = None, showRootFiles = False):
+    def __init__(self, subsystem, runDir, startOfRun, runLength, showRootFiles = False):
         """ Initializes subsystem properties.
 
         It does safety and sanity checks on a number of variables.
         """
         self.subsystem = subsystem
         self.showRootFiles = showRootFiles
-        self.writeDirs = []
+        #self.writeDirs = []
 
         # Contains all files for that particular run
         self.files = []
         # Times
         self.startOfRun = startOfRun
-        self.endOfRun = endOfRun
-        self.runLenght = self.endOfRun - self.startOfRun
+        self.runLength = runLength
+        self.endOfRun = self.startOfRun + runLength*60 # runLength is in minutes
         # Histograms
         self.histGroups = []
         # Need to rework the qa container 
@@ -75,22 +79,22 @@ class subsystemContainer(object):
 
         # If data does not exist for this subsystem then it is dependent on HLT data
         subsystemDataExistsFlag = False
-        for runDir in runDirs[subsystem]:
-            if exists(os.path.join(processingParameters.dirPrefix, runDir, subsystem)):
-                subsystemDataExistsFlag = True
+        if os.path.exists(os.path.join(processingParameters.dirPrefix, runDir, subsystem)):
+            subsystemDataExistsFlag = True
 
         if subsystemDataExistsFlag == True:
             self.fileLocationSubsystem = subsystem
         else:
             self.fileLocationSubsystem = "HLT"
-            if showRootFiles == True:
+            if self.showRootFiles == True:
                 print("\tWARNING! It is requested to show ROOT files for subsystem %s, but the subsystem does not have specific data files. Using HLT data files!" % subsystem)
 
         # Complete variable assignment now that we know where the data is located.
-        self.runDirs = runDirs[self.fileLocationSubsystem]
-        self.mergeDirs = []
-        if mergeDirs != None:
-            self.mergeDirs = mergeDirs[self.fileLocationSubsystem]
+        #self.runDirs = runDirs[self.fileLocationSubsystem]
+        # Need to handle this after subsystem creation!
+        #self.mergeDirs = []
+        #if mergeDirs != None:
+        #    self.mergeDirs = mergeDirs[self.fileLocationSubsystem]
 
 ###################################################
 class fileContainer(object):
@@ -98,11 +102,15 @@ class fileContainer(object):
     
     """
     def __init__(self, filename, startOfRun):
-        self.fileName = filename
-        # Extract from filename?
-        self.fileTime = 123456789
+        self.filename = filename
+        if "combined" in self.filename:
+            self.combinedFile = True
+        else:
+            self.combinedFile = False
+
+        # The combined file time will be the length of the run
+        self.fileTime = utilities.extractTimeStampFromFilename(self.filename)
         self.timeIntoRun = self.fileTime - startOfRun
-        self.combinedFile = False
 
 ###################################################
 class histGroupContainer(object):

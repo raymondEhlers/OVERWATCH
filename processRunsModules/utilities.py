@@ -28,11 +28,13 @@ def extractTimeStampFromFilename(filename):
 
     """
     if "combined" in filename:
-        print("Error: cannot extract a time stamp for a combined file")
-
-    timeString = filename.split(".")[1]
-    timeStamp = time.strptime(timeString, "%Y_%m_%d_%H_%M_%S")
-    return timegm(timeStamp)
+        # This will be the length of the run
+        timeString = filename.split(".")[3]
+        return int(timeString)
+    else:
+        timeString = filename.split(".")[1]
+        timeStamp = time.strptime(timeString, "%Y_%m_%d_%H_%M_%S")
+        return timegm(timeStamp)
 
 ###################################################
 def createFileDictionary(currentDir, runDir, subsystem):
@@ -150,7 +152,7 @@ def rsyncData(dirPrefix, username, remoteSystems, remoteFileLocations):
             call(rsyncCall)
 
 ###################################################
-# File moving utilites
+# File moving utilities
 ###################################################
 def enumerateFiles(dirPrefix, subsystem):
     """ Makes list of ROOT files that need to be moved from directory that receives HLT histograms into appropriate file structure for processing. 
@@ -175,7 +177,7 @@ def enumerateFiles(dirPrefix, subsystem):
             filesToMove.append(name)
             #print("name: %s" % name)
         
-    return filesToMove
+    return sorted(filesToMove)
 
 ###################################################
 def moveFiles(subsystemDict, dirPrefix):
@@ -192,6 +194,8 @@ def moveFiles(subsystemDict, dirPrefix):
 
     """
 
+    runsDict = {}
+
     # For each subsystem, loop over all files to move, and put them in subsystem directory
     for key in subsystemDict.keys():
         filesToMove = subsystemDict[key]
@@ -199,8 +203,6 @@ def moveFiles(subsystemDict, dirPrefix):
             print("No files to move in %s" % key)
         for filename in filesToMove:
             # Extract time stamp and run number
-            #print("filename: %s" % filename)
-            #print(filesToMove)
             tempFilename = filename
             splitFilename = tempFilename.replace(".root","").split("_")
             #print("tempFilename: %s" % tempFilename)
@@ -236,6 +238,13 @@ def moveFiles(subsystemDict, dirPrefix):
             # DON"T IMPORT MOVE. BAD CONSEQUENCES!!
             shutil.move(oldPath, newPath)
 
+            # Create dict for subsystem if it doesn't exist, and then create a list for the run if it doesn't exist
+            # See: https://stackoverflow.com/a/12906014
+            runsDict.setdefault(runString, {}).setdefault(subsystem, []).append(newFilename)
+
+    return runsDict
+
+
 ###################################################
 def moveRootFiles(dirPrefix, subsystemList):
     """ Orchestrates the enumeration of files to be moved as they are read in from the HLT, the creation the appropriate directory structure for processing, and the moving of these files to these directories.  
@@ -255,5 +264,5 @@ def moveRootFiles(dirPrefix, subsystemList):
     for subsystem in subsystemList:
         subsystemDict[subsystem] = enumerateFiles(dirPrefix, subsystem)
     
-    moveFiles(subsystemDict, dirPrefix)
+    return moveFiles(subsystemDict, dirPrefix)
 

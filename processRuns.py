@@ -423,37 +423,105 @@ def processAllRuns():
 
     """
     # Load general configuration options
-    (fileExtension, beVerbose, forceReprocessing, forceNewMerge, sendData, remoteUsername, cumulativeMode, templateDataDirName, dirPrefix, subsystemList, subsystemsWithRootFilesToShow) = processingParameters.defineRunProperties()
+    #(fileExtension, beVerbose, forceReprocessing, forceNewMerge, sendData, remoteUsername, cumulativeMode, templateDataDirName, dirPrefix, subsystemList, subsystemsWithRootFilesToShow) = processingParameters.defineRunProperties()
+
+    dirPrefix = processingParameters.dirPrefix
 
     # Setup before processing data
     # Determine templateDataDirPrefix
-    if templateDataDirName != None:
-        templateDataDirPrefix = os.path.join(os.path.dirname(dirPrefix), templateDataDirName)
+    if processingParameters.templateDataDirName != None:
+        templateDataDirPrefix = os.path.join(os.path.dirname(dirPrefix), processingParameters.templateDataDirName)
         print("templateDataDirPrefix:", templateDataDirPrefix)
         # Create directory to store the templates if necessary
-        if not exists(templateDataDirPrefix):
+        if not os.path.exists(templateDataDirPrefix):
             makedirs(templateDataDirPrefix)
 
     # Create runs list
-    #runs = []
-    ## If the file that contains it already exists, then just use that here!
-    ## Else, use the loop below
-    #for runDir in utilities.findCurrentRunDirs(dirPrefix):
-    #    runs.append(processingClasses.runContainer( , cumulativeMode))
+    runs = {}
+    if os.path.exists(os.path.join(dirPrefix, "objectStore.db")):
+        # The objects exist, so just use the stored copy and update it.
+        pass
+    else:
+        # The objects don't exist, so we need to create them.
+        # This will be a slow process, so the results should be stored
+        for runDir in utilities.findCurrentRunDirs(dirPrefix):
+            # Create run object
+            runs[runDir] = processingClasses.runContainer( runDir = runDir, 
+                                                           fileMode = processingParameters.cumulativeMode)
+
+        for runDir, run in runs.iteritems():
+            for subsystem in processingParameters.subsystemList:
+                # If subsystem exists, then create file containers 
+                subsystemPath = os.path.join(dirPrefix, runDir, subsystem)
+                print("Creating subsystem {0} in {1}".format(subsystem, runDir))
+                if os.path.exists(subsystemPath):
+                    files = []
+                    # Retrieve the files for a given directory
+                    [filenamesDict, runLength] = utilities.createFileDictionary(dirPrefix, runDir, subsystem)
+                    #print("filenames: {0}\trunLength: {1}".format(filenamesDict, runLength))
+                    runStartTime = utilities.extractTimeStampFromFilename(filenamesDict[filenamesDict.keys()[0]])
+
+                    filenames = [filenamesDict[key] for key in filenamesDict]
+                    #print("filenames: {0}".format(filenames))
+                    print("filenames length: {0}".format(len(filenames)))
+                    # Add combined files, which are also valid
+                    filenames += [filename for filename in os.listdir(subsystemPath) if "combined" in filename and ".root"in filename]
+                    #for filename in combinedFilenames:
+                    #    filenames[utilities.extractTimeStampFromFilename(filename)] = filename
+                    #for fileTime, filename in filenames.iteritems():
+                    for filename in filenames:
+                        files.append(processingClasses.fileContainer(filename, runStartTime))
+
+                    print("With combined - filenames length: {0}".format(len(filenames)))
+                    #print("With combined - filenames: {0}\trunLength: {1}".format(filenames, runLength))
+
+                    # Completed creating all file containers for this subsystem in this run
+                    # Now create the subsystem
+                    showRootFiles = False
+                    if subsystem in processingParameters.subsystemsWithRootFilesToShow:
+                        showRootFiles = True
+                    run.subsystems.append(processingClasses.subsystemContainer(subsystem = subsystem,
+                                                                               runDir = run.runDir,
+                                                                               startOfRun = runStartTime,
+                                                                               runLength = runLength,
+                                                                               showRootFiles = showRootFiles))
+
+                    # And add the files
+                    # Since a run was just appended, accessing the last element should always be fine
+                    run.subsystems[-1].files = files
 
     # Start of processing data
     # Takes histos from dirPrefix and moves them into Run dir structure, with a subdir for each subsystem
-    utilities.moveRootFiles(dirPrefix, subsystemList)
+    runDict = utilities.moveRootFiles(dirPrefix, processingParameters.subsystemList)
+
+    print("Files moved: {0}".format(runDict))
+
+    # Now process the results from moving the files and add them into the runs list
+    for runDir in runDict:
+        if runDir in runs:
+            run = runs[runDir]
+            # Update each subsystem and note that it needs to be reprocessed
+            for subsystem in run.subsystems:
+                subsystem.newFile = True
+                for filename in runDict[runDir][subsystem]:
+                    subsystem.files.append( processingClasses.fileContainer(filename = filename,
+                                                                            startOfRun = subsystem.startOfRun) )
+        else:
+            runs[runDir] = processingClasses.runContainer( runDir = runDir,
+                                                           fileMode = processingParameters.cumulativeMode)
+            # Create subsystems, add files
+
+    exit(0)
 
     # Find directories to run over
-    runDirs = utilities.findCurrentRunDirs(dirPrefix)
+    #runDirs = utilities.findCurrentRunDirs(dirPrefix)
 
     # If subsystem dir exists (which only happens if it has files), add runDir to subsystem run list
     subsystemRunDirDict = {}
     for subsystem in subsystemList:
         subsystemRunDirDict[subsystem] = []
         for runDir in runDirs:
-            if exists(os.path.join(dirPrefix, runDir, subsystem)):
+            if os.path.exists(os.path.join(dirPrefix, runDir, subsystem)):
                 subsystemRunDirDict[subsystem].append(runDir)
 
     # Merge histograms over all runs, all subsystems if needed. Results in one combined file per subdir.
