@@ -128,47 +128,6 @@ def generateHtmlForHistOnRunPage(listOfHists, outputFormatting, startOfName):
     return returnText
 
 ###################################################
-class sortingGroup(object):
-    """ Class to handle sorting of objects.
-
-    This class can select a group of histograms and store their names in a list. It also stores a more
-    readable version of the group name, as well as whether the histograms should be plotted in a grid.
-
-    Args:
-        groupName (str): Readable name of the group.
-        groupSelectionPattern (str): Pattern of the histogram names that will be selected. For example, if
-            wanted to select histograms related to EMCal patch amplitude, we would make the pattern something
-            like "PatchAmp". The name depends on the name of the histogram sent from the HLT.
-        plotInGridSelectionPattern (str): Pattern which denotes whether the histograms should be plotted in
-            a grid. ``plotInGrid`` is set based on whether this value is in ``groupSelectionPattern``. For
-            example, in the EMCal, the ``plotInGridSelectionPattern`` is "_SM". 
-
-    Available attributes include:
-
-    Attributes:
-        name (str): Readable name of the group. Set via the ``groupName`` in the constructor.
-        selectionPattern (str): Pattern of the histogram names that will be selected.
-        plotInGridSelectionPattern (str): Pattern which denotes whether the histograms should be plotted in
-            a grid.
-        plotInGrid (bool): True when the histograms should be plotted in a grid.
-        histList (list): List of the histograms that should be filled when the ``selectionPattern`` is matched.
-    
-    """
-
-    def __init__(self, groupName, groupSelectionPattern, plotInGridSelectionPattern = "DO NOT PLOT IN GRID"):
-        """ Initializes the sorting group """
-        self.name = groupName
-        self.selectionPattern = groupSelectionPattern
-        self.plotInGridSelectionPattern = plotInGridSelectionPattern
-        self.histList = []
-
-        # So that it is not necessary to check the list every time
-        if self.plotInGridSelectionPattern in self.selectionPattern:
-            self.plotInGrid = True
-        else:
-            self.plotInGrid = False
-
-###################################################
 def generateHtmlForPlotInGridLinks(groupName):
     """ Generate a link to the grid for a given group name.
 

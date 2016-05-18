@@ -22,6 +22,7 @@ import itertools
 
 # Used for sorting and generating html
 from processRunsModules import generateHtml
+from processRunsModules import processingClasses
 
 # For retrieving debug configuration
 from config.processingParams import processingParameters
@@ -97,26 +98,26 @@ def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem 
     groupedHists = []
     # The order in which these are added is the order in which they are processed!
     # Plot by SM
-    groupedHists.append(generateHtml.sortingGroup("FEE vs TRU", "FEEvsTRU_SM", "_SM"))
-    groupedHists.append(generateHtml.sortingGroup("FEE vs STU", "FEEvsSTU_SM", "_SM"))
-    groupedHists.append(generateHtml.sortingGroup("FastOR L0 (hits with ADC > 0)", "FastORL0_SM", "_SM"))
-    groupedHists.append(generateHtml.sortingGroup("FastOR L0 Amp (hits weighted with ADC value)", "FastORL0Amp_SM", "_SM"))
-    groupedHists.append(generateHtml.sortingGroup("FastOR L0 Large Amp (hits above 400 ADC)", "FastORL0LargeAmp_SM", "_SM"))
-    groupedHists.append(generateHtml.sortingGroup("FastOR L1 (hits with ADC > 0)", "FastORL1_SM", "_SM"))
-    groupedHists.append(generateHtml.sortingGroup("FastOR L1 Amp (hits weighted with ADC value)", "FastORL1Amp_SM", "_SM"))
-    groupedHists.append(generateHtml.sortingGroup("FastOR L1 Large Amp (hits above 400 ADC)", "FastORL1LargeAmp_SM", "_SM"))
+    groupedHists.append(processingClasses.sortingGroup("FEE vs TRU", "FEEvsTRU_SM", "_SM"))
+    groupedHists.append(processingClasses.sortingGroup("FEE vs STU", "FEEvsSTU_SM", "_SM"))
+    groupedHists.append(processingClasses.sortingGroup("FastOR L0 (hits with ADC > 0)", "FastORL0_SM", "_SM"))
+    groupedHists.append(processingClasses.sortingGroup("FastOR L0 Amp (hits weighted with ADC value)", "FastORL0Amp_SM", "_SM"))
+    groupedHists.append(processingClasses.sortingGroup("FastOR L0 Large Amp (hits above 400 ADC)", "FastORL0LargeAmp_SM", "_SM"))
+    groupedHists.append(processingClasses.sortingGroup("FastOR L1 (hits with ADC > 0)", "FastORL1_SM", "_SM"))
+    groupedHists.append(processingClasses.sortingGroup("FastOR L1 Amp (hits weighted with ADC value)", "FastORL1Amp_SM", "_SM"))
+    groupedHists.append(processingClasses.sortingGroup("FastOR L1 Large Amp (hits above 400 ADC)", "FastORL1LargeAmp_SM", "_SM"))
     # Trigger classes
-    groupedHists.append(generateHtml.sortingGroup("Gamma Trigger Low", "GAL"))
-    groupedHists.append(generateHtml.sortingGroup("Gamma Trigger High", "GAH"))
-    groupedHists.append(generateHtml.sortingGroup("Jet Trigger Low", "JEL"))
-    groupedHists.append(generateHtml.sortingGroup("Jet Trigger High", "JEH"))
-    groupedHists.append(generateHtml.sortingGroup("L0", "EMCL0"))
-    groupedHists.append(generateHtml.sortingGroup("Background", "BKG"))
+    groupedHists.append(processingClasses.sortingGroup("Gamma Trigger Low", "GAL"))
+    groupedHists.append(processingClasses.sortingGroup("Gamma Trigger High", "GAH"))
+    groupedHists.append(processingClasses.sortingGroup("Jet Trigger Low", "JEL"))
+    groupedHists.append(processingClasses.sortingGroup("Jet Trigger High", "JEH"))
+    groupedHists.append(processingClasses.sortingGroup("L0", "EMCL0"))
+    groupedHists.append(processingClasses.sortingGroup("Background", "BKG"))
     # Other EMC
-    groupedHists.append(generateHtml.sortingGroup("FastOR", "FastOR"))
-    groupedHists.append(generateHtml.sortingGroup("Other EMC", "EMC"))
+    groupedHists.append(processingClasses.sortingGroup("FastOR", "FastOR"))
+    groupedHists.append(processingClasses.sortingGroup("Other EMC", "EMC"))
     # Catch all of the other hists
-    groupedHists.append(generateHtml.sortingGroup("Non EMC", ""))
+    groupedHists.append(processingClasses.sortingGroup("Non EMC", ""))
 
     # Group filenames
     for filename in outputHistNames:

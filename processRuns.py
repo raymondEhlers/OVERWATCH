@@ -40,59 +40,7 @@ from processRunsModules import utilities
 from processRunsModules import generateWebPages
 from processRunsModules import mergeFiles
 from processRunsModules import qa
-
-###################################################
-class subsystemProperties(object):
-    """ Subsystem Property container class.
-
-    Defines properties of each subsystem in a consistent place.
-
-    Args:
-        subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
-        runDirs (dict): Contains list of valid runDirs for each subsystem, indexed by subsystem.
-        mergeDirs (Optional[dict]): Contains list of valid mergeDirs for each subsystem, indexed by subsystem.
-            Defaults to ``None``.
-        showRootFiles (Optional[bool]): Determines whether to create a page to make the ROOT files available.
-            Defaults to ``False``.
-
-    Available attributes include:
-
-    Attributes:
-        fileLocationSubsystem (str): Subsystem name of where the files are actually located. If a subsystem has
-            specific data files then this is just equal to the `subsystem`. However, if it relies on files inside
-            of another subsystem, then this variable is equal to that subsystem name.
-        runDirs (list): List of runs with entries in the form of "Run#" (str).
-        mergeDirs (list): List of merged runs with entries in the form of "Run#" (str).
-
-    """
-
-    def __init__(self, subsystem, runDirs, mergeDirs = None, showRootFiles = False):
-        """ Initializes subsystem properties.
-
-        It does safety and sanity checks on a number of variables.
-        """
-        self.subsystem = subsystem
-        self.showRootFiles = showRootFiles
-        self.writeDirs = []
-
-        # If data does not exist for this subsystem then it is dependent on HLT data
-        subsystemDataExistsFlag = False
-        for runDir in runDirs[subsystem]:
-            if exists(os.path.join(processingParameters.dirPrefix, runDir, subsystem)):
-                subsystemDataExistsFlag = True
-
-        if subsystemDataExistsFlag == True:
-            self.fileLocationSubsystem = subsystem
-        else:
-            self.fileLocationSubsystem = "HLT"
-            if showRootFiles == True:
-                print("\tWARNING! It is requested to show ROOT files for subsystem %s, but the subsystem does not have specific data files. Using HLT data files!" % subsystem)
-
-        # Complete variable assignment now that we know where the data is located.
-        self.runDirs = runDirs[self.fileLocationSubsystem]
-        self.mergeDirs = []
-        if mergeDirs != None:
-            self.mergeDirs = mergeDirs[self.fileLocationSubsystem]
+from processRunsModules import processingClasses
 
 ###################################################
 def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
@@ -485,6 +433,13 @@ def processAllRuns():
         # Create directory to store the templates if necessary
         if not exists(templateDataDirPrefix):
             makedirs(templateDataDirPrefix)
+
+    # Create runs list
+    #runs = []
+    ## If the file that contains it already exists, then just use that here!
+    ## Else, use the loop below
+    #for runDir in utilities.findCurrentRunDirs(dirPrefix):
+    #    runs.append(processingClasses.runContainer( , cumulativeMode))
 
     # Start of processing data
     # Takes histos from dirPrefix and moves them into Run dir structure, with a subdir for each subsystem
