@@ -28,7 +28,7 @@ class runContainer(object):
         # Need to rework the qa container 
         #self.qaContainer = qa.qaFunctionContainer
         self.mode = fileMode
-        self.subsystems = []
+        self.subsystems = {}
 
 ###################################################
 class subsystemContainer(object):

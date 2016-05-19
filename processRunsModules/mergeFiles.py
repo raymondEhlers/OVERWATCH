@@ -199,14 +199,12 @@ def subtractFiles(minFile, maxFile, outfile):
     fOut.Close()
 
 ###################################################
-def mergeRootFiles(runDirs, subsystemRunDirDict, dirPrefix, subsystemList, forceNewMerge = False, cumulativeMode = True):
+def mergeRootFiles(runs, dirPrefix, forceNewMerge = False, cumulativeMode = True):
     """ Iterates over all runs, all subsystems as specified, and merges histograms according to the merge() function. Results in one combined file per subdirectory.
 
     Args:
         runDirs (list): List of run directories to perform merge over.
-        subsystemRunDirDict (dict): Dictionary containing a list of existing runs for each subsystem.
         dirPrefix (str): Directory prefix necessary to get to all of the folders. 
-        subsystemList (list): List of subsystems to perform merge over.
         forceNewMerge (Optional[bool]): Flag to force new merge, regardless of whether it has already been merged.
             Default: False. 
         cumulativeMode (Optional[bool]): Specifies whether the histograms we receive are cumulative or if they 
@@ -223,60 +221,61 @@ def mergeRootFiles(runDirs, subsystemRunDirDict, dirPrefix, subsystemList, force
     else:
         currentDir = os.path.abspath(dirPrefix)
 
-    # Setup mergedRuns output
-    mergedRuns = {}
-    for subsystem in subsystemList:
-        mergedRuns[subsystem] = []
-
     # Process runs
-    for runDir in runDirs:
-        for subsystem in subsystemList:
-            # Check if the run exists for that subsystem
-            # If it does not exist, continue on to the next run
-            if runDir not in subsystemRunDirDict[subsystem]:
-                continue
+    for runDir, run in runs.iteritems():
+        for subsystem in run.subsystems:
+            # Only merge if we there are new files to merge
+            if subsystem.newFile == True:
+                # Perform the merge
+                filenamePrefix = os.path.join(currentDir, runDir, subsystem)# This is the prefix for working with most files
 
-            filenamePrefix = os.path.join(currentDir, runDir, subsystem)# This is the prefix for working with most files
+                # Check for a combined file. The file has a name of the form hists.combined.(number of uncombined
+                # files in directory).(timestamp of combined file).root
+                # File found via http://stackoverflow.com/a/7006873
+                combinedFile = next((name for name in run.subsystems[subsystem].files if "combined" in name), None)
+                #combinedFile = next((name for name in os.listdir(filenamePrefix) if "combined" in name), None)
+                # If it doesn't exist then we go directly to merging; otherwise we check if it is up to date, and
+                # delete+remerge if it isn't, and return run name for reprocessing
+                if combinedFile:
+                    needRemerge = False
+                    uncombinedFiles = [name for name in run.subsystems[subsystem].files if "combined" not in name]
+                    #uncombinedFiles = [name for name in os.listdir(filenamePrefix) if "combined" not in name and ".root" in name ]
+                    # We should already have to re-merge here since we know we have new files, but it is possible that they do not matter.
+                    # It is best to check to be certain.
+                    if cumulativeMode:
+                        # In SUB, compare combined file timestamp with latest timestamp of uncombined file
+                        print("Checking time stamps to determine if we need to merge...")
+                        timeStamps = []
+                        for name in uncombinedFiles:
+                            timeStamps.append( utilities.extractTimeStampFromFilename(name) )
+                        combinedTimeStamp = utilities.extractTimeStampFromFilename(combinedFile)
+                        #combinedTimeStamp = combinedFile.split(".")[3]
+                        needRemerge = (max(timeStamps) != combinedTimeStamp)
+                        #needRemerge = (repr(max(timeStamps)) != combinedTimeStamp)
+                    else: # In REQ mode, compare combined file merge count with number of uncombined files
+                        print("Checking if we have any new files to merge...")
+                        numberOfFilesPreviouslyMerged = int(combinedFile.split(".")[2])
+                        #numberOfFilesPreviouslyMerged = combinedFile.split(".")[2]
+                        print("numberOfFilesPreviouslyMerged = {0}".format(numberOfFilesPreviouslyMerged))
+                        #print("numberOfFilesPreviouslyMerged = " + numberOfFilesPreviouslyMerged)
+                        numberOfFilesInDir = len(uncombinedFiles)
+                        print("numberOfFilesInDir = {0}".format(numberOfFilesInDir))
+                        #print("numberOfFilesInDir = " + repr(numberOfFilesInDir))
+                        needRemerge = (numberOfFilesInDir > numberOfFilesPreviouslyMerged)
+                        #needRemerge = (repr(numberOfFilesInDir) > numberOfFilesPreviouslyMerged)
 
-            # Check for a combined file. The file has a name of the form hists.combined.(number of uncombined
-            # files in directory).(timestamp of combined file).root
-            # File found via http://stackoverflow.com/a/7006873
-            combinedFile = next((name for name in os.listdir(filenamePrefix) if "combined" in name), None)
-            # If it doesn't exist then we go directly to merging; otherwise we check if it is up to date, and
-            # delete+remerge if it isn't, and return run name for reprocessing
-            if combinedFile:
-                needRemerge = False
-                uncombinedFiles = [name for name in os.listdir(filenamePrefix) if "combined" not in name and ".root" in name ]
-                if cumulativeMode: 
-                    # In SUB, compare combined file timestamp with latest timestamp of uncombined file
-                    print("Checking time stamps to determine if we need to merge...")
-                    timeStamps = []
-                    for name in uncombinedFiles:
-                        timeStamps.append( utilities.extractTimeStampFromFilename(name) )
-                    combinedTimeStamp = combinedFile.split(".")[3]
-                    needRemerge = (repr(max(timeStamps)) != combinedTimeStamp)
-                else: # In REQ mode, compare combined file merge count with number of uncombined files
-                    print("Checking if we have any new files to merge...")
-                    numberOfFilesPreviouslyMerged = combinedFile.split(".")[2]
-                    print("numberOfFilesPreviouslyMerged = " + numberOfFilesPreviouslyMerged)
-                    numberOfFilesInDir = len(uncombinedFiles)
-                    print("numberOfFilesInDir = " + repr(numberOfFilesInDir))
-                    needRemerge = (repr(numberOfFilesInDir) > numberOfFilesPreviouslyMerged)
-                if needRemerge or forceNewMerge:
-                    print("Need to merge %s, %s again" % (runDir, subsystem))
-                    print("Removing previous merged file %s" % combinedFile)
-                    os.remove(os.path.join(filenamePrefix, combinedFile))
-                else:
-                    print("No need to merge %s, %s again" % (runDir, subsystem))
-                    continue
-                    
-            # Perform the actual merge
-            merge(currentDir, runDir, subsystem, cumulativeMode)
+                    if needRemerge or forceNewMerge:
+                        print("Need to merge %s, %s again" % (runDir, subsystem))
+                        print("Removing previous merged file %s" % combinedFile)
+                        os.remove(os.path.join(filenamePrefix, combinedFile))
+                    else:
+                        print("WARNING: No need to merge %s, %s again. Check this subsystem!" % (runDir, subsystem))
+                        continue
 
-            # Track the runs which have been merged to allow for reprocessing
-            # We have successfully merged, so add this to the list
-            if runDir not in mergedRuns[subsystem]:
-                mergedRuns[subsystem].append(runDir)
+                # Perform the actual merge
+                merge(currentDir, runDir, subsystem, cumulativeMode)
 
-    return mergedRuns
+                # We have successfully merged
+                # Don't mark that a new file is gone until we have processed
+                #run.subsystems[subsystem].newFile = False
 
