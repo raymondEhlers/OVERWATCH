@@ -533,9 +533,11 @@ def processAllRuns():
                 # Flag that there are new files
                 runs[runDir].subsystems[subsystem].newFile = True
 
-    for runDir in runs:
-        for subsystem in runs[runDir].subsystems:
-            print("{0} has nFiles: {1}".format(runDir, len(runs[runDir].subsystems[subsystem].files)))
+    # DEBUG
+    if processingParameters.beVerbose:
+        for runDir in runs:
+            for subsystem in runs[runDir].subsystems:
+                print("{0}, {1} has nFiles: {2}".format(runDir, subsystem, len(runs[runDir].subsystems[subsystem].files)))
 
     # Find directories to run over
     #runDirs = utilities.findCurrentRunDirs(dirPrefix)
@@ -549,7 +551,9 @@ def processAllRuns():
     #            subsystemRunDirDict[subsystem].append(runDir)
 
     # Merge histograms over all runs, all subsystems if needed. Results in one combined file per subdir.
-    mergedRuns = mergeFiles.mergeRootFiles(runs, subsystemRunDirDict, dirPrefix, subsystemList, forceNewMerge, cumulativeMode)
+    mergedRuns = mergeFiles.mergeRootFiles(runs, dirPrefix,
+                                           processingParameters.forceNewMerge,
+                                           processingParameters.cumulativeMode)
 
     # Construct subsystems
     # Up to this point, the files have just been setup and merged.
