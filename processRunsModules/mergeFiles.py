@@ -17,6 +17,7 @@ from ROOT import gROOT, TH1, TFile, TFileMerger
 import os
 import shutil
 
+from . import processingClasses
 from . import utilities
 
 ###################################################
@@ -156,6 +157,10 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, minTimeMinutes = -1
         merger.OutputFile(outfile)
         merger.Merge()
     print("Merging complete!")
+
+    # Add file to subsystem file list
+    run.subsystems[subsystem].files.append(processingClasses.fileContainer(outfile,
+                                                                           startOfRun = run.subsystems[subsystem].startOfRun))
     return (actualFilterTimeMin, outfile)
 
 ###################################################
@@ -282,6 +287,8 @@ def mergeRootFiles(runs, dirPrefix, forceNewMerge = False, cumulativeMode = True
                     print("Need to merge %s, %s again" % (runDir, subsystem))
                     print("Removing previous merged file %s" % combinedFile)
                     os.remove(os.path.join(filenamePrefix, combinedFile))
+                    # Remove from the file list
+                    run.subsystems[subsystem].files = [fileCont for fileCont in run.subsystems[subsystem].files if fileCont.combinedFile == False]
                 else:
                     print("Need to merge %s, %s" % (runDir, subsystem))
                     #print("WARNING: No need to merge %s, %s again. Check this subsystem!" % (runDir, subsystem))

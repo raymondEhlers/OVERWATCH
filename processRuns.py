@@ -470,7 +470,7 @@ def processAllRuns():
                                                                                      showRootFiles = showRootFiles)
 
                     # Handle files and create file containers
-                    files = []
+                    files = {}
 
                     # Get filenames from dict
                     filenames = [filenamesDict[key] for key in filenamesDict]
@@ -501,9 +501,11 @@ def processAllRuns():
             # Update each subsystem and note that it needs to be reprocessed
             for subsystem in run.subsystems.itervalues():
                 subsystem.newFile = True
-                for filename in runDict[runDir][subsystem]:
+                for filename in sorted(runDict[runDir][subsystem]):
                     subsystem.files.append( processingClasses.fileContainer(filename = filename,
                                                                             startOfRun = subsystem.startOfRun) )
+
+                # Update endOfRun time?
         else:
             runs[runDir] = processingClasses.runContainer( runDir = runDir,
                                                            fileMode = processingParameters.cumulativeMode)
@@ -539,17 +541,6 @@ def processAllRuns():
             for subsystem in runs[runDir].subsystems:
                 print("{0}, {1} has nFiles: {2}".format(runDir, subsystem, len(runs[runDir].subsystems[subsystem].files)))
 
-    # Find directories to run over
-    #runDirs = utilities.findCurrentRunDirs(dirPrefix)
-
-    # If subsystem dir exists (which only happens if it has files), add runDir to subsystem run list
-    #subsystemRunDirDict = {}
-    #for subsystem in subsystemList:
-    #    subsystemRunDirDict[subsystem] = []
-    #    for runDir in runDirs:
-    #        if os.path.exists(os.path.join(dirPrefix, runDir, subsystem)):
-    #            subsystemRunDirDict[subsystem].append(runDir)
-
     # Merge histograms over all runs, all subsystems if needed. Results in one combined file per subdir.
     mergedRuns = mergeFiles.mergeRootFiles(runs, dirPrefix,
                                            processingParameters.forceNewMerge,
@@ -575,13 +566,9 @@ def processAllRuns():
     exit(0)
 
     # Determine which runs to process
-    for runDir in runDirs:
-        for subsystem in subsystems:
-            # Check if the run exists for that subsystem
-            # If it does not exist, continue on to the next run
-            if runDir not in subsystem.runDirs:
-                continue
-
+    for runDir, run in runs.iteritems():
+        #for subsystem in subsystems:
+        for subsystem in run.subsystems:
             # Determine img dir and input file
             imgDir = os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem, "img")
             combinedFile = next(name for name in os.listdir(os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem)) if "combined" in name)
