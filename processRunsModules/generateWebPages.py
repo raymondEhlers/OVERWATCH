@@ -211,6 +211,20 @@ def createPageForRootFileAccess(dirPrefix, dirName, subsystem, generateTemplate 
         #print "filename:", filename
         #print "path:", os.path.join(dirName, subsystem.fileLocationSubsystem, filename)
 
+    # Add the combined file
+    combinedFile = next((name for name in os.listdir(runDir) if "combined" in name and ".root" in name), None)
+    if combinedFile:
+        # TODO: Make this more robust!
+        # Get number of files
+        numberOfFiles = int(combinedFile.split(".")[2])
+        # Get time
+        combinedFileTime = int(combinedFile.split(".")[3])
+        timeStruct = time.gmtime(combinedFileTime)
+        timeString = time.strftime("%A, %d %b %Y %H:%M:%S", timeStruct)
+        linkLabel = "Combined File created from {0} file(s) at {1}".format(numberOfFiles, timeString)
+
+        htmlText += generateHtml.generateHtmlForRootFileAccessPage(combinedFile, linkLabel)
+
     # Close listColumns ul and contentContainer div opened above
     htmlText += "</ul>"
     htmlText += "</div>"

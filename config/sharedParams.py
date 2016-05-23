@@ -16,7 +16,7 @@ class sharedParameters(object):
     subsystemList = ["EMC", "HLT"]
 
     #: Each of these subsystems will also get an individual page for access to their respective ROOT files.
-    subsystemsWithRootFilesToShow = ["HLT"]
+    subsystemsWithRootFilesToShow = ["EMC", "HLT"]
 
     qaFunctionsList = {"EMC": ["determineMedianSlope", "checkForOutliers"]}
     #qaFunctionsList = {"EMC": ["determineMedianSlope", "checkForOutliers"], "HLT" : ["determineValue"], "TPC" : ["checkForOutliers"]}
