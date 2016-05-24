@@ -12,6 +12,7 @@ or read from file.
 from __future__ import print_function
 
 import os
+import sortedcontainers
 
 from processRunsModules import qa
 from processRunsModules import utilities
@@ -60,21 +61,35 @@ class subsystemContainer(object):
 
         It does safety and sanity checks on a number of variables.
         """
+        # Subsystem name
         self.subsystem = subsystem
+        # Bool to control whether to show root files for this subsystem for this run
         self.showRootFiles = showRootFiles
-        #self.writeDirs = []
 
+        # Files
+        # Be certain to set these after the subsystem has been created!
         # Contains all files for that particular run
-        self.files = []
+        self.files = sortedcontainers.SortedDict()
+        # Only one combined file, so we do not need a dict!
+        self.combinedFile = None
+
+        # Directories
+        self.imgDir = ""
+        self.jsonDir = self.imgDir.replace("img", "json")
+        # Ensure that they exist?
+
         # Times
         self.startOfRun = startOfRun
         self.runLength = runLength
         self.endOfRun = self.startOfRun + runLength*60 # runLength is in minutes
         # Histograms
-        self.histGroups = []
+        self.histGroups = {}
+
         # Need to rework the qa container 
         #self.qaContainer = qa.qaFunctionContainer
+
         # True if we received a new file, therefore leading to reprocessing
+        # If the subsystem is being created, we likely need reprocessing, so defaults to true
         self.newFile = True
 
         # If data does not exist for this subsystem then it is dependent on HLT data

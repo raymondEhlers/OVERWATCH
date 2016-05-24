@@ -92,7 +92,7 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, minTimeMinutes = -1
 
     # Filter mergeDict by input time range
     filesToMerge = []
-    for fileCont in run.subsystems[subsystem].files:
+    for fileCont in run.subsystems[subsystem].files.values():
         if isTimeSlice:
             if fileCont.fileTime >= minTimeCutUnix and fileCont.fileTime <= maxTimeCutUnix and fileCont.combinedFile == False:
                 # The file is in the time range, so we keep it
@@ -159,8 +159,10 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, minTimeMinutes = -1
     print("Merging complete!")
 
     # Add file to subsystem file list
-    run.subsystems[subsystem].files.append(processingClasses.fileContainer(outfile,
-                                                                           startOfRun = run.subsystems[subsystem].startOfRun))
+    run.subsystems[subsystem].combinedFile = processingClasses.fileContainer(outfile,
+                                                                            startOfRun = run.subsystems[subsystem].startOfRun)
+    #run.subsystems[subsystem].files.append(processingClasses.fileContainer(outfile,
+    #                                                                       startOfRun = run.subsystems[subsystem].startOfRun))
     return (actualFilterTimeMin, outfile)
 
 ###################################################
@@ -251,7 +253,8 @@ def mergeRootFiles(runs, dirPrefix, forceNewMerge = False, cumulativeMode = True
                 # Check for a combined file. The file has a name of the form hists.combined.(number of uncombined
                 # files in directory).(timestamp of combined file).root
                 # File found via http://stackoverflow.com/a/7006873
-                combinedFile = next((fileCont.filename for fileCont in run.subsystems[subsystem].files if fileCont.combinedFile == True), None)
+                combinedFile = run.subsystems[subsystem].combinedFile
+                #combinedFile = next((fileCont.filename for fileCont in run.subsystems[subsystem].files if fileCont.combinedFile == True), None)
                 #combinedFile = next((name for name in os.listdir(filenamePrefix) if "combined" in name), None)
                 # If it doesn't exist then we go directly to merging; otherwise we check if it is up to date, and
                 # delete+remerge if it isn't, and return run name for reprocessing
@@ -285,10 +288,10 @@ def mergeRootFiles(runs, dirPrefix, forceNewMerge = False, cumulativeMode = True
 
                 if combinedFile:
                     print("Need to merge %s, %s again" % (runDir, subsystem))
-                    print("Removing previous merged file %s" % combinedFile)
-                    os.remove(os.path.join(filenamePrefix, combinedFile))
+                    print("Removing previous merged file %s" % combinedFile.filename)
+                    os.remove(os.path.join(filenamePrefix, combinedFile.filename))
                     # Remove from the file list
-                    run.subsystems[subsystem].files = [fileCont for fileCont in run.subsystems[subsystem].files if fileCont.combinedFile == False]
+                    run.subsystems[subsystem].combinedFile = None
                 else:
                     print("Need to merge %s, %s" % (runDir, subsystem))
                     #print("WARNING: No need to merge %s, %s again. Check this subsystem!" % (runDir, subsystem))
@@ -298,6 +301,6 @@ def mergeRootFiles(runs, dirPrefix, forceNewMerge = False, cumulativeMode = True
                 merge(currentDir, run, subsystem, cumulativeMode)
 
                 # We have successfully merged
-                # Don't mark that a new file is gone until we have processed
+                # Still considered a newFile until we have processed, so don't change state here
                 #run.subsystems[subsystem].newFile = False
 

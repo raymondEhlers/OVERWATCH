@@ -30,6 +30,7 @@ gROOT.ProcessLine("gErrorIgnoreLevel = kWarning;")
 import os
 import time
 from collections import OrderedDict
+import sortedcontainers
 
 # Config
 from config.processingParams import processingParameters
@@ -436,7 +437,7 @@ def processAllRuns():
             os.makedirs(templateDataDirPrefix)
 
     # Create runs list
-    runs = OrderedDict()
+    runs = sortedcontainers.SortedDict()
     if os.path.exists(os.path.join(dirPrefix, "objectStore.db")):
         # The objects exist, so just use the stored copy and update it.
         pass
@@ -449,7 +450,7 @@ def processAllRuns():
                                                            fileMode = processingParameters.cumulativeMode)
 
         # Find files and create subsystems
-        for runDir, run in runs.iteritems():
+        for runDir, run in runs.items():
             for subsystem in processingParameters.subsystemList:
                 # If subsystem exists, then create file containers 
                 subsystemPath = os.path.join(dirPrefix, runDir, subsystem)
@@ -470,24 +471,39 @@ def processAllRuns():
                                                                                      showRootFiles = showRootFiles)
 
                     # Handle files and create file containers
-                    files = {}
+                    files = sortedcontainers.SortedDict()
+
+                    for key in filenamesDict:
+                        files[key] = processingClasses.fileContainer(filenamesDict[key], startOfRun)
+
+                    print("files length: {0}".format(len(files)))
 
                     # Get filenames from dict
-                    filenames = [filenamesDict[key] for key in filenamesDict]
-                    filenames.sort()
-                    print("filenames length: {0}".format(len(filenames)))
+                    #filenames = [filenamesDict[key] for key in filenamesDict]
+                    #filenames.sort()
+                    #print("filenames length: {0}".format(len(filenames)))
                     # Add combined files, which are also valid files
-                    filenames += [filename for filename in os.listdir(subsystemPath) if "combined" in filename and ".root"in filename]
-                    print("With combined - filenames length: {0}".format(len(filenames)))
+                    #filenames += [filename for filename in os.listdir(subsystemPath) if "combined" in filename and ".root"in filename]
+                    #print("With combined - filenames length: {0}".format(len(filenames)))
 
                     # Create file containers
-                    for filename in filenames:
-                        files.append(processingClasses.fileContainer(filename, startOfRun))
+                    #for filename in filenames:
+                    #    files.append(processingClasses.fileContainer(filename, startOfRun))
 
                     # And add the files to the subsystem
                     # Since a run was just appended, accessing the last element should always be fine
                     run.subsystems[subsystem].files = files
 
+                    # Add combined
+                    combinedFilename = [filename for filename in os.listdir(subsystemPath) if "combined" in filename and ".root"in filename]
+                    if len(combinedFilename) > 1:
+                        print("ERROR: Number of combined files in {0} is {1}, but should be 1! Exiting!".format(runDir, len(combinedFilename)))
+                        exit(0)
+                    if len(combinedFilename) == 1:
+                        run.subsystems[subsystem].combinedFile = processingClasses.fileContainer(combinedFilename[0], startOfRun)
+                    else:
+                        print("INFO: No combined file in {0}".format(runDir))
+                        
     # Start of processing data
     # Takes histos from dirPrefix and moves them into Run dir structure, with a subdir for each subsystem
     runDict = utilities.moveRootFiles(dirPrefix, processingParameters.subsystemList)
@@ -501,11 +517,15 @@ def processAllRuns():
             # Update each subsystem and note that it needs to be reprocessed
             for subsystem in run.subsystems.itervalues():
                 subsystem.newFile = True
-                for filename in sorted(runDict[runDir][subsystem]):
-                    subsystem.files.append( processingClasses.fileContainer(filename = filename,
-                                                                            startOfRun = subsystem.startOfRun) )
+                for filename in runDict[runDir][subsystem]:
+                    subsystem.files[utilities.extractTimeStampFromFilename(filename)] = processingClasses.fileContainer(filename = filename, startOfRun = subsystem.startOfRun)
 
-                # Update endOfRun time?
+                # Update time stamps
+                fileKeys = subsystem.files.keys()
+                # This should rarely change, but in principle we could get a new file that we missed.
+                subsystem.startOfRun = fileKeys[0]
+                print("Previous EOR: {0}\tNew: {1}".format(subsystem.endOfRun, fileKeys[-1]))
+                subsystem.endOfRun = fileKeys[-1]
         else:
             runs[runDir] = processingClasses.runContainer( runDir = runDir,
                                                            fileMode = processingParameters.cumulativeMode)
@@ -527,15 +547,16 @@ def processAllRuns():
                                                                                           showRootFiles = showRootFiles)
 
                 # Handle files
-                files = []
+                files = sortedcontainers.SortedDict()
                 for filename in filenames:
-                    files.append(processingClasses.fileContainer(filename, startOfRun))
+                    files[utilities.extractTimeStampFromFilename(filenmae)] = processingClasses.fileContainer(filename, startOfRun)
                 runs[runDir].subsystems[subsystem].files = files
 
                 # Flag that there are new files
                 runs[runDir].subsystems[subsystem].newFile = True
 
     # DEBUG
+    print("DEBUG:")
     if processingParameters.beVerbose:
         for runDir in runs:
             for subsystem in runs[runDir].subsystems:
@@ -561,31 +582,34 @@ def processAllRuns():
     #                                          showRootFiles = showRootFiles))
 
     # Contains which directories to write out on the main page
-    writeDirs = []
+    #writeDirs = []
 
     exit(0)
 
     # Determine which runs to process
-    for runDir, run in runs.iteritems():
+    for runDir, run in runs.items():
         #for subsystem in subsystems:
         for subsystem in run.subsystems:
             # Determine img dir and input file
             imgDir = os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem, "img")
-            combinedFile = next(name for name in os.listdir(os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem)) if "combined" in name)
-            inputFilename = os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem, combinedFile)
+            #combinedFile = next(name for name in os.listdir(os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem)) if "combined" in name)
+            inputFilename = os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem, run.subsystems[subsystem].combinedFile.filename)
 
-            if os.path.exists(inputFilename):
-                # Does not always append, since a run number could come up multiple times when processing
-                # different subsystems. This is not necessarily a problem since it is not new information,
-                # but it could become confusing.
-                if runDir not in subsystem.writeDirs:
-                    subsystem.writeDirs.append(runDir)
-            else:
-                print("File %s does not seem to exist! Skipping!" % inputFilename)
-                continue
+            #if os.path.exists(inputFilename):
+            #    # Does not always append, since a run number could come up multiple times when processing
+            #    # different subsystems. This is not necessarily a problem since it is not new information,
+            #    # but it could become confusing.
+            #    if runDir not in subsystem.writeDirs:
+            #        subsystem.writeDirs.append(runDir)
+            #else:
+            #    print("File %s does not seem to exist! Skipping!" % inputFilename)
+            #    continue
 
             # Process if imgDir doesn't exist, or if forceReprocessing, or if runDir has been merged recently
-            if not os.path.exists(imgDir) or forceReprocessing == True or runDir in subsystem.mergeDirs:
+            #if not os.path.exists(imgDir) or forceReprocessing == True or runDir in subsystem.mergeDirs:
+            if run.subsystems[subsystem].newFile == True or forceReprocessing == True:
+                # TODO: Move file checks to loading above. In that case, we know that they always exist.
+                #       Need to be careful that we also create them when we create a new run!
                 if not os.path.exists(imgDir): # check in case forceReprocessing
                     os.makedirs(imgDir)
                 # json files

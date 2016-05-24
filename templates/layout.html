@@ -5,6 +5,8 @@
         <title>ALICE OVERWATCH</title>
         <script src="{{ url_for("static", filename="shared.js") }}" type="text/javascript"></script>
         <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="style.css") }}">
+        {# Disable favicon request. See: https://stackoverflow.com/a/13416784 #}
+        <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         {% block head %}{% endblock %}
     </head>
