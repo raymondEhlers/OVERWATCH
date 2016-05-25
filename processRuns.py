@@ -616,8 +616,6 @@ def processAllRuns():
     # Contains which directories to write out on the main page
     #writeDirs = []
 
-    exit(0)
-
     # Determine which runs to process
     for runDir, run in runs.items():
         #for subsystem in subsystems:
@@ -625,7 +623,7 @@ def processAllRuns():
             # Determine img dir and input file
             #imgDir = os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem, "img")
             #combinedFile = next(name for name in os.listdir(os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem)) if "combined" in name)
-            inputFilename = os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem, run.subsystems[subsystem].combinedFile.filename)
+            inputFilename = os.path.join(dirPrefix, runDir, run.subsystems[subsystem].fileLocationSubsystem, run.subsystems[subsystem].combinedFile.filename)
 
             #if os.path.exists(inputFilename):
             #    # Does not always append, since a run number could come up multiple times when processing
@@ -672,6 +670,8 @@ def processAllRuns():
                 # We often want to skip this point since most runs will not need to be processed most times
                 if beVerbose:
                     print("Don't need to process %s. It has already been processed" % runDir)
+
+    exit(0)
 
     # Now write the webpage in the root directory
     # Static page
