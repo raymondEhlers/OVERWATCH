@@ -57,7 +57,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             The string contains "%s" to print the filename contained in listOfHists. It also includes the file
             extension. Ex: "img/%s.png".
         subsystem (:class:`~subsystemProperties`): Contains information about the current subsystem.
-        qaContainer (Optional[:class:`~processRunsModules.qa.qaFunctionContainer`]): Contains information
+        qaContainer (Optional[:class:`~processRunsModules.processingClasses.qaFunctionContainer`]): Contains information
             about the QA function and histograms, as well as the run being processed.
 
     Returns:
@@ -84,7 +84,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
     # histograms.
     # TODO: A better approach should be taken!
     if qaContainer is None:
-        qaContainer = qa.qaFunctionContainer("Run000000", "Run000000", ["Run000000"], "")
+        qaContainer = processingClasses.qaFunctionContainer("Run000000", "Run000000", ["Run000000"], "")
 
     # Find the histogram containing the number of events (if it exists)
     for key in keysInFile:
@@ -222,7 +222,7 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
 
     # Create objects to setup for processRootFile() call
     # QA class
-    qaContainer = qa.qaFunctionContainer(firstRun, lastRun, runDirs, qaFunctionName)
+    qaContainer = processingClasses.qaFunctionContainer(firstRun, lastRun, runDirs, qaFunctionName)
 
     # Formatting
     outputFormatting = os.path.join(dataDir, "%s.png")
@@ -649,7 +649,7 @@ def processAllRuns():
                 # Process combined root file: plot histos and save in imgDir
                 print("About to process %s, %s" % (runDir, subsystem))
                 outputFormattingSave = os.path.join(run.subsystems[subsystem].imgDir, "%s" + processingParameters.fileExtension) 
-                outputHistNames = processRootFile(inputFilename, outputFormattingSave, subsystem)
+                outputHistNames = processRootFile(inputFilename, outputFormattingSave, run.subsystems[subsystem])
 
                 # Store filenames and timestamps in dictionary, for sorting by time
                 #[mergeDict, maxTimeMinutes] = utilities.createFileDictionary(dirPrefix, runDir, subsystem.fileLocationSubsystem)
