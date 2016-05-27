@@ -119,7 +119,7 @@ void zmqReceiver::ReceiveData()
   for (aliZMQmsg::iterator i=message.begin(); i!=message.end(); ++i)
   {
     // Check for information about the data
-    if (alizmq_msg_iter_check(i, "INFO")==0)
+    if (alizmq_msg_iter_check_id(i, "INFO")==0)
     {
       // Retrieve info about the data
       std::string info;
