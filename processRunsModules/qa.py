@@ -22,6 +22,18 @@ from config.processingParams import processingParameters
 currentModule = sys.modules[__name__]
 
 ###################################################
+def createHistGroups(subsystem):
+    functionName = "create" + subsystem.subsystem + "HistogramGroups"
+    # Get the function
+    sortFunction = getattr(currentModule, functionName, None)
+    if sortFunction is not None:
+        histStackNames = sortFunction(subsystem)
+        return [True, histStackNames]
+
+    # If it doens't work for any reason, return false so that we can create a default
+    return False
+
+###################################################
 def checkHist(hist, qaContainer):
     """ Selects and calls the proper qa function based on the input.
 

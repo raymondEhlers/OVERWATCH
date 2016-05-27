@@ -27,7 +27,7 @@ class runContainer(object):
         # Need to rework the qa container 
         #self.qaContainer = qa.qaFunctionContainer
         self.mode = fileMode
-        self.subsystems = {}
+        self.subsystems = dict()
 
 ###################################################
 class subsystemContainer(object):
@@ -101,8 +101,12 @@ class subsystemContainer(object):
         self.startOfRun = startOfRun
         self.runLength = runLength
         self.endOfRun = self.startOfRun + runLength*60 # runLength is in minutes
+
         # Histograms
-        self.histGroups = {}
+        self.histGroups = []
+        self.histStackNames = []
+        # Should be accessed through the group usually, but this provides direct access
+        self.hists = dict()
 
         # Need to rework the qa container 
         #self.qaContainer = qa.qaFunctionContainer
@@ -110,6 +114,9 @@ class subsystemContainer(object):
         # True if we received a new file, therefore leading to reprocessing
         # If the subsystem is being created, we likely need reprocessing, so defaults to true
         self.newFile = True
+
+        # nEvents
+        self.nEvents = None
 
 
 ###################################################
@@ -129,7 +136,7 @@ class fileContainer(object):
         self.timeIntoRun = self.fileTime - startOfRun
 
 ###################################################
-class histGroupContainer(object):
+class histogramGroupContainer(object):
     """ Class to handle sorting of objects.
 
     This class can select a group of histograms and store their names in a list. It also stores a more
@@ -161,7 +168,7 @@ class histGroupContainer(object):
         self.prettyName = prettyName
         self.selectionPattern = groupSelectionPattern
         self.plotInGridSelectionPattern = plotInGridSelectionPattern
-        self.histList = []
+        self.histNameList = []
 
         # So that it is not necessary to check the list every time
         if self.plotInGridSelectionPattern in self.selectionPattern:
@@ -171,11 +178,11 @@ class histGroupContainer(object):
 
 
 ###################################################
-class histContainer(object):
+class histogramContainer(object):
     """ Histogram information container
     
     """
-    def __init__(self, histName, prettyName = None):
+    def __init__(self, histName, prettyName = None, histStack = False):
         self.histName = histName
         # Only assign if meaningful
         if prettyName != None:
@@ -183,9 +190,11 @@ class histContainer(object):
         else:
             self.prettyName = hist.histName
 
+        self.histStack = histStack
         self.information = dict()
         self.hist = None
-        self.processedHist = None
+        # Contains the canvas where the hist may be plotted, along with additional content
+        self.canvas = None
 
 ###################################################
 class qaFunctionContainer(object):
@@ -223,7 +232,7 @@ class qaFunctionContainer(object):
         self.lastRun = lastRun
         self.runDirs = runDirs
         self.qaFunctionName = qaFunctionName
-        self.hists = {}
+        self.hists = dict()
         self.currentRun = firstRun
         self.filledValueInRun = False
         self.currentRunLength = 0

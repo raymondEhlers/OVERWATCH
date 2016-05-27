@@ -73,6 +73,35 @@ def sortSMsInPhysicalOrder(histList):
     return tempList
 
 ###################################################
+def createEMCHistogramGroups(subsystem):
+    # Sort the filenames of the histograms into catagories for better presentation
+    # The order in which these are added is the order in which they are processed!
+    # Plot by SM
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FEE vs TRU", "FEEvsTRU_SM", "_SM"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FEE vs STU", "FEEvsSTU_SM", "_SM"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L0 (hits with ADC > 0)", "FastORL0_SM", "_SM"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L0 Amp (hits weighted with ADC value)", "FastORL0Amp_SM", "_SM"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L0 Large Amp (hits above 400 ADC)", "FastORL0LargeAmp_SM", "_SM"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L1 (hits with ADC > 0)", "FastORL1_SM", "_SM"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L1 Amp (hits weighted with ADC value)", "FastORL1Amp_SM", "_SM"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L1 Large Amp (hits above 400 ADC)", "FastORL1LargeAmp_SM", "_SM"))
+    # Trigger classes
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Gamma Trigger Low", "GAL"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Gamma Trigger High", "GAH"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Jet Trigger Low", "JEL"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Jet Trigger High", "JEH"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("L0", "EMCL0"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Background", "BKG"))
+    # Other EMC
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR", "FastOR"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Other EMC", "EMC"))
+    # Catch all of the other hists
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Non EMC", ""))
+
+    histStackNames = ["PatchAmp"]
+    return histStackNames
+
+###################################################
 def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem = "EMC"):
     """ Sorts and displays EMC histograms.
 
@@ -93,31 +122,6 @@ def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem 
         str: HTML containing all of the EMC histograms, with proper formatting and links from the top of the page to the named images.
 
     """
-
-    # Sort the filenames of the histograms into catagories for better presentation
-    groupedHists = []
-    # The order in which these are added is the order in which they are processed!
-    # Plot by SM
-    groupedHists.append(processingClasses.sortingGroup("FEE vs TRU", "FEEvsTRU_SM", "_SM"))
-    groupedHists.append(processingClasses.sortingGroup("FEE vs STU", "FEEvsSTU_SM", "_SM"))
-    groupedHists.append(processingClasses.sortingGroup("FastOR L0 (hits with ADC > 0)", "FastORL0_SM", "_SM"))
-    groupedHists.append(processingClasses.sortingGroup("FastOR L0 Amp (hits weighted with ADC value)", "FastORL0Amp_SM", "_SM"))
-    groupedHists.append(processingClasses.sortingGroup("FastOR L0 Large Amp (hits above 400 ADC)", "FastORL0LargeAmp_SM", "_SM"))
-    groupedHists.append(processingClasses.sortingGroup("FastOR L1 (hits with ADC > 0)", "FastORL1_SM", "_SM"))
-    groupedHists.append(processingClasses.sortingGroup("FastOR L1 Amp (hits weighted with ADC value)", "FastORL1Amp_SM", "_SM"))
-    groupedHists.append(processingClasses.sortingGroup("FastOR L1 Large Amp (hits above 400 ADC)", "FastORL1LargeAmp_SM", "_SM"))
-    # Trigger classes
-    groupedHists.append(processingClasses.sortingGroup("Gamma Trigger Low", "GAL"))
-    groupedHists.append(processingClasses.sortingGroup("Gamma Trigger High", "GAH"))
-    groupedHists.append(processingClasses.sortingGroup("Jet Trigger Low", "JEL"))
-    groupedHists.append(processingClasses.sortingGroup("Jet Trigger High", "JEH"))
-    groupedHists.append(processingClasses.sortingGroup("L0", "EMCL0"))
-    groupedHists.append(processingClasses.sortingGroup("Background", "BKG"))
-    # Other EMC
-    groupedHists.append(processingClasses.sortingGroup("FastOR", "FastOR"))
-    groupedHists.append(processingClasses.sortingGroup("Other EMC", "EMC"))
-    # Catch all of the other hists
-    groupedHists.append(processingClasses.sortingGroup("Non EMC", ""))
 
     # Group filenames
     for filename in outputHistNames:

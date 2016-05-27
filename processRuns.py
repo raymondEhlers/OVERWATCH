@@ -65,10 +65,10 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
 
     """
     # Seems to be required for pyroot?
-    gROOT.Reset()
+    #gROOT.Reset()
 
     # Use to write out
-    canvas = TCanvas("processRootFilecanvas", "processRootFilecanvas")
+    #canvas = TCanvas("processRootFileCanvas", "processRootFileCanvas")
 
     # The file with the new histograms
     fIn = TFile(filename, "READ")
@@ -76,58 +76,110 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
     # Read in available keys in the file
     keysInFile = fIn.GetListOfKeys();
 
+    # Sorts keys so that we can have consistency when histograms are processed.
+    keysInFile.Sort()
+
+    # Create histogram sorting groups
+    if subsystem.histGroups == []:
+        [sortingSuccess, histStackNames] = qa.createHistGroups(subsystem)
+        subsystem.histStackNames = histStackNames
+        if sortingSuccess is False:
+            if processingParameters.beVerbose:
+                print("Subsystem {0} does not have a sorting function. Add all histograms one group!".format(subsystem.subsystem))
+            if subsystem.fileLocationSubsystem != subsystem.subsystem:
+                selection = subsystem.subsystem
+            else:
+                selection = ""
+            subsystem.histGroups.append(processingClasses.histogramGroupContainer(subsystem.subsystem + " Histograms", selection)
+
+    # Get histograms and sort them if they do not exist in the subsystem
+    # TODO: Consider a condition where this is not necessary
+    for key in keysInFile:
+        classOfObject = gROOT.GetClass(key.GetClassName())
+        if classOfObject.InheritsFrom("TH1"):
+            # Create histogram object
+            hist = processingClasses.histogramContainer(key.GetName())
+            hist.hist = key.ReadObj()
+            hist.canvas = TCanvas(key.GetName() + "Canvas", key.GetName() + "Canvas")
+            # Shouldn't be needed, because I keep a reference to it
+            #SetOwnership(hist.canvas, False)
+            
+            if subsystem.nEvents is None and "events" in hist.histName.lower():
+                subsystem.nEvents = hist.GetBinContent(1)
+
+            # Add the histogram name to the proper group
+            classifiedHist = False
+            for group in subsystem.histGroups:
+                if group.selectionPattern in hist.histName:
+                    group.histList.append(hist.histName)
+                    classifiedHist = True
+                    # Break so that we don't have multiple copies of hists!
+                    break
+
+            if classifiedHist:
+                # Add it to the subsystem
+                subsystem.hists[key.GetName()] = hist
+            else:
+                if processingParameters.beVerbose:
+                    print("Skipping histogram {0} since it is not classifiable for subsystem {1}".format(hist.histName, subsystem.subsystem))
+
+    # TODO: Check for hist stack and here combine histograms as necessary.
+    # Will require a number of for loops!
+    # Should be in the same selective grouping as above
+    # THStack
+
     # Save output names for writing to webpage later
-    outputHistNames = [ ]
+    #outputHistNames = [ ]
 
     # If a qaContainer does not exist, then create one, but do not specify the function
     # By not specifying the function, it denotes that this container is just being used to hold
     # histograms.
     # TODO: A better approach should be taken!
-    if qaContainer is None:
-        qaContainer = processingClasses.qaFunctionContainer("Run000000", "Run000000", ["Run000000"], "")
+    #if qaContainer is None:
+    #    qaContainer = processingClasses.qaFunctionContainer("Run000000", "Run000000", ["Run000000"], "")
 
     # Find the histogram containing the number of events (if it exists)
-    for key in keysInFile:
-        if "histEvents" in key.GetName():
-            nEventsFromFile = key.ReadObj()
-            # If we subtract two files with the same number of events, then we would divide by 0.
-            # So we require there to be more than 0 events.
-            if nEventsFromFile.GetBinContent(1) > 0:
-                # Need to create a new hist to avoid a memory leak!
-                nEvents = TH1F("nEvents", "nEvents", 1, 0, 1)
-                nEvents.Fill(0.5, nEventsFromFile.GetBinContent(1))
-                print("NEvents Hist name: {0}".format(key.GetName()))
-                print("NEvents from file: {0}".format(nEventsFromFile.GetBinContent(1)))
-                print("NEvents: {0}".format(nEvents.GetBinContent(1)))
-                qaContainer.addHist(nEvents, "NEvents")
+    #for key in keysInFile:
+    #    if "histEvents" in key.GetName():
+    #        nEventsFromFile = key.ReadObj()
+    #        # If we subtract two files with the same number of events, then we would divide by 0.
+    #        # So we require there to be more than 0 events.
+    #        if nEventsFromFile.GetBinContent(1) > 0:
+    #            # Need to create a new hist to avoid a memory leak!
+    #            nEvents = TH1F("nEvents", "nEvents", 1, 0, 1)
+    #            nEvents.Fill(0.5, nEventsFromFile.GetBinContent(1))
+    #            print("NEvents Hist name: {0}".format(key.GetName()))
+    #            print("NEvents from file: {0}".format(nEventsFromFile.GetBinContent(1)))
+    #            print("NEvents: {0}".format(nEvents.GetBinContent(1)))
+    #            qaContainer.addHist(nEvents, "NEvents")
 
-    # Sorts keys so that we can have consistency when histograms are processed.
-    keysInFile.Sort()
-
-    # Useful information: https://root.cern.ch/phpBB3/viewtopic.php?t=11049
-    for key in keysInFile:
-        classOfObject = gROOT.GetClass(key.GetClassName())
-        # Ensure that we only take histograms
-        if classOfObject.InheritsFrom("TH1"):
-            hist = key.ReadObj()
+    for histGroup in subsystem.histGroups:
+        for histName in histGroup:
+            # Retrieve histogram and canvas
+            hist = subsystem.hists[histName]
+            canvas = hist.canvas
+            # Ensure we plot onto the right canvas
+            canvas.cd()
 
             # Now set options, draw and save
             drawOptions = ""
 
             # Allows curotmization of draw options for 2D hists
-            if classOfObject.InheritsFrom("TH2"):
+            # TODO: This probably should be moved elsewhere
+            if hist.InheritsFrom("TH2"):
                 drawOptions = "colz"
-                gPad.SetLogz()
-            
+                canvas.SetLogz()
+
             # Setup and draw histogram
             # Turn off title, but store the value
             gStyle.SetOptTitle(0)
             hist.Draw(drawOptions)
             canvas.Update()
-            
+
             # Various checks and QA that are performed on hists
             skipPrinting = qa.checkHist(hist, qaContainer)
 
+            # TODO: Determine whether this is needed!
             # Skips printing out the histogram
             if skipPrinting == True:
                 if processingParameters.beVerbose == True and qaContainer.qaFunctionName == "":
@@ -157,11 +209,60 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             with open(jsonBufferFile, "wb") as f:
                 f.write(TBufferJSON.ConvertToJSON(canvas).Data())
 
-    # Remove NEvents so that it doesn't get printed
-    if qaContainer.getHist("NEvents") is not None:
-        if processingParameters.beVerbose == True:
-            print("Removing NEvents QA hist!")
-        qaContainer.removeHist("NEvents")
+    # Useful information: https://root.cern.ch/phpBB3/viewtopic.php?t=11049
+    #for key in keysInFile:
+    #    classOfObject = gROOT.GetClass(key.GetClassName())
+    #    # Ensure that we only take histograms
+    #    if classOfObject.InheritsFrom("TH1"):
+    #        hist = key.ReadObj()
+
+    #        # Now set options, draw and save
+    #        drawOptions = ""
+
+    #        # Allows curotmization of draw options for 2D hists
+    #        if classOfObject.InheritsFrom("TH2"):
+    #            drawOptions = "colz"
+    #            gPad.SetLogz()
+    #        
+    #        # Setup and draw histogram
+    #        hist.SetTitle("")
+    #        hist.Draw(drawOptions)
+    #        canvas.Update()
+    #        
+    #        # Various checks and QA that are performed on hists
+    #        skipPrinting = qa.checkHist(hist, qaContainer)
+
+    #        # Skips printing out the histogram
+    #        if skipPrinting == True:
+    #            if processingParameters.beVerbose == True and qaContainer.qaFunctionName == "":
+    #                print("Skip printing histogram {0}".format(hist.GetName()))
+    #            continue
+
+    #        # Filter here for hists in the subsystem if subsystem != fileLocationSubsystem
+    #        # Thus, we can filter the proper subsystems for subsystems that don't have their own data files
+    #        if subsystem.subsystem != subsystem.fileLocationSubsystem and subsystem.subsystem not in hist.GetName():
+    #            continue
+
+    #        # Add to our list for printing to the webpage later
+    #        # We only want to do this if we are actually printing the histogram
+    #        outputHistNames.append(hist.GetName())
+
+    #        # Save
+    #        outputFilename = outputFormatting % hist.GetName()
+    #        canvas.SaveAs(outputFilename)
+
+    #        # Write BufferJSON
+    #        jsonBufferFile = outputFilename.replace("img", "json").replace("png","json")
+    #        print("jsonBufferFile: {0}".format(jsonBufferFile))
+    #        # GZip is performed by the web server, not here!
+    #        with open(jsonBufferFile, "wb") as f:
+    #            f.write(TBufferJSON.ConvertToJSON(canvas).Data())
+
+    ## Remove NEvents so that it doesn't get printed
+    #if qaContainer.getHist("NEvents") is not None:
+    #    if processingParameters.beVerbose == True:
+    #        print("Removing NEvents QA hist!")
+    #    qaContainer.removeHist("NEvents")
 
     # Add to output names if hists are created
     if qaContainer.getHists() != []:
@@ -619,11 +720,11 @@ def processAllRuns():
     # Determine which runs to process
     for runDir, run in runs.items():
         #for subsystem in subsystems:
-        for subsystem in run.subsystems:
+        for subsystem in run.subsystems.values():
             # Determine img dir and input file
             #imgDir = os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem, "img")
             #combinedFile = next(name for name in os.listdir(os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem)) if "combined" in name)
-            inputFilename = os.path.join(dirPrefix, runDir, run.subsystems[subsystem].fileLocationSubsystem, run.subsystems[subsystem].combinedFile.filename)
+            inputFilename = os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem, subsystem.combinedFile.filename)
 
             #if os.path.exists(inputFilename):
             #    # Does not always append, since a run number could come up multiple times when processing
@@ -637,7 +738,7 @@ def processAllRuns():
 
             # Process if imgDir doesn't exist, or if forceReprocessing, or if runDir has been merged recently
             #if not os.path.exists(imgDir) or forceReprocessing == True or runDir in subsystem.mergeDirs:
-            if run.subsystems[subsystem].newFile == True or processingParameters.forceReprocessing == True:
+            if subsystem.newFile == True or processingParameters.forceReprocessing == True:
                 #if not os.path.exists(imgDir): # check in case forceReprocessing
                 #    os.makedirs(imgDir)
                 ## json files
@@ -647,9 +748,9 @@ def processAllRuns():
                 #    os.makedirs(jsonPath)
 
                 # Process combined root file: plot histos and save in imgDir
-                print("About to process %s, %s" % (runDir, subsystem))
-                outputFormattingSave = os.path.join(run.subsystems[subsystem].imgDir, "%s" + processingParameters.fileExtension) 
-                outputHistNames = processRootFile(inputFilename, outputFormattingSave, run.subsystems[subsystem])
+                print("About to process %s, %s" % (runDir, subsystem.subsystem))
+                outputFormattingSave = os.path.join(subsystem.imgDir, "%s" + processingParameters.fileExtension) 
+                outputHistNames = processRootFile(inputFilename, outputFormattingSave, subsystem)
 
                 # Store filenames and timestamps in dictionary, for sorting by time
                 #[mergeDict, maxTimeMinutes] = utilities.createFileDictionary(dirPrefix, runDir, subsystem.fileLocationSubsystem)
