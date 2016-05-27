@@ -31,9 +31,9 @@ then
 fi
 
 calledFromSystemd=false
-if [[ -n "$1" && "$1" == "systemd" ]];
+if [[ -n "$1" && ("$1" == "systemd" || "$1" == "upstart") ]];
 then
-    echo "INFO: Script was called by systemd!"
+    echo "INFO: Script was called by $1!"
     calledFromSystemd=true
 fi
 
@@ -148,7 +148,7 @@ else
     then
         if [[ "$calledFromSystemd" == true ]];
         then
-            echo "ERROR: Processing should not be started from systemd! Exiting"
+            echo "ERROR: Processing should not be started from $1! Exiting"
             safeExit 1
             return $?
         fi
