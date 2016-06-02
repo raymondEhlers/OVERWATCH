@@ -23,15 +23,42 @@ currentModule = sys.modules[__name__]
 
 ###################################################
 def createHistGroups(subsystem):
+    """ Properly route histogram group function for each subsystem
+    
+    """
     functionName = "create" + subsystem.subsystem + "HistogramGroups"
     # Get the function
     sortFunction = getattr(currentModule, functionName, None)
     if sortFunction is not None:
-        histStackNames = sortFunction(subsystem)
-        return [True, histStackNames]
+        sortFunction(subsystem)
+        return True
 
     # If it doens't work for any reason, return false so that we can create a default
     return False
+
+###################################################
+def createHistogramStacks(subsystem):
+    """ Properly routes histogram stack function for each subsystem
+    
+    """
+    functionName = "create" + subsystem.subsystem + "HistogramStacks"
+    histogramStackFunction = getattr(currentModule, functionName, None)
+    if histogramStackFunction is not None:
+        histogramStackFunction(subsystem)
+    else:
+        print("Could not find histogram stack function for subsystem {0}".format(subsystem.subsystem))
+
+###################################################
+def findFunctionsForHist(subsystem, hist):
+    """ Determines which functions should be applied to a histogram
+    
+    """
+    functionName = "findFunctionsFor" + subsystem.subsystem + "Histogram"
+    findFunction = getattr(currentModule, functionName, None)
+    if findFunction is not None:
+        findFunction(subsystem, hist)
+    else:
+        print("Could not find histogram function sorting function for subsystem {0}".format(subsystem.subsystem))
 
 ###################################################
 def checkHist(hist, qaContainer):

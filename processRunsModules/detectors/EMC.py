@@ -12,7 +12,7 @@ from __future__ import print_function
 from builtins import range
 
 # Used for QA functions
-from ROOT import ROOT, gStyle, TH1, TH1F, TF1, gPad, TAxis, TGaxis, SetOwnership, TPaveText, TLegend, TLine, kRed, kBlue, kOpenCircle, kFullCircle
+from ROOT import ROOT, TH1, TH1F, THStack, TF1, gPad, TAxis, TGaxis, SetOwnership, TPaveText, TLegend, TLine, kRed, kBlue, kOpenCircle, kFullCircle
 
 # Used for the outlier detection function
 import numpy
@@ -73,33 +73,66 @@ def sortSMsInPhysicalOrder(histList):
     return tempList
 
 ###################################################
+def createEMCHistogramStacks(subsystem):
+    skipList = []
+    for histName in subsystem.histsInFile:
+        # Skip if we have already put it into another stack
+        if histName in skipList:
+            continue
+        # TODO: Refactor these functions
+        patchAmpSelector = "EMCalMaxPatchAmpEMC"
+        if patchAmpSelector in histName and patchAmpSelector.replace("EMCal", "DCal") in subsystem.histsInFile:
+            # Don't add to the availableHists 
+            histNames = [histName, histName.replace("EMCal", "DCal")]
+            skipList.extend(histName)
+            # Remove hists if they exist (EMCal shouldn't, but DCal could)
+            for name in histName:
+                # See: https://stackoverflow.com/a/15411146
+                subsystem.histsAvailable.pop(histName, None)
+            # Add a new hist object for the stack
+            subsystem.histsAvailable[histName] = processingClasses.histogramStackContainer(histName, histNames)
+            continue
+        patchAmpSelector = "EMCalPatchAmpEMC"
+        if patchAmpSelector in histName and patchAmpSelector.replace("EMCal", "DCal") in subsystem.histsInFile:
+            # Don't add to the availableHists 
+            histNames = [histName, histName.replace("EMCal", "DCal")]
+            skipList.extend(histName)
+            # Remove hists if they exist (EMCal shouldn't, but DCal could)
+            for name in histName:
+                # See: https://stackoverflow.com/a/15411146
+                subsystem.histsAvailable.pop(histName, None)
+            # Add a new hist object for the stack
+            subsystem.histsAvailable[histName] = processingClasses.histogramStackContainer(histName, histNames)
+            continue
+
+        # Just add if we don't want need to stack
+        subsystem.histsAvailable[histName] = subsystem.histsInFile[histName]
+
+###################################################
 def createEMCHistogramGroups(subsystem):
     # Sort the filenames of the histograms into catagories for better presentation
     # The order in which these are added is the order in which they are processed!
     # Plot by SM
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FEE vs TRU", "FEEvsTRU_SM", "_SM"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FEE vs STU", "FEEvsSTU_SM", "_SM"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L0 (hits with ADC > 0)", "FastORL0_SM", "_SM"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L0 Amp (hits weighted with ADC value)", "FastORL0Amp_SM", "_SM"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L0 Large Amp (hits above 400 ADC)", "FastORL0LargeAmp_SM", "_SM"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L1 (hits with ADC > 0)", "FastORL1_SM", "_SM"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L1 Amp (hits weighted with ADC value)", "FastORL1Amp_SM", "_SM"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L1 Large Amp (hits above 400 ADC)", "FastORL1LargeAmp_SM", "_SM"))
+    subsystem.histGroups["FEEvsTRU_SM"] = processingClasses.histogramGroupContainer("FEE vs TRU", "FEEvsTRU_SM", "_SM")
+    subsystem.histGroups["FEEvsSTU_SM"] = processingClasses.histogramGroupContainer("FEE vs STU", "FEEvsSTU_SM", "_SM")
+    subsystem.histGroups["FastORL0_SM"] = processingClasses.histogramGroupContainer("FastOR L0 (hits with ADC > 0)", "FastORL0_SM", "_SM")
+    subsystem.histGroups["FastORL0Amp_SM"] = processingClasses.histogramGroupContainer("FastOR L0 Amp (hits weighted with ADC value)", "FastORL0Amp_SM", "_SM")
+    subsystem.histGroups["FastORL0LargeAmp_SM"] = processingClasses.histogramGroupContainer("FastOR L0 Large Amp (hits above 400 ADC)", "FastORL0LargeAmp_SM", "_SM")
+    subsystem.histGroups["FastORL1_SM"] = processingClasses.histogramGroupContainer("FastOR L1 (hits with ADC > 0)", "FastORL1_SM", "_SM")
+    subsystem.histGroups["FastORL1Amp_SM"] = processingClasses.histogramGroupContainer("FastOR L1 Amp (hits weighted with ADC value)", "FastORL1Amp_SM", "_SM")
+    subsystem.histGroups["FastORL1LargeAmp_SM"] = processingClasses.histogramGroupContainer("FastOR L1 Large Amp (hits above 400 ADC)", "FastORL1LargeAmp_SM", "_SM")
     # Trigger classes
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Gamma Trigger Low", "GAL"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Gamma Trigger High", "GAH"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Jet Trigger Low", "JEL"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Jet Trigger High", "JEH"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("L0", "EMCL0"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Background", "BKG"))
+    subsystem.histGroups["GAL"] = processingClasses.histogramGroupContainer("Gamma Trigger Low", "GAL")
+    subsystem.histGroups["GAH"] = processingClasses.histogramGroupContainer("Gamma Trigger High", "GAH")
+    subsystem.histGroups["JEL"] = processingClasses.histogramGroupContainer("Jet Trigger Low", "JEL")
+    subsystem.histGroups["JEH"] = processingClasses.histogramGroupContainer("Jet Trigger High", "JEH")
+    subsystem.histGroups["EMCL0"] = processingClasses.histogramGroupContainer("L0", "EMCL0")
+    subsystem.histGroups["BKG"] = processingClasses.histogramGroupContainer("Background", "BKG")
     # Other EMC
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR", "FastOR"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Other EMC", "EMC"))
+    subsystem.histGroups["FastOR"] = processingClasses.histogramGroupContainer("FastOR", "FastOR")
+    subsystem.histGroups["EMC"] = processingClasses.histogramGroupContainer("Other EMC", "EMC")
     # Catch all of the other hists
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Non EMC", ""))
-
-    histStackNames = ["PatchAmp"]
-    return histStackNames
+    subsystem.histGroups["NonEMC"] = processingClasses.histogramGroupContainer("Non EMC", "")
 
 ###################################################
 def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem = "EMC"):
@@ -395,7 +428,7 @@ def determineMedianSlope(hist, qaContainer):
 ###################################################
 # Plot Patch Spectra with logy and grad 
 ###################################################
-def properlyPlotPatchSpectra(hist):
+def properlyPlotPatchSpectra(subsystem, hist):
     """ Sets logy and a grid to gPad for particular histograms.
 
     These conditions are set for "{EMCal,DCal}(Max)Patch{Energy,Amp}".
@@ -410,19 +443,18 @@ def properlyPlotPatchSpectra(hist):
         None
 
     """
-    if any(substring in hist.GetName() for substring in ["EMCalPatchEnergy", "EMCalPatchAmp", "EMCalMaxPatchAmp", "DCalPatchAmp", "DCalPatchEnergy", "DCalMaxPatchAmp"]):
-        gPad.SetLogy()
-        gPad.SetGrid(1,1)
-    else:
-        if processingParameters.debug == False:
-            hist.SetStats(False)
-        gPad.SetLogy(0)
-        gPad.SetGrid(0,0)
+    hist.canvas.SetLogy()
+    hist.canvas.SetGrid(1,1)
+    #else:
+    #    if processingParameters.debug == False:
+    #        hist.SetStats(False)
+    #    gPad.SetLogy(0)
+    #    gPad.SetGrid(0,0)
 
 ###################################################
 # Add Energy Axis to Patch Amplitude Spectra
 ###################################################
-def addEnergyAxisToPatches(hist):
+def addEnergyAxisToPatches(subsystem, hist):
     """ Adds an additional axis showing the conversion from ADC counts to Energy.
 
     These conditions are set for "{EMCal,DCal}(Max)PatchAmp".
@@ -443,18 +475,17 @@ def addEnergyAxisToPatches(hist):
         None
 
     """
-    if any(substring in hist.GetName() for substring in ["EMCalPatchAmp", "EMCalMaxPatchAmp", "DCalPatchAmp", "DCalMaxPatchAmp"]):
-        kEMCL1ADCtoGeV = 0.07874   # Conversion from EMCAL Level1 ADC to energy
-        adcMin = hist.GetXaxis().GetXmin()
-        adcMax = hist.GetXaxis().GetXmax()
-        EMax = adcMax*kEMCL1ADCtoGeV
-        EMin = adcMin*kEMCL1ADCtoGeV
-        #yMax = gPad.GetUymax()    # this function does not work here (log problem)
-        yMax= 2*hist.GetMaximum()
-        energyAxis = TGaxis(adcMin,yMax,adcMax,yMax,EMin,EMax,510,"-")
-        SetOwnership(energyAxis, False)
-        energyAxis.SetTitle("Energy (GeV)")
-        energyAxis.Draw()
+    kEMCL1ADCtoGeV = 0.07874   # Conversion from EMCAL Level1 ADC to energy
+    adcMin = hist.hist.GetXaxis().GetXmin()
+    adcMax = hist.hist.GetXaxis().GetXmax()
+    EMax = adcMax*kEMCL1ADCtoGeV
+    EMin = adcMin*kEMCL1ADCtoGeV
+    #yMax = gPad.GetUymax()    # this function does not work here (log problem)
+    yMax= 2*hist.hist.GetMaximum()
+    energyAxis = TGaxis(adcMin,yMax,adcMax,yMax,EMin,EMax,510,"-")
+    SetOwnership(energyAxis, False)
+    energyAxis.SetTitle("Energy (GeV)")
+    energyAxis.Draw()
 
 ###################################################
 # Label each individual super module (SM) plot
@@ -465,16 +496,14 @@ def labelSupermodules(hist):
     The label is inserted in the title.
 
     """
-    if "_SM" in hist.GetName()[-5:]:
-        smNumber = hist.GetName()[hist.GetName().find("_SM")+3:]
-        hist.SetTitle("SM {0}".format(smNumber))
-        # Show title
-        gStyle.SetOptTitle(1)
+    if "_SM" in hist.histName[-5:]:
+        smNumber = hist.histName[hist.histName.find("_SM")+3:]
+        hist.hist.SetTitle("SM {0}".format(smNumber))
 
 ###################################################
 # Add a grid representing the TRUs to a canvas.
 ###################################################
-def addTRUGrid(hist):
+def addTRUGrid(subsystem, hist):
     """ Add a grid of TLines representing the TRU on a canvas.
 
     Note:
@@ -486,7 +515,7 @@ def addTRUGrid(hist):
 
     """
     # TEMP
-    print("TRU Grid histName: {0}".format(hist.GetName()))
+    print("TRU Grid histName: {0}".format(hist.histName))
 
     # Draw grid for TRUs in full EMCal SMs
     for x in range(8, 48, 8):
@@ -532,46 +561,201 @@ def addTRUGrid(hist):
     SetOwnership(line, False)
     line.Draw()
 
+###################################################
+def edgePosOptions(subsystem, hist):
+    hist.hist.Scale(1. / subsystem.nEvents)
+    hist.hist.GetZaxis().SetTitle("entries / events")
+
+    if hist.hist.InheritsFrom("TH2"):
+        # Add grid of TRU boundaries
+        addTRUGrid(subsystem, hist)
+
+###################################################
+def smOptions(subsystem, hist):
+    #canvas.SetLogz(logz)
+    hist.hist.Scale(1. / subsystem.nEvents)
+    labelSupermodules(hist)
+
+###################################################
+def feeSMOptions(subsystem, hist):
+    hist.canvas.SetLogz(True)
+    hist.hist.GetXaxis().SetRangeUser(0, 250)
+    hist.hist.GetYaxis().SetRangeUser(0, 20)
+
+###################################################
+def fastOROptions(subsystem, hist):
+    # Handle the 2D hists
+    if hist.hist.InheritsFrom("TH2"):
+        # Add grid of TRU boundaries
+        addTRUGrid(subsystem, hist)
+
+        # Scale hist
+        hist.hist.Scale(1. / subsystem.nEvents)
+        hist.hist.GetZaxis().SetTitle("entries / events")
+    else:
+        # Check thresholds for hot fastORs in 1D hists
+        # Set threshold for printing
+        threshold = 0
+        # TODO: These thresholds probably need to be tuned
+        if "LargeAmp" in hist.histName:
+            threshold = 1e-7
+        elif "Amp" in hist.histName:
+            threshold = 10000
+        else:
+            threshold = 1e-2
+
+        # Set hist options
+        hist.hist.Sumw2()
+        hist.hist.Scale(1. / subsystem.nEvents)
+
+        # Set style
+        hist.hist.SetMarkerStyle(kFullCircle)
+        hist.hist.SetMarkerSize(0.8)
+        hist.hist.SetMarkerColor(kBlue+1)
+        hist.hist.SetLineColor(kBlue+1)
+
+        # Find bins above the threshold
+        absIdList = []
+        for iBin in range(1, hist.hist.GetXaxis().GetNbins()+1):
+            if hist.hist.GetBinContent(iBin) > threshold:
+                # Translate back from bin number (1, Nbins() + 1) to fastOR ID (0, Nbins())
+                absIdList.append(iBin - 1)
+
+        hist.information["Fast OR Hot Channels ID"] = absIdList
+
+        # Create pave text to display above threshold values
+        # TODO: This should be saved with the element and written to the page rather than the image.
+        #        Such a change will require a change in architecture.
+        #pave = TPaveText(0.1, 0.7, 0.9, 0.2, "NB NDC")
+        #pave.SetTextAlign(13)
+        #pave.SetTextFont(43)
+        #pave.SetTextSize(12)
+        #pave.SetFillStyle(0)
+        #pave.SetTextColor(kRed)
+        #pave.SetBorderSize(0)
+        #SetOwnership(pave, False)
+
+        ## Add above threshold values to the pave text
+        #absIdText = ""
+        #for absId in absIdList:
+        #    if absIdText:
+        #        absIdText = "{0}, {1}".format(absIdText, absId)
+        #    else:
+        #        absIdText = "{0}".format(absId)
+        #    if len(absIdText) > 110:
+        #        pave.AddText(absIdText)
+        #        #print(absIdText)
+        #        absIdText = ""
+        ##print(hist.GetName())
+
+        ## Only draw if we have enough statistics!
+        #if subsystem.nEvents > 10000:
+        #    #print("Drawing hot fastORs!")
+        #    pave.Draw("same")
+
+###################################################
+def patchAmpOptions(subsystem, hist):
+    # Setup canvas as desired
+    hist.canvas.SetLogy(True)
+    hist.canvas.SetGrid(1,1)
+
+    # Check for the corresponding hist
+    #if "DCal" in hist.GetName():
+    #    nameToCheck = hist.GetName().replace("DCal", "EMCal")
+    #else:
+    #    nameToCheck = hist.GetName().replace("EMCal", "DCal")
+    #otherHist = qaContainer.getHist(nameToCheck)
+
+    # Plot both on the same canvas if they both exist
+    #if otherHist is not None:
+    if hist.hist.InheritsFrom(THStack.Class()):
+        # Add legend
+        legend = TLegend(0.6, 0.9, 0.9, 0.7)
+        legend.SetBorderSize(0)
+        legend.SetFillStyle(0)
+        SetOwnership(legend, False)
+
+        # Lists to use to plot
+        detectors = ["EMCal", "DCal"]
+        colors = [kRed+1, kBlue+1]
+        markers = [kFullCircle, kOpenCircle]
+
+        # Plot elements
+        for tempHist, detector, color, marker, option in zip(hist.hist.GetHists(), detectors, colors, markers, options):
+            tempHist.Sumw2()
+            tempHist.SetMarkerSize(0.8)
+            tempHist.SetMarkerStyle(marker)
+            tempHist.SetLineColor(color)
+            tempHist.SetMarkerColor(color)
+
+            tempHist.Scale(1./subsystem.nEvents)
+            tempHist.GetYaxis().SetTitle("entries / events")
+
+            # Draw hists
+            # This is not the usual philosophy. We are clearing the canvas and then plotting
+            # the second hist on it
+            #tempHist.Draw(option)
+            legend.AddEntry(tempHist, detector, "pe")
+
+        # Add legend
+        legend.Draw()
+
+        # Ensure that canvas is updated to account for the new object colors
+        hist.canvas.Update()
+
+        # Add energy axis
+        addEnergyAxisToPatches(subsystem, hist)
+
+        # Remove from QA container! (Not currently possible)
+
+        # NOTE: the histogram is named after the EMCal (we have sorted the order of hists so that DCal comes before EMCal)
+    #else:
+    #    if processingParameters.beVerbose == True:
+    #        print("Adding hist {0} for PatchAmp".format(hist.GetName()))
+    #    # Add histogram to save for later
+    #    # We clone to ensure there are no memory issues
+    #    qaContainer.addHist(hist.Clone(), hist.GetName())
+
+    #    if "EMCal" in hist.GetName():
+    #        # Needed to print EMC hist if the DCal equivalent does not exist
+    #        # Since the hists are sorted, the EMCal should never come up before the DCal one.
+    #        print("Keeping EMCal hist {0} since it seems to be unpaired with a DCal hist".format(hist.GetName()))
+
+    #        # Add energy axis
+    #        addEnergyAxisToPatches(hist)
+
+    #        # Still print the hist
+    #        return False
+    #    else:
+    #        # Don't print the individual histogram
+    #        # WARNING: This could cause unpaired DCal hists to disappear!
+    #        return True
 
 ###################################################
 # Add drawing options to plots
 # Plots come in 4 types: PlotbySM, Plot2D, Plot1D, PlotMaxMatch
 ###################################################
-def setEMCDrawOptions(hist, qaContainer):
-    # Get NEvents
-    nEvents = 1
-    nEventsHist = qaContainer.getHist("NEvents")
-    if nEventsHist is not None:
-        nEvents = nEventsHist.GetBinContent(1)
-        #print("NEvents: {0}".format(nEvents))
+#def setEMCDrawOptions(hist, qaContainer):
+def findFunctionsForEMCHistogram(subsystem, hist):
 
-    # Reset gPad incase it was changed by any functions
+    # Disable hist stats when not debugging.
+    # Always true, so leave it here, even if it is perhaps not totally appropriate for function
+    # TODO: Consider refactor on this line
     if processingParameters.debug == False:
-                hist.SetStats(False)
-    gPad.SetLogy(0)
-    gPad.SetGrid(0,0)
+        hist.hist.SetStats(False)
 
     # Plot by SM
-    if "SM" in hist.GetName():
-        #canvas.SetLogz(logz)
-        hist.Scale(1. / nEvents)
-        labelSupermodules(hist)
-        
+    if "SM" in hist.histName:
+        hist.functionsToApply.append(smOptions)
+       
         # For FEE plots, set a different range
-        if "FEE" in hist.GetName():
-            gPad.SetLogz(True)
-            hist.GetXaxis().SetRangeUser(0, 250)
-            hist.GetYaxis().SetRangeUser(0, 20)
-        
+        if "FEE" in hist.histName:
+            hist.functionsToApply.append(feeSMOptions)
+                    
     # EdgePos plots
-    if "EdgePos" in hist.GetName():
-        hist.Scale(1./nEvents)
-        hist.GetZaxis().SetTitle("entries / events")
-
-        if hist.InheritsFrom("TH2"):
-            # Add grid of TRU boundaries
-            addTRUGrid(hist)
-
+    if "EdgePos" in hist.histName:
+        hist.functionsToApply.append(edgePosOptions)
+        
     # Check summary FastOR hists
     # First determine possible fastOR names
     fastORLevels = ["EMCTRQA_histFastORL0", "EMCTRQA_histFastORL1"]
@@ -579,169 +763,21 @@ def setEMCDrawOptions(hist, qaContainer):
     possibleFastORNames = [a + b for a,b in list(itertools.product(fastORLevels, fastORTypes))]
     #print(possibleFastORNames)
     #if "FastORL" in hist.GetName() and "SM" not in hist.GetName(): 
-    if any(substring == hist.GetName() for substring in possibleFastORNames):
-        # Handle the 2D hists
-        if hist.InheritsFrom("TH2"):
-            # Add grid of TRU boundaries
-            addTRUGrid(hist)
-
-            # Scale hist
-            hist.Scale(1. / nEvents)
-            hist.GetZaxis().SetTitle("entries / events")
-        else:
-            # Check thresholds for hot fastORs in 1D hists
-            # Set threshold for printing
-            threshold = 0
-            # TODO: These thresholds probably need to be tuned
-            if "LargeAmp" in hist.GetName():
-                threshold = 1e-7
-            elif "Amp" in hist.GetName():
-                threshold = 10000
-            else:
-                threshold = 1e-2
-
-            # Set hist options
-            hist.Sumw2()
-            hist.Scale(1. / nEvents)
-
-            # Set style
-            hist.SetMarkerStyle(kFullCircle)
-            hist.SetMarkerSize(0.8)
-            hist.SetMarkerColor(kBlue+1)
-            hist.SetLineColor(kBlue+1)
-
-            # Find bins above the threshold
-            absIdList = []
-            for iBin in range(1, hist.GetXaxis().GetNbins()+1):
-                if hist.GetBinContent(iBin) > threshold:
-                    # Translate back from bin number (1, Nbins() + 1) to fastOR ID (0, Nbins())
-                    absIdList.append(iBin - 1)
-
-            # Create pave text to display above threshold values
-            # TODO: This should be saved with the element and written to the page rather than the image.
-            #        Such a change will require a change in architecture.
-            pave = TPaveText(0.1, 0.7, 0.9, 0.2, "NB NDC")
-            pave.SetTextAlign(13)
-            pave.SetTextFont(43)
-            pave.SetTextSize(12)
-            pave.SetFillStyle(0)
-            pave.SetTextColor(kRed)
-            pave.SetBorderSize(0)
-            SetOwnership(pave, False)
-
-            # Add above threshold values to the pave text
-            absIdText = ""
-            for absId in absIdList:
-                if absIdText:
-                    absIdText = "{0}, {1}".format(absIdText, absId)
-                else:
-                    absIdText = "{0}".format(absId)
-                if len(absIdText) > 110:
-                    pave.AddText(absIdText)
-                    #print(absIdText)
-                    absIdText = ""
-            #print(hist.GetName())
-
-            # Only draw if we have enough statistics!
-            if nEvents > 10000:
-                #print("Drawing hot fastORs!")
-                pave.Draw("same")
-    
+    if any(substring == hist.histName for substring in possibleFastORNames):
+        hist.functionsToApply.append(fastOROptions)
+            
     # PlotMaxPatch plots
     # Ideally EMCal and DCal histos should be plot on the same plot
     # However, sometimes they are unpaired and must be printed individually
     # Subtracted ensures that unpaired subtracted histograms are still printed
     # "EMCRE" ensures that early unpaired histograms are still printed
-    if "PatchAmp" in hist.GetName() and "Subtracted" not in hist.GetName() and "EMCRE" not in hist.GetName():
-        # Setup canvas as desired
-        gPad.SetLogy(True)
-        gPad.SetGrid(1,1)
-
-        # Check for the corresponding hist
-        if "DCal" in hist.GetName():
-            nameToCheck = hist.GetName().replace("DCal", "EMCal")
-        else:
-            nameToCheck = hist.GetName().replace("EMCal", "DCal")
-        otherHist = qaContainer.getHist(nameToCheck)
-
-        # Plot both on the same canvas if they both exist
-        if otherHist is not None:
-
-            # List of hists to plot
-            hists = []
-
-            # Ensure that the EMCal is plotted first for consistency
-            if "DCal" in hist.GetName():
-                # Plot EMCal first
-                hists.append(otherHist)
-                hists.append(hist)
-            else:
-                # Plot EMCal first
-                hists.append(hist)
-                hists.append(otherHist)
-
-            #print(hists)
-
-            # Add legend
-            legend = TLegend(0.6, 0.9, 0.9, 0.7)
-            legend.SetBorderSize(0)
-            legend.SetFillStyle(0)
-            SetOwnership(legend, False)
-
-            # Lists to use to plot
-            detectors = ["EMCal", "DCal"]
-            colors = [kRed+1, kBlue+1]
-            markers = [kFullCircle, kOpenCircle]
-            options = ["", "same"]
-
-            # Plot elements
-            for tempHist, detector, color, marker, option in zip(hists, detectors, colors, markers, options):
-                tempHist.Sumw2()
-                tempHist.SetMarkerSize(0.8)
-                tempHist.SetMarkerStyle(marker)
-                tempHist.SetLineColor(color)
-                tempHist.SetMarkerColor(color)
-
-                tempHist.Scale(1./nEvents)
-                tempHist.GetYaxis().SetTitle("entries / events")
-
-                # Draw hists
-                # This is not the usual philosophy. We are clearing the canvas and then plotting
-                # the second hist on it
-                tempHist.Draw(option)
-                legend.AddEntry(tempHist, detector, "pe")
-
-            # Add legend
-            legend.Draw()
-
-            # Add energy axis
-            addEnergyAxisToPatches(hists[0])
-
-            # Remove from QA container! (Not currently possible)
-
-            # NOTE: the histogram is named after the EMCal (we have sorted the order of hists so that DCal comes before EMCal)
-        else:
-            if processingParameters.beVerbose == True:
-                print("Adding hist {0} for PatchAmp".format(hist.GetName()))
-            # Add histogram to save for later
-            # We clone to ensure there are no memory issues
-            qaContainer.addHist(hist.Clone(), hist.GetName())
-
-            if "EMCal" in hist.GetName():
-                # Needed to print EMC hist if the DCal equivalent does not exist
-                # Since the hists are sorted, the EMCal should never come up before the DCal one.
-                print("Keeping EMCal hist {0} since it seems to be unpaired with a DCal hist".format(hist.GetName()))
-
-                # Add energy axis
-                addEnergyAxisToPatches(hist)
-
-                # Still print the hist
-                return False
-            else:
-                # Don't print the individual histogram
-                # WARNING: This could cause unpaired DCal hists to disappear!
-                return True
+    if "PatchAmp" in hist.histName and "Subtracted" not in hist.histName and "EMCRE" not in hist.histName:
+        hist.functionsToApply.append(patchAmpOptions)
 
     # Essentially only for legacy support. Newer instances of this plot are handled above
-    properlyPlotPatchSpectra(hist)
-    addEnergyAxisToPatches(hist)
+    if any(substring in hist.histName for substring in ["EMCalPatchEnergy", "EMCalPatchAmp", "EMCalMaxPatchAmp", "DCalPatchAmp", "DCalPatchEnergy", "DCalMaxPatchAmp"]):
+        hist.functionsToApply.append(properlyPlotPatchSpectra)
+
+    if any(substring in hist.histName for substring in ["EMCalPatchAmp", "EMCalMaxPatchAmp", "DCalPatchAmp", "DCalMaxPatchAmp"]):
+        hist.functionsToApply.append(addEnergyAxisToPatches)
+

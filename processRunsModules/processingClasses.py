@@ -103,10 +103,12 @@ class subsystemContainer(object):
         self.endOfRun = self.startOfRun + runLength*60 # runLength is in minutes
 
         # Histograms
-        self.histGroups = []
-        self.histStackNames = []
+        self.histGroups = sortedcontainers.SortedDict()
         # Should be accessed through the group usually, but this provides direct access
-        self.hists = dict()
+        self.histsInFile = sortedcontainers.SortedDict()
+        self.histsAvailable = sortedcontainers.SortedDict()
+        # Hists list that should be used
+        self.hists = sortedcontainers.SortedDict()
 
         # Need to rework the qa container 
         #self.qaContainer = qa.qaFunctionContainer
@@ -116,7 +118,7 @@ class subsystemContainer(object):
         self.newFile = True
 
         # nEvents
-        self.nEvents = None
+        self.nEvents = 1
 
 
 ###################################################
@@ -168,7 +170,7 @@ class histogramGroupContainer(object):
         self.prettyName = prettyName
         self.selectionPattern = groupSelectionPattern
         self.plotInGridSelectionPattern = plotInGridSelectionPattern
-        self.histNameList = []
+        self.histList = []
 
         # So that it is not necessary to check the list every time
         if self.plotInGridSelectionPattern in self.selectionPattern:
@@ -182,19 +184,33 @@ class histogramContainer(object):
     """ Histogram information container
     
     """
-    def __init__(self, histName, prettyName = None, histStack = False):
+    def __init__(self, histName, histList = None, prettyName = None):
         self.histName = histName
         # Only assign if meaningful
         if prettyName != None:
             self.prettyName = prettyName
         else:
-            self.prettyName = hist.histName
+            self.prettyName = self.histName
 
-        self.histStack = histStack
+        self.histList = histList
         self.information = dict()
         self.hist = None
+        self.drawOptions = ""
         # Contains the canvas where the hist may be plotted, along with additional content
         self.canvas = None
+        self.functionsToApply = []
+
+    def retrieveHistogram(self, fIn):
+        if self.histList is not None:
+            self.hist = THStack(self.histName, self.histName)
+            for name in self.histList:
+                print("HistName in list: {0}".format(name))
+                self.hist.Add(fIn.GetKey(name).ReadObj())
+            self.drawOptions += "nostack"
+            # TODO: Allow for further configuration of THStack, like TLegend and such
+        else:
+            print("HistName: {0}".format(self.histName))
+            self.hist = fIn.GetKey(self.histName).ReadObj()
 
 ###################################################
 class qaFunctionContainer(object):
