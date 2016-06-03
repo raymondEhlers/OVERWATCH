@@ -30,6 +30,11 @@ gROOT.ProcessLine("gErrorIgnoreLevel = kWarning;")
 import os
 import time
 import sortedcontainers
+try:
+    import cPickle as pickle
+    #import pickle
+except ImportError:
+    import pickle
 
 # Config
 from config.processingParams import processingParameters
@@ -108,10 +113,12 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
         if sortingSuccess is False:
             if processingParameters.beVerbose:
                 print("Subsystem {0} does not have a sorting function. Adding all histograms into one group!".format(subsystem.subsystem))
+
             if subsystem.fileLocationSubsystem != subsystem.subsystem:
                 selection = subsystem.subsystem
             else:
                 selection = ""
+            print("selection: {0}".format(selection))
             subsystem.histGroups[subsystem.subsystem] = processingClasses.histogramGroupContainer(subsystem.subsystem + " Histograms", selection)
 
     # Finally classify into the groups and determine which functions to apply
@@ -125,6 +132,9 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
                 classifiedHist = True
                 # Break so that we don't have multiple copies of hists!
                 break
+
+        # TEMP
+        print("{2} hist: {0} - classified: {1}".format(hist.histName, classifiedHist, subsystem.subsystem))
 
         if classifiedHist:
             # Determine the functions (qa and monitoring) to apply
@@ -171,6 +181,8 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             hist = subsystem.hists[histName]
             hist.retrieveHistogram(fIn)
             canvas = hist.canvas
+            if canvas is None:
+                canvas = TCanvas(hist.histName + "Canvas", hist.histName + "Canvas")
             # Ensure we plot onto the right canvas
             canvas.cd()
 
@@ -186,8 +198,9 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             canvas.Update()
 
             # Call functions for each hist
+            #print("Functions to apply: {0}".format(hist.functionsToApply))
             for func in hist.functionsToApply:
-                print("Calling func: {0}".format(func))
+                #print("Calling func: {0}".format(func))
                 func(subsystem, hist)
 
             # Various checks and QA that are performed on hists
@@ -216,7 +229,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
 
             # Write BufferJSON
             jsonBufferFile = outputFilename.replace("img", "json").replace("png","json")
-            print("jsonBufferFile: {0}".format(jsonBufferFile))
+            #print("jsonBufferFile: {0}".format(jsonBufferFile))
             # GZip is performed by the web server, not here!
             with open(jsonBufferFile, "wb") as f:
                 f.write(TBufferJSON.ConvertToJSON(canvas).Data())
@@ -224,12 +237,15 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
     # Clear canvases at the end to ensure that we don't carry them around
     # Otherwise, we get "TCanvas::Constructor:0: RuntimeWarning: Deleting canvas with same name: EMCTRQA_histCMPosEMCREBKGCanvas" from the TCanvas constructor deleting the previous canvas with the same name.
     # TODO: Think of a better solution
-    #for hist in subsystem.availab:
-    for hist in subsystem.histsAvailable.values():
+    removeCanvases = subsystem.histsAvailable.copy()
+    removeCanvases.update(subsystem.histsInFile)
+    for hist in removeCanvases.values():
         if hist.canvas is not None:
             # See: https://wlav.web.cern.ch/wlav/pyroot/memory.html#id2540226
             hist.canvas.IsA().Destructor( hist.canvas )
             hist.canvas = None
+        if hist.hist is not None:
+            hist.hist = None
 
     # Useful information: https://root.cern.ch/phpBB3/viewtopic.php?t=11049
     #for key in keysInFile:
@@ -794,6 +810,10 @@ def processAllRuns():
                 if beVerbose:
                     print("Don't need to process %s. It has already been processed" % runDir)
 
+    # Save the dict out
+    pickle.dump(runs, open(os.path.join(processingParameters.dirPrefix, "runs.p"), "wb"))
+    #pickle.dump(runs["Run123456"], open(os.path.join(processingParameters.dirPrefix, "runs.p"), "wb"))
+    
     exit(0)
 
     # Now write the webpage in the root directory

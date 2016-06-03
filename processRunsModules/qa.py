@@ -46,7 +46,9 @@ def createHistogramStacks(subsystem):
     if histogramStackFunction is not None:
         histogramStackFunction(subsystem)
     else:
-        print("Could not find histogram stack function for subsystem {0}".format(subsystem.subsystem))
+        print("Could not find histogram stack function for subsystem {0}.".format(subsystem.subsystem))
+        # Ensure that the histograms propagate to the next dict if there is not stack function!
+        subsystem.histsAvailable = subsystem.histsInFile
 
 ###################################################
 def findFunctionsForHist(subsystem, hist):
@@ -58,7 +60,8 @@ def findFunctionsForHist(subsystem, hist):
     if findFunction is not None:
         findFunction(subsystem, hist)
     else:
-        print("Could not find histogram function sorting function for subsystem {0}".format(subsystem.subsystem))
+        if processingParameters.beVerbose:
+            print("Could not find histogram function sorting function for subsystem {0}".format(subsystem.subsystem))
 
 ###################################################
 def checkHist(hist, qaContainer):

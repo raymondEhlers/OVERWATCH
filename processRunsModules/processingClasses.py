@@ -12,6 +12,7 @@ from __future__ import print_function
 
 import os
 import sortedcontainers
+import collections
 
 from processRunsModules import utilities
 from config.processingParams import processingParameters
@@ -103,7 +104,8 @@ class subsystemContainer(object):
         self.endOfRun = self.startOfRun + runLength*60 # runLength is in minutes
 
         # Histograms
-        self.histGroups = sortedcontainers.SortedDict()
+        #self.histGroups = sortedcontainers.SortedDict()
+        self.histGroups = collections.OrderedDict()
         # Should be accessed through the group usually, but this provides direct access
         self.histsInFile = sortedcontainers.SortedDict()
         self.histsAvailable = sortedcontainers.SortedDict()

@@ -14,6 +14,12 @@ import time
 import zipfile
 import subprocess
 
+try:
+    import cPickle as pickle
+    #import pickle
+except ImportError:
+    import pickle
+
 # Flask
 from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, Markup
 from flask.ext.login import LoginManager, login_user, logout_user, login_required, current_user
@@ -55,6 +61,10 @@ loginManager.init_app(app)
 
 # Tells the manager where to redirect when login is required.
 loginManager.login_view = "login"
+
+# Load data
+# TODO: Improve mechanism!
+runs = pickle.load( open(os.path.join(serverParameters.protectedFolder, "runs.p"), "rb") )
 
 ###################################################
 @loginManager.user_loader
@@ -145,6 +155,15 @@ def index():
         return render_template(os.path.join("data", "runList.html"))
     else:
         return redirect(url_for("protected", filename="runList.html"))
+
+###################################################
+# TEST!
+###################################################
+@app.route("/<string:runDir>/<string:subsystem>/<string:filename>")
+@login_required
+def testingFunc(runDir, subsystem, filename):
+    print("runDir: {0}, subsytsem: {1}, filename: {2}".format(runDir, subsystem, filename))
+    return render_template(filename, run=runs[runDir], subsystem=subsystem, useGrid=False)
 
 ###################################################
 @app.route("/<path:runPath>")
