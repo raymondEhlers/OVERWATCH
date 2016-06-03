@@ -5,18 +5,11 @@
 {% endblock %}
 
 {% block body %}
-    <a class="anchor" name="topOfPage"></a>
-    <h1>{{ run.runDir }}</h1>
-    <p>
-        Run {{ run.runNumber }} started at __INSERT_FORMATTED_CERN_TIME__ (CERN time zone).</br>
-        <a target="_blank" href="https://alice-logbook.cern.ch/logbook/date_online.php?p_cont=rund&p_run={{ run.runNumber }}">Logbook entry</a>
-    </p>
-
     {# Add list of histograms here #}
     <div class="contentDivider">
     {% for histGroup in run.subsystems[subsystem].histGroups.values() %}
         {% if histGroup.histList != [] %}
-            <p> {{ histGroup }} </p>
+            {#<p> {{ histGroup }} </p>#}
             {# groupSelectionPatten should always be a valid proxy for a valid link #}
             <h3><a href="#{{ histGroup.selectionPattern }}">{{ histGroup.prettyName }}</a></h3>
             {% for histName in histGroup.histList %}
@@ -27,20 +20,29 @@
     {% endfor %}
     </div>
 
-    {# Display histograms here #}
-    {% if useGrid %}
-        {# How to handle a grid #}
-    {% else %}
-        {% for histGroup in run.subsystems[subsystem].histGroups.values() %}
-            {% for histName in histGroup.histList %}
-                {% set hist = run.subsystems[subsystem].hists[histName] %}
-                <a class="anchor" name="{{ hist.histName }}"></a>
-                <h2>{{ hist.prettyName }}</h2>
-                {# TODO: Improve this line! #}
-                {% set filename = run.subsystems[subsystem].imgDir.replace("data/", "") + "/" + hist.histName + ".png" %}
-                <img src="{{ url_for("protected", filename=filename) }}" alt="{{ hist.histName }}">
+    <div style="left:28vw; width: 70vw; position: relative;">
+        <a class="anchor" name="topOfPage"></a>
+        <h1>{{ run.runDir }}</h1>
+        <p>
+            Run {{ run.runNumber }} started at __INSERT_FORMATTED_CERN_TIME__ (CERN time zone).</br>
+            <a target="_blank" href="https://alice-logbook.cern.ch/logbook/date_online.php?p_cont=rund&p_run={{ run.runNumber }}">Logbook entry</a>
+        </p>
+
+        {# Display histograms here #}
+        {% if useGrid %}
+            {# How to handle a grid #}
+        {% else %}
+            {% for histGroup in run.subsystems[subsystem].histGroups.values() %}
+                {% for histName in histGroup.histList %}
+                    {% set hist = run.subsystems[subsystem].hists[histName] %}
+                    <a class="anchor" name="{{ hist.histName }}"></a>
+                    <h2>{{ hist.prettyName }}</h2>
+                    {# TODO: Improve this line! #}
+                    {% set filename = run.subsystems[subsystem].imgDir.replace("data/", "") + "/" + hist.histName + ".png" %}
+                    <img src="{{ url_for("protected", filename=filename) }}" alt="{{ hist.histName }}">
+                {% endfor %}
             {% endfor %}
-        {% endfor %}
-    {% endif %}
+        {% endif %}
+    </div>
 
 {% endblock %}

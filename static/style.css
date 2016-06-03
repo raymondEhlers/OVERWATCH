@@ -178,14 +178,24 @@ a.anchor {
 /* Creates a border around content to divide up the page */
 .contentDivider {
     /* Ensure some reasonable spacing */
-    margin-top: 24px;
-    padding-bottom: 15px;
+    /*margin-top: 24px;
+    padding-bottom: 15px;*/
     /* Create the border on the top and bottom to divide.
      * This is perhaps not the most scalable because putting two of these
      * next to each other does not work well (it creates two borders), but
      * it is sufficient for our purposes */
-    border-top: 3px solid #4588ba;
-    border-bottom: 3px solid #4588ba;
+    /*border-top: 3px solid #4588ba;
+    border-bottom: 3px solid #4588ba;*/
+    border: 3px solid #4588ba;
+    position: fixed;
+    top: 32.6px;
+    left: 0px;
+    width: 25vw;
+    /*height: calc(100vh-60px);*/
+    height: auto;
+    background-color: white;
+    overflow: auto;
+    word-wrap: break-word;
 }
 
 /* Styles the QA Link on the main run page of the desktop. */
