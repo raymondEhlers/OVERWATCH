@@ -1,0 +1,55 @@
+{% extends "layout.html" %}
+{% block onLoad %}scrollIfHashExists({{ scrollAmount }});setScrollValueInForm();{% endblock %}
+{% block secondLineInHeader %}
+{# Interactive Form here! #}
+{% endblock %}
+
+{% block body %}
+<app-header-layout>
+    <app-header fixed>
+        <paper-toolbar style="background-color: white; color: blue;">
+        <!--<paper-toolbar style="background-color: white; color: blue;" class="tall">-->
+            <paper-icon-button icon="menu" paper-drawer-toggle style="color:white;"></paper-icon-button>
+            <!-- Using drawer-toggle does it directly-->
+            <!--<paper-icon-button icon="menu" on-tap="toggleDrawer" style="color:white;"></paper-icon-button>-->
+            <div class="title">ALICE OVERWATCH</div>
+            <div drawer-toggle>toggle</div>
+            <!--<div class="middle title">Middle title</div>
+            <div class="bottom title">Bottom title</div>-->
+        </paper-toolbar>
+        <!-- An alternative approach -->
+        <!--<app-toolbar style="background-color:white;">
+        toolbar2!
+        </app-toolbar>
+        <app-toolbar>
+        toolbar3!
+        </app-toolbar>-->
+    </app-header>
+    <paper-drawer-panel style="position:relative; height:100vh;">
+        <div drawer>
+            <div style="height: 100%; overflow: auto;">
+                Drawer content!<br />
+                Drawer content!<br />
+                Drawer content!<br />
+                Drawer content!<br />
+                Drawer content!<br />
+                Drawer content!<br />
+                Drawer content!<br />
+                Drawer content!<br />
+            </div>
+        </div>
+
+        <div main>
+            main content<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+        </div>
+    </paper-drawer-panel>
+
+</app-header-layout>
+
+{% endblock %}
