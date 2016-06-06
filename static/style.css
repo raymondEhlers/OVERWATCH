@@ -129,6 +129,8 @@ body {
     background-image: url("absurdity.png"), linear-gradient(90deg, #B2CBE5, #C6E2FF 10%, #C6E2FF 90%, #B2CBE5);
     /* Set font */
     font-family: Geneva, Candara, Tahoma, sans-serif;
+    height: 100vh;
+    margin: 0px;
 }
 h1 {
     /* Allow left and right floated elements (such as div) in a given header */

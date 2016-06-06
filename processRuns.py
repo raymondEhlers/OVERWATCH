@@ -91,8 +91,8 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
         if classOfObject.InheritsFrom(TH1.Class()):
             # Create histogram object
             hist = processingClasses.histogramContainer(key.GetName())
-            hist.hist = key.ReadObj()
-            hist.canvas = TCanvas(key.GetName() + "Canvas", key.GetName() + "Canvas")
+            #hist.hist = key.ReadObj()
+            #hist.canvas = TCanvas(key.GetName() + "Canvas", key.GetName() + "Canvas")
             # Shouldn't be needed, because I keep a reference to it
             #SetOwnership(hist.canvas, False)
             subsystem.histsInFile[hist.histName] = hist
@@ -100,7 +100,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             # Set nEvents
             #if subsystem.nEvents is None and "events" in hist.histName.lower():
             if "events" in hist.histName.lower():
-                subsystem.nEvents = hist.hist.GetBinContent(1)
+                subsystem.nEvents = key.ReadObj().GetBinContent(1)
 
     # Create the subsystem stacks
     # TODO: Consider a condition where this is not necessary
@@ -234,18 +234,22 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             with open(jsonBufferFile, "wb") as f:
                 f.write(TBufferJSON.ConvertToJSON(canvas).Data())
 
+            # Clear hist and canvas so that we can successfully save
+            hist.hist = None
+            hist.canvas = None
+
     # Clear canvases at the end to ensure that we don't carry them around
     # Otherwise, we get "TCanvas::Constructor:0: RuntimeWarning: Deleting canvas with same name: EMCTRQA_histCMPosEMCREBKGCanvas" from the TCanvas constructor deleting the previous canvas with the same name.
     # TODO: Think of a better solution
-    removeCanvases = subsystem.histsAvailable.copy()
-    removeCanvases.update(subsystem.histsInFile)
-    for hist in removeCanvases.values():
-        if hist.canvas is not None:
-            # See: https://wlav.web.cern.ch/wlav/pyroot/memory.html#id2540226
-            hist.canvas.IsA().Destructor( hist.canvas )
-            hist.canvas = None
-        if hist.hist is not None:
-            hist.hist = None
+    #removeCanvases = subsystem.histsAvailable.copy()
+    #removeCanvases.update(subsystem.histsInFile)
+    #for hist in removeCanvases.values():
+    #    if hist.canvas is not None:
+    #        # See: https://wlav.web.cern.ch/wlav/pyroot/memory.html#id2540226
+    #        hist.canvas.IsA().Destructor( hist.canvas )
+    #        hist.canvas = None
+    #    if hist.hist is not None:
+    #        hist.hist = None
 
     # Useful information: https://root.cern.ch/phpBB3/viewtopic.php?t=11049
     #for key in keysInFile:

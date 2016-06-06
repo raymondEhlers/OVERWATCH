@@ -15,6 +15,11 @@
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-toolbar/paper-toolbar.html") }}">
         <link rel="import" href="{{ url_for("static", filename="bower_components/iron-icons/iron-icons.html") }}">
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-icon-button/paper-icon-button.html") }}">
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-toggle-button/paper-toggle-button.html") }}">
+
+        <!-- test -->
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-header-panel/paper-header-panel.html") }}">
+        <link rel="import" href="{{ url_for("static", filename="bower_components/iron-flex-layout/iron-flex-layout.html") }}">
         <!--<link rel="import" href="bower_components/paper-input/paper-input.html">-->
 
         <script src="{{ url_for("static", filename="shared.js") }}" type="text/javascript"></script>
@@ -24,7 +29,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         {% block head %}{% endblock %}
     </head>
-    <body onload="{% block onLoad %}{% endblock %}removeFlashes()">
+    <body class="fullbleed layout vertical" onload="{% block onLoad %}{% endblock %}removeFlashes()">
         <!--<header class="header">
             <div class="headerContainer">
                 <div class="headerMainLinks">

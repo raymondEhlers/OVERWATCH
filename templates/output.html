@@ -5,27 +5,16 @@
 {% endblock %}
 
 {% block body %}
-<app-header-layout>
-    <app-header fixed>
-        <paper-toolbar style="background-color: white; color: blue;">
-        <!--<paper-toolbar style="background-color: white; color: blue;" class="tall">-->
-            <paper-icon-button icon="menu" paper-drawer-toggle style="color:white;"></paper-icon-button>
-            <!-- Using drawer-toggle does it directly-->
-            <!--<paper-icon-button icon="menu" on-tap="toggleDrawer" style="color:white;"></paper-icon-button>-->
-            <div class="title">ALICE OVERWATCH</div>
-            <div drawer-toggle>toggle</div>
-            <!--<div class="middle title">Middle title</div>
-            <div class="bottom title">Bottom title</div>-->
-        </paper-toolbar>
-        <!-- An alternative approach -->
-        <!--<app-toolbar style="background-color:white;">
-        toolbar2!
-        </app-toolbar>
-        <app-toolbar>
-        toolbar3!
-        </app-toolbar>-->
-    </app-header>
-    <paper-drawer-panel style="position:relative; height:100vh;">
+<paper-header-panel>
+    <paper-toolbar style="background-color:blue;">
+    <!--<paper-toolbar style="background-color: white; color: blue;" class="tall">-->
+        <paper-icon-button icon="menu" paper-drawer-toggle style="color:white;"></paper-icon-button>
+        <!-- Using drawer-toggle does it directly-->
+        <!--<paper-icon-button icon="menu" on-tap="toggleDrawer" style="color:white;"></paper-icon-button>-->
+        <div class="title">ALICE OVERWATCH</div>
+        <div paper-drawer-toggle>toggle</div>
+    </paper-toolbar>
+    <paper-drawer-panel class="fit">
         <div drawer>
             <div style="height: 100%; overflow: auto;">
                 Drawer content!<br />
@@ -40,6 +29,8 @@
         </div>
 
         <div main>
+            <div style="height: 100%; overflow: auto;">
+            <paper-icon-button icon="menu" paper-drawer-toggle style="color:white;"></paper-icon-button>
             main content<br />
             And even more content!!!<br />
             And even more content!!!<br />
@@ -47,9 +38,102 @@
             And even more content!!!<br />
             And even more content!!!<br />
             And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            And even more content!!!<br />
+            </div>
         </div>
     </paper-drawer-panel>
+    <!-- This scrolls normally!! -->
+    <!--<div>
+        main content<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+        And even more content!!!<br />
+    </div>-->
 
-</app-header-layout>
+</paper-header-panel>
+<!--<app-header-layout flex style="height: 100%;">
+    <app-header fixed>
+        <paper-toolbar style="background-color: white; color: blue;">
+            <paper-icon-button icon="menu" paper-drawer-toggle style="color:white;"></paper-icon-button>
+            <div class="title">ALICE OVERWATCH</div>
+            <div paper-drawer-toggle>toggle</div>
+        </paper-toolbar>
+    </app-header>
+    <section>
+        <paper-drawer-panel style="position:relative; height:100px;">
+            <div drawer>
+                <div style="height: 100%; overflow: auto;">
+                    Drawer content!<br />
+                    Drawer content!<br />
+                    Drawer content!<br />
+                    Drawer content!<br />
+                    Drawer content!<br />
+                    Drawer content!<br />
+                    Drawer content!<br />
+                    Drawer content!<br />
+                </div>
+            </div>
+
+            <div main>
+                main content<br />
+                And even more content!!!<br />
+                And even more content!!!<br />
+                And even more content!!!<br />
+                And even more content!!!<br />
+                And even more content!!!<br />
+                And even more content!!!<br />
+            </div>
+        </paper-drawer-panel>
+    </section>
+
+</app-header-layout>-->
 
 {% endblock %}

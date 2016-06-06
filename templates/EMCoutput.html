@@ -5,68 +5,51 @@
 {% endblock %}
 
 {% block body %}
-    <app-header-layout>
-        <!-- This is the header for the main page -->
-        <app-header fixed>
-            <paper-toolbar style="background-color: white; color: blue;">
-            <!--<paper-toolbar style="background-color: white; color: blue;" class="tall">-->
-                <paper-icon-button icon="menu" drawer-toggle style="color:white;"></paper-icon-button>
-                <!-- Using drawer-toggle does it directly-->
-                <!--<paper-icon-button icon="menu" on-tap="toggleDrawer" style="color:white;"></paper-icon-button>-->
-                <div class="title">ALICE OVERWATCH</div>
-                <div drawer-toggle>toggle
-                </div>
-                <!--<div class="middle title">Middle title</div>
-                <div class="bottom title">Bottom title</div>-->
-            </paper-toolbar>
-            <!-- An alternative approach -->
-            <!--<app-toolbar style="background-color:white;">
-            toolbar2!
-            </app-toolbar>
-            <app-toolbar>
-            toolbar3!
-            </app-toolbar>-->
-        </app-header>
-        <!-- Temp so that it doesn't collapse to zero until I figure it out!-->
-        <div>
-            hello.</br>
-            hello.</br>
-            hello.</br>
-            hello.</br>
-            hello.</br>
-            hello.</br>
-            hello.</br>
-            hello.</br>
-            hello.</br>
-            hello.</br>
-            hello.</br>
-            hello.</br>
-            hello.</br>
-            hello.</br>
-            hello.</br>
-            hello.</br>
-            hello.</br>
-        </div>
-        <paper-drawer-panel style="fullbleed">
-            <div drawer style="height:100vh;">
-                <!-- This is the drawer menu -->
-                <div style="height: 100%; overflow: auto;">
-                {% for histGroup in run.subsystems[subsystem].histGroups.values() -%}
-                    {%- if histGroup.histList != [] -%}
-                        {#<p> {{ histGroup }} </p>#}
-                        {# groupSelectionPatten should always be a valid proxy for a valid link #}
-                        <h3><a href="#{{ histGroup.selectionPattern }}">{{ histGroup.prettyName }}</a></h3>
-                        {%- for histName in histGroup.histList -%}
-                            {% set hist = run.subsystems[subsystem].hists[histName] %}
-                            <a href="#{{ hist.histName }}">{{ hist.prettyName }}</a><br />
-                        {%- endfor -%}
-                    {%- endif -%}
-                {% endfor %}
-                </div>
+<paper-header-panel>
+    <!-- This is the header for the main page -->
+    <paper-toolbar style="background-color:blue;">
+    <!--<paper-toolbar style="background-color: white; color: blue;" class="tall">-->
+        <paper-icon-button id="headerMenuButton" icon="menu" style="color:white; display: none;"></paper-icon-button>
+        <!--<paper-icon-button paper-drawer-toggle id="headerMenuButton" icon="menu" style="color:white;"></paper-icon-button>-->
+        <!-- Using paper-drawer-toggle does it directly, but only inside the object -->
+        <!--<paper-icon-button icon="menu" on-tap="toggleDrawer" style="color:white;"></paper-icon-button>-->
+        <div class="title">ALICE OVERWATCH</div>
+        <paper-toggle-button>jsroot</paper-toggle-button>
+        <a href="#topOfPage" tabindex="-1">
+            <paper-icon-button id="headerTopOfPage" icon="arrow-upward" style="color: white;"></paper-icon-button>
+        </a>
+        <!--<div on-tap="toggleDrawer">toggle</div>-->
+        <!--<div class="middle title">Middle title</div>
+        <div class="bottom title">Bottom title</div>-->
+    </paper-toolbar>
+    <!-- An alternative approach -->
+    <!--<app-toolbar style="background-color:white;">
+    toolbar2!
+    </app-toolbar>
+    <app-toolbar>
+    toolbar3!
+    </app-toolbar>-->
+    <paper-drawer-panel id="drawerPanelID" class="fit">
+        <div drawer >
+            <!-- This is the drawer menu -->
+            <div style="height: 100%; overflow: auto; word-wrap: break-word;">
+            {% for histGroup in run.subsystems[subsystem].histGroups.values() -%}
+                {%- if histGroup.histList != [] -%}
+                    {#<p> {{ histGroup }} </p>#}
+                    {# groupSelectionPatten should always be a valid proxy for a valid link #}
+                    <h3><a href="#{{ histGroup.selectionPattern }}">{{ histGroup.prettyName }}</a></h3>
+                    {%- for histName in histGroup.histList -%}
+                        {% set hist = run.subsystems[subsystem].hists[histName] %}
+                        <a href="#{{ hist.histName }}">{{ hist.prettyName }}</a><br />
+                    {%- endfor -%}
+                {%- endif -%}
+            {% endfor %}
             </div>
-            <div main style="height: 100vh; overflow: auto;">
-                <!-- This is the main content! -->
-                <div style="height: 100%; overflow: auto;">
+        </div>
+        
+        <div main>
+            <!-- This is the main content! -->
+            <div style="height: 100%; overflow: auto;">
                 <a class="anchor" name="topOfPage"></a>
                 <h1>{{ run.runDir }}</h1>
                 <p>
@@ -89,10 +72,38 @@
                         {%- endfor -%}
                     {% endfor %}
                 {% endif %}
-                </div>
             </div>
-        </paper-drawer-panel>
-    </app-header-layout>
+        </div>
+    </paper-drawer-panel>
+</paper-header-panel>
+
+<script>
+    // To ensure that elements are ready on polyfilled browsers, 
+    // wait for WebComponentsReady. 
+    document.addEventListener('WebComponentsReady', function() {
+        var menuButton = document.getElementById("headerMenuButton");
+        var panel = document.getElementById("drawerPanelID");
+        console.log("panelButton: " + menuButton.outerHTML);
+        // Create toggle for the panel button
+        menuButton.addEventListener("click", function() {
+            panel.togglePanel();
+        });
+
+        // Hide the menu button if wide!
+        document.addEventListener("paper-responsive-change", function(e) {
+            console.log("narrow: " + e.target.narrow);
+            var menuButton = document.getElementById("headerMenuButton");
+            if (e.target.narrow === true) {
+                /*menuButton.style.visibility = "visible";*/
+                menuButton.style.display = "inline-block";
+            }
+            else {
+                /*menuButton.style.visibility = "hidden";*/
+                menuButton.style.display = "none";
+            }
+        });
+    });
+</script>
 
     {# Add list of histograms here #}
     <!--<div class="contentDivider">
