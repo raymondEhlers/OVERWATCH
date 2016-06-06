@@ -164,7 +164,7 @@ a.anchor {
 }
 
 /* Container for all content */
-#contentContainer {
+#contentContainerTemp {
     /* Narrowing the width a bit makes the page more viewable.
      * The width is set relative to the viewport */
     width: 90vw;
@@ -347,7 +347,7 @@ a.anchor {
  * 600px is selected arbitrarily */
 @media screen and (max-width: 600px) {
     /* Make the body wider on mobile since space is more limited. */
-    #contentContainer {
+    #contentContainerTemp {
         width: 95vw;
     }
     h1 > div {

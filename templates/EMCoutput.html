@@ -5,7 +5,7 @@
 {% endblock %}
 
 {% block body %}
-    <app-drawer-layout fullbleed>
+    <app-drawer-layout>
         <app-drawer swipe-open>
             <!-- This is the drawer menu -->
             <div style="height: 100%; overflow: auto;">
@@ -25,13 +25,23 @@
         <app-header-layout>
             <!-- This is the header for the main page -->
             <app-header fixed watefall>
-                <app-toolbar style="background-color: white; color: blue;">
-                    <div title>ALICE OVERWATCH</div>
+                <paper-toolbar style="background-color: white; color: blue;">
+                <!--<paper-toolbar style="background-color: white; color: blue;" class="tall">-->
+                    <paper-icon-button icon="menu" drawer-toggle style="color:white;"></paper-icon-button>
+                    <!-- Using drawer-toggle does it directly-->
+                    <!--<paper-icon-button icon="menu" on-tap="toggleDrawer" style="color:white;"></paper-icon-button>-->
+                    <div class="title">ALICE OVERWATCH</div>
                     <div drawer-toggle>toggle
-                    <paper-icon-button icon="menu" on-tap="toggleDrawer" style="color:white;"></paper-icon-button>
                     </div>
+                    <div class="middle title">Middle title</div>
+                    <div class="bottom title">Bottom title</div>
                 </app-toolbar>
             </app-header>
+            <!--<paper-drawer-panel>
+                <div drawer>Paper drawer!!</div>
+                <div main style="height:100vh;">
+                            </div>
+            </paper-drawer-panel>-->
             <!-- This is the main content! -->
             <a class="anchor" name="topOfPage"></a>
             <h1>{{ run.runDir }}</h1>
