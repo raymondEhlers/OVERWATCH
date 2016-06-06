@@ -5,44 +5,64 @@
 {% endblock %}
 
 {% block body %}
-    {# Add list of histograms here #}
-    <div class="contentDivider">
-    {% for histGroup in run.subsystems[subsystem].histGroups.values() %}
-        {% if histGroup.histList != [] %}
-            {#<p> {{ histGroup }} </p>#}
-            {# groupSelectionPatten should always be a valid proxy for a valid link #}
-            <h3><a href="#{{ histGroup.selectionPattern }}">{{ histGroup.prettyName }}</a></h3>
-            {% for histName in histGroup.histList %}
-                {% set hist = run.subsystems[subsystem].hists[histName] %}
-                <a href="#{{ hist.histName }}">{{ hist.prettyName }}</a><br />
+    <app-drawer-layout fullbleed>
+        <app-drawer swipe-open>
+            <!-- This is the drawer menu -->
+            <div style="height: 100%; overflow: auto;">
+            {% for histGroup in run.subsystems[subsystem].histGroups.values() -%}
+                {%- if histGroup.histList != [] -%}
+                    {#<p> {{ histGroup }} </p>#}
+                    {# groupSelectionPatten should always be a valid proxy for a valid link #}
+                    <h3><a href="#{{ histGroup.selectionPattern }}">{{ histGroup.prettyName }}</a></h3>
+                    {%- for histName in histGroup.histList -%}
+                        {% set hist = run.subsystems[subsystem].hists[histName] %}
+                        <a href="#{{ hist.histName }}">{{ hist.prettyName }}</a><br />
+                    {%- endfor -%}
+                {%- endif -%}
             {% endfor %}
-        {% endif %}
-    {% endfor %}
-    </div>
+            </div>
+        </app-drawer>
+        <app-header-layout>
+            <!-- This is the header for the main page -->
+            <app-header fixed watefall>
+                <app-toolbar style="background-color: white; color: blue;">
+                    <div title>ALICE OVERWATCH</div>
+                    <div drawer-toggle>toggle
+                    <paper-icon-button icon="menu" on-tap="toggleDrawer" style="color:white;"></paper-icon-button>
+                    </div>
+                </app-toolbar>
+            </app-header>
+            <!-- This is the main content! -->
+            <a class="anchor" name="topOfPage"></a>
+            <h1>{{ run.runDir }}</h1>
+            <p>
+                Run {{ run.runNumber }} started at __INSERT_FORMATTED_CERN_TIME__ (CERN time zone).</br>
+                <a target="_blank" href="https://alice-logbook.cern.ch/logbook/date_online.php?p_cont=rund&p_run={{ run.runNumber }}">Logbook entry</a>
+            </p>
+
+            {# Display histograms here #}
+            {% if useGrid %}
+                {# How to handle a grid #}
+            {% else %}
+                {% for histGroup in run.subsystems[subsystem].histGroups.values() %}
+                    {%- for histName in histGroup.histList -%}
+                        {%- set hist = run.subsystems[subsystem].hists[histName] -%}
+                        <a class="anchor" name="{{ hist.histName }}"></a>
+                        <h2>{{ hist.prettyName }}</h2>
+                        {# TODO: Improve this line! #}
+                        {%- set filename = run.subsystems[subsystem].imgDir.replace("data/", "") + "/" + hist.histName + ".png" -%}
+                        <img src="{{ url_for("protected", filename=filename) }}" alt="{{ hist.histName }}">
+                    {%- endfor -%}
+                {% endfor %}
+            {% endif %}
+        </app-header-layout>
+    </app-drawer-layout>
+
+    {# Add list of histograms here #}
+    <!--<div class="contentDivider">
+        </div>
 
     <div style="left:28vw; width: 70vw; position: relative;">
-        <a class="anchor" name="topOfPage"></a>
-        <h1>{{ run.runDir }}</h1>
-        <p>
-            Run {{ run.runNumber }} started at __INSERT_FORMATTED_CERN_TIME__ (CERN time zone).</br>
-            <a target="_blank" href="https://alice-logbook.cern.ch/logbook/date_online.php?p_cont=rund&p_run={{ run.runNumber }}">Logbook entry</a>
-        </p>
-
-        {# Display histograms here #}
-        {% if useGrid %}
-            {# How to handle a grid #}
-        {% else %}
-            {% for histGroup in run.subsystems[subsystem].histGroups.values() %}
-                {% for histName in histGroup.histList %}
-                    {% set hist = run.subsystems[subsystem].hists[histName] %}
-                    <a class="anchor" name="{{ hist.histName }}"></a>
-                    <h2>{{ hist.prettyName }}</h2>
-                    {# TODO: Improve this line! #}
-                    {% set filename = run.subsystems[subsystem].imgDir.replace("data/", "") + "/" + hist.histName + ".png" %}
-                    <img src="{{ url_for("protected", filename=filename) }}" alt="{{ hist.histName }}">
-                {% endfor %}
-            {% endfor %}
-        {% endif %}
-    </div>
+    </div>-->
 
 {% endblock %}

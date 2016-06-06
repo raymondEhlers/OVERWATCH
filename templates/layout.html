@@ -6,7 +6,13 @@
         <!-- 1. Load webcomponents-lite.min.js for polyfill support. -->
         <script src="{{url_for("static", filename="bower_components/webcomponentsjs/webcomponents-lite.min.js") }}"></script>
         <!-- 2. Use an HTML Import to bring in some elements. -->
+        <link rel="import" href="{{ url_for("static", filename="bower_components/app-layout/app-header-layout/app-header-layout.html") }}">
+        <link rel="import" href="{{ url_for("static", filename="bower_components/app-layout/app-header/app-header.html") }}">
         <link rel="import" href="{{ url_for("static", filename="bower_components/app-layout/app-drawer-layout/app-drawer-layout.html") }}">
+        <link rel="import" href="{{ url_for("static", filename="bower_components/app-layout/app-drawer/app-drawer.html") }}">
+        <link rel="import" href="{{ url_for("static", filename="bower_components/app-layout/app-toolbar/app-toolbar.html") }}">
+        <link rel="import" href="{{ url_for("static", filename="bower_components/iron-icons/iron-icons.html") }}">
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-icon-button/paper-icon-button.html") }}">
         <!--<link rel="import" href="bower_components/paper-input/paper-input.html">-->
 
         <script src="{{ url_for("static", filename="shared.js") }}" type="text/javascript"></script>
@@ -52,6 +58,7 @@
              </div>
         </header>
         {# Defines the body block #}
+        {% block body %}{% endblock %}
         <div id="contentContainer">
             {# Flask flash based on: http://cssreset.com/creating-fixed-headers-with-css/ #}
             {% with messages = get_flashed_messages() %}
@@ -63,7 +70,7 @@
                     </div>
                 {% endif %}
             {% endwith %}
-            {% block body %}{% endblock %}
+            {#{% block body %}{% endblock %}#}
             <div class="contactLinkContainer"><p class="contactLinkParagraph"><a href="{{ url_for("contact") }}">Information, documentation, contact, and suggestions</a></p></div>
         </div>
     </body>
