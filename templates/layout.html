@@ -14,10 +14,15 @@
         <link rel="import" href="{{ url_for("static", filename="bower_components/app-layout/app-toolbar/app-toolbar.html") }}">
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-toolbar/paper-toolbar.html") }}">
         <link rel="import" href="{{ url_for("static", filename="bower_components/iron-icons/iron-icons.html") }}">
+        <link rel="import" href="{{ url_for("static", filename="bower_components/iron-icons/av-icons.html") }}">
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-icon-button/paper-icon-button.html") }}">
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-toggle-button/paper-toggle-button.html") }}">
 
-        <!-- test -->
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-menu/paper-menu.html") }}">
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-item/paper-item.html") }}">
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-item/paper-icon-item.html") }}">
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-dialog/paper-dialog.html") }}">
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-button/paper-button.html") }}">
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-slider/paper-slider.html") }}">
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-header-panel/paper-header-panel.html") }}">
         <link rel="import" href="{{ url_for("static", filename="bower_components/iron-flex-layout/iron-flex-layout.html") }}">
@@ -41,15 +46,38 @@
         <!-- Using paper-drawer-toggle does it directly, but only inside the object -->
         <!--<paper-icon-button icon="menu" on-tap="toggleDrawer" style="color:white;"></paper-icon-button>-->
         <div class="title">{% block title %}ALICE OVERWATCH{% endblock %}</div>
-        <paper-toggle-button>jsroot</paper-toggle-button>
+        <paper-button id="propertiesButton">
+            <div style="/*word-wrap:break-word;*/">Time Slices</div>
+            <paper-icon-button icon="av:av-timer" style="color: white;"></paper-icon-button>
+        </paper-button>
         <a href="#topOfPage" tabindex="-1">
             <paper-icon-button id="headerTopOfPage" icon="arrow-upward" style="color: white;"></paper-icon-button>
         </a>
+
+        <!-- User settings here! -->
+        <paper-icon-button id="userSettingsButton" icon="account-circle" style="color: white;"></paper-icon-button>
+        <!-- Can also use no-overlap as an option! -->
+        <paper-dialog vertical-align="auto" dynamic-align id="userSettings">
+            <h2>User Settings</h2>
+            <!-- All links previously had class="headerLink" ! -->
+                <p>
+            {%- if current_user.is_authenticated -%}
+                <a href="{{ url_for("index") }}">Return to Run List</a>
+            {%- else -%}
+                <a href="{{ url_for("login") }}">Home</a>
+            {%- endif -%}
+                </p>
+                <p>
+            {%- if current_user.is_authenticated -%}
+                User: {{ current_user.id }} <a href="{{ url_for("logout") }}">Logout</a>
+            {%- else -%}
+                Not logged in. <a href="{{ url_for("login") }}">Please login</a>
+            {%- endif %}
+                </p>
+                <paper-toggle-button id="jsRootToggle">jsroot</paper-toggle-button>
+        </paper-dialog>
+
         <!--<div class="middle title">
-            <div>Min</div>
-            <paper-slider value="23" max="255" editable></paper-slider>
-            <div>Max</div>
-            <paper-slider value="23" max="255" editable></paper-slider>
         </div>-->
         <!--<div on-tap="toggleDrawer">toggle</div>-->
         <!--<div class="middle title">Middle title</div>
@@ -62,10 +90,20 @@
     <app-toolbar>
     toolbar3!
     </app-toolbar>-->
-    <paper-drawer-panel id="drawerPanelID" class="fit">
+    <paper-drawer-panel id="drawerPanelId" class="fit">
         <div drawer>
             <!-- Ensures that we can scroll in the header! -->
             <div style="height: 100%; overflow: auto; word-wrap: break-word;">
+                <paper-menu>
+                    <paper-item>
+                        <a href="{{ url_for("login") }}">Run List</a>
+                    </paper-item>
+                    <paper-item>
+                        <a href="{{ url_for("processQA") }}">Basic QA</a>
+                    </paper-item>
+                </paper-menu>
+                <!-- TODO: Improve this divider! -->
+                <hr />
                 {# Defines content in the drawer #}
                 {% block drawer %}{% endblock %}
             </div>
@@ -74,11 +112,32 @@
         <div main>
             <!-- Ensures that we can scroll in the header! -->
             <div style="height: 100%; overflow: auto;">
+                {# Flask flash based on: http://cssreset.com/creating-fixed-headers-with-css/ #}
+                {% with messages = get_flashed_messages() %}
+                    {% if messages %}
+                        <div class=flashes id="flashes">
+                            {% for message in messages %}
+                            <p>{{ message.replace("\n", "<br />") | safe }}</p>
+                            {% endfor %}
+                        </div>
+                    {% endif %}
+                {% endwith %}
                 {% block mainContent %}{% endblock %}
+                <div class="contactLinkContainer"><p class="contactLinkParagraph"><a href="{{ url_for("contact") }}">Information, documentation, contact, and suggestions</a></p></div>
             </div>
         </div>
     </paper-drawer-panel>
 </paper-header-panel>
+
+<paper-dialog id="propertiesDialog">
+    <h2>Time Dependent Merge</h2>
+    <paper-slider value="2" max="255" editable></paper-slider>
+    <paper-slider value="50" max="255" editable></paper-slider>
+    <div class="buttons">
+        <paper-button dialog-dismiss>Cancel</paper-button>
+        <paper-button dialog-confirm>Accept</paper-button>
+    </div>
+</paper-dialog>
 
 {# Defines direct access to the body block #}
 {% block body %}{% endblock %}
@@ -87,19 +146,41 @@
     // To ensure that elements are ready on polyfilled browsers, 
     // wait for WebComponentsReady. 
     document.addEventListener('WebComponentsReady', function() {
+        // Enable the link for the menu button to control the drawer
         var menuButton = document.getElementById("headerMenuButton");
-        var panel = document.getElementById("drawerPanelID");
-        console.log("panelButton: " + menuButton.outerHTML);
-        // Create toggle for the panel button
+        var drawer = document.getElementById("drawerPanelId");
+        //console.log("panelButton: " + menuButton.outerHTML);
+        // Create toggle for the drawer button
         menuButton.addEventListener("click", function() {
-            panel.togglePanel();
+            drawer.togglePanel();
         });
 
-        // Hide the menu button if wide!
-        document.addEventListener("paper-responsive-change", function(e) {
-            console.log("narrow: " + e.target.narrow);
+        // Create the link for opening the time slices dialog panel
+        var propertiesButton = document.getElementById("propertiesButton");
+        var propertiesDialog = document.getElementById("propertiesDialog");
+        //console.log("button: " + propertiesButton + " dialog: " + propertiesDialog.outerHTML);
+        propertiesButton.addEventListener("click", function() {
+            propertiesDialog.open();
+        });
+
+        // Create the link for opening the user settings dialog panel
+        var userSettingsButton = document.getElementById("userSettingsButton");
+        var userSettings = document.getElementById("userSettings")
+        userSettingsButton.addEventListener("click", function() {
+            userSettings.open();
+        })
+        // Assign the position target of the settings
+        // Don't currently need it because it is positioned correctly
+        userSettings.positionTarget = userSettingsButton;
+
+        // Hide the menu button if in the wide display!
+        function showOrHideMenuButton() {
+            //console.log("narrow: " + e.target.narrow);
             var menuButton = document.getElementById("headerMenuButton");
-            if (e.target.narrow === true) {
+            var drawer = document.getElementById("drawerPanelId");
+            //console.log("drawer: " + drawer);
+            //if (e.target.narrow === true) {
+            if (drawer.narrow === true) {
                 /*menuButton.style.visibility = "visible";*/
                 menuButton.style.display = "inline-block";
             }
@@ -107,7 +188,48 @@
                 /*menuButton.style.visibility = "hidden";*/
                 menuButton.style.display = "none";
             }
-        });
+        }
+        // Ensure that we show or hide the menu button on load
+        showOrHideMenuButton();
+        // Add a listener for further changes
+        document.addEventListener("paper-responsive-change", showOrHideMenuButton);
+
+        // Handle jsRoot value
+        // Check for local storage being available
+        // From: https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API
+        function storageAvailable(type) {
+            try {
+                var storage = window[type],
+                x = '__storage_test__';
+                storage.setItem(x, x);
+                storage.removeItem(x);
+                return true;
+            }
+            catch(e) {
+                return false;
+            }
+        }
+
+        // Actually handle jsroot value
+        if (storageAvailable("localStorage")) {
+            var jsRootToggle = document.getElementById("jsRootToggle");
+            // Check for value in local storage, and set it properly if it exists
+            var storedToggleValue = localStorage.getItem("jsRootToggle");
+            if (storedToggleValue) {
+                // See: https://stackoverflow.com/a/264037
+                jsRootToggle.checked = (storedToggleValue === "true");
+
+                console.log("Local storage checked: " + localStorage.getItem("jsRootToggle"));
+            }
+
+            // Storage the change value in local storage
+            jsRootToggle.addEventListener("change", function(e) {
+                // Store value in local storage
+                //console.log("checked: " + e.target.checked);
+                localStorage.setItem("jsRootToggle", e.target.checked.toString());
+                //console.log("Local storage checked: " + localStorage.getItem("jsRootToggle"));
+            });
+        }
     });
 </script>
         <!--<header class="header">
