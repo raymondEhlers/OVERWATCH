@@ -2,7 +2,7 @@
 {# Flashes from: http://flask.pocoo.org/docs/0.10/patterns/flashing/ #}
 <html lang="en">
     <head>
-        <title>ALICE OVERWATCH</title>
+        <title>ALICE OVERWATCH - {{ self.title() }}</title>
         <!-- 1. Load webcomponents-lite.min.js for polyfill support. -->
         <script src="{{url_for("static", filename="bower_components/webcomponentsjs/webcomponents-lite.min.js") }}"></script>
         <!-- 2. Use an HTML Import to bring in some elements. -->
@@ -18,18 +18,98 @@
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-toggle-button/paper-toggle-button.html") }}">
 
         <!-- test -->
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-slider/paper-slider.html") }}">
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-header-panel/paper-header-panel.html") }}">
         <link rel="import" href="{{ url_for("static", filename="bower_components/iron-flex-layout/iron-flex-layout.html") }}">
         <!--<link rel="import" href="bower_components/paper-input/paper-input.html">-->
 
         <script src="{{ url_for("static", filename="shared.js") }}" type="text/javascript"></script>
         <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="style.css") }}">
+
         {# Disable favicon request. See: https://stackoverflow.com/a/13416784 #}
         <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">
         <meta name="viewport" content="width=device-width, initial-scale=1">
         {% block head %}{% endblock %}
     </head>
     <body class="fullbleed layout vertical" onload="{% block onLoad %}{% endblock %}removeFlashes()">
+<paper-header-panel>
+    <!-- This is the header for the main page -->
+    <paper-toolbar style="background-color:blue;">
+    <!--<paper-toolbar style="background-color: white; color: blue;" class="tall">-->
+        <paper-icon-button id="headerMenuButton" icon="menu" style="color:white; display: none;"></paper-icon-button>
+        <!--<paper-icon-button paper-drawer-toggle id="headerMenuButton" icon="menu" style="color:white;"></paper-icon-button>-->
+        <!-- Using paper-drawer-toggle does it directly, but only inside the object -->
+        <!--<paper-icon-button icon="menu" on-tap="toggleDrawer" style="color:white;"></paper-icon-button>-->
+        <div class="title">{% block title %}ALICE OVERWATCH{% endblock %}</div>
+        <paper-toggle-button>jsroot</paper-toggle-button>
+        <a href="#topOfPage" tabindex="-1">
+            <paper-icon-button id="headerTopOfPage" icon="arrow-upward" style="color: white;"></paper-icon-button>
+        </a>
+        <!--<div class="middle title">
+            <div>Min</div>
+            <paper-slider value="23" max="255" editable></paper-slider>
+            <div>Max</div>
+            <paper-slider value="23" max="255" editable></paper-slider>
+        </div>-->
+        <!--<div on-tap="toggleDrawer">toggle</div>-->
+        <!--<div class="middle title">Middle title</div>
+        <div class="bottom title">Bottom title</div>-->
+    </paper-toolbar>
+    <!-- An alternative approach -->
+    <!--<app-toolbar style="background-color:white;">
+    toolbar2!
+    </app-toolbar>
+    <app-toolbar>
+    toolbar3!
+    </app-toolbar>-->
+    <paper-drawer-panel id="drawerPanelID" class="fit">
+        <div drawer>
+            <!-- Ensures that we can scroll in the header! -->
+            <div style="height: 100%; overflow: auto; word-wrap: break-word;">
+                {# Defines content in the drawer #}
+                {% block drawer %}{% endblock %}
+            </div>
+        </div>
+
+        <div main>
+            <!-- Ensures that we can scroll in the header! -->
+            <div style="height: 100%; overflow: auto;">
+                {% block mainContent %}{% endblock %}
+            </div>
+        </div>
+    </paper-drawer-panel>
+</paper-header-panel>
+
+{# Defines direct access to the body block #}
+{% block body %}{% endblock %}
+
+<script>
+    // To ensure that elements are ready on polyfilled browsers, 
+    // wait for WebComponentsReady. 
+    document.addEventListener('WebComponentsReady', function() {
+        var menuButton = document.getElementById("headerMenuButton");
+        var panel = document.getElementById("drawerPanelID");
+        console.log("panelButton: " + menuButton.outerHTML);
+        // Create toggle for the panel button
+        menuButton.addEventListener("click", function() {
+            panel.togglePanel();
+        });
+
+        // Hide the menu button if wide!
+        document.addEventListener("paper-responsive-change", function(e) {
+            console.log("narrow: " + e.target.narrow);
+            var menuButton = document.getElementById("headerMenuButton");
+            if (e.target.narrow === true) {
+                /*menuButton.style.visibility = "visible";*/
+                menuButton.style.display = "inline-block";
+            }
+            else {
+                /*menuButton.style.visibility = "hidden";*/
+                menuButton.style.display = "none";
+            }
+        });
+    });
+</script>
         <!--<header class="header">
             <div class="headerContainer">
                 <div class="headerMainLinks">
@@ -64,9 +144,7 @@
                  </div>
              </div>
          </header>-->
-        {# Defines the body block #}
-        {% block body %}{% endblock %}
-        <!--<div id="contentContainer">
+         <!--<div id="contentContainer">
             {# Flask flash based on: http://cssreset.com/creating-fixed-headers-with-css/ #}
             {% with messages = get_flashed_messages() %}
                 {% if messages %}
