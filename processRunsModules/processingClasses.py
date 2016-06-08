@@ -11,6 +11,7 @@ or read from file.
 from __future__ import print_function
 
 import os
+import time
 import sortedcontainers
 import collections
 
@@ -123,6 +124,15 @@ class subsystemContainer(object):
         # nEvents
         self.nEvents = 1
 
+    @staticmethod
+    def prettyPrintUnixTime(unixTime):
+        """ Pretty print the unix time. Needed mostly in templates were arbitrary functions are not allowed.
+
+        """
+        timeStruct = time.gmtime(unixTime)
+        timeString = time.strftime("%A, %d %b %Y %H:%M:%S", timeStruct)
+
+        return timeString
 
 ###################################################
 class fileContainer(object):
