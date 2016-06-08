@@ -13,6 +13,7 @@ import socket
 import time
 import zipfile
 import subprocess
+import jinja2
 
 try:
     import cPickle as pickle
@@ -152,18 +153,32 @@ def index():
     redirect to the static page.
     """
     if serverParameters.dynamicContent:
-        return render_template(os.path.join("data", "runList.html"))
+        #return render_template(os.path.join("data", "runList.html"))
+        # TODO: Check reversed more closely to ensure that it is doing what is expected!
+        return render_template("runList.html", runs=reversed(runs.values()))
     else:
         return redirect(url_for("protected", filename="runList.html"))
 
 ###################################################
 # TEST!
 ###################################################
-@app.route("/<string:runDir>/<string:subsystem>/<string:filename>")
+@app.route("/<string:runDir>/<string:subsystem>/<string:requestedFileType>")
 @login_required
-def testingFunc(runDir, subsystem, filename):
-    print("runDir: {0}, subsytsem: {1}, filename: {2}".format(runDir, subsystem, filename))
-    return render_template(filename, run=runs[runDir], subsystem=subsystem, useGrid=False)
+def runPage(runDir, subsystem, requestedFileType):
+    # TODO: Validate these inputs!!!
+    print("runDir: {0}, subsytsem: {1}, requestedFileType: {2}".format(runDir, subsystem, requestedFileType))
+    if requestedFileType == "runPage":
+        # TODO: Consider a better approach, but this may be sufficient
+        try:
+            returnValue = render_template(subsystem + "runPage.html", run=runs[runDir], subsystem=subsystem, useGrid=False)
+        except jinja2.exceptions.TemplateNotFound:
+            returnValue = render_template("runPage.html", run=runs[runDir], subsystem=subsystem, useGrid=False)
+        return returnValue
+    elif requestedFileType == "rootFiles":
+        # TODO: Consider splitting these functions?
+        return render_template("rootfiles.html", run=runs[runDir], subsystem=subsystem)
+
+    return render_template("error.html", errors={"error": ["Requested: {0}. Must request either runPage or rootFiles!".format(requestedFileType)]})
 
 ###################################################
 @app.route("/<path:runPath>")

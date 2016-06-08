@@ -90,7 +90,7 @@
     <app-toolbar>
     toolbar3!
     </app-toolbar>-->
-    <paper-drawer-panel id="drawerPanelId" class="fit">
+    <paper-drawer-panel id="drawerPanelId" class="fit" {% block drawerOptions%}{% endblock %}>
         <div drawer>
             <!-- Ensures that we can scroll in the header! -->
             <div style="height: 100%; overflow: auto; word-wrap: break-word;">
@@ -122,6 +122,7 @@
                         </div>
                     {% endif %}
                 {% endwith %}
+                <a class="anchor" name="topOfPage"></a>
                 {% block mainContent %}{% endblock %}
                 <div class="contactLinkContainer"><p class="contactLinkParagraph"><a href="{{ url_for("contact") }}">Information, documentation, contact, and suggestions</a></p></div>
             </div>

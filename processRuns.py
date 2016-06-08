@@ -91,6 +91,8 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
         if classOfObject.InheritsFrom(TH1.Class()):
             # Create histogram object
             hist = processingClasses.histogramContainer(key.GetName())
+            hist.hist = None
+            hist.canvas = None
             #hist.hist = key.ReadObj()
             #hist.canvas = TCanvas(key.GetName() + "Canvas", key.GetName() + "Canvas")
             # Shouldn't be needed, because I keep a reference to it
@@ -180,9 +182,9 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             # Retrieve histogram and canvas
             hist = subsystem.hists[histName]
             hist.retrieveHistogram(fIn)
+            if hist.canvas is None:
+                hist.canvas = TCanvas(hist.histName + "Canvas", hist.histName + "Canvas")
             canvas = hist.canvas
-            if canvas is None:
-                canvas = TCanvas(hist.histName + "Canvas", hist.histName + "Canvas")
             # Ensure we plot onto the right canvas
             canvas.cd()
 
@@ -237,6 +239,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             # Clear hist and canvas so that we can successfully save
             hist.hist = None
             hist.canvas = None
+            canvas = None
 
     # Clear canvases at the end to ensure that we don't carry them around
     # Otherwise, we get "TCanvas::Constructor:0: RuntimeWarning: Deleting canvas with same name: EMCTRQA_histCMPosEMCREBKGCanvas" from the TCanvas constructor deleting the previous canvas with the same name.

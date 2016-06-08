@@ -1,11 +1,8 @@
 {% extends "layout.html" %}
 {% block onLoad %}scrollIfHashExists({{ scrollAmount }});setScrollValueInForm();{% endblock %}
-{% block secondLineInHeader %}
-{# Interactive Form here! #}
-{% endblock %}
 
 {% block title %}
-{{ run.runDir }}
+{{ run.prettyName }}
 {% endblock %}
 
 {% block drawer %}
@@ -25,10 +22,9 @@
 
 {% block mainContent %}
     <!-- This is the main content! -->
-    <a class="anchor" name="topOfPage"></a>
-    <h1>{{ run.runDir }}</h1>
+    <h1>{{ self.title() }}</h1>
     <p>
-        Run {{ run.runNumber }} started at __INSERT_FORMATTED_CERN_TIME__ (CERN time zone).</br>
+        {{ run.prettyName }} started at __INSERT_FORMATTED_CERN_TIME__ (CERN time zone).</br>
         <a target="_blank" href="https://alice-logbook.cern.ch/logbook/date_online.php?p_cont=rund&p_run={{ run.runNumber }}">Logbook entry</a>
     </p>
 

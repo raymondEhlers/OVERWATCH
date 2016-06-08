@@ -25,10 +25,11 @@ class runContainer(object):
     def __init__(self, runDir, fileMode):
         self.runDir = runDir
         self.runNumber = int(runDir.replace("Run", ""))
+        self.prettyName = "Run {0}".format(self.runNumber)
         # Need to rework the qa container 
         #self.qaContainer = qa.qaFunctionContainer
         self.mode = fileMode
-        self.subsystems = dict()
+        self.subsystems = collections.OrderedDict()
 
 ###################################################
 class subsystemContainer(object):
