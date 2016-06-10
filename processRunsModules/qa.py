@@ -51,6 +51,22 @@ def createHistogramStacks(subsystem):
         subsystem.histsAvailable = subsystem.histsInFile
 
 ###################################################
+def setHistogramOptions(subsystem):
+    """ Properly routes histogram stack function for each subsystem
+    
+    """
+    functionName = "set" + subsystem.subsystem + "HistogramOptions"
+    histogramStackFunction = getattr(currentModule, functionName, None)
+    if histogramStackFunction is not None:
+        histogramStackFunction(subsystem)
+    else:
+        print("Could not find histogram stack function for subsystem {0}.".format(subsystem.subsystem))
+        # Ensure that the histograms propagate to the next dict if there is not stack function!
+        subsystem.histsAvailable = subsystem.histsInFile
+
+
+
+###################################################
 def findFunctionsForHist(subsystem, hist):
     """ Determines which functions should be applied to a histogram
     

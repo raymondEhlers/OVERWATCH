@@ -108,6 +108,10 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
     # TODO: Consider a condition where this is not necessary
     qa.createHistogramStacks(subsystem)
 
+    # Customize histogram traits
+    # TODO: Consider a condition where this is not necessary
+    qa.setHistogramOptions(subsystem)
+
     # Create histogram sorting groups
     # TODO: Consider a condition where this is not necessary
     if subsystem.histGroups == sortedcontainers.SortedDict():

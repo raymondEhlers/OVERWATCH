@@ -170,9 +170,9 @@ def runPage(runDir, subsystem, requestedFileType):
     if requestedFileType == "runPage":
         # TODO: Consider a better approach, but this may be sufficient
         try:
-            returnValue = render_template(subsystem + "runPage.html", run=runs[runDir], subsystem=subsystem, useGrid=False)
+            returnValue = render_template(subsystem + "runPage.html", run=runs[runDir], subsystemName=subsystem, useGrid=False)
         except jinja2.exceptions.TemplateNotFound:
-            returnValue = render_template("runPage.html", run=runs[runDir], subsystem=subsystem, useGrid=False)
+            returnValue = render_template("runPage.html", run=runs[runDir], subsystemName=subsystem, useGrid=False)
         return returnValue
     elif requestedFileType == "rootFiles":
         # TODO: Consider splitting these functions?

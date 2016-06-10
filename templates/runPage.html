@@ -5,44 +5,48 @@
 {{ run.prettyName }}
 {% endblock %}
 
+{% set subsystem = run.subsystems[subsystemName] %}
+
 {% block drawer %}
     <!-- This is the drawer menu -->
-    {% for histGroup in run.subsystems[subsystem].histGroups.values() -%}
+    <paper-menu>
+    {% for histGroup in subsystem.histGroups.values() -%}
         {%- if histGroup.histList != [] -%}
             {#<p> {{ histGroup }} </p>#}
             {# groupSelectionPatten should always be a valid proxy for a valid link #}
             <a href="#{{ histGroup.selectionPattern }}" tabindex=-1>
-                <h3>{{ histGroup.prettyName }}</h3>
+                <paper-item><h3>{{ histGroup.prettyName }}</h3></paper-item>
             </a>
             {%- for histName in histGroup.histList -%}
-                {% set hist = run.subsystems[subsystem].hists[histName] %}
+                {% set hist = subsystem.hists[histName] %}
                 <a href="#{{ hist.histName }}" tabindex=-1>
-                    {{ hist.prettyName }}
-                </a><br />
+                    <paper-item>{{ hist.prettyName }}</paper-item>
+                </a>
             {%- endfor -%}
         {%- endif -%}
     {% endfor %}
+    </paper-menu>
 {% endblock %}
 
 {% block mainContent %}
     <!-- This is the main content! -->
     <h1>{{ self.title() }}</h1>
     <p>
-        {{ run.prettyName }} started at __INSERT_FORMATTED_CERN_TIME__ (CERN time zone).</br>
-        <a target="_blank" href="https://alice-logbook.cern.ch/logbook/date_online.php?p_cont=rund&p_run={{ run.runNumber }}">Logbook entry</a>
+        {{ run.prettyName }} started at {{ subsystem.prettyPrintUnixTime(subsystem.startOfRun) }} (CERN time zone).</br>
+       <a target="_blank" href="https://alice-logbook.cern.ch/logbook/date_online.php?p_cont=rund&p_run={{ run.runNumber }}">Logbook entry</a>
     </p>
 
     {# Display histograms here #}
     {% if useGrid %}
         {# How to handle a grid #}
     {% else %}
-        {% for histGroupName,histGroup in run.subsystems[subsystem].histGroups.items() %}
+        {% for histGroupName, histGroup in subsystem.histGroups.iteritems() %}
             {%- for histName in histGroup.histList -%}
-                {%- set hist = run.subsystems[subsystem].hists[histName] %}
+                {%- set hist = subsystem.hists[histName] %}
                 <a class="anchor" data-histName="{{ histName }}" data-histGroup="{{ histGroup }}" name="{{ hist.histName }}"></a>
                 <h2>{{ hist.prettyName }}</h2>
                 {# TODO: Improve this line! #}
-                {%- set filename = run.subsystems[subsystem].imgDir.replace("data/", "") + "/" + hist.histName + ".png" -%}
+                {%- set filename = subsystem.imgDir.replace("data/", "") + "/" + hist.histName + ".png" -%}
                 <img src="{{ url_for("protected", filename=filename) }}" alt="{{ hist.histName }}">
             {% endfor -%}
         {% endfor %}

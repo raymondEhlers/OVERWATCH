@@ -135,6 +135,16 @@ def createEMCHistogramGroups(subsystem):
     subsystem.histGroups["NonEMC"] = processingClasses.histogramGroupContainer("Non EMC", "")
 
 ###################################################
+def setEMCHistogramOptions(subsystem):
+
+    # TODO: Set the histogram draw options
+
+    # Set the histogram pretty names
+    # We can remove the first 12 characters
+    for hist in subsystem.histsAvailable.values():
+        hist.prettyName = hist.histName[12:]
+
+###################################################
 def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem = "EMC"):
     """ Sorts and displays EMC histograms.
 
