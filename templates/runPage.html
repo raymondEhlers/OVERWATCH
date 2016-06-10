@@ -11,10 +11,14 @@
         {%- if histGroup.histList != [] -%}
             {#<p> {{ histGroup }} </p>#}
             {# groupSelectionPatten should always be a valid proxy for a valid link #}
-            <h3><a href="#{{ histGroup.selectionPattern }}">{{ histGroup.prettyName }}</a></h3>
+            <a href="#{{ histGroup.selectionPattern }}" tabindex=-1>
+                <h3>{{ histGroup.prettyName }}</h3>
+            </a>
             {%- for histName in histGroup.histList -%}
                 {% set hist = run.subsystems[subsystem].hists[histName] %}
-                <a href="#{{ hist.histName }}">{{ hist.prettyName }}</a><br />
+                <a href="#{{ hist.histName }}" tabindex=-1>
+                    {{ hist.prettyName }}
+                </a><br />
             {%- endfor -%}
         {%- endif -%}
     {% endfor %}
@@ -32,15 +36,15 @@
     {% if useGrid %}
         {# How to handle a grid #}
     {% else %}
-        {% for histGroup in run.subsystems[subsystem].histGroups.values() %}
+        {% for histGroupName,histGroup in run.subsystems[subsystem].histGroups.items() %}
             {%- for histName in histGroup.histList -%}
-                {%- set hist = run.subsystems[subsystem].hists[histName] -%}
-                <a class="anchor" name="{{ hist.histName }}"></a>
+                {%- set hist = run.subsystems[subsystem].hists[histName] %}
+                <a class="anchor" data-histName="{{ histName }}" data-histGroup="{{ histGroup }}" name="{{ hist.histName }}"></a>
                 <h2>{{ hist.prettyName }}</h2>
                 {# TODO: Improve this line! #}
                 {%- set filename = run.subsystems[subsystem].imgDir.replace("data/", "") + "/" + hist.histName + ".png" -%}
                 <img src="{{ url_for("protected", filename=filename) }}" alt="{{ hist.histName }}">
-            {%- endfor -%}
+            {% endfor -%}
         {% endfor %}
     {% endif %}
 {% endblock %}

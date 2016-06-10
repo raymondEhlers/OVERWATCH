@@ -19,6 +19,8 @@
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-toggle-button/paper-toggle-button.html") }}">
 
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-menu/paper-menu.html") }}">
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-menu/paper-submenu.html") }}">
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-listbox/paper-listbox.html") }}">
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-item/paper-item.html") }}">
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-item/paper-icon-item.html") }}">
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-dialog/paper-dialog.html") }}">
@@ -94,37 +96,41 @@
         <div drawer>
             <!-- Ensures that we can scroll in the header! -->
             <div style="height: 100%; overflow: auto; word-wrap: break-word;">
-                <paper-menu>
-                    <paper-item>
-                        <a href="{{ url_for("login") }}">Run List</a>
-                    </paper-item>
-                    <paper-item>
-                        <a href="{{ url_for("processQA") }}">Basic QA</a>
-                    </paper-item>
-                </paper-menu>
+                <paper-listbox>
+                    <a href="{{ url_for("login") }}" tabindex=-1>
+                        <paper-item>Run List</paper-item>
+                    </a>
+                    <a href="{{ url_for("processQA") }}" tabindex=-1>
+                        <paper-item>Basic QA</paper-item>
+                    </a>
+                </paper-listbox>
                 <!-- TODO: Improve this divider! -->
                 <hr />
-                {# Defines content in the drawer #}
-                {% block drawer %}{% endblock %}
+                <div style="width: 95%; margin-left: auto; margin-right: auto;">
+                    {# Defines content in the drawer #}
+                    {% block drawer %}{% endblock %}
+                </div>
             </div>
         </div>
 
         <div main>
             <!-- Ensures that we can scroll in the header! -->
-            <div style="height: 100%; overflow: auto;">
-                {# Flask flash based on: http://cssreset.com/creating-fixed-headers-with-css/ #}
-                {% with messages = get_flashed_messages() %}
-                    {% if messages %}
-                        <div class=flashes id="flashes">
-                            {% for message in messages %}
-                            <p>{{ message.replace("\n", "<br />") | safe }}</p>
-                            {% endfor %}
-                        </div>
-                    {% endif %}
-                {% endwith %}
-                <a class="anchor" name="topOfPage"></a>
-                {% block mainContent %}{% endblock %}
-                <div class="contactLinkContainer"><p class="contactLinkParagraph"><a href="{{ url_for("contact") }}">Information, documentation, contact, and suggestions</a></p></div>
+            <div style="height: 100%; overflow: auto; ">
+                <div style="width: 95%; margin-left: auto; margin-right: auto; word-wrap: break-word;">
+                    {# Flask flash based on: http://cssreset.com/creating-fixed-headers-with-css/ #}
+                    {% with messages = get_flashed_messages() %}
+                        {% if messages %}
+                            <div class=flashes id="flashes">
+                                {% for message in messages %}
+                                <p>{{ message.replace("\n", "<br />") | safe }}</p>
+                                {% endfor %}
+                            </div>
+                        {% endif %}
+                    {% endwith %}
+                    <a class="anchor" name="topOfPage"></a>
+                    {% block mainContent %}{% endblock %}
+                    <div class="contactLinkContainer"><p class="contactLinkParagraph"><a href="{{ url_for("contact") }}">Information, documentation, contact, and suggestions</a></p></div>
+                </div>
             </div>
         </div>
     </paper-drawer-panel>
