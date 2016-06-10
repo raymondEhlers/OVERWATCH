@@ -1,8 +1,68 @@
 /* TODO: Remove some debug messages! */
 
+// Handle all of the polymer elements!
+// To ensure that elements are ready on polyfilled browsers, wait for WebComponentsReady. 
+document.addEventListener('WebComponentsReady', function() {
+    // Enable the link for the menu button to control the drawer
+    var menuButton = document.getElementById("headerMenuButton");
+    var drawer = document.getElementById("drawerPanelId");
+    //console.log("panelButton: " + menuButton.outerHTML);
+    // Create toggle for the drawer button
+    menuButton.addEventListener("click", function() {
+        drawer.togglePanel();
+    });
+
+    // Create the link for opening the time slices dialog panel
+    var propertiesButton = document.getElementById("propertiesButton");
+    var propertiesDialog = document.getElementById("propertiesDialog");
+    //console.log("button: " + propertiesButton + " dialog: " + propertiesDialog.outerHTML);
+    propertiesButton.addEventListener("click", function() {
+        propertiesDialog.open();
+    });
+
+    // Create the link for opening the user settings dialog panel
+    var userSettingsButton = document.getElementById("userSettingsButton");
+    var userSettings = document.getElementById("userSettings")
+    userSettingsButton.addEventListener("click", function() {
+        userSettings.open();
+    })
+    // Assign the position target of the settings
+    // Don't currently need it because it is positioned correctly
+    userSettings.positionTarget = userSettingsButton;
+
+    // Ensure that we show or hide the menu button on load
+    showOrHideMenuButton();
+    // Add a listener for further changes
+    document.addEventListener("paper-responsive-change", showOrHideMenuButton);
+
+    // Handle jsRoot value
+    if (storageAvailable("localStorage")) {
+        var jsRootToggle = document.getElementById("jsRootToggle");
+        // Check for value in local storage, and set it properly if it exists
+        var storedToggleValue = localStorage.getItem("jsRootToggle");
+        if (storedToggleValue) {
+            // See: https://stackoverflow.com/a/264037
+            jsRootToggle.checked = (storedToggleValue === "true");
+
+            console.log("Local storage checked: " + localStorage.getItem("jsRootToggle"));
+        }
+
+        // Storage the change value in local storage
+        jsRootToggle.addEventListener("change", function(e) {
+            // Store value in local storage
+            //console.log("checked: " + e.target.checked);
+            localStorage.setItem("jsRootToggle", e.target.checked.toString());
+            //console.log("Local storage checked: " + localStorage.getItem("jsRootToggle"));
+        });
+    }
+
+    removeFlashes();
+});
+
 function removeFlashes() {
     /* Removes flash after 5 seconds to avoid confusion */
     /* From: https://www.sitepoint.com/community/t/hide-div-after-10-seconds/5910 */
+    console.log("running removeFlashes()");
     setTimeout(function() {
         var flashes = document.getElementById("flashes")
         if (flashes != null)
@@ -79,3 +139,37 @@ function setScrollValueInForm() {
         }
     }
 }
+
+// Hide the menu button if in the wide display!
+function showOrHideMenuButton() {
+    //console.log("narrow: " + e.target.narrow);
+    var menuButton = document.getElementById("headerMenuButton");
+    var drawer = document.getElementById("drawerPanelId");
+    //console.log("drawer: " + drawer);
+    //if (e.target.narrow === true) {
+    if (drawer.narrow === true) {
+        /*menuButton.style.visibility = "visible";*/
+        menuButton.style.display = "inline-block";
+    }
+    else {
+        /*menuButton.style.visibility = "hidden";*/
+        menuButton.style.display = "none";
+    }
+}
+
+// Check for local storage being available
+// From: https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API
+function storageAvailable(type) {
+    try {
+        var storage = window[type],
+        x = '__storage_test__';
+        storage.setItem(x, x);
+        storage.removeItem(x);
+        return true;
+    }
+    catch(e) {
+        return false;
+    }
+}
+
+

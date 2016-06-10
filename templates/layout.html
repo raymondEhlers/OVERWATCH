@@ -1,36 +1,43 @@
 <!doctype html>
-{# Flashes from: http://flask.pocoo.org/docs/0.10/patterns/flashing/ #}
 <html lang="en">
     <head>
         <title>ALICE OVERWATCH - {{ self.title() }}</title>
         <!-- 1. Load webcomponents-lite.min.js for polyfill support. -->
         <script src="{{url_for("static", filename="bower_components/webcomponentsjs/webcomponents-lite.min.js") }}"></script>
-        <!-- 2. Use an HTML Import to bring in some elements. -->
-        <link rel="import" href="{{ url_for("static", filename="bower_components/app-layout/app-header-layout/app-header-layout.html") }}">
-        <link rel="import" href="{{ url_for("static", filename="bower_components/app-layout/app-header/app-header.html") }}">
-        <link rel="import" href="{{ url_for("static", filename="bower_components/app-layout/app-drawer-layout/app-drawer-layout.html") }}">
-        <link rel="import" href="{{ url_for("static", filename="bower_components/app-layout/app-drawer/app-drawer.html") }}">
-        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-drawer-panel/paper-drawer-panel.html") }}">
-        <link rel="import" href="{{ url_for("static", filename="bower_components/app-layout/app-toolbar/app-toolbar.html") }}">
-        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-toolbar/paper-toolbar.html") }}">
-        <link rel="import" href="{{ url_for("static", filename="bower_components/iron-icons/iron-icons.html") }}">
-        <link rel="import" href="{{ url_for("static", filename="bower_components/iron-icons/av-icons.html") }}">
-        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-icon-button/paper-icon-button.html") }}">
-        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-toggle-button/paper-toggle-button.html") }}">
 
-        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-menu/paper-menu.html") }}">
-        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-menu/paper-submenu.html") }}">
-        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-listbox/paper-listbox.html") }}">
-        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-item/paper-item.html") }}">
-        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-item/paper-icon-item.html") }}">
-        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-dialog/paper-dialog.html") }}">
-        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-button/paper-button.html") }}">
-        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-slider/paper-slider.html") }}">
+        <!-- 2. Use an HTML Import to bring in some elements. -->
+        <!-- Header and layyout -->
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-header-panel/paper-header-panel.html") }}">
         <link rel="import" href="{{ url_for("static", filename="bower_components/iron-flex-layout/iron-flex-layout.html") }}">
-        <!--<link rel="import" href="bower_components/paper-input/paper-input.html">-->
+        <!-- Drawer -->
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-drawer-panel/paper-drawer-panel.html") }}">
+        <!-- Toolbar in header -->
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-toolbar/paper-toolbar.html") }}">
+        <!-- Time slices icon -->
+        <link rel="import" href="{{ url_for("static", filename="bower_components/iron-icons/av-icons.html") }}">
+        <!-- Time slices link in the toolbar -->
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-button/paper-button.html") }}">
+        <!-- Icons in menu -->
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-icon-button/paper-icon-button.html") }}">
+        <link rel="import" href="{{ url_for("static", filename="bower_components/iron-icons/iron-icons.html") }}">
+        <!-- Toggle buttons (jsroot) -->
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-toggle-button/paper-toggle-button.html") }}">
+        <!-- List links and content in drawer -->
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-listbox/paper-listbox.html") }}">
+        <!-- Items in the drawer -->
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-item/paper-item.html") }}">
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-item/paper-icon-item.html") }}">
+        <!-- Dialog for user information -->
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-dialog/paper-dialog.html") }}">
+        <!-- Slide in the time slices menu -->
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-slider/paper-slider.html") }}">
 
-        <script src="{{ url_for("static", filename="shared.js") }}" type="text/javascript"></script>
+        <script async src="{{ url_for("static", filename="shared.js") }}" type="text/javascript"></script>
+        {# See: http://flask.pocoo.org/docs/0.11/patterns/jquery/ #}
+        {# Loads jQuery from google if available, or locaclly is not #}
+        <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
+        <script>window.jQuery || document.write('<script src="{{ url_for('static', filename='jquery.js') }}">\x3C/script>')</script>
+
         <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="style.css") }}">
 
         {# Disable favicon request. See: https://stackoverflow.com/a/13416784 #}
@@ -38,7 +45,7 @@
         <meta name="viewport" content="width=device-width, initial-scale=1">
         {% block head %}{% endblock %}
     </head>
-    <body class="fullbleed layout vertical" onload="{% block onLoad %}{% endblock %}removeFlashes()">
+    <body class="fullbleed layout vertical">
 <paper-header-panel>
     <!-- This is the header for the main page -->
     <paper-toolbar style="background-color:blue;">
@@ -85,13 +92,6 @@
         <!--<div class="middle title">Middle title</div>
         <div class="bottom title">Bottom title</div>-->
     </paper-toolbar>
-    <!-- An alternative approach -->
-    <!--<app-toolbar style="background-color:white;">
-    toolbar2!
-    </app-toolbar>
-    <app-toolbar>
-    toolbar3!
-    </app-toolbar>-->
     <paper-drawer-panel id="drawerPanelId" class="fit" {% block drawerOptions%}{% endblock %}>
         <div drawer>
             <!-- Ensures that we can scroll in the header! -->
@@ -115,7 +115,7 @@
             <!-- Ensures that we can scroll in the header! -->
             <div style="height: 100%; overflow: auto; ">
                 <div style="width: 95%; margin-left: auto; margin-right: auto; word-wrap: break-word;">
-                    {# Flask flash based on: http://cssreset.com/creating-fixed-headers-with-css/ #}
+                    {# Flashes from: http://flask.pocoo.org/docs/0.10/patterns/flashing/ #}
                     {% with messages = get_flashed_messages() %}
                         {% if messages %}
                             <div class=flashes id="flashes">
@@ -147,143 +147,18 @@
 {# Defines direct access to the body block #}
 {% block body %}{% endblock %}
 
-<script>
-    // To ensure that elements are ready on polyfilled browsers, 
-    // wait for WebComponentsReady. 
-    document.addEventListener('WebComponentsReady', function() {
-        // Enable the link for the menu button to control the drawer
-        var menuButton = document.getElementById("headerMenuButton");
-        var drawer = document.getElementById("drawerPanelId");
-        //console.log("panelButton: " + menuButton.outerHTML);
-        // Create toggle for the drawer button
-        menuButton.addEventListener("click", function() {
-            drawer.togglePanel();
-        });
-
-        // Create the link for opening the time slices dialog panel
-        var propertiesButton = document.getElementById("propertiesButton");
-        var propertiesDialog = document.getElementById("propertiesDialog");
-        //console.log("button: " + propertiesButton + " dialog: " + propertiesDialog.outerHTML);
-        propertiesButton.addEventListener("click", function() {
-            propertiesDialog.open();
-        });
-
-        // Create the link for opening the user settings dialog panel
-        var userSettingsButton = document.getElementById("userSettingsButton");
-        var userSettings = document.getElementById("userSettings")
-        userSettingsButton.addEventListener("click", function() {
-            userSettings.open();
-        })
-        // Assign the position target of the settings
-        // Don't currently need it because it is positioned correctly
-        userSettings.positionTarget = userSettingsButton;
-
-        // Hide the menu button if in the wide display!
-        function showOrHideMenuButton() {
-            //console.log("narrow: " + e.target.narrow);
-            var menuButton = document.getElementById("headerMenuButton");
-            var drawer = document.getElementById("drawerPanelId");
-            //console.log("drawer: " + drawer);
-            //if (e.target.narrow === true) {
-            if (drawer.narrow === true) {
-                /*menuButton.style.visibility = "visible";*/
-                menuButton.style.display = "inline-block";
-            }
-            else {
-                /*menuButton.style.visibility = "hidden";*/
-                menuButton.style.display = "none";
-            }
-        }
-        // Ensure that we show or hide the menu button on load
-        showOrHideMenuButton();
-        // Add a listener for further changes
-        document.addEventListener("paper-responsive-change", showOrHideMenuButton);
-
-        // Handle jsRoot value
-        // Check for local storage being available
-        // From: https://developer.mozilla.org/en-US/docs/Web/API/Web_Storage_API/Using_the_Web_Storage_API
-        function storageAvailable(type) {
-            try {
-                var storage = window[type],
-                x = '__storage_test__';
-                storage.setItem(x, x);
-                storage.removeItem(x);
-                return true;
-            }
-            catch(e) {
-                return false;
-            }
-        }
-
-        // Actually handle jsroot value
-        if (storageAvailable("localStorage")) {
-            var jsRootToggle = document.getElementById("jsRootToggle");
-            // Check for value in local storage, and set it properly if it exists
-            var storedToggleValue = localStorage.getItem("jsRootToggle");
-            if (storedToggleValue) {
-                // See: https://stackoverflow.com/a/264037
-                jsRootToggle.checked = (storedToggleValue === "true");
-
-                console.log("Local storage checked: " + localStorage.getItem("jsRootToggle"));
-            }
-
-            // Storage the change value in local storage
-            jsRootToggle.addEventListener("change", function(e) {
-                // Store value in local storage
-                //console.log("checked: " + e.target.checked);
-                localStorage.setItem("jsRootToggle", e.target.checked.toString());
-                //console.log("Local storage checked: " + localStorage.getItem("jsRootToggle"));
-            });
-        }
+{# Previously loaded scripts on DOM ready (which will fire before onLoad()) #}
+{# See (answer and comments): https://stackoverflow.com/a/2414766 #}
+{# Hoewver, with Polymer, we should instead wait for WebComponentsReady! #}
+<script type="text/javascript">
+    document.addEventListener("WebComponentsReady", function() {
+        {% block pageReadyForJS %}{% endblock %}
+        //removeFlashes();
     });
 </script>
         <!--<header class="header">
             <div class="headerContainer">
-                <div class="headerMainLinks">
-                    {%- if current_user.is_authenticated -%}
-                        <a class="headerLink" href="{{ url_for("index") }}">Return to Run List</a>
-                    {%- else -%}
-                        <a class="headerLink" href="{{ url_for("login") }}">Home</a>
-                    {%- endif -%}
-                    <a class="headerLink" href="#topOfPage">Top of Page</a>
-                </div>
-                <div class="responsiveContentContainer">
-                    {# Based on http://www.outofscope.com/css-only-menu-toggle-no-javascript-required/ #}
-                    <input type="checkbox" id="menuToggle"/>
-                    {# onclick hack from: http://stackoverflow.com/a/6472181 #}
-                    <label class="menuIcon" for="menuToggle" onclick=""><div></div></label>
-                    <div class="responsiveContent">
-                        <p class="responsiveHeaderParagraph responsiveElement">
-                        {%- if current_user.is_authenticated -%}
-                            User: {{ current_user.id }} <a class="headerLink" href="{{ url_for("logout") }}">Logout</a>
-                        {%- else -%}
-                            Not logged in. <a class="headerLink" href="{{ url_for("login") }}">Please login</a>
-                        {%- endif %}
-                        </p>
-                        <div class="responsiveTimeDependentMerge responsiveElement">
-                            {# Centered via: https://stackoverflow.com/a/6353345 #}
-                            {% block secondLineInHeader %}{% endblock %}
-                        </div>
-                        <div class="responsiveQALinkContainer responsiveElement">
-                            <a class="headerLink" href="{{ url_for("processQA") }}">Basic QA</a>
-                        </div>
-                    </div>
-                 </div>
              </div>
          </header>-->
-         <!--<div id="contentContainer">
-            {# Flask flash based on: http://cssreset.com/creating-fixed-headers-with-css/ #}
-            {% with messages = get_flashed_messages() %}
-                {% if messages %}
-                    <div class=flashes id="flashes">
-                        {% for message in messages %}
-                        <p>{{ message.replace("\n", "<br />") | safe }}</p>
-                        {% endfor %}
-                    </div>
-                {% endif %}
-            {% endwith %}
-            {# Body block was here #}
-            <div class="contactLinkContainer"><p class="contactLinkParagraph"><a href="{{ url_for("contact") }}">Information, documentation, contact, and suggestions</a></p></div>
-        </div>-->
     </body>
 </html>

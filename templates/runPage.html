@@ -1,5 +1,5 @@
 {% extends "layout.html" %}
-{% block onLoad %}scrollIfHashExists({{ scrollAmount }});setScrollValueInForm();{% endblock %}
+{% block pageReadyForJS %}scrollIfHashExists({{ scrollAmount }});setScrollValueInForm();{% endblock %}
 
 {% block title %}
 {{ run.prettyName }}
@@ -9,7 +9,7 @@
 
 {% block drawer %}
     <!-- This is the drawer menu -->
-    <paper-menu>
+    <paper-listbox>
     {% for histGroup in subsystem.histGroups.values() -%}
         {%- if histGroup.histList != [] -%}
             {#<p> {{ histGroup }} </p>#}
@@ -25,7 +25,7 @@
             {%- endfor -%}
         {%- endif -%}
     {% endfor %}
-    </paper-menu>
+    </paper-listbox>
 {% endblock %}
 
 {% block mainContent %}
