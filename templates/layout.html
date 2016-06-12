@@ -124,7 +124,9 @@
                 <!-- TODO: Improve this divider! -->
                 <hr />
                 {# Defines content in the drawer #}
-                {% block drawer %}{% endblock %}
+                <div id="drawerContent">
+                    {% block drawer %}{% endblock %}
+                </div>
             </div>
         </div>
 
@@ -144,7 +146,9 @@
                     {% endwith %}
                     <a class="anchor" name="topOfPage"></a>
                     <a href="#" id="testAjax">test Ajax</a>
-                    {% block mainContent %}{% endblock %}
+                    <div id="mainCont">
+                        {% block mainContent %}{% endblock %}
+                    </div>
                     <hr />
                     <div class="contactLinkContainer"><p class="contactLinkParagraph"><a href="{{ url_for("contact") }}">Information, documentation, contact, and suggestions</a></p></div>
                 </div>

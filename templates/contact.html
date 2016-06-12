@@ -1,35 +1,9 @@
 {% extends "layout.html" %}
 
 {% block title %}OVERWATCH Information{% endblock %}
+
 {% block mainContent %}
-    <h1>{{ self.title() }}</h1>
-    <hr />
-    <p style="text-align:center">ALICE <strong>OVERWATCH</strong>: <br> <strong>O</strong>nline <strong>V</strong>isualization of <strong>E</strong>merging t<strong>R</strong>ends and <strong>W</strong>eb <strong>A</strong>ccessible de<strong>T</strong>ector <strong>C</strong>onditions using the <strong>H</strong>LT</p>
-    <p>Comments, suggestions, and ideas are appreciated. Problems or bugs reports are also helpful. Contact: <a href="mailto:raymond.ehlers@yale.edu">Raymond Ehlers</a> and <a href="mailto:james.mulligan@yale.edu">James Mulligan</a>.</p>
-    {% if current_user.is_authenticated %}
-        <p>QA function testing data is available <a href="{{ url_for("testingDataArchive") }}">here</a></p>
-        <p>See the documentation <a href="{{ url_for("docs", filename="index.html") }}">here</a></p>
-    {% endif %}
-    {% if current_user.id == "emcalAdmin" %}
-        <p>Rebuild the docs <a href={{ url_for("rebuildDocs") }}>here</a></p>
-    {% endif %}
-    <p>QA and Website created by:</p>
-    <table>
-        <tr>
-            <td class="contactTableData">Salvatore Aiola</td>
-            <td class="contactTableData">Yale University</td>
-        </tr>
-        <tr>
-            <td class="contactTableData">Raymond Ehlers</td>
-            <td class="contactTableData">Yale University</td>
-        </tr>
-        <tr>
-            <td class="contactTableData">Markus Fasel</td>
-            <td class="contactTableData">LBNL</td>
-        </tr>
-        <tr>
-            <td class="contactTableData">James Mulligan</td>
-            <td class="contactTableData">Yale University</td>
-        </tr>
-    </table>
+    {% with title=self.title() %}
+        {% include "contactMainContent.html" %}
+    {% endwith %}
 {% endblock %}

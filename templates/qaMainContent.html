@@ -1,0 +1,59 @@
+<h1>{{ title }}</h1>
+<!-- div is just to manage placement -->
+<div style="overflow: auto; text-align: center;">
+    <form class="qaSelector" id="qaSelector" action"/processQA" method="post">
+        <div class="qaControlsGroup">
+            <div class="qaControlsElement">
+                <p style="margin: 0px;">First run</p>
+                <select name="firstRun">
+                    {% for run in runList %}
+                    <option value="{{ run }}">Run {{ run.replace("Run","")}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="qaControlsElement">
+                <p style="margin: 0px;">Last run</p>
+                <select name="lastRun">
+                    {% for run in runList %}
+                    <option value="{{ run }}">Run {{ run.replace("Run","")}}</option>
+                    {% endfor %}
+                </select>
+            </div>
+        </div>
+        <div class="qaControlsGroup">
+            <div class="qaControlsElement">
+                <p style="margin: 0px;">Subsystem</p>
+                <select name="subsystem" id="subsystem">
+                    {% for subsystem in subsystemList %}
+                    <option value="{{ subsystem }}">{{ subsystem }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+            <div class="qaControlsElement">
+                <p style="margin: 0px;">QA Function</p>
+                <select name="qaFunction" id="qaFunction">
+                    {% for subsystem in qaFunctionsList %}
+                        {% for funcName in qaFunctionsList[subsystem] %}
+                        <option class="{{ subsystem }}Selector" value="{{ funcName }}">{{ funcName }}</option>
+                        {% endfor %}
+                    {% endfor %}
+                    <option class="noSelector" value="noFunction" hidden="hidden">No fuctions available!</option>
+                </select>
+            </div>
+        </div>
+        <br />
+        <!-- div is just to manage placement -->
+        <div style="text-align:center; margin-top: 5px;">
+            <input style="display: inline-block;" value="Process QA" class="submitButton" type="submit" />
+        </div>
+    </form>
+</div>
+<hr />
+<!-- QA function descriptions -->
+<div>
+    {% for funcName, docStringList in docStrings.items() %}
+        {# Replaces new lines with HTML new lines (ie <br>) and replaces groups of spaces with no break spaces #}
+        <p class="hideFunctionDocstring" id="{{ funcName }}"><strong>{{ funcName.replace(docStringList[0], "") }} ({{ docStringList[0] }}):</strong><br />{{ docStringList[1].replace("\n","<br />").replace("    ","&nbsp&nbsp&nbsp&nbsp") | safe }}</p>
+    {% endfor %}
+    <p class="hideFunctionDocstring" id="noFunction" >No functions are available in this subsystem! Please select another subsystem!</p>
+</div>

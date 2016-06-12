@@ -195,7 +195,7 @@ def testAjax():
     returnTest += "<p>%s</p>" % b
 
     print("returnTest: {0}".format(returnTest))
-    return render_template("runPageMainContent.html", run=runs["Run300005"], subsystem=runs["Run300005"].subsystems["EMC"])
+    return render_template("runPageMainContent.html", run=runs["Run300005"], subsystem=runs["Run300005"].subsystems["EMC"], title="Run 300005")
     #return returnTest
     #return jsonify(a=a, b=b)
 

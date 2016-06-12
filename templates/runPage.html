@@ -11,28 +11,16 @@
 
 {% block drawer %}
     <!-- This is the drawer menu -->
-    <div id="drawerContent">
-        {% with subsystem=subsystem %}
-            {% include "runPageDrawer.html" %}
-        {% endwith %}
-    </div>
+    {% with subsystem=subsystem %}
+        {% include "runPageDrawer.html" %}
+    {% endwith %}
 {% endblock %}
 
 {% block mainContent %}
     <!-- This is the main content! -->
-    <h1>{{ self.title() }}</h1>
-    <p>
-        {{ run.prettyName }} started at {{ subsystem.prettyPrintUnixTime(subsystem.startOfRun) }} (CERN time zone).</br>
-       <a target="_blank" href="https://alice-logbook.cern.ch/logbook/date_online.php?p_cont=rund&p_run={{ run.runNumber }}">Logbook entry</a>
-    </p>
-    <hr />
-
-    <!-- Main content that can be loaded via ajax -->
-    <div id="mainCont">
-        {% with subsystem=subsystem %}
+    {% with subsystem=subsystem %}
         {% include "runPageMainContent.html" %}
-        {% endwith %}
-    </div>
+    {% endwith %}
 {% endblock %}
 
 {% block body %}

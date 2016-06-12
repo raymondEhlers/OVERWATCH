@@ -1,16 +1,9 @@
 {% extends "layout.html" %}
+
+{% block title %}Error in OVERWATCH!{% endblock %}
+
 {% block mainContent %}
-    <h1>Error in Request</h1>
-    <hr />
-    <div class="errors">
-    {% for errorContainer in errors %}
-    <p>Error type: {{ errorContainer }}</p>
-        <ul>
-        {% for error in errors[errorContainer] %}
-            <li>{{ error }}</li>
-        {% endfor %}
-        </ul>
-    {% endfor %}
-        <p>Please go back to the previous page or return to the run list</p>
-    </div>
+    {% with errors=errors %}
+        {% include "errorMainContent.html" %}
+    {% endwith %}
 {% endblock %}
