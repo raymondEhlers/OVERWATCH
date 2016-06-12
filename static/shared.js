@@ -54,10 +54,32 @@ document.addEventListener('WebComponentsReady', function() {
             localStorage.setItem("jsRootToggle", e.target.checked.toString());
             //console.log("Local storage checked: " + localStorage.getItem("jsRootToggle"));
         });
+
+        var ajaxToggle = document.getElementById("ajaxToggle");
+        // Check for value in local storage, and set it properly if it exists
+        storedToggleValue = localStorage.getItem("ajaxToggle");
+        if (storedToggleValue) {
+            // See: https://stackoverflow.com/a/264037
+            ajaxToggle.checked = (storedToggleValue === "true");
+
+            console.log("Local storage checked: " + localStorage.getItem("ajaxToggle"));
+        }
+
+        // Storage the change value in local storage
+        ajaxToggle.addEventListener("change", function(e) {
+            // Store value in local storage
+            //console.log("checked: " + e.target.checked);
+            localStorage.setItem("ajaxToggle", e.target.checked.toString());
+            //console.log("Local storage checked: " + localStorage.getItem("ajaxToggle"));
+        });
     }
 
     removeFlashes();
     testAjax();
+
+    $(document).ready(function() {
+        interceptLinks();
+    });
 });
 
 function removeFlashes() {
@@ -156,6 +178,26 @@ function showOrHideMenuButton() {
         /*menuButton.style.visibility = "hidden";*/
         menuButton.style.display = "none";
     }
+}
+
+function interceptLinks() {
+    var allLinks = Polymer.dom(this.root).querySelectorAll("a");
+    $(allLinks).click(function(event) {
+        var ajaxToggle = Polymer.dom(this.root).querySelector("#ajaxToggle");
+        if (ajaxToggle.checked === false) {
+            console.log("ajax disabled link");
+        }
+        else {
+            console.log("ajax enabled link");
+            // Prevent the link from going through
+            event.preventDefault();
+
+            // Call ajax
+
+            // Prevent further action
+            return false;
+        }
+    });
 }
 
 // Check for local storage being available
