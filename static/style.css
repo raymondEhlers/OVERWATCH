@@ -5,46 +5,49 @@
 /* General header elements */
 /* A fixed header for both desktop and mobile */
 .header {
-    /* Position and size */
-    position: fixed;
-    top: 0px;
-    left: 0px;
-    margin: 0px auto;
-    width: 100%;
-    /* Ensure the header stays on the screen */
-    max-width: 100%;
     /* Appearance */
     background-color: #003E72;
-    border-bottom: 1px solid #BCE8F1;
-    /* Set text color */
+    /*border-bottom: 1px solid #BCE8F1;*/
+}
+
+/* Style the horizontal dividing line */
+/* Derived from : https://css-tricks.com/examples/hrs/ */
+hr {
+    border: 0;
+    height: 2px;
+    /* Old color: */
+    /*color: #4588ba; = rgba(69, 136, 186, 1)*/
+    background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 62, 114, 0.75), rgba(0, 0, 0, 0));
+    /*background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));*/
+}
+
+/* Menu icon settings */
+.menuIcon {
     color: white;
 }
-/* General container for the header that ensures the proper alignment of header elements */
-.headerContainer {
-    /* The "overflow: auto;" is a hack to keep the container div from collapsing to 0 height
-     * See: https://stackoverflow.com/q/218760 */
+
+/* Class to hide element when necessary */
+.hideElement {
+    display: none;
+}
+
+/* Allow drawer and main content to scroll */
+.scrollableContainer {
+    height: 100%;
     overflow: auto;
+    word-wrap: break-word;
 }
-/* Styles all links in the header */
-.headerLink {
-    color: white;
-    /* Provides sufficient spacing between links
-     * The spacing is slightly off when mixed with text, but it is close enough */
-    padding: 0px 10px;
+
+/* Shadow on the drawer to make the transition clearer */
+.drawerShadow {
+    box-shadow: 5px 0px 6px -3px rgba(0, 0, 0, 0.4);
 }
-/* Styles the return to run list and top of page links. These should always be visible. */
-.headerMainLinks {
-    /* Should be displayed on the left of the header */
-    float: left;
-    /* Ensures sufficient spacing from the side of the page */
-    margin-left: 5px;
-}
-/* Ensures that the elements that could go in the menu (ie. "responsive elements") are displayed correctly. */
-.responsiveElement {
-    /* Should be displayed on the right of the header */
-    float: right;
-    /* Allows each element to be on a new line and to be displayed as ordered in the html */
-    clear: both;
+
+/* Style main content to make it more viewable  */
+.mainContentContainer {
+    width: 95%;
+    margin-left: auto;
+    margin-right: auto;
 }
 
 /* Responsive elements */
@@ -60,18 +63,6 @@
     background-color: #6AADE4;
     /* Allows child content to be centered */
     text-align: center;
-}
-/* Allows for a link to basic QA in the mobile menu */
-.responsiveQALinkContainer {
-    /* It is hidden on the desktop */
-    display: none;
-}
-/* Styles the username and login/logout information in the header */
-.responsiveHeaderParagraph {
-    padding: 0px;
-    margin-top: 0px;
-    margin-bottom: 0px;
-    clear: none;
 }
 
 /* Time dependent merge elements */
@@ -106,7 +97,7 @@
     display: none;
 }
 /* The icon which is clicked to show the menu */
-.menuIcon {
+.menuIconStop {
     /*display: hidden;*/
     width: 40px;
     height: 40px;
@@ -253,7 +244,7 @@ a.anchor {
 /* Sets the location of the contact link shown on all pages */
 .contactLinkContainer {
     margin: 0px auto;
-    margin-top: 1.5cm;
+    margin-top: 1cm;
     margin-bottom: 1cm;
 }
 /* Styles the paragraph around the link to the contact page */
@@ -357,16 +348,8 @@ a.anchor {
         font-size: 100%;
     }
 
-    /*  Vertically center text on the left
-     *  See: https://stackoverflow.com/a/6490283 */
-    .headerMainLinks {
-        position: absolute;
-        top: 50%;
-        transform: translate(0%, -50%);
-    }
-
     /* Show the menu icon */
-    .menuIcon {
+    .menuIconStop {
         /* Ensures that the icon is shown on the same line as the other links in the header */
         display: inline-block;
         /* Should be on the right side of the screen */
@@ -408,19 +391,7 @@ a.anchor {
         /* Ensures that the menu maintains a reasonable width */
         max-width: 75%;
     }
-    /* Applies to all responsive elements */
-    .responsiveElement {
-        /* Prevents elements from floating */
-        float: none;
-        /* Restore normal alignment behavior - perhaps not necessary? */
-        clear: none;
-        /* Center content in the menu */
-        text-align: center;
-    }
-    /* Show a link to basic QA in the menu */
-    .responsiveQALinkContainer {
-        display: block;
-    }
+    
     /* Styles the time dependent merge controls to make them stand out */
     .responsiveTimeDependentMerge {
         /* Repeats color from the border, but this should be fine */

@@ -54,27 +54,32 @@
     <body class="fullbleed layout vertical">
 <paper-header-panel>
     <!-- This is the header for the main page -->
-    <paper-toolbar style="background-color:blue;">
+    <paper-toolbar class="header">
     <!--<paper-toolbar style="background-color: white; color: blue;" class="tall">-->
-        <paper-icon-button id="headerMenuButton" icon="menu" style="color:white; display: none;"></paper-icon-button>
+        <paper-icon-button id="headerMenuButton" icon="menu" class="menuIcon hideElement"></paper-icon-button>
         <!--<paper-icon-button paper-drawer-toggle id="headerMenuButton" icon="menu" style="color:white;"></paper-icon-button>-->
         <!-- Using paper-drawer-toggle does it directly, but only inside the object -->
         <!--<paper-icon-button icon="menu" on-tap="toggleDrawer" style="color:white;"></paper-icon-button>-->
+
+        <!-- Title -->
         <div class="title">{% block title %}ALICE OVERWATCH{% endblock %}</div>
+
+        <!-- Time slices -->
         <paper-button id="propertiesButton">
-            <div style="/*word-wrap:break-word;*/">Time Slices</div>
-            <paper-icon-button icon="av:av-timer" style="color: white;"></paper-icon-button>
+            <div>Time Slices</div>
+            <paper-icon-button icon="av:av-timer" class="menuIcon"></paper-icon-button>
         </paper-button>
+
+        <!-- Top of page -->
         <a href="#topOfPage" tabindex="-1">
-            <paper-icon-button id="headerTopOfPage" icon="arrow-upward" style="color: white;"></paper-icon-button>
+            <paper-icon-button icon="arrow-upward" class="menuIcon" id="headerTopOfPage"></paper-icon-button>
         </a>
 
         <!-- User settings here! -->
-        <paper-icon-button id="userSettingsButton" icon="account-circle" style="color: white;"></paper-icon-button>
+        <paper-icon-button icon="account-circle" class="menuIcon" id="userSettingsButton"></paper-icon-button>
         <!-- Can also use no-overlap as an option! -->
         <paper-dialog vertical-align="auto" dynamic-align id="userSettings">
             <h2>User Settings</h2>
-            <!-- All links previously had class="headerLink" ! -->
             <paper-listbox>
                 {%- if current_user.is_authenticated -%}
                 <a href="{{ url_for("index") }}" tabindex=-1>
@@ -105,9 +110,9 @@
         <div class="bottom title">Bottom title</div>-->
     </paper-toolbar>
     <paper-drawer-panel id="drawerPanelId" class="fit" {% block drawerOptions%}{% endblock %}>
-        <div drawer>
+        <div drawer class="drawerShadow">
             <!-- Ensures that we can scroll in the header! -->
-            <div style="height: 100%; overflow: auto; word-wrap: break-word;">
+            <div class="scrollableContainer">
                 <paper-listbox>
                     <a href="{{ url_for("login") }}" tabindex=-1>
                         <paper-item>Run List</paper-item>
@@ -125,8 +130,8 @@
 
         <div main>
             <!-- Ensures that we can scroll in the header! -->
-            <div style="height: 100%; overflow: auto; ">
-                <div style="width: 95%; margin-left: auto; margin-right: auto; word-wrap: break-word;">
+            <div class="scrollableContainer">
+                <div class="mainContentContainer">
                     {# Flashes from: http://flask.pocoo.org/docs/0.10/patterns/flashing/ #}
                     {% with messages = get_flashed_messages() %}
                         {% if messages %}
@@ -140,6 +145,7 @@
                     <a class="anchor" name="topOfPage"></a>
                     <a href="#" id="testAjax">test Ajax</a>
                     {% block mainContent %}{% endblock %}
+                    <hr />
                     <div class="contactLinkContainer"><p class="contactLinkParagraph"><a href="{{ url_for("contact") }}">Information, documentation, contact, and suggestions</a></p></div>
                 </div>
             </div>
@@ -168,9 +174,5 @@
         {% block pageReadyForJS %}{% endblock %}
     });
 </script>
-        <!--<header class="header">
-            <div class="headerContainer">
-             </div>
-         </header>-->
     </body>
 </html>
