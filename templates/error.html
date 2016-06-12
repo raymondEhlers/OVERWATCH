@@ -1,6 +1,7 @@
 {% extends "layout.html" %}
-{% block body %}
+{% block mainContent %}
     <h1>Error in Request</h1>
+    <hr />
     <div class="errors">
     {% for errorContainer in errors %}
     <p>Error type: {{ errorContainer }}</p>

@@ -4,8 +4,6 @@
 {{ run.prettyName }} {{ subsystem }} ROOT Files
 {% endblock %}
 
-{% block drawerOptions %}drawer-width="150px"{% endblock %}
-
 {% block mainContent %}
     <!-- This is the main content! -->
     {% set subsystemObject = run.subsystems[subsystem] %}
@@ -14,6 +12,7 @@
         (stored in {{ subsystemObject.fileLocationSubsystem }} files)
         {%- endif %}</h1>
     <p>All times recorded in the CERN time zone.</p>
+    <hr />
 
     <ul class="listColumns">
         {% if subsystemObject.combinedFile != None %}
@@ -22,7 +21,6 @@
         {% for fileCont in subsystemObject.files.values() %}
         <li><a href="{{ url_for("protected", filename=fileCont.filename) }}" download>
             {{ subsystemObject.prettyPrintUnixTime(fileCont.fileTime) }}</a></li>
-            </a></li>
         {% endfor %}
     </ul>
 {% endblock %}

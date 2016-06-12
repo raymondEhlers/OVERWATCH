@@ -1,31 +1,31 @@
 {% extends "layout.html" %}
-{% block body %}
-    <a class="anchor" name="topOfPage"></a>
+
+{% block drawer %}
+    {% if hists != {} %}
+        {% for histLabel in hists %}
+            <a href="#{{ histLabel }}">{{ histLabel }}</a><br />
+        {% endfor %}
+    {% endif %}
+{% endblock %}
+{% block mainContent %}
     <h1>QA Using HLT Histograms</h1>
     {# Cannot escape html encoding using url_for, so have to manually replace "?", "=", and "&" #}
     {# See: https://stackoverflow.com/a/27304735 #}
     <p>Ran QA function "{{ qaFunctionName }}" for Subsystem "{{ subsystem }}" from {{ firstRun }} to {{ lastRun }}.</p>
     <p>ROOT file containing all QA histograms from this function are <a href="{{ url_for("protected", filename=rootFilePath) | replace("%3F", "?") | replace("%3D", "=") | replace("%26", "&") }}">available here</a>.</p>
+    <hr />
     {% if hists != {} %}
-        <div class="contentDivider">
-            <h2>Results</h2>
-            {% for histLabel in hists %}
-                <a href="#{{ histLabel }}">{{ histLabel }}</a><br />
-            {% endfor %}
-        </div>
+        <h2>Results</h2>
         <div>
-                {% for histLabel in hists %}
-                    <a class="anchor" name="{{ histLabel }}"></a>
-                    <h2>{{ histLabel }}</h2>
-                    {# Cannot escape html encoding using url_for, so have to manually replace "?", "=", and "&" #}
-                    {# See: https://stackoverflow.com/a/27304735 #}
-                    <img src="{{ url_for("protected", filename=hists[histLabel]) | replace("%3F", "?") | replace("%3D", "=") | replace("%26", "&") }}" alt="{{ histLabel }}">
-                {% endfor %}
+        {% for histLabel in hists %}
+            <a class="anchor" name="{{ histLabel }}"></a>
+            <h2>{{ histLabel }}</h2>
+            {# Cannot escape html encoding using url_for, so have to manually replace "?", "=", and "&" #}
+            {# See: https://stackoverflow.com/a/27304735 #}
+            <img src="{{ url_for("protected", filename=hists[histLabel]) | replace("%3F", "?") | replace("%3D", "=") | replace("%26", "&") }}" alt="{{ histLabel }}">
+        {% endfor %}
         </div>
     {% else %}
-        <div class="contentDivider">
-            <p>There are no histograms to display! Please try again, perhaps with a different set of runs.</p>
-        </div>
+        <p>There are no histograms to display! Please try again, perhaps with a different set of runs.</p>
     {% endif %}
-
 {% endblock %}
