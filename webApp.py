@@ -181,6 +181,25 @@ def runPage(runDir, subsystem, requestedFileType):
     return render_template("error.html", errors={"error": ["Requested: {0}. Must request either runPage or rootFiles!".format(requestedFileType)]})
 
 ###################################################
+@app.route("/testAjax", methods=["GET"])
+@login_required
+def testAjax():
+    """ Test ajax. Return the requested data and append it.
+    
+    """
+
+    a = request.args.get("a", "failedA", type=str)
+    b = request.args.get("b", "failedB", type=str)
+
+    returnTest = "<p>%s</p>" % a
+    returnTest += "<p>%s</p>" % b
+
+    print("returnTest: {0}".format(returnTest))
+    return render_template("runPageMainContent.html", run=runs["Run300005"], subsystem=runs["Run300005"].subsystems["EMC"])
+    #return returnTest
+    #return jsonify(a=a, b=b)
+
+###################################################
 @app.route("/<path:runPath>")
 @login_required
 def showRuns(runPath):

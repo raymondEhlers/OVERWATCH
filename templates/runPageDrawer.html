@@ -1,0 +1,17 @@
+<paper-listbox>
+{% for histGroup in subsystem.histGroups.values() -%}
+    {%- if histGroup.histList != [] -%}
+        {#<p> {{ histGroup }} </p>#}
+        {# groupSelectionPatten should always be a valid proxy for a valid link #}
+        <a href="#{{ histGroup.selectionPattern }}" tabindex=-1>
+            <paper-item><h3>{{ histGroup.prettyName }}</h3></paper-item>
+        </a>
+        {%- for histName in histGroup.histList -%}
+            {% set hist = subsystem.hists[histName] %}
+            <a href="#{{ hist.histName }}" tabindex=-1>
+                <paper-item>{{ hist.prettyName }}</paper-item>
+            </a>
+        {%- endfor -%}
+    {%- endif -%}
+{% endfor %}
+</paper-listbox>

@@ -7,6 +7,8 @@
 
         <!-- 2. Use an HTML Import to bring in some elements. -->
         <!-- Header and layyout -->
+        {# Consider trying to simply this with vulcanize: https://github.com/Polymer/vulcanize #}
+        {# However, it doesn't integrate well with jinja templates #}
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-header-panel/paper-header-panel.html") }}">
         <link rel="import" href="{{ url_for("static", filename="bower_components/iron-flex-layout/iron-flex-layout.html") }}">
         <!-- Drawer -->
@@ -31,6 +33,10 @@
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-dialog/paper-dialog.html") }}">
         <!-- Slide in the time slices menu -->
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-slider/paper-slider.html") }}">
+
+        <script type=text/javascript>
+            $SCRIPT_ROOT = {{ request.script_root|tojson|safe  }};
+        </script>
 
         <script async src="{{ url_for("static", filename="shared.js") }}" type="text/javascript"></script>
         {# See: http://flask.pocoo.org/docs/0.11/patterns/jquery/ #}
@@ -69,21 +75,27 @@
         <paper-dialog vertical-align="auto" dynamic-align id="userSettings">
             <h2>User Settings</h2>
             <!-- All links previously had class="headerLink" ! -->
-                <p>
-            {%- if current_user.is_authenticated -%}
-                <a href="{{ url_for("index") }}">Return to Run List</a>
-            {%- else -%}
-                <a href="{{ url_for("login") }}">Home</a>
-            {%- endif -%}
-                </p>
-                <p>
-            {%- if current_user.is_authenticated -%}
-                User: {{ current_user.id }} <a href="{{ url_for("logout") }}">Logout</a>
-            {%- else -%}
-                Not logged in. <a href="{{ url_for("login") }}">Please login</a>
-            {%- endif %}
-                </p>
-                <paper-toggle-button id="jsRootToggle">jsroot</paper-toggle-button>
+            <paper-listbox>
+                {%- if current_user.is_authenticated -%}
+                <a href="{{ url_for("index") }}" tabindex=-1>
+                    <paper-item>Return to Run List</paper-item>
+                </a>
+                <paper-item>
+                    <paper-item-body two-line>
+                        <div>User: {{ current_user.id }}</div>
+                        <div secondary><a href="{{ url_for("logout") }}">Logout</a></div>
+                    </paper-item-body>
+                </paper-item>
+                {%- else -%}
+                <a href="{{ url_for("login") }}">
+                    <paper-item>Home</paper-item>
+                </a>
+                <paper-item>
+                    Not logged in. <a href="{{ url_for("login") }}">Please login</a>
+                </paper-item>
+                {%- endif -%}
+            </paper-listbox>
+            <paper-toggle-button id="jsRootToggle">jsroot</paper-toggle-button>
         </paper-dialog>
 
         <!--<div class="middle title">
@@ -126,6 +138,7 @@
                         {% endif %}
                     {% endwith %}
                     <a class="anchor" name="topOfPage"></a>
+                    <a href="#" id="testAjax">test Ajax</a>
                     {% block mainContent %}{% endblock %}
                     <div class="contactLinkContainer"><p class="contactLinkParagraph"><a href="{{ url_for("contact") }}">Information, documentation, contact, and suggestions</a></p></div>
                 </div>
@@ -153,7 +166,6 @@
 <script type="text/javascript">
     document.addEventListener("WebComponentsReady", function() {
         {% block pageReadyForJS %}{% endblock %}
-        //removeFlashes();
     });
 </script>
         <!--<header class="header">

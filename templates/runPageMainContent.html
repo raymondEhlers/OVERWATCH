@@ -1,0 +1,15 @@
+{# Display histograms here #}
+{% if useGrid %}
+    {# How to handle a grid #}
+{% else %}
+    {% for histGroupName, histGroup in subsystem.histGroups.iteritems() %}
+        {%- for histName in histGroup.histList -%}
+            {%- set hist = subsystem.hists[histName] %}
+            <a class="anchor" data-histName="{{ histName }}" data-histGroup="{{ histGroup }}" name="{{ hist.histName }}"></a>
+            <h2>{{ hist.prettyName }}</h2>
+            {# TODO: Improve this line! #}
+            {%- set filename = subsystem.imgDir.replace("data/", "") + "/" + hist.histName + ".png" -%}
+            <img src="{{ url_for("protected", filename=filename) }}" alt="{{ hist.histName }}">
+        {% endfor -%}
+    {% endfor %}
+{% endif %}

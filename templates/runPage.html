@@ -9,23 +9,11 @@
 
 {% block drawer %}
     <!-- This is the drawer menu -->
-    <paper-listbox>
-    {% for histGroup in subsystem.histGroups.values() -%}
-        {%- if histGroup.histList != [] -%}
-            {#<p> {{ histGroup }} </p>#}
-            {# groupSelectionPatten should always be a valid proxy for a valid link #}
-            <a href="#{{ histGroup.selectionPattern }}" tabindex=-1>
-                <paper-item><h3>{{ histGroup.prettyName }}</h3></paper-item>
-            </a>
-            {%- for histName in histGroup.histList -%}
-                {% set hist = subsystem.hists[histName] %}
-                <a href="#{{ hist.histName }}" tabindex=-1>
-                    <paper-item>{{ hist.prettyName }}</paper-item>
-                </a>
-            {%- endfor -%}
-        {%- endif -%}
-    {% endfor %}
-    </paper-listbox>
+    <div id="drawerContent">
+        {% with subsystem=subsystem %}
+            {% include "runPageDrawer.html" %}
+        {% endwith %}
+    </div>
 {% endblock %}
 
 {% block mainContent %}
@@ -36,21 +24,12 @@
        <a target="_blank" href="https://alice-logbook.cern.ch/logbook/date_online.php?p_cont=rund&p_run={{ run.runNumber }}">Logbook entry</a>
     </p>
 
-    {# Display histograms here #}
-    {% if useGrid %}
-        {# How to handle a grid #}
-    {% else %}
-        {% for histGroupName, histGroup in subsystem.histGroups.iteritems() %}
-            {%- for histName in histGroup.histList -%}
-                {%- set hist = subsystem.hists[histName] %}
-                <a class="anchor" data-histName="{{ histName }}" data-histGroup="{{ histGroup }}" name="{{ hist.histName }}"></a>
-                <h2>{{ hist.prettyName }}</h2>
-                {# TODO: Improve this line! #}
-                {%- set filename = subsystem.imgDir.replace("data/", "") + "/" + hist.histName + ".png" -%}
-                <img src="{{ url_for("protected", filename=filename) }}" alt="{{ hist.histName }}">
-            {% endfor -%}
-        {% endfor %}
-    {% endif %}
+    <!-- Main content that can be loaded via ajax -->
+    <div id="mainCont">
+        {% with subsystem=subsystem %}
+        {% include "runPageMainContent.html" %}
+        {% endwith %}
+    </div>
 {% endblock %}
 
 {% block body %}

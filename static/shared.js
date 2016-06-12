@@ -57,6 +57,7 @@ document.addEventListener('WebComponentsReady', function() {
     }
 
     removeFlashes();
+    testAjax();
 });
 
 function removeFlashes() {
@@ -172,4 +173,17 @@ function storageAvailable(type) {
     }
 }
 
+function testAjax() {
+    $('a#testAjax').bind('click', function() {
+        $.get($SCRIPT_ROOT + '/testAjax', {
+            a: "testA",
+            b: "testB"
+        }, function(data) {
+            console.log(data)
+            $("#mainCont").replaceWith(data);
+            //$("#mainCont").append(data);
+        });
+        return false;
+    });
+}
 
