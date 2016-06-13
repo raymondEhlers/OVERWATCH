@@ -4,82 +4,34 @@
 // To ensure that elements are ready on polyfilled browsers, wait for WebComponentsReady. 
 document.addEventListener('WebComponentsReady', function() {
     // Enable the link for the menu button to control the drawer
-    var menuButton = document.getElementById("headerMenuButton");
-    var drawer = document.getElementById("drawerPanelId");
+    var menuButton = Polymer.dom(this.root).querySelector("#headerMenuButton");
+    var drawer = Polymer.dom(this.root).querySelector("#drawerPanelId");
     //console.log("panelButton: " + menuButton.outerHTML);
     // Create toggle for the drawer button
-    menuButton.addEventListener("click", function() {
+    $(menuButton).click(function() {
         drawer.togglePanel();
     });
 
-    // Create the link for opening the time slices dialog panel
-    var propertiesButton = document.getElementById("propertiesButton");
-    var propertiesDialog = document.getElementById("propertiesDialog");
-    //console.log("button: " + propertiesButton + " dialog: " + propertiesDialog.outerHTML);
-    propertiesButton.addEventListener("click", function() {
-        propertiesDialog.open();
-    });
-
-    // Create the link for opening the user settings dialog panel
-    var userSettingsButton = document.getElementById("userSettingsButton");
-    var userSettings = document.getElementById("userSettings")
-    userSettingsButton.addEventListener("click", function() {
-        userSettings.open();
-    })
-    // Assign the position target of the settings
-    // Don't currently need it because it is positioned correctly
-    userSettings.positionTarget = userSettingsButton;
+    // Create the link and dialog for the time slices dialog panel
+    setupDialog("propertiesButton", "propertiesDialog");
+    // Create the link and dialog for the user settings dialog panel
+    setupDialog("userSettingsButton", "userSettings", true);
 
     // Ensure that we show or hide the menu button on load
     showOrHideMenuButton();
     // Add a listener for further changes
     document.addEventListener("paper-responsive-change", showOrHideMenuButton);
 
-    // Handle jsRoot value
-    if (storageAvailable("localStorage")) {
-        var jsRootToggle = document.getElementById("jsRootToggle");
-        // Check for value in local storage, and set it properly if it exists
-        var storedToggleValue = localStorage.getItem("jsRootToggle");
-        if (storedToggleValue) {
-            // See: https://stackoverflow.com/a/264037
-            jsRootToggle.checked = (storedToggleValue === "true");
+    // Handle toggle value
+    handleToggle("jsRootToggle");
+    handleToggle("ajaxToggle");
 
-            console.log("Local storage checked: " + localStorage.getItem("jsRootToggle"));
-        }
-
-        // Storage the change value in local storage
-        jsRootToggle.addEventListener("change", function(e) {
-            // Store value in local storage
-            //console.log("checked: " + e.target.checked);
-            localStorage.setItem("jsRootToggle", e.target.checked.toString());
-            //console.log("Local storage checked: " + localStorage.getItem("jsRootToggle"));
-        });
-
-        var ajaxToggle = document.getElementById("ajaxToggle");
-        // Check for value in local storage, and set it properly if it exists
-        storedToggleValue = localStorage.getItem("ajaxToggle");
-        if (storedToggleValue) {
-            // See: https://stackoverflow.com/a/264037
-            ajaxToggle.checked = (storedToggleValue === "true");
-
-            console.log("Local storage checked: " + localStorage.getItem("ajaxToggle"));
-        }
-
-        // Storage the change value in local storage
-        ajaxToggle.addEventListener("change", function(e) {
-            // Store value in local storage
-            //console.log("checked: " + e.target.checked);
-            localStorage.setItem("ajaxToggle", e.target.checked.toString());
-            //console.log("Local storage checked: " + localStorage.getItem("ajaxToggle"));
-        });
-    }
-
+    // Remove flask flashes after a short period to ensure that it doens't clutter the screen
     removeFlashes();
     testAjax();
 
-    $(document).ready(function() {
-        interceptLinks();
-    });
+    // Ensure that all links are routed properly (either through ajax or a normal link)
+    interceptLinks();
 });
 
 function removeFlashes() {
@@ -93,6 +45,56 @@ function removeFlashes() {
             flashes.style.display="none"
         }
     }, 5000)
+}
+
+function handleToggle(selectedToggle) {
+    if (storageAvailable("localStorage")) {
+        //var jsRootToggle = document.getElementById("jsRootToggle");
+        var jsRootToggle = Polymer.dom(this.root).querySelector("#" + selectedToggle);
+        // Check for value in local storage, and set it properly if it exists
+        var storedToggleValue = localStorage.getItem(selectedToggle);
+        if (storedToggleValue) {
+            // See: https://stackoverflow.com/a/264037
+            $(jsRootToggle).prop("checked", (storedToggleValue === "true"));
+
+            console.log("Local storage checked: " + localStorage.getItem(selectedToggle));
+        }
+
+        // Storage the change value in local storage
+        $(jsRootToggle).click(function() {
+        //jsRootToggle.addEventListener("change", function(e) {
+            // Store value in local storage
+            //console.log("checked: " + e.target.checked);
+            localStorage.setItem(selectedToggle, $(this).prop("checked").toString());
+            //localStorage.setItem("jsRootToggle", e.target.checked.toString());
+            console.log("Local storage checked: " + localStorage.getItem("jsRootToggle"));
+        });
+    }
+    else {
+        console.log("ERROR: Local storage not supported!");
+    }
+}
+
+function setupDialog(buttonSelector, dialogSelector, relativePosition) {
+    // Retrieve objects
+    //var propertiesButton = document.getElementById("buttonSelector");
+    var button = Polymer.dom(this.root).querySelector("#" + buttonSelector);
+    //var propertiesDialog = document.getElementById("dialogSelector");
+    var dialog = Polymer.dom(this.root).querySelector("#" + dialogSelector);
+    
+    //console.log("button: " + button + " dialog: " + dialog);
+
+    // Add click listener
+    $(button).click(function() {
+    //button.addEventListener("click", function() {
+        dialog.open();
+    });
+
+    // Assign the position target of the dialog
+    if (relativePosition === true)
+    {
+        $(dialog).prop("positionTarget", button);
+    }
 }
 
 /* inputValue is needed for the template, where we can't set anchors */
@@ -165,18 +167,17 @@ function setScrollValueInForm() {
 
 // Hide the menu button if in the wide display!
 function showOrHideMenuButton() {
-    //console.log("narrow: " + e.target.narrow);
-    var menuButton = document.getElementById("headerMenuButton");
-    var drawer = document.getElementById("drawerPanelId");
-    //console.log("drawer: " + drawer);
-    //if (e.target.narrow === true) {
-    if (drawer.narrow === true) {
-        /*menuButton.style.visibility = "visible";*/
-        menuButton.style.display = "inline-block";
+    var menuButton = Polymer.dom(this.root).querySelector("#headerMenuButton");
+    var drawer = Polymer.dom(this.root).querySelector("#drawerPanelId");
+    console.log("menuButton: " + menuButton.outerHTML);
+    console.log("drawer narrow: " + $(drawer).prop("narrow"));
+    if ($(drawer).prop("narrow") === true) {
+        $(menuButton).removeClass("hideElement");
+        console.log("Removing hideElement");
     }
     else {
-        /*menuButton.style.visibility = "hidden";*/
-        menuButton.style.display = "none";
+        $(menuButton).addClass("hideElement");
+        console.log("Adding hideElement");
     }
 }
 
@@ -192,7 +193,27 @@ function interceptLinks() {
             // Prevent the link from going through
             event.preventDefault();
 
+            // Update the hash
+            var href = $(this).attr("href");
+            console.log("href " + href)
+            window.location.hash = href;
+
+            // Get hist group
+            var histGroupName = $(this).data("histgroup");
+            console.log("histGroupName: " + histGroupName);
+            // Get histogram
+            var histName = $(this).data("histname");
+            console.log("histName: " + histName);
+
             // Call ajax
+            // See: https://stackoverflow.com/a/788501
+            $.get($SCRIPT_ROOT + "/testAjax", {
+                a : "testA",
+                b : "testB"
+            }, function(data) {
+                //console.log(data)
+                $("#mainCont").replaceWith(data);
+            });
 
             // Prevent further action
             return false;

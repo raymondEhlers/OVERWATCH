@@ -51,6 +51,14 @@
         {# Disable favicon request. See: https://stackoverflow.com/a/13416784 #}
         <link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">
         <meta name="viewport" content="width=device-width, initial-scale=1">
+        {# Set color of nav bar #}
+        {# See: https://stackoverflow.com/a/33193739 #}
+        <!-- Blink, webkit -->
+        <meta name="theme-color" content="#C6E2FF">
+        <!-- Windows phone -->
+        <meta name="msapplication-navbutton-color" content="#C6E2FF">
+        <!-- iOS (?) -->
+        <meta name="apple-mobile-web-app-status-bar-style" content="#C6E2FF">
         {% block head %}{% endblock %}
     </head>
     <body class="fullbleed layout vertical">
