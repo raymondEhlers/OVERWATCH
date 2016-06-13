@@ -61,7 +61,8 @@
         <meta name="apple-mobile-web-app-status-bar-style" content="#C6E2FF">
         {% block head %}{% endblock %}
     </head>
-    <body class="fullbleed layout vertical">
+    <!-- unresolved causes the page not be to be shown until it is ready -->
+    <body class="fullbleed layout vertical" unresolved>
 <paper-header-panel>
     <!-- This is the header for the main page -->
     <paper-toolbar class="header">
@@ -157,7 +158,7 @@
                     {% endwith %}
                     <a class="anchor" name="topOfPage"></a>
                     <a href="#" id="testAjax">test Ajax</a>
-                    <div id="mainCont">
+                    <div id="mainContent">
                         {% block mainContent %}{% endblock %}
                     </div>
                     <hr />

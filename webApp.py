@@ -22,7 +22,7 @@ except ImportError:
     import pickle
 
 # Flask
-from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, Markup
+from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, Markup, jsonify
 from flask.ext.login import LoginManager, login_user, logout_user, login_required, current_user
 from flask.ext.bcrypt import Bcrypt
 from flup.server.fcgi import WSGIServer
@@ -162,23 +162,43 @@ def index():
 ###################################################
 # TEST!
 ###################################################
-@app.route("/<string:runDir>/<string:subsystem>/<string:requestedFileType>")
+@app.route("/<string:runDir>/<string:subsystem>/<string:requestedFileType>", methods=["GET"])
 @login_required
 def runPage(runDir, subsystem, requestedFileType):
     # TODO: Validate these inputs!!!
-    print("runDir: {0}, subsytsem: {1}, requestedFileType: {2}".format(runDir, subsystem, requestedFileType))
-    if requestedFileType == "runPage":
-        # TODO: Consider a better approach, but this may be sufficient
-        try:
-            returnValue = render_template(subsystem + "runPage.html", run=runs[runDir], subsystemName=subsystem, useGrid=False)
-        except jinja2.exceptions.TemplateNotFound:
-            returnValue = render_template("runPage.html", run=runs[runDir], subsystemName=subsystem, useGrid=False)
-        return returnValue
-    elif requestedFileType == "rootFiles":
-        # TODO: Consider splitting these functions?
-        return render_template("rootfiles.html", run=runs[runDir], subsystem=subsystem)
+    ajaxRequest = request.args.get("ajaxRequest", False, type=bool)
+    print("runDir: {0}, subsytsem: {1}, requestedFileType: {2}, ajaxRequest: {3}".format(runDir, subsystem, requestedFileType, ajaxRequest))
 
-    return render_template("error.html", errors={"error": ["Requested: {0}. Must request either runPage or rootFiles!".format(requestedFileType)]})
+    if ajaxRequest == False:
+        if requestedFileType == "runPage":
+            # TODO: Consider a better approach, but this may be sufficient
+            try:
+                returnValue = render_template(subsystem + "runPage.html", run=runs[runDir], subsystemName=subsystem, selectedHistGroup=None, useGrid=False)
+            except jinja2.exceptions.TemplateNotFound:
+                returnValue = render_template("runPage.html", run=runs[runDir], subsystemName=subsystem, selectedHistGroup=None, useGrid=False)
+            return returnValue
+        elif requestedFileType == "rootFiles":
+            # TODO: Consider splitting these functions?
+            return render_template("rootfiles.html", run=runs[runDir], subsystem=subsystem)
+
+        return render_template("error.html", errors={"error": ["Requested: {0}. Must request either runPage or rootFiles!".format(requestedFileType)]})
+    else:
+        # result = handleAjax(page, enableDrawer, enableMainContent, args...)
+        # TODO: This should be refactored into a function!
+        requestedHistGroup = request.args.get("histGroup", None, type=str)
+        print("request: {0}".format(request.args))
+        print("requestedHistGroup: {0}".format(requestedHistGroup))
+        if requestedFileType == "runPage":
+            drawerContent = render_template("runPageDrawer.html", run=runs[runDir], subsystem=runs[runDir].subsystems[subsystem], selectedHistGroup = requestedHistGroup, useGrid=False)
+            mainContent = render_template("runPageMainContent.html", run=runs[runDir], subsystem=runs[runDir].subsystems[subsystem], selectedHistGroup = requestedHistGroup, useGrid=False)
+
+            return jsonify(drawerContent = drawerContent, mainContent = mainContent)
+        elif requestedFileType == "rootFiles":
+            pass
+
+        # TODO: This should be main content!
+        return render_template("error.html", errors={"error": ["Requested: {0}. Must request either runPage or rootFiles!".format(requestedFileType)]})
+
 
 ###################################################
 @app.route("/testAjax", methods=["GET"])

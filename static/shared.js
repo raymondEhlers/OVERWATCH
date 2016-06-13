@@ -182,20 +182,26 @@ function showOrHideMenuButton() {
 }
 
 function interceptLinks() {
-    var allLinks = Polymer.dom(this.root).querySelectorAll("a");
-    $(allLinks).click(function(event) {
+    var drawer = Polymer.dom(this.root).querySelector("#drawerContent");
+    var allLinks = Polymer.dom(drawer).querySelectorAll("a");
+    console.log("allLinks: " + allLinks);
+    //$(allLinks).click(function(event) {
+    // Uses event delegation
+    $(drawer).on("click", "a", function(event) {
         var ajaxToggle = Polymer.dom(this.root).querySelector("#ajaxToggle");
         if (ajaxToggle.checked === false) {
             console.log("ajax disabled link");
         }
         else {
             console.log("ajax enabled link");
+            console.log("this: " + $(this).text());
+            console.log("current target: " + $(event.currentTarget).text());
             // Prevent the link from going through
             event.preventDefault();
 
             // Update the hash
             var href = $(this).attr("href");
-            console.log("href " + href)
+            console.log("href: " + href)
             window.location.hash = href;
 
             // Get hist group
@@ -204,15 +210,37 @@ function interceptLinks() {
             // Get histogram
             var histName = $(this).data("histname");
             console.log("histName: " + histName);
+            // Get the current page
+            var currentPage = window.location.pathname;
+            console.log("currentPage: " + currentPage);
 
             // Call ajax
             // See: https://stackoverflow.com/a/788501
-            $.get($SCRIPT_ROOT + "/testAjax", {
-                a : "testA",
-                b : "testB"
+            console.log("Sending ajax request to " + currentPage);
+            $.get($SCRIPT_ROOT + currentPage, {
+                ajaxRequest: true,
+                histName: histName,
+                histGroup: histGroupName
             }, function(data) {
-                //console.log(data)
-                $("#mainCont").replaceWith(data);
+                // Already JSON!
+                console.log(data)
+                var drawerContent = $(data).prop("drawerContent");
+                //console.log("drawerContent " + drawerContent);
+                if (drawerContent !== undefined)
+                {
+                    console.log("Replacing drawer content!");
+                    var drawerContainer = Polymer.dom(this.root).querySelector("#drawerContent");
+                    $(drawerContainer).html(drawerContent);
+                }
+                var mainContent = $(data).prop("mainContent");
+                //console.log("mainContent: " + mainContent);
+                if (mainContent !== undefined)
+                {
+                    console.log("Replacing main content!");
+                    var mainContainer = Polymer.dom(this.root).querySelector("#mainContent");
+                    $(mainContainer).html(mainContent);
+                }
+                //$("#mainCont").replaceWith(data);
             });
 
             // Prevent further action
