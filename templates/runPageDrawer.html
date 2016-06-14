@@ -8,7 +8,7 @@
         </a>
         {%- for histName in histGroup.histList -%}
             {% set hist = subsystem.hists[histName] %}
-            <a href="#{{ hist.histName }}" data-histname="{{ hist.histName }}" data-histgroup="{{ histGroup.selectionPattern }}" name="{{ hist.histName }}" tabindex=-1>
+            <a href="#{{ hist.histName }}" data-histname="{{ hist.histName }}" data-histgroup="{{ histGroup.selectionPattern }}" tabindex=-1>
                 <paper-item>{{ hist.prettyName }}</paper-item>
             </a>
         {%- endfor -%}

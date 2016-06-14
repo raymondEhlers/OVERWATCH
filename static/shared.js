@@ -189,8 +189,36 @@ function interceptLinks() {
     // Uses event delegation
     $(drawer).on("click", "a", function(event) {
         var ajaxToggle = Polymer.dom(this.root).querySelector("#ajaxToggle");
+
+        // Get hist group
+        var histGroupName = $(this).data("histgroup");
+        console.log("histGroupName: " + histGroupName);
+        // Get histogram
+        var histName = $(this).data("histname");
+        console.log("histName: " + histName);
+
+        var params = jQuery.param({
+            histGroup: histGroupName,
+            histName: histName
+        });
+        console.log("params: " + params);
         if (ajaxToggle.checked === false) {
             console.log("ajax disabled link");
+
+            // Prevent the link while we change where it is going
+            event.preventDefault();
+
+            //var appendTohref = window.location.href;
+            // Used since href contains the previous parameters
+            var appendTohref = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            console.log("appendTohref: " + appendTohref);
+            appendTohref += "?";
+            appendTohref += params;
+            console.log("appendTohref: " + appendTohref);
+            window.location.href = appendTohref;
+            var hash = $(this).attr("href");
+            console.log("href: " + href);
+            //window.location.hash = hash;
         }
         else {
             console.log("ajax enabled link");
@@ -199,17 +227,6 @@ function interceptLinks() {
             // Prevent the link from going through
             event.preventDefault();
 
-            // Update the hash
-            var href = $(this).attr("href");
-            console.log("href: " + href)
-            window.location.hash = href;
-
-            // Get hist group
-            var histGroupName = $(this).data("histgroup");
-            console.log("histGroupName: " + histGroupName);
-            // Get histogram
-            var histName = $(this).data("histname");
-            console.log("histName: " + histName);
             // Get the current page
             var currentPage = window.location.pathname;
             console.log("currentPage: " + currentPage);
@@ -242,6 +259,15 @@ function interceptLinks() {
                 }
                 //$("#mainCont").replaceWith(data);
             });
+
+            // Update the hash
+            //var href = $(this).attr("href");
+            //console.log("href: " + href)
+            //window.location.hash = href;
+
+            // Update the href
+            //window.location.href += "?" + params;
+            window.history.pushState("string", "Title", "?" + params);
 
             // Prevent further action
             return false;

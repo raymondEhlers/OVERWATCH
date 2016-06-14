@@ -168,14 +168,16 @@ def runPage(runDir, subsystem, requestedFileType):
     # TODO: Validate these inputs!!!
     ajaxRequest = request.args.get("ajaxRequest", False, type=bool)
     print("runDir: {0}, subsytsem: {1}, requestedFileType: {2}, ajaxRequest: {3}".format(runDir, subsystem, requestedFileType, ajaxRequest))
+    print("request: {0}".format(request.args))
+    requestedHistGroup = request.args.get("histGroup", None, type=str)
 
     if ajaxRequest == False:
         if requestedFileType == "runPage":
             # TODO: Consider a better approach, but this may be sufficient
             try:
-                returnValue = render_template(subsystem + "runPage.html", run=runs[runDir], subsystemName=subsystem, selectedHistGroup=None, useGrid=False)
+                returnValue = render_template(subsystem + "runPage.html", run=runs[runDir], subsystemName=subsystem, selectedHistGroup=requestedHistGroup, useGrid=False)
             except jinja2.exceptions.TemplateNotFound:
-                returnValue = render_template("runPage.html", run=runs[runDir], subsystemName=subsystem, selectedHistGroup=None, useGrid=False)
+                returnValue = render_template("runPage.html", run=runs[runDir], subsystemName=subsystem, selectedHistGroup=requestedHistGroup, useGrid=False)
             return returnValue
         elif requestedFileType == "rootFiles":
             # TODO: Consider splitting these functions?
@@ -185,8 +187,6 @@ def runPage(runDir, subsystem, requestedFileType):
     else:
         # result = handleAjax(page, enableDrawer, enableMainContent, args...)
         # TODO: This should be refactored into a function!
-        requestedHistGroup = request.args.get("histGroup", None, type=str)
-        print("request: {0}".format(request.args))
         print("requestedHistGroup: {0}".format(requestedHistGroup))
         if requestedFileType == "runPage":
             drawerContent = render_template("runPageDrawer.html", run=runs[runDir], subsystem=runs[runDir].subsystems[subsystem], selectedHistGroup = requestedHistGroup, useGrid=False)
