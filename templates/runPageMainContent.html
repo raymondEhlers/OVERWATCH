@@ -16,12 +16,14 @@
         {% if selectedHistGroup == histGroupName or (selectedHistGroup == None and firstLoopCompleted == []) %}
             {%- for histName in histGroup.histList -%}
                 {% if firstLoopCompleted.append(1) %}{% endif %}
-                    {%- set hist = subsystem.hists[histName] %}
+                {%- set hist = subsystem.hists[histName] %}
+                {% if selectedHist == hist.histName or selectedHist == None %}
                     <a class="anchor" data-histname="{{ hist.histName }}" data-histgroup="{{ histGroup.selectionPattern }}" name="{{ hist.histName }}"></a>
                     <h2>{{ hist.prettyName }}</h2>
                     {# TODO: Improve this line! #}
                     {%- set filename = subsystem.imgDir.replace("data/", "") + "/" + hist.histName + ".png" -%}
                     <img src="{{ url_for("protected", filename=filename) }}" alt="{{ hist.histName }}">
+                {% endif %}
             {% endfor -%}
         {% endif %}
     {% endfor %}
