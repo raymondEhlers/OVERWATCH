@@ -131,7 +131,15 @@ def logout():
 @app.route("/contact")
 def contact():
     """ Simple contact page so we can provide support in the future."""
-    return render_template("contact.html")
+    # TODO: Validate these inputs!!!
+    ajaxRequest = request.args.get("ajaxRequest", False, type=bool)
+
+    if ajaxRequest == False:
+        return render_template("contact.html")
+    else:
+        drawerContent = ""
+        mainContent = render_template("contactMainContent.html")
+        return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
 ###################################################
 @app.route("/favicon.ico")

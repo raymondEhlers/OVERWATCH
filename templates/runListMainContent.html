@@ -11,14 +11,14 @@
             <td></td>
             {% endif %}
             <td>
-                <a href="{{ url_for("runPage", runDir = run.runDir, subsystem=subsystem.subsystem, requestedFileType="runPage") }}">{{ subsystem.subsystem }} Histograms</a>
+                <a href="{{ url_for("runPage", runNumber = run.runNumber, subsystem=subsystem.subsystem, requestedFileType="runPage") }}">{{ subsystem.subsystem }} Histograms</a>
             </td>
         </tr>
         {% if subsystem.showRootFiles == True %}
         <tr>
             <td></td>
             <td>
-                <a href="{{ url_for("runPage", runDir = run.runDir, subsystem = subsystem.subsystem, requestedFileType="rootFiles") }}">{{ subsystem.subsystem }} ROOT Files</a>
+                <a href="{{ url_for("runPage", runNumber = run.runNumber, subsystem = subsystem.subsystem, requestedFileType="rootFiles") }}">{{ subsystem.subsystem }} ROOT Files</a>
             </td>
         </tr>
         {% endif %}
