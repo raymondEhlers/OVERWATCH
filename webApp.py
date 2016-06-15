@@ -172,8 +172,9 @@ def index():
 def runPage(runDir, subsystem, requestedFileType):
     # TODO: Validate these inputs!!!
     ajaxRequest = request.args.get("ajaxRequest", False, type=bool)
-    print("runDir: {0}, subsytsem: {1}, requestedFileType: {2}, ajaxRequest: {3}".format(runDir, subsystem, requestedFileType, ajaxRequest))
+    jsRoot = request.args.get("jsRoot", False, type=str)
     print("request: {0}".format(request.args))
+    print("runDir: {0}, subsytsem: {1}, requestedFileType: {2}, ajaxRequest: {3}, jsRoot: {4}".format(runDir, subsystem, requestedFileType, ajaxRequest, jsRoot))
     requestedHistGroup = request.args.get("histGroup", None, type=str)
     requestedHist = request.args.get("histName", None, type=str)
 
@@ -182,14 +183,20 @@ def runPage(runDir, subsystem, requestedFileType):
         requestedHistGroup = None
     if requestedHist == "":
         requestedHist = None
+    if jsRoot == "true":
+        jsRoot = True
+    else:
+        jsRoot = False
+
+    print("ajaxRequest: {0}, jsRoot: {1}".format(ajaxRequest,jsRoot))
 
     if ajaxRequest == False:
         if requestedFileType == "runPage":
             # TODO: Consider a better approach, but this may be sufficient
             try:
-                returnValue = render_template(subsystem + "runPage.html", run=runs[runDir], subsystemName=subsystem, selectedHistGroup=requestedHistGroup, selectedHist = requestedHist, useGrid=False)
+                returnValue = render_template(subsystem + "runPage.html", run=runs[runDir], subsystemName=subsystem, selectedHistGroup=requestedHistGroup, selectedHist = requestedHist, jsRoot = jsRoot, useGrid=False)
             except jinja2.exceptions.TemplateNotFound:
-                returnValue = render_template("runPage.html", run=runs[runDir], subsystemName=subsystem, selectedHistGroup=requestedHistGroup, selectedHist = requestedHist, useGrid=False)
+                returnValue = render_template("runPage.html", run=runs[runDir], subsystemName=subsystem, selectedHistGroup=requestedHistGroup, selectedHist = requestedHist, jsRoot = jsRoot, useGrid=False)
             return returnValue
         elif requestedFileType == "rootFiles":
             # TODO: Consider splitting these functions?
@@ -201,8 +208,8 @@ def runPage(runDir, subsystem, requestedFileType):
         # TODO: This should be refactored into a function!
         print("requestedHistGroup: {0}".format(requestedHistGroup))
         if requestedFileType == "runPage":
-            drawerContent = render_template("runPageDrawer.html", run=runs[runDir], subsystem=runs[runDir].subsystems[subsystem], selectedHistGroup = requestedHistGroup, selectedHist = requestedHist, useGrid=False)
-            mainContent = render_template("runPageMainContent.html", run=runs[runDir], subsystem=runs[runDir].subsystems[subsystem], selectedHistGroup = requestedHistGroup, selectedHist = requestedHist, useGrid=False)
+            drawerContent = render_template("runPageDrawer.html", run=runs[runDir], subsystem=runs[runDir].subsystems[subsystem], selectedHistGroup = requestedHistGroup, selectedHist = requestedHist, jsRoot = jsRoot, useGrid=False)
+            mainContent = render_template("runPageMainContent.html", run=runs[runDir], subsystem=runs[runDir].subsystems[subsystem], selectedHistGroup = requestedHistGroup, selectedHist = requestedHist, jsRoot = jsRoot, useGrid=False)
 
             return jsonify(drawerContent = drawerContent, mainContent = mainContent)
         elif requestedFileType == "rootFiles":

@@ -21,8 +21,13 @@
                     <a class="anchor" data-histname="{{ hist.histName }}" data-histgroup="{{ histGroup.selectionPattern }}" name="{{ hist.histName }}"></a>
                     <h2>{{ hist.prettyName }}</h2>
                     {# TODO: Improve this line! #}
-                    {%- set filename = subsystem.imgDir.replace("data/", "") + "/" + hist.histName + ".png" -%}
-                    <img src="{{ url_for("protected", filename=filename) }}" alt="{{ hist.histName }}">
+                    {%- set filenameImage = subsystem.imgDir.replace("data/", "") + "/" + hist.histName + ".png" -%}
+                    {%- set filenameJSON = subsystem.jsonDir.replace("data/", "") + "/" + hist.histName + ".json" -%}
+                    <div class="histogramContainer" data-filename="{{ filenameJSON }}">
+                    {% if jsRoot != True %}
+                        <img src="{{ url_for("protected", filename=filenameImage) }}" alt="{{ hist.histName }}">
+                    {% endif %}
+                    </div>
                 {% endif %}
             {% endfor -%}
         {% endif %}

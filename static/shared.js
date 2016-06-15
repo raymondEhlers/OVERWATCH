@@ -216,7 +216,13 @@ function interceptLinks() {
         var histName = $(this).data("histname");
         console.log("histName: " + histName);
 
+        // jsRoot toggle
+        var jsRootToggle = Polymer.dom(this.root).querySelector("#jsRootToggle");
+        var jsRoot = ($(jsRootToggle).prop("checked") === true);
+        console.log("jsRoot: " + jsRoot);
+
         var params = jQuery.param({
+            jsRoot: jsRoot,
             histGroup: histGroupName,
             histName: histName
         });
@@ -288,6 +294,7 @@ function interceptLinks() {
             console.log("Sending ajax request to " + pageToRequest);
             $.get($SCRIPT_ROOT + pageToRequest, {
                 ajaxRequest: true,
+                jsRoot: jsRoot,
                 histName: histName,
                 histGroup: histGroupName
             }, function(data) {
