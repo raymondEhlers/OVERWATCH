@@ -298,6 +298,14 @@ function interceptLinks() {
                 var title = Polymer.dom(this.root).querySelector("#mainContentTitle");
                 var titlesToSet = Polymer.dom(this.root).querySelectorAll(".title");
                 $(titlesToSet).text($(title).text());
+
+                // Update the drawer width
+                // Code works, but the drawer does not handle this very gracefully.
+                // Better to leave this disabled.
+                /*var drawerWidthObject = Polymer.dom(this.root).querySelector("#drawerWidth");
+                var drawerWidth = $(drawerWidth).data("width");
+                var drawer = Polymer.dom(this.root).querySelector("#drawerPanelId");
+                $(drawer).prop("drawerWidth", drawerWidth);*/
             });
 
             // Update the hash

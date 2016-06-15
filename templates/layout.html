@@ -121,7 +121,8 @@
         <!--<div class="middle title">Middle title</div>
         <div class="bottom title">Bottom title</div>-->
     </paper-toolbar>
-    <paper-drawer-panel id="drawerPanelId" class="fit" {% block drawerOptions%}drawer-width="150px"{% endblock %}>
+    {# <!--<paper-drawer-panel id="drawerPanelId" class="fit" {% block drawerOptions%}drawer-width="150px"{% endblock %}>--> #}
+    <paper-drawer-panel id="drawerPanelId" class="fit">
         <div drawer class="drawerShadow">
             <!-- Ensures that we can scroll in the header! -->
             <div class="scrollableContainer">
@@ -157,7 +158,7 @@
                         {% endif %}
                     {% endwith %}
                     <a class="anchor" name="topOfPage"></a>
-                    <div id="mainContent">
+                    <div id="mainContent" class="linksToIntercept">
                         {% block mainContent %}{% endblock %}
                     </div>
                     <hr />

@@ -144,20 +144,25 @@ def favicon():
 ######################################################################################################
 
 ###################################################
-@app.route("/monitoring")
+@app.route("/monitoring", methods=["GET"])
 @login_required
 def index():
     """ This is the main page for logged in users. It always redirects to the run list.
     
-    In the case of dynamicContent being enabled, it renders the runList template. Otherwise, it will
-    redirect to the static page.
     """
-    if serverParameters.dynamicContent:
+    # TODO: Validate these inputs!!!
+    ajaxRequest = request.args.get("ajaxRequest", False, type=bool)
+
+    if ajaxRequest == False:
         #return render_template(os.path.join("data", "runList.html"))
         # TODO: Check reversed more closely to ensure that it is doing what is expected!
         return render_template("runList.html", runs=reversed(runs.values()))
+        #return redirect(url_for("protected", filename="runList.html"))
     else:
-        return redirect(url_for("protected", filename="runList.html"))
+        drawerContent = render_template("runListDrawer.html")
+        mainContent = render_template("runListMainContent.html", runs=reversed(runs.values()))
+
+        return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
 ###################################################
 # TEST!
@@ -171,9 +176,11 @@ def runPage(runDir, subsystem, requestedFileType):
     print("request: {0}".format(request.args))
     requestedHistGroup = request.args.get("histGroup", None, type=str)
     requestedHist = request.args.get("histName", None, type=str)
-    if (requestedHistGroup == ""):
+
+    # Empty strings should be treated as None
+    if requestedHistGroup == "":
         requestedHistGroup = None
-    if (requestedHist == ""):
+    if requestedHist == "":
         requestedHist = None
 
     if ajaxRequest == False:
