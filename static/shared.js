@@ -17,10 +17,13 @@ document.addEventListener('WebComponentsReady', function() {
     // Create the link and dialog for the user settings dialog panel
     setupDialog("userSettingsButton", "userSettings", true);
 
-    // Ensure that we show or hide the menu button on load
+    // Ensure that we show or hide the menu button when the page loads
     showOrHideMenuButton();
     // Add a listener for further changes
     document.addEventListener("paper-responsive-change", showOrHideMenuButton);
+
+    // Ensure that we only show on run pages
+    showOrHideProperties();
 
     // Handle toggle value
     handleToggle("jsRootToggle");
@@ -162,6 +165,20 @@ function setScrollValueInForm() {
     }
 }
 
+function showOrHideProperties() {
+    var properties = Polymer.dom(this.root).querySelector("#propertiesButton");
+    var currentPage = window.location.pathname;
+    console.log("currentPage: " + currentPage);
+    if (currentPage.search("runPage") !== -1) {
+        console.log("Showing properties button");
+        $(properties).removeClass("hideElement");
+    }
+    else {
+        console.log("Hiding properties button");
+        $(properties).addClass("hideElement");
+    }
+}
+
 // Hide the menu button if in the wide display!
 function showOrHideMenuButton() {
     var menuButton = Polymer.dom(this.root).querySelector("#headerMenuButton");
@@ -298,6 +315,9 @@ function interceptLinks() {
                 var title = Polymer.dom(this.root).querySelector("#mainContentTitle");
                 var titlesToSet = Polymer.dom(this.root).querySelectorAll(".title");
                 $(titlesToSet).text($(title).text());
+
+                // Remove the properties button if necessary
+                showOrHideProperties();
 
                 // Update the drawer width
                 // Code works, but the drawer does not handle this very gracefully.
