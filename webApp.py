@@ -171,6 +171,8 @@ def runPage(runDir, subsystem, requestedFileType):
     print("request: {0}".format(request.args))
     requestedHistGroup = request.args.get("histGroup", None, type=str)
     requestedHist = request.args.get("histName", None, type=str)
+    if (requestedHistGroup == ""):
+        requestedHistGroup = None
     if (requestedHist == ""):
         requestedHist = None
 

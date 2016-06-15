@@ -89,7 +89,7 @@
         <!-- User settings here! -->
         <paper-icon-button icon="account-circle" class="menuIcon" id="userSettingsButton"></paper-icon-button>
         <!-- Can also use no-overlap as an option! -->
-        <paper-dialog vertical-align="auto" dynamic-align id="userSettings">
+        <paper-dialog vertical-align="auto" dynamic-align id="userSettings" class="linksToIntercept">
             <h2>User Settings</h2>
             <paper-listbox>
                 {%- if current_user.is_authenticated -%}
@@ -125,8 +125,8 @@
         <div drawer class="drawerShadow">
             <!-- Ensures that we can scroll in the header! -->
             <div class="scrollableContainer">
-                <paper-listbox>
-                    <a href="{{ url_for("login") }}" tabindex=-1>
+                <paper-listbox class="linksToIntercept">
+                    <a href="{{ url_for("index") }}" tabindex=-1>
                         <paper-item>Run List</paper-item>
                     </a>
                     <a href="{{ url_for("processQA") }}" tabindex=-1>
@@ -136,7 +136,7 @@
                 <!-- TODO: Improve this divider! -->
                 <hr />
                 {# Defines content in the drawer #}
-                <div id="drawerContent">
+                <div id="drawerContent" class="linksToIntercept">
                     {% block drawer %}{% endblock %}
                 </div>
             </div>
@@ -157,12 +157,11 @@
                         {% endif %}
                     {% endwith %}
                     <a class="anchor" name="topOfPage"></a>
-                    <a href="#" id="testAjax">test Ajax</a>
                     <div id="mainContent">
                         {% block mainContent %}{% endblock %}
                     </div>
                     <hr />
-                    <div class="contactLinkContainer"><p class="contactLinkParagraph"><a href="{{ url_for("contact") }}">Information, documentation, contact, and suggestions</a></p></div>
+                    <div class="contactLinkContainer linksToIntercept"><p class="contactLinkParagraph"><a href="{{ url_for("contact") }}">Information, documentation, contact, and suggestions</a></p></div>
                 </div>
             </div>
         </div>

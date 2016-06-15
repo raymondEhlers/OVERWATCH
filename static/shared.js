@@ -49,25 +49,22 @@ function removeFlashes() {
 
 function handleToggle(selectedToggle) {
     if (storageAvailable("localStorage")) {
-        //var jsRootToggle = document.getElementById("jsRootToggle");
-        var jsRootToggle = Polymer.dom(this.root).querySelector("#" + selectedToggle);
+        var toggle = Polymer.dom(this.root).querySelector("#" + selectedToggle);
         // Check for value in local storage, and set it properly if it exists
         var storedToggleValue = localStorage.getItem(selectedToggle);
         if (storedToggleValue) {
             // See: https://stackoverflow.com/a/264037
-            $(jsRootToggle).prop("checked", (storedToggleValue === "true"));
+            $(toggle).prop("checked", (storedToggleValue === "true"));
 
-            console.log("Local storage checked: " + localStorage.getItem(selectedToggle));
+            console.log("Local storage checked for " + selectedToggle +": " + localStorage.getItem(selectedToggle));
         }
 
         // Storage the change value in local storage
-        $(jsRootToggle).click(function() {
-        //jsRootToggle.addEventListener("change", function(e) {
+        $(toggle).click(function() {
             // Store value in local storage
-            //console.log("checked: " + e.target.checked);
             localStorage.setItem(selectedToggle, $(this).prop("checked").toString());
-            //localStorage.setItem("jsRootToggle", e.target.checked.toString());
-            console.log("Local storage checked: " + localStorage.getItem("jsRootToggle"));
+
+            console.log("Local storage checked for " + selectedToggle +": " + localStorage.getItem(selectedToggle));
         });
     }
     else {
@@ -169,7 +166,7 @@ function setScrollValueInForm() {
 function showOrHideMenuButton() {
     var menuButton = Polymer.dom(this.root).querySelector("#headerMenuButton");
     var drawer = Polymer.dom(this.root).querySelector("#drawerPanelId");
-    console.log("menuButton: " + menuButton.outerHTML);
+    //console.log("menuButton: " + menuButton.outerHTML);
     console.log("drawer narrow: " + $(drawer).prop("narrow"));
     if ($(drawer).prop("narrow") === true) {
         $(menuButton).removeClass("hideElement");
@@ -183,11 +180,16 @@ function showOrHideMenuButton() {
 
 function interceptLinks() {
     var drawer = Polymer.dom(this.root).querySelector("#drawerContent");
+    var linksToIntercept = Polymer.dom(this.root).querySelectorAll(".linksToIntercept");
     var allLinks = Polymer.dom(drawer).querySelectorAll("a");
     console.log("allLinks: " + allLinks);
+    //console.log("linksToIntercept: " + linksToIntercept);
+    //console.log("linksToIntercept[0]: " + linksToIntercept[0].outerHTML);
+    console.log("drawer: " + drawer);
     //$(allLinks).click(function(event) {
     // Uses event delegation
-    $(drawer).on("click", "a", function(event) {
+    //$(drawer).on("click", "a", function(event) {
+    $(linksToIntercept).on("click", "a", function(event) {
         var ajaxToggle = Polymer.dom(this.root).querySelector("#ajaxToggle");
 
         // Get hist group
@@ -201,6 +203,7 @@ function interceptLinks() {
             histGroup: histGroupName,
             histName: histName
         });
+
         console.log("params: " + params);
         if (ajaxToggle.checked === false) {
             console.log("ajax disabled link");
@@ -208,16 +211,41 @@ function interceptLinks() {
             // Prevent the link while we change where it is going
             event.preventDefault();
 
+            // Get the current page
+            var currentPage = window.location.pathname;
+            console.log("currentPage: " + currentPage);
+
+            var pageToRequest = $(this).attr("href");
+            console.log("pageToRequest: " + pageToRequest);
+            if (pageToRequest === "#") {
+                // Request the current page again with the proper GET request
+                pageToRequest = currentPage;
+            }
+
+            if (!(histGroupName === undefined && histName === undefined)) {
+                console.log("Assigning parameters to href");
+                pageToRequest += "?" + params;
+                // TEST
+                //pageToRequest += "#";
+            }
+            else {
+                console.log("No parameters to assign");
+            }
+
+            // Assign the page (which will send it to the specified link)
+            window.location.href = pageToRequest;
+
+            // TODO: Update this more carefully to avoid adding unnecessary parameters
+            // Normalize to the html5 history
             //var appendTohref = window.location.href;
             // Used since href contains the previous parameters
-            var appendTohref = window.location.protocol + "//" + window.location.host + window.location.pathname;
+            // See: https://stackoverflow.com/a/6257480
+            /*var appendTohref = window.location.protocol + "//" + window.location.host + window.location.pathname;
             console.log("appendTohref: " + appendTohref);
             appendTohref += "?";
             appendTohref += params;
             console.log("appendTohref: " + appendTohref);
-            window.location.href = appendTohref;
-            var hash = $(this).attr("href");
-            console.log("href: " + href);
+            window.location.href = appendTohref;*/
             //window.location.hash = hash;
         }
         else {
@@ -231,10 +259,17 @@ function interceptLinks() {
             var currentPage = window.location.pathname;
             console.log("currentPage: " + currentPage);
 
+            var pageToRequest = $(this).attr("href");
+            console.log("pageToRequest: " + pageToRequest);
+            if (pageToRequest === "#") {
+                // Request the current page again with the proper GET request
+                pageToRequest = currentPage;
+            }
+
             // Call ajax
             // See: https://stackoverflow.com/a/788501
-            console.log("Sending ajax request to " + currentPage);
-            $.get($SCRIPT_ROOT + currentPage, {
+            console.log("Sending ajax request to " + pageToRequest);
+            $.get($SCRIPT_ROOT + pageToRequest, {
                 ajaxRequest: true,
                 histName: histName,
                 histGroup: histGroupName
@@ -258,6 +293,11 @@ function interceptLinks() {
                     $(mainContainer).html(mainContent);
                 }
                 //$("#mainCont").replaceWith(data);
+
+                // Update the title
+                var title = Polymer.dom(this.root).querySelector("#mainContentTitle");
+                var titlesToSet = Polymer.dom(this.root).querySelectorAll(".title");
+                $(titlesToSet).text($(title).text());
             });
 
             // Update the hash
@@ -265,9 +305,18 @@ function interceptLinks() {
             //console.log("href: " + href)
             //window.location.hash = href;
 
-            // Update the href
+            // Update the current link
             //window.location.href += "?" + params;
-            window.history.pushState("string", "Title", "?" + params);
+            // See: https://stackoverflow.com/a/5607923
+            console.log("histGroupName: " + histGroupName);
+            if (!(histGroupName === undefined && histName === undefined)) {
+                // Uses a relative path
+                window.history.pushState("string", "Title", "?" + params);
+            }
+            else {
+                // Uses a absolute path
+                window.history.pushState("string", "Title", pageToRequest);
+            }
 
             // Prevent further action
             return false;
