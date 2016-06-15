@@ -167,12 +167,13 @@ def index():
 ###################################################
 # TEST!
 ###################################################
-@app.route("/<string:runDir>/<string:subsystem>/<string:requestedFileType>", methods=["GET"])
+@app.route("/Run<int:runNumber>/<string:subsystem>/<string:requestedFileType>", methods=["GET"])
 @login_required
-def runPage(runDir, subsystem, requestedFileType):
+def runPage(runNumber, subsystem, requestedFileType):
     # TODO: Validate these inputs!!!
     ajaxRequest = request.args.get("ajaxRequest", False, type=bool)
     jsRoot = request.args.get("jsRoot", False, type=str)
+    runDir = "Run{0}".format(runNumber)
     print("request: {0}".format(request.args))
     print("runDir: {0}, subsytsem: {1}, requestedFileType: {2}, ajaxRequest: {3}, jsRoot: {4}".format(runDir, subsystem, requestedFileType, ajaxRequest, jsRoot))
     requestedHistGroup = request.args.get("histGroup", None, type=str)

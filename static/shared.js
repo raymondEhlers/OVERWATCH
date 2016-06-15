@@ -317,6 +317,39 @@ function interceptLinks() {
                     $(mainContainer).html(mainContent);
                 }
                 //$("#mainCont").replaceWith(data);
+                
+                // Setup jsRoot and get images
+                if (jsRoot === true)
+                {
+                    console.log("Handling js root request!");
+                    var requestedHists = Polymer.dom(this.root).querySelectorAll(".histogramContainer");
+
+                    $(requestedHists).each(function() {
+                        // TODO: Improve the robustness here
+                        requestAddress = $(this).data("filename");
+                        requestAddress = "/monitoring/protected/" + requestAddress;
+                        console.log("requestAddress: " + requestAddress);
+                        console.log("this: " + $(this).toString());
+                        var idToDrawIn = $(this).attr("id");
+                        console.log("idToDrawIn:" + idToDrawIn);
+                        var req = JSROOT.NewHttpRequest(requestAddress, 'object', function(canvas) {
+                            // Plot the hist
+                            var frame = idToDrawIn;
+                            console.log("frame: " + frame);
+                            // Allow the div to resize properly
+                            JSROOT.RegisterForResize("test");
+                            //JSROOT.RegisterForResize(frame);
+                            // The 2 corresponds to the 2x2 grid above
+                            //if (layout != null) { console.log("2x2 this.cnt % 2: " + this.cnt); frame = layout.FindFrame("item" + this.cnt , true) }
+
+                            // redraw canvas at specified frame
+                            JSROOT.redraw(frame, canvas, "colz");
+
+                        });
+
+                        req.send(null);
+                    });
+                }
 
                 // Update the title
                 var title = Polymer.dom(this.root).querySelector("#mainContentTitle");

@@ -46,6 +46,9 @@
         <!-- Ensure that we can use jQuery here! -->
         <script async src="{{ url_for("static", filename="shared.js") }}" type="text/javascript"></script>
 
+        <!-- jsroot -->
+        <script src="{{ url_for("static", filename="scripts/JSRootCore.js") }}" type="text/javascript"></script>
+
         <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="style.css") }}">
 
         {# Disable favicon request. See: https://stackoverflow.com/a/13416784 #}
