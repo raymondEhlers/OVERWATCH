@@ -85,6 +85,9 @@ def login():
     After logging in, it should then forward them to resource they requested.
     """
     #print("Login called")
+    # TODO: Validate these inputs!!!
+    print("request: {0}".format(request.args))
+    ajaxRequest = request.args.get("ajaxRequest", False, type=bool)
 
     errorValue = None
     nextValue = routing.getRedirectTarget()
@@ -110,9 +113,14 @@ def login():
 
     # If we visit the login page, but we are already authenticated, then send to the index page.
     if current_user.is_authenticated:
-        return redirect(url_for("index"))
+        return redirect(url_for("index", ajaxRequest = ajaxRequest))
 
-    return render_template("login.html", error=errorValue, nextValue=nextValue)
+    if ajaxRequest == False:
+        return render_template("login.html", error=errorValue, nextValue=nextValue)
+    else:
+        drawerContent = ""
+        mainContent = render_template("loginMainContent.html", error=errorValue, nextValue=nextValue)
+        return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
 ###################################################
 @app.route("/logout")
@@ -160,6 +168,8 @@ def index():
     """
     # TODO: Validate these inputs!!!
     ajaxRequest = request.args.get("ajaxRequest", False, type=bool)
+    print("request: {0}".format(request.args))
+    print("ajaxRequest: {0}".format(ajaxRequest))
 
     if ajaxRequest == False:
         #return render_template(os.path.join("data", "runList.html"))
@@ -173,11 +183,12 @@ def index():
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
 ###################################################
-# TEST!
-###################################################
 @app.route("/Run<int:runNumber>/<string:subsystem>/<string:requestedFileType>", methods=["GET"])
 @login_required
 def runPage(runNumber, subsystem, requestedFileType):
+    """ Serves the run pages and root files for a request run
+    
+    """
     # TODO: Validate these inputs!!!
     ajaxRequest = request.args.get("ajaxRequest", False, type=bool)
     jsRoot = request.args.get("jsRoot", False, type=str)
@@ -226,26 +237,6 @@ def runPage(runNumber, subsystem, requestedFileType):
 
         # TODO: This should be main content!
         return render_template("error.html", errors={"error": ["Requested: {0}. Must request either runPage or rootFiles!".format(requestedFileType)]})
-
-
-###################################################
-@app.route("/testAjax", methods=["GET"])
-@login_required
-def testAjax():
-    """ Test ajax. Return the requested data and append it.
-    
-    """
-
-    a = request.args.get("a", "failedA", type=str)
-    b = request.args.get("b", "failedB", type=str)
-
-    returnTest = "<p>%s</p>" % a
-    returnTest += "<p>%s</p>" % b
-
-    print("returnTest: {0}".format(returnTest))
-    return render_template("runPageMainContent.html", run=runs["Run300005"], subsystem=runs["Run300005"].subsystems["EMC"], title="Run 300005")
-    #return returnTest
-    #return jsonify(a=a, b=b)
 
 ###################################################
 @app.route("/<path:runPath>")
