@@ -20,6 +20,14 @@
                 {% if selectedHist == hist.histName or selectedHist == None %}
                     <a class="anchor" data-histname="{{ hist.histName }}" data-histgroup="{{ histGroup.selectionPattern }}" name="{{ hist.histName }}"></a>
                     <h2>{{ hist.prettyName }}</h2>
+                    {% if hist.information != dict() %}
+                        {# TODO: Update this container! We need a button to toggle it! #}
+                        <iron-collapse class="collapsibleContainer" opened>
+                        {% for label, info in hist.information.iteritems() %}
+                        <div>{{ label }}: {{ info }}</div>
+                        {% endfor %}
+                        </iron-collapse>
+                    {% endif %}
                     {# TODO: Improve this line! #}
                     {%- set filenameImage = subsystem.imgDir.replace("data/", "") + "/" + hist.histName + ".png" -%}
                     {%- set filenameJSON = subsystem.jsonDir.replace("data/", "") + "/" + hist.histName + ".json" -%}
