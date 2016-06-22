@@ -14,6 +14,7 @@ import time
 import zipfile
 import subprocess
 import jinja2
+import json
 
 try:
     import cPickle as pickle
@@ -87,7 +88,10 @@ def login():
     #print("Login called")
     # TODO: Validate these inputs!!!
     print("request: {0}".format(request.args))
-    ajaxRequest = request.args.get("ajaxRequest", False, type=bool)
+    ajaxRequest = request.args.get("ajaxRequest", default=False, type=str)
+    if ajaxRequest != False:
+        ajaxRequest = json.loads(ajaxRequest)
+    print("ajaxRequest: {0}".format(ajaxRequest))
 
     errorValue = None
     nextValue = routing.getRedirectTarget()
@@ -113,7 +117,8 @@ def login():
 
     # If we visit the login page, but we are already authenticated, then send to the index page.
     if current_user.is_authenticated:
-        return redirect(url_for("index", ajaxRequest = ajaxRequest))
+        print("Redirecting...")
+        return redirect(url_for("index", ajaxRequest = json.dumps(ajaxRequest)))
 
     if ajaxRequest == False:
         return render_template("login.html", error=errorValue, nextValue=nextValue)
@@ -167,8 +172,10 @@ def index():
     
     """
     # TODO: Validate these inputs!!!
-    ajaxRequest = request.args.get("ajaxRequest", False, type=bool)
     print("request: {0}".format(request.args))
+    ajaxRequest = request.args.get("ajaxRequest", False, type=str)
+    if ajaxRequest != False:
+        ajaxRequest = json.loads(ajaxRequest)
     print("ajaxRequest: {0}".format(ajaxRequest))
 
     if ajaxRequest == False:
@@ -190,7 +197,7 @@ def runPage(runNumber, subsystem, requestedFileType):
     
     """
     # TODO: Validate these inputs!!!
-    ajaxRequest = request.args.get("ajaxRequest", False, type=bool)
+    ajaxRequest = request.args.get("ajaxRequest", False, type=str)
     jsRoot = request.args.get("jsRoot", False, type=str)
     runDir = "Run{0}".format(runNumber)
     print("request: {0}".format(request.args))
@@ -203,10 +210,10 @@ def runPage(runNumber, subsystem, requestedFileType):
         requestedHistGroup = None
     if requestedHist == "":
         requestedHist = None
-    if jsRoot == "true":
-        jsRoot = True
-    else:
-        jsRoot = False
+    if jsRoot != False:
+        jsRoot = json.loads(jsRoot)
+    if ajaxRequest != False:
+        ajaxRequest = json.loads(ajaxRequest)
 
     print("ajaxRequest: {0}, jsRoot: {1}".format(ajaxRequest,jsRoot))
 
@@ -384,10 +391,17 @@ def processQA():
     be ignored without any other intervention.
 
     """
+    print("request: {0}".format(request.args))
+    ajaxRequest = request.args.get("ajaxRequest", False, type=str)
+    if ajaxRequest != False:
+        ajaxRequest = json.loads(ajaxRequest)
+    print("ajaxRequest: {0}".format(ajaxRequest))
     # Variable is shared, so it is defined here
     # This assumes that any folder that exists should have proper files.
     # However, this seems to be a fairly reasonable assumption and can be handled safely.
-    runList = utilities.findCurrentRunDirs(serverParameters.protectedFolder)
+    #runList = utilities.findCurrentRunDirs(serverParameters.protectedFolder)
+    runList = runs.keys()
+    print("runList: {0}".format(runList))
 
     if request.method == "POST":
         # Validate post request
@@ -431,7 +445,12 @@ def processQA():
         # Make sure that we have a unique list of subsystems.
         subsystems = sorted(set(subsystems))
 
-        return render_template("qa.html", runList=runList, qaFunctionsList=serverParameters.qaFunctionsList, subsystemList=subsystems, docStrings=qa.qaFunctionDocstrings)
+        if ajaxRequest == False:
+            return render_template("qa.html", runList=runList, qaFunctionsList=serverParameters.qaFunctionsList, subsystemList=subsystems, docStrings=qa.qaFunctionDocstrings)
+        else:
+            drawerContent = render_template("qaDrawer.html", subsystemList=subsystems, qaFunctionsList=serverParameters.qaFunctionsList)
+            mainContent = render_template("qaMainContent.html", runList=runList, qaFunctionsList=serverParameters.qaFunctionsList, subsystemList=subsystems, docStrings=qa.qaFunctionDocstrings)
+            return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
 ###################################################
 @app.route("/testingDataArchive")

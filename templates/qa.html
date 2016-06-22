@@ -108,6 +108,11 @@
 
 {% block title %}OVERWATCH Basic QA{% endblock %}
 
+{% block drawer %}
+    <!-- This is the drawer menu -->
+    {% include "qaDrawer.html" %}
+{% endblock %}
+
 {% block mainContent %}
     {% with title=self.title() %}
         {% include "qaMainContent.html" %}
