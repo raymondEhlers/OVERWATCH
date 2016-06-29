@@ -11,7 +11,7 @@ then writes out histograms to webpage.
 from __future__ import print_function
 
 # ROOT includes
-from ROOT import gROOT, TFile, TCanvas, TClass, TH1, TLegend, SetOwnership, TFileMerger, TList, gPad, TGaxis, gStyle, TProfile, TF1, TH1F
+from ROOT import gROOT, gStyle, TFile, TCanvas, TClass, TH1, TLegend, SetOwnership, TFileMerger, TList, gPad, TGaxis, gStyle, TProfile, TF1, TH1F
 
 # Allow ROOT to be compatiable with Flask reloading in debug mode
 # See: https://root.cern.ch/phpBB3/viewtopic.php?t=19594#p83968
@@ -172,7 +172,8 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
                 gPad.SetLogz()
             
             # Setup and draw histogram
-            hist.SetTitle("")
+            # Turn off title, but store the value
+            gStyle.SetOptTitle(0)
             hist.Draw(drawOptions)
             canvas.Update()
             

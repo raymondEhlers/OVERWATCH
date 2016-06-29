@@ -12,7 +12,7 @@ from __future__ import print_function
 from builtins import range
 
 # Used for QA functions
-from ROOT import ROOT, TH1, TH1F, TF1, gPad, TAxis, TGaxis, SetOwnership, TPaveText, TLegend, TLine, kRed, kBlue, kOpenCircle, kFullCircle
+from ROOT import ROOT, gStyle, TH1, TH1F, TF1, gPad, TAxis, TGaxis, SetOwnership, TPaveText, TLegend, TLine, kRed, kBlue, kOpenCircle, kFullCircle
 
 # Used for the outlier detection function
 import numpy
@@ -463,6 +463,8 @@ def labelSupermodules(hist):
     if "_SM" in hist.GetName()[-5:]:
         smNumber = hist.GetName()[hist.GetName().find("_SM")+3:]
         hist.SetTitle("SM {0}".format(smNumber))
+        # Show title
+        gStyle.SetOptTitle(1)
 
 ###################################################
 # Add a grid representing the TRUs to a canvas.

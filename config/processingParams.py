@@ -80,7 +80,7 @@ class processingParameters(object):
 
     # Determine proper remote username.
     _localUser = os.getenv("USER")
-    if _localUser == "re239" or _localUser == "rehlers":
+    if _localUser == "re239" or _localUser == "rehlers" or _localUser == "emcal":
         remoteUsername = "rehlers"
     else:
         remoteUsername = "jdmull"

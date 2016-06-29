@@ -9,6 +9,8 @@ This currently serves as a catch all for unsorted histograms. No additional QA f
 
 from processRunsModules import generateHtml
 
+from ROOT import gStyle
+
 ######################################################################################################
 ######################################################################################################
 # Sorting
@@ -55,4 +57,8 @@ def sortAndGenerateHtmlForHLTHists(outputHistNames, outputFormatting, subsystem 
 ######################################################################################################
 ######################################################################################################
 
-# None currently implemented
+###################################################
+def setHLTDrawOptions(hist, qaContainer):
+    # Show HLT titles (by request from Mikolaj)
+    if "EMC" not in hist.GetName():
+        gStyle.SetOptTitle(1)
