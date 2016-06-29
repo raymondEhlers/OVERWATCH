@@ -116,7 +116,7 @@ then
     # Setup aliBuild helper
     eval "`alienv shell-helper`"
 
-    alienv load AliRoot/latest-aliMaster
+    eval "$(alienv load AliRoot/latest-aliMaster)"
 
     # Setup python in root
     export PYTHONPATH="$ROOTSYS/lib"

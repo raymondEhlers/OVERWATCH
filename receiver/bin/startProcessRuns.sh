@@ -16,21 +16,24 @@ then
     exit 0
 fi
 
+# Start virtualenv
+# Need to be in base directory
+source ${currentLocation}/../../.env/bin/activate
+
 #echo "$PWD"
 
 # Load the alice environment
-. /home/james/alice/alice-env.sh -n 1 -q
+#. /home/james/alice/alice-env.sh -n 1 -q
+eval "$(alienv load -w /home/emcal/alice/sw AliRoot/latest-aliMaster)"
 
-# http://stackoverflow.com/a/246128 
-DIR="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# Make python available
+export PYTHONPATH="$ROOTSYS/lib"
+
 #echo "$DIR"
 # Need to get out of the receiver/bin/ directory
-cd $DIR/../..
+cd $currentLocation/../..
 
 #echo "$PWD"
-
-# Start virtualenv
-source .env/bin/activate
 
 # Start the processing in batch mode
 python processRuns.py -b
