@@ -325,10 +325,7 @@ a.anchor {
     /* Centers the elements */
     text-align: center;
 }
-/* Hides doc strings on the processQA page that are not currently being shown */
-.hideFunctionDocstring {
-    display: none;
-}
+
 /* Applies to the doc string on the processQA page corresponding to the currently selected function.
  * In doing so, it shows the description of the function. */
 .showFunctionDocstring {

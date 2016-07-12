@@ -3,7 +3,7 @@
     {% for subsystem in subsystemList %}
     <paper-item><h3>{{ subsystem }}</h3></paper-item>
         {% for funcName in qaFunctionsList[subsystem] %}
-        <a href="#" class="{{ subsystem }}Selector" vale="{{ funcName }}">
+        <a href="#" class="{{ subsystem }}Selector qaFunctionSelector" data-funcname="{{ funcName }}" data-subsystem="{{ subsystem }}" tabindex=-1>
             <paper-item>{{ funcName }}</paper-item>
         </a>
         {% endfor %}

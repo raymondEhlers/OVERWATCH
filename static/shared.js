@@ -35,6 +35,16 @@ document.addEventListener('WebComponentsReady', function() {
 
     // Ensure that all links are routed properly (either through ajax or a normal link)
     interceptLinks();
+
+    // Fired click event on qa page if the elements exist
+    // TODO: Make into function
+    // TODO: Fire on each reload. Perhaps there is a function that is called either on load or on ajax request
+    var qaFunctionSelector = Polymer.dom(this.root).querySelector(".qaFunctionSelector");
+    if (qaFunctionSelector !== null)
+    {
+        // Fire event
+        $(qaFunctionSelector).trigger("click");
+    }
 });
 
 function removeFlashes() {
@@ -227,167 +237,193 @@ function interceptLinks() {
             histName: histName
         });
 
+        // Handle link requests
         console.log("params: " + params);
-        if (ajaxToggle.checked === false) {
-            console.log("ajax disabled link");
 
-            // Prevent the link while we change where it is going
-            event.preventDefault();
+        // Prevent the link while we change where it is going
+        event.preventDefault();
 
-            // Get the current page
-            var currentPage = window.location.pathname;
-            console.log("currentPage: " + currentPage);
+        var currentTarget = event.currentTarget;
+        console.log("current target: " + $(currentTarget).text());
 
-            var pageToRequest = $(this).attr("href");
-            console.log("pageToRequest: " + pageToRequest);
-            if (pageToRequest === "#") {
-                // Request the current page again with the proper GET request
-                pageToRequest = currentPage;
+        // Handles qa function descriptions
+        if ($(currentTarget).hasClass("qaFunctionSelector")) {
+            // Hide previous docstring
+            var hideDocstring = Polymer.dom(this.root).querySelector(".showDocstring");
+            if (hideDocstring !== null)
+            {
+                $(hideDocstring).removeClass("showDocstring");
+                $(hideDocstring).addClass("hideElement");
             }
 
-            if (!(histGroupName === undefined && histName === undefined)) {
-                console.log("Assigning parameters to href");
-                pageToRequest += "?" + params;
-                // TEST
-                //pageToRequest += "#";
-            }
-            else {
-                console.log("No parameters to assign");
-            }
-
-            // Assign the page (which will send it to the specified link)
-            window.location.href = pageToRequest;
-
-            // TODO: Update this more carefully to avoid adding unnecessary parameters
-            // Normalize to the html5 history
-            //var appendTohref = window.location.href;
-            // Used since href contains the previous parameters
-            // See: https://stackoverflow.com/a/6257480
-            /*var appendTohref = window.location.protocol + "//" + window.location.host + window.location.pathname;
-            console.log("appendTohref: " + appendTohref);
-            appendTohref += "?";
-            appendTohref += params;
-            console.log("appendTohref: " + appendTohref);
-            window.location.href = appendTohref;*/
-            //window.location.hash = hash;
+            // Show new docstring
+            var funcName = $(currentTarget).data("funcname");
+            var subsystem = $(currentTarget).data("subsystem");
+            var targetDocstring = Polymer.dom(this.root).querySelector("#" + subsystem + funcName);
+            console.log("targetDocstring: " + $(targetDocstring).text());
+            $(targetDocstring).removeClass("hideElement");
+            $(targetDocstring).addClass("showDocstring");
         }
         else {
-            console.log("ajax enabled link");
-            console.log("this: " + $(this).text());
-            console.log("current target: " + $(event.currentTarget).text());
-            // Prevent the link from going through
-            event.preventDefault();
+            // Handles general requests
+            if (ajaxToggle.checked === false) {
+                console.log("ajax disabled link");
 
-            // Get the current page
-            var currentPage = window.location.pathname;
-            console.log("currentPage: " + currentPage);
+                // Get the current page
+                var currentPage = window.location.pathname;
+                console.log("currentPage: " + currentPage);
 
-            var pageToRequest = $(this).attr("href");
-            console.log("pageToRequest: " + pageToRequest);
-            if (pageToRequest === "#") {
-                // Request the current page again with the proper GET request
-                pageToRequest = currentPage;
-            }
-
-            // Call ajax
-            // See: https://stackoverflow.com/a/788501
-            console.log("Sending ajax request to " + pageToRequest);
-            $.get($SCRIPT_ROOT + pageToRequest, {
-                ajaxRequest: true,
-                jsRoot: jsRoot,
-                histName: histName,
-                histGroup: histGroupName
-            }, function(data) {
-                // Already JSON!
-                console.log(data)
-                var drawerContent = $(data).prop("drawerContent");
-                //console.log("drawerContent " + drawerContent);
-                if (drawerContent !== undefined)
-                {
-                    console.log("Replacing drawer content!");
-                    var drawerContainer = Polymer.dom(this.root).querySelector("#drawerContent");
-                    $(drawerContainer).html(drawerContent);
-                }
-                var mainContent = $(data).prop("mainContent");
-                //console.log("mainContent: " + mainContent);
-                if (mainContent !== undefined)
-                {
-                    console.log("Replacing main content!");
-                    var mainContainer = Polymer.dom(this.root).querySelector("#mainContent");
-                    $(mainContainer).html(mainContent);
-                }
-                //$("#mainCont").replaceWith(data);
-                
-                // Setup jsRoot and get images
-                if (jsRoot === true)
-                {
-                    console.log("Handling js root request!");
-                    var requestedHists = Polymer.dom(this.root).querySelectorAll(".histogramContainer");
-
-                    $(requestedHists).each(function() {
-                        // TODO: Improve the robustness here
-                        requestAddress = $(this).data("filename");
-                        requestAddress = "/monitoring/protected/" + requestAddress;
-                        console.log("requestAddress: " + requestAddress);
-                        console.log("this: " + $(this).toString());
-                        var idToDrawIn = $(this).attr("id");
-                        console.log("idToDrawIn:" + idToDrawIn);
-                        // Reason that [0] is needed is currently unclear!
-                        var objectToDrawIn = $(this)[0];
-                        var req = JSROOT.NewHttpRequest(requestAddress, 'object', function(canvas) {
-                            // Plot the hist
-                            // Allow the div to resize properly
-                            // TODO: Improve registration with Polymer size changes!
-                            JSROOT.RegisterForResize(objectToDrawIn);
-                            // The 2 corresponds to the 2x2 grid above
-                            //if (layout != null) { console.log("2x2 this.cnt % 2: " + this.cnt); frame = layout.FindFrame("item" + this.cnt , true) }
-
-                            // redraw canvas at specified frame
-                            JSROOT.redraw(objectToDrawIn, canvas, "colz");
-                        });
-
-                        req.send(null);
-                    });
+                var pageToRequest = $(this).attr("href");
+                console.log("pageToRequest: " + pageToRequest);
+                if (pageToRequest === "#") {
+                    // Request the current page again with the proper GET request
+                    pageToRequest = currentPage;
                 }
 
-                // Update the title
-                var title = Polymer.dom(this.root).querySelector("#mainContentTitle");
-                var titlesToSet = Polymer.dom(this.root).querySelectorAll(".title");
-                $(titlesToSet).text($(title).text());
+                if (!(histGroupName === undefined && histName === undefined)) {
+                    console.log("Assigning parameters to href");
+                    pageToRequest += "?" + params;
+                    // TEST
+                    //pageToRequest += "#";
+                }
+                else {
+                    console.log("No parameters to assign");
+                }
 
-                // Remove the properties button if necessary
-                showOrHideProperties();
+                // Assign the page (which will send it to the specified link)
+                window.location.href = pageToRequest;
 
-                // Update the drawer width
-                // Code works, but the drawer does not handle this very gracefully.
-                // Better to leave this disabled.
-                /*var drawerWidthObject = Polymer.dom(this.root).querySelector("#drawerWidth");
-                var drawerWidth = $(drawerWidth).data("width");
-                var drawer = Polymer.dom(this.root).querySelector("#drawerPanelId");
-                $(drawer).prop("drawerWidth", drawerWidth);*/
-            });
-
-            // Update the hash
-            //var href = $(this).attr("href");
-            //console.log("href: " + href)
-            //window.location.hash = href;
-
-            // Update the current link
-            //window.location.href += "?" + params;
-            // See: https://stackoverflow.com/a/5607923
-            console.log("histGroupName: " + histGroupName);
-            if (!(histGroupName === undefined && histName === undefined)) {
-                // Uses a relative path
-                window.history.pushState("string", "Title", "?" + params);
+                // TODO: Update this more carefully to avoid adding unnecessary parameters
+                // Normalize to the html5 history
+                //var appendTohref = window.location.href;
+                // Used since href contains the previous parameters
+                // See: https://stackoverflow.com/a/6257480
+                /*var appendTohref = window.location.protocol + "//" + window.location.host + window.location.pathname;
+                console.log("appendTohref: " + appendTohref);
+                appendTohref += "?";
+                appendTohref += params;
+                console.log("appendTohref: " + appendTohref);
+                window.location.href = appendTohref;*/
+                //window.location.hash = hash;
             }
             else {
-                // Uses a absolute path
-                window.history.pushState("string", "Title", pageToRequest);
+                console.log("ajax enabled link");
+                console.log("this: " + $(this).text());
+                console.log("current target: " + $(event.currentTarget).text());
+
+                // Get the current page
+                var currentPage = window.location.pathname;
+                console.log("currentPage: " + currentPage);
+
+                var pageToRequest = $(this).attr("href");
+                console.log("pageToRequest: " + pageToRequest);
+                if (pageToRequest === "#") {
+                    // Request the current page again with the proper GET request
+                    pageToRequest = currentPage;
+                }
+
+                // Call ajax
+                // See: https://stackoverflow.com/a/788501
+                console.log("Sending ajax request to " + pageToRequest);
+                $.get($SCRIPT_ROOT + pageToRequest, {
+                    ajaxRequest: true,
+                    jsRoot: jsRoot,
+                    histName: histName,
+                    histGroup: histGroupName
+                }, function(data) {
+                    // Already JSON!
+                    console.log(data)
+                    var drawerContent = $(data).prop("drawerContent");
+                    //console.log("drawerContent " + drawerContent);
+                    if (drawerContent !== undefined)
+                    {
+                        console.log("Replacing drawer content!");
+                        var drawerContainer = Polymer.dom(this.root).querySelector("#drawerContent");
+                        $(drawerContainer).html(drawerContent);
+                    }
+                    var mainContent = $(data).prop("mainContent");
+                    //console.log("mainContent: " + mainContent);
+                    if (mainContent !== undefined)
+                    {
+                        console.log("Replacing main content!");
+                        var mainContainer = Polymer.dom(this.root).querySelector("#mainContent");
+                        $(mainContainer).html(mainContent);
+                    }
+                    //$("#mainCont").replaceWith(data);
+                    
+                    // Setup jsRoot and get images
+                    if (jsRoot === true)
+                    {
+                        console.log("Handling js root request!");
+                        var requestedHists = Polymer.dom(this.root).querySelectorAll(".histogramContainer");
+
+                        $(requestedHists).each(function() {
+                            // TODO: Improve the robustness here
+                            requestAddress = $(this).data("filename");
+                            requestAddress = "/monitoring/protected/" + requestAddress;
+                            console.log("requestAddress: " + requestAddress);
+                            console.log("this: " + $(this).toString());
+                            var idToDrawIn = $(this).attr("id");
+                            console.log("idToDrawIn:" + idToDrawIn);
+                            // Reason that [0] is needed is currently unclear!
+                            var objectToDrawIn = $(this)[0];
+                            var req = JSROOT.NewHttpRequest(requestAddress, 'object', function(canvas) {
+                                // Plot the hist
+                                // Allow the div to resize properly
+                                // TODO: Improve registration with Polymer size changes!
+                                JSROOT.RegisterForResize(objectToDrawIn);
+                                // The 2 corresponds to the 2x2 grid above
+                                //if (layout != null) { console.log("2x2 this.cnt % 2: " + this.cnt); frame = layout.FindFrame("item" + this.cnt , true) }
+
+                                // redraw canvas at specified frame
+                                JSROOT.redraw(objectToDrawIn, canvas, "colz");
+                            });
+
+                            req.send(null);
+                        });
+                    }
+
+                    // Update the title
+                    var title = Polymer.dom(this.root).querySelector("#mainContentTitle");
+                    var titlesToSet = Polymer.dom(this.root).querySelectorAll(".title");
+                    $(titlesToSet).text($(title).text());
+
+                    // Remove the properties button if necessary
+                    showOrHideProperties();
+
+                    // Update the drawer width
+                    // Code works, but the drawer does not handle this very gracefully.
+                    // Better to leave this disabled.
+                    /*var drawerWidthObject = Polymer.dom(this.root).querySelector("#drawerWidth");
+                    var drawerWidth = $(drawerWidth).data("width");
+                    var drawer = Polymer.dom(this.root).querySelector("#drawerPanelId");
+                    $(drawer).prop("drawerWidth", drawerWidth);*/
+                });
+
+                // Update the hash
+                //var href = $(this).attr("href");
+                //console.log("href: " + href)
+                //window.location.hash = href;
+
+                // Update the current link
+                //window.location.href += "?" + params;
+                // See: https://stackoverflow.com/a/5607923
+                console.log("histGroupName: " + histGroupName);
+                if (!(histGroupName === undefined && histName === undefined)) {
+                    // Uses a relative path
+                    window.history.pushState("string", "Title", "?" + params);
+                }
+                else {
+                    // Uses a absolute path
+                    window.history.pushState("string", "Title", pageToRequest);
+                }
+
+                // Prevent further action
+                return false;
             }
 
-            // Prevent further action
-            return false;
         }
+
     });
 }
 

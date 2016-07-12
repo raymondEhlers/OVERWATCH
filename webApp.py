@@ -150,12 +150,6 @@ def contact():
         mainContent = render_template("contactMainContent.html")
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
-###################################################
-@app.route("/favicon.ico")
-def favicon():
-    """ Browsers always try to load the Favicon, so this suppresses the errors about not finding one. """
-    return ""
-
 ######################################################################################################
 # Authenticated Routes
 ######################################################################################################

@@ -53,7 +53,7 @@
 <div>
     {% for funcName, docStringList in docStrings.items() %}
         {# Replaces new lines with HTML new lines (ie <br>) and replaces groups of spaces with no break spaces #}
-        <p class="hideFunctionDocstring" id="{{ funcName }}"><strong>{{ funcName.replace(docStringList[0], "") }} ({{ docStringList[0] }}):</strong><br />{{ docStringList[1].replace("\n","<br />").replace("    ","&nbsp&nbsp&nbsp&nbsp") | safe }}</p>
+        <p class="functionDocstring hideElement" id="{{ funcName }}"><strong>{{ funcName.replace(docStringList[0], "") }} ({{ docStringList[0] }}):</strong><br />{{ docStringList[1].replace("\n","<br />").replace("    ","&nbsp&nbsp&nbsp&nbsp") | safe }}</p>
     {% endfor %}
-    <p class="hideFunctionDocstring" id="noFunction" >No functions are available in this subsystem! Please select another subsystem!</p>
+    <p class="functionDocstring hideElement" id="noFunction" >No functions are available in this subsystem! Please select another subsystem!</p>
 </div>
