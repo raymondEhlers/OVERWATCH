@@ -10,6 +10,7 @@ under particular circumstances.
 """
 
 from flask import request, url_for, redirect
+import json
 
 # Handle python 2/3
 try:
@@ -75,3 +76,12 @@ def redirectBack(endpoint, **values):
         target = url_for(endpoint, **values)
     return redirect(target)
 
+###################################################
+def convertRequestToPythonBool(paramName):
+    # TODO: Update quality of validation
+    paramValue = request.args.get(paramName, False, type=str)
+    if paramValue != False:
+        paramValue = json.loads(paramValue)
+    print("{0}: {1}".format(paramName, paramValue))
+
+    return paramValue

@@ -87,13 +87,8 @@ def login():
     Unauthenticated users are also redirected here if they try to access something restricted.
     After logging in, it should then forward them to resource they requested.
     """
-    #print("Login called")
-    # TODO: Validate these inputs!!!
     print("request: {0}".format(request.args))
-    ajaxRequest = request.args.get("ajaxRequest", default=False, type=str)
-    if ajaxRequest != False:
-        ajaxRequest = json.loads(ajaxRequest)
-    print("ajaxRequest: {0}".format(ajaxRequest))
+    ajaxRequest = routing.convertRequestToPythonBool("ajaxRequest")
 
     errorValue = None
     nextValue = routing.getRedirectTarget()
@@ -146,11 +141,7 @@ def logout():
 @app.route("/contact")
 def contact():
     """ Simple contact page so we can provide support in the future."""
-    # TODO: Validate these inputs!!!
-    ajaxRequest = request.args.get("ajaxRequest", False, type=bool)
-    if ajaxRequest != False:
-        ajaxRequest = json.loads(ajaxRequest)
-    print("ajaxRequest: {0}".format(ajaxRequest))
+    ajaxRequest = routing.convertRequestToPythonBool("ajaxRequest")
 
     if ajaxRequest == False:
         return render_template("contact.html")
@@ -176,12 +167,8 @@ def index():
     """ This is the main page for logged in users. It always redirects to the run list.
     
     """
-    # TODO: Validate these inputs!!!
     print("request: {0}".format(request.args))
-    ajaxRequest = request.args.get("ajaxRequest", False, type=str)
-    if ajaxRequest != False:
-        ajaxRequest = json.loads(ajaxRequest)
-    print("ajaxRequest: {0}".format(ajaxRequest))
+    ajaxRequest = routing.convertRequestToPythonBool("ajaxRequest")
 
     if ajaxRequest == False:
         #return render_template(os.path.join("data", "runList.html"))
@@ -202,9 +189,9 @@ def runPage(runNumber, subsystem, requestedFileType):
     
     """
     # TODO: Validate these inputs!!!
-    ajaxRequest = request.args.get("ajaxRequest", False, type=str)
-    jsRoot = request.args.get("jsRoot", False, type=str)
     runDir = "Run{0}".format(runNumber)
+    jsRoot = routing.convertRequestToPythonBool("jsRoot")
+    ajaxRequest = routing.convertRequestToPythonBool("ajaxRequest")
     print("request: {0}".format(request.args))
     print("runDir: {0}, subsytsem: {1}, requestedFileType: {2}, ajaxRequest: {3}, jsRoot: {4}".format(runDir, subsystem, requestedFileType, ajaxRequest, jsRoot))
     requestedHistGroup = request.args.get("histGroup", None, type=str)
@@ -215,10 +202,6 @@ def runPage(runNumber, subsystem, requestedFileType):
         requestedHistGroup = None
     if requestedHist == "":
         requestedHist = None
-    if jsRoot != False:
-        jsRoot = json.loads(jsRoot)
-    if ajaxRequest != False:
-        ajaxRequest = json.loads(ajaxRequest)
 
     print("ajaxRequest: {0}, jsRoot: {1}".format(ajaxRequest,jsRoot))
 
@@ -403,10 +386,7 @@ def processQA():
 
     """
     print("request: {0}".format(request.args))
-    ajaxRequest = request.args.get("ajaxRequest", False, type=str)
-    if ajaxRequest != False:
-        ajaxRequest = json.loads(ajaxRequest)
-    print("ajaxRequest: {0}".format(ajaxRequest))
+    ajaxRequest = routing.convertRequestToPythonBool("ajaxRequest")
     # Variable is shared, so it is defined here
     # This assumes that any folder that exists should have proper files.
     # However, this seems to be a fairly reasonable assumption and can be handled safely.
