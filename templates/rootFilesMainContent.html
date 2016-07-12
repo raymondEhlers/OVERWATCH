@@ -1,5 +1,5 @@
 {% set subsystemObject = run.subsystems[subsystem] %}
-<h1>{{ title }}
+<h1 id="mainContentTitle">{{ run.prettyName }} {{ subsystem }} ROOT Files
     {%- if subsystemObject.fileLocationSubsystem != subsystem %}
     (stored in {{ subsystemObject.fileLocationSubsystem }} files)
     {%- endif %}</h1>

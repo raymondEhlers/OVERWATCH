@@ -14,7 +14,7 @@
                 <a href="{{ url_for("runPage", runNumber = run.runNumber, subsystem=subsystem.subsystem, requestedFileType="runPage") }}">{{ subsystem.subsystem }} Histograms</a>
             </td>
         </tr>
-        {% if subsystem.showRootFiles == True %}
+        {% if subsystem.subsystem in subsystemsWithRootFilesToShow %}
         <tr>
             <td></td>
             <td>

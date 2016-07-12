@@ -67,6 +67,8 @@ loginManager.login_view = "login"
 # Load data
 # TODO: Improve mechanism!
 runs = pickle.load( open(os.path.join(serverParameters.protectedFolder, "runs.p"), "rb") )
+# Find available templates on startup
+serverParameters.availabeRunPageTemplates = [name for name in os.listdir(serverParameters.templateFolder) if "runPage.html" in name]
 
 ###################################################
 @loginManager.user_loader
@@ -146,6 +148,9 @@ def contact():
     """ Simple contact page so we can provide support in the future."""
     # TODO: Validate these inputs!!!
     ajaxRequest = request.args.get("ajaxRequest", False, type=bool)
+    if ajaxRequest != False:
+        ajaxRequest = json.loads(ajaxRequest)
+    print("ajaxRequest: {0}".format(ajaxRequest))
 
     if ajaxRequest == False:
         return render_template("contact.html")
@@ -181,11 +186,11 @@ def index():
     if ajaxRequest == False:
         #return render_template(os.path.join("data", "runList.html"))
         # TODO: Check reversed more closely to ensure that it is doing what is expected!
-        return render_template("runList.html", runs=reversed(runs.values()))
+        return render_template("runList.html", runs=reversed(runs.values()), subsystemsWithRootFilesToShow = serverParameters.subsystemsWithRootFilesToShow)
         #return redirect(url_for("protected", filename="runList.html"))
     else:
         drawerContent = render_template("runListDrawer.html")
-        mainContent = render_template("runListMainContent.html", runs=reversed(runs.values()))
+        mainContent = render_template("runListMainContent.html", runs=reversed(runs.values()), subsystemsWithRootFilesToShow = serverParameters.subsystemsWithRootFilesToShow)
 
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
@@ -219,17 +224,20 @@ def runPage(runNumber, subsystem, requestedFileType):
 
     if ajaxRequest == False:
         if requestedFileType == "runPage":
-            # TODO: Consider a better approach, but this may be sufficient
+            runPageName = subsystem + "runPage.html"
+            if runPageName not in serverParameters.availabeRunPageTemplates:
+                runPageName = runPageName.replace(subsystem, "")
+
             try:
-                returnValue = render_template(subsystem + "runPage.html", run=runs[runDir], subsystemName=subsystem, selectedHistGroup=requestedHistGroup, selectedHist = requestedHist, jsRoot = jsRoot, useGrid=False)
-            except jinja2.exceptions.TemplateNotFound:
-                returnValue = render_template("runPage.html", run=runs[runDir], subsystemName=subsystem, selectedHistGroup=requestedHistGroup, selectedHist = requestedHist, jsRoot = jsRoot, useGrid=False)
+                returnValue = render_template(runPageName, run=runs[runDir], subsystemName=subsystem, selectedHistGroup=requestedHistGroup, selectedHist = requestedHist, jsRoot = jsRoot, useGrid=False)
+            except jinja2.exceptions.TemplateNotFound as e:
+                returnValue = render_template("error.html", errors={"Template Error": ["Request template: \"{0}\", but it was not found!".format(e.name)]})
             return returnValue
         elif requestedFileType == "rootFiles":
             # TODO: Consider splitting these functions?
             return render_template("rootfiles.html", run=runs[runDir], subsystem=subsystem)
 
-        return render_template("error.html", errors={"error": ["Requested: {0}. Must request either runPage or rootFiles!".format(requestedFileType)]})
+        return render_template("error.html", errors={"Request Error": ["Requested: {0}. Must request either runPage or rootFiles!".format(requestedFileType)]})
     else:
         # result = handleAjax(page, enableDrawer, enableMainContent, args...)
         # TODO: This should be refactored into a function!
@@ -240,10 +248,13 @@ def runPage(runNumber, subsystem, requestedFileType):
 
             return jsonify(drawerContent = drawerContent, mainContent = mainContent)
         elif requestedFileType == "rootFiles":
-            pass
+            drawerContent = ""
+            mainContent = render_template("rootfilesMainContent.html", run=runs[runDir], subsystem=subsystem)
 
-        # TODO: This should be main content!
-        return render_template("error.html", errors={"error": ["Requested: {0}. Must request either runPage or rootFiles!".format(requestedFileType)]})
+            return jsonify(drawerContent = drawerContent, mainContent = mainContent)
+
+        drawerContent = ""
+        mainContent =  render_template("errorMainContent.html", errors={"Request Error": ["Requested: {0}. Must request either runPage or rootFiles!".format(requestedFileType)]})
 
 ###################################################
 @app.route("/<path:runPath>")
