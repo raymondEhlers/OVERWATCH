@@ -30,8 +30,10 @@
         <!-- Items in the drawer -->
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-item/paper-item.html") }}">
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-item/paper-icon-item.html") }}">
-        <!-- Dialog for user information -->
+        <!-- Dialog for user information and processing settings -->
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-dialog/paper-dialog.html") }}">
+        <!-- For improving dialog usability -->
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html") }}">
         <!-- Slide in the time slices menu -->
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-slider/paper-slider.html") }}">
 
@@ -174,9 +176,17 @@
 </paper-header-panel>
 
 <paper-dialog id="propertiesDialog">
-    <h2>Time Dependent Merge</h2>
-    <paper-slider value="2" max="255" editable></paper-slider>
-    <paper-slider value="50" max="255" editable></paper-slider>
+    <h2>Processing Settings</h2>
+    <paper-dialog-scrollable>
+        <p>Time Dependent Merge</p>
+        <p>Min:</p>
+        <paper-slider value="2" max="255" editable></paper-slider>
+        <p>Max:</p>
+        <paper-slider value="50" max="255" editable></paper-slider>
+        <paper-toggle-button checked id="scaleHistsToggle">Scale by nEvents</paper-toggle-button>
+        <p>Hot channel threshold</p>
+        <paper-slider value="3" max="100" editable></paper-slider>
+    </paper-dialog-scrollable>
     <div class="buttons">
         <paper-button dialog-dismiss>Cancel</paper-button>
         <paper-button dialog-confirm>Accept</paper-button>
