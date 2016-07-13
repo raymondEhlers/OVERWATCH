@@ -22,11 +22,15 @@
                     <h2>{{ hist.prettyName }}</h2>
                     {% if hist.information != dict() %}
                         {# TODO: Update this container! We need a button to toggle it! #}
-                        <iron-collapse class="collapsibleContainer" opened>
                         {% for label, info in hist.information.iteritems() %}
-                        <div>{{ label }}: {{ info }}</div>
-                        {% endfor %}
+                        <paper-button class="collapsibleContainerButton" id="collapse{{ loop.index0 }}Button">
+                            <div>{{ label }}</div>
+                            <paper-icon-button class="collapsibleContainerIcon" icon="icons:arrow-drop-down"></paper-icon-button>
+                        </paper-button>
+                        <iron-collapse class="collapsibleContainer" id="collapse{{ loop.index0 }}">
+                            <div>{{ info }}</div>
                         </iron-collapse>
+                        {% endfor %}
                     {% endif %}
                     {# TODO: Improve this line! #}
                     {%- set filenameImage = subsystem.imgDir.replace("data/", "") + "/" + hist.histName + ".png" -%}

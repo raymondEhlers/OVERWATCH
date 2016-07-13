@@ -357,7 +357,7 @@ a.anchor {
         margin-bottom: 10px;
     }
     /* Selects the sibling element (menuIcon) located after the checkbox */
-    #menuToggle:checked + .menuIcon {
+    #menuToggle:checked + .menuIconStop {
         /* Changes the menu background color to make it clear that it is selected.
          * The color is selected to match the border of the menu */
         background-color: #444;

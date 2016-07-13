@@ -37,14 +37,11 @@ document.addEventListener('WebComponentsReady', function() {
     interceptLinks();
 
     // Fired click event on qa page if the elements exist
-    // TODO: Make into function
     // TODO: Fire on each reload. Perhaps there is a function that is called either on load or on ajax request
-    var qaFunctionSelector = Polymer.dom(this.root).querySelector(".qaFunctionSelector");
-    if (qaFunctionSelector !== null)
-    {
-        // Fire event
-        $(qaFunctionSelector).trigger("click");
-    }
+    initQADocStrings();
+
+    // TODO: Fire on each reload. Perhaps there is a function that is called either on load or on ajax request
+    collapsibleContainers();
 });
 
 function removeFlashes() {
@@ -424,6 +421,49 @@ function interceptLinks() {
 
         }
 
+    });
+}
+
+function initQADocStrings() {
+    // Fire click event if the qa function docstrings exists so that it will show one on page load
+    var qaFunctionSelector = Polymer.dom(this.root).querySelector(".qaFunctionSelector");
+    if (qaFunctionSelector !== null)
+    {
+        // Fire event
+        $(qaFunctionSelector).trigger("click");
+    }
+}
+
+function collapsibleContainers() {
+    var containers = Polymer.dom(this.root).querySelectorAll(".collapsibleContainerButton");
+
+    $(containers).on("click", function(event) {
+        // Prevent the link while we change where it is going
+        event.preventDefault();
+
+        var currentTarget = event.currentTarget;
+        console.log("current target: " + $(currentTarget).text());
+
+        // Collapsible container
+        var containerName = $(currentTarget).attr("id").replace("Button", "");
+        console.log("containerName: " + containerName);
+
+        // Toggle container
+        // Polyer.dom() does not work for some reason...
+        //var container = Polymer.dom(this.root).querySelector("#" + containerName);
+        var container = $(currentTarget).siblings("#" + containerName);
+        container.toggle();
+
+        // Toggle icon
+        var iconObject = $(currentTarget).children(".collapsibleContainerIcon");
+        var icon = $(iconObject).attr("icon");
+        if (icon === "icons:arrow-drop-down") {
+            icon = icon.replace("down", "up");
+        }
+        else {
+            icon = icon.replace("up", "down");
+        }
+        $(iconObject).attr("icon", icon);
     });
 }
 
