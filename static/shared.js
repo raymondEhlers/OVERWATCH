@@ -31,7 +31,6 @@ document.addEventListener('WebComponentsReady', function() {
 
     // Remove flask flashes after a short period to ensure that it doens't clutter the screen
     removeFlashes();
-    testAjax();
 
     // Ensure that all links are routed properly (either through ajax or a normal link)
     interceptLinks();
@@ -40,7 +39,7 @@ document.addEventListener('WebComponentsReady', function() {
     // TODO: Fire on each reload. Perhaps there is a function that is called either on load or on ajax request
     initQADocStrings();
 
-    // TODO: Fire on each reload. Perhaps there is a function that is called either on load or on ajax request
+    // Enables collapsing of containers with information
     collapsibleContainers();
 });
 
@@ -435,9 +434,11 @@ function initQADocStrings() {
 }
 
 function collapsibleContainers() {
-    var containers = Polymer.dom(this.root).querySelectorAll(".collapsibleContainerButton");
+    //var containers = Polymer.dom(this.root).querySelectorAll(".collapsibleContainerButton");
+    var containers = Polymer.dom(this.root).querySelectorAll("#mainContent");
 
-    $(containers).on("click", function(event) {
+    //$(containers).on("click", function(event) {
+    $(containers).on("click", ".collapsibleContainerButton", function(event) {
         // Prevent the link while we change where it is going
         event.preventDefault();
 
@@ -480,19 +481,5 @@ function storageAvailable(type) {
     catch(e) {
         return false;
     }
-}
-
-function testAjax() {
-    $('a#testAjax').bind('click', function() {
-        $.get($SCRIPT_ROOT + '/testAjax', {
-            a: "testA",
-            b: "testB"
-        }, function(data) {
-            console.log(data)
-            $("#mainCont").replaceWith(data);
-            //$("#mainCont").append(data);
-        });
-        return false;
-    });
 }
 
