@@ -57,6 +57,8 @@ function removeFlashes() {
 }
 
 function handleToggle(selectedToggle) {
+    // NOTE: If no local storage, then both jsroot and ajax are enabled. However, it should be
+    // fairly unlikely to encounter such a environment now
     var returnValue = true;
     if (storageAvailable("localStorage")) {
         var toggle = Polymer.dom(this.root).querySelector("#" + selectedToggle);
@@ -67,16 +69,6 @@ function handleToggle(selectedToggle) {
             $(toggle).prop("checked", (storedToggleValue === "true"));
 
             console.log("Local storage checked for " + selectedToggle +": " + localStorage.getItem(selectedToggle));
-        }
-        else {
-            // Handle if there is no stored value - ie. a new user.
-            // Default is for ajax with jsroot disabled
-            if (selectedToggle === "jsRootToggle") {
-                $(toggle).prop("checked", false);
-            }
-            if (selectedToggle === "ajaxToggle") {
-                $(toggle).prop("checked", true);
-            }
         }
 
         // Storage the change value in local storage
@@ -407,7 +399,12 @@ function interceptLinks() {
                     $(titlesToSet).text($(title).text());
 
                     // Remove the properties button if necessary
+                    // TODO: Improve the robustness here? (ie should this just be in a re-init function?)
                     showOrHideProperties();
+
+                    // Init QA doc string since the normal loading procedure is not executed here
+                    // TODO: Improve the robustness here? (ie should this just be in a re-init function?)
+                    initQADocStrings();
 
                     // Update the drawer width
                     // Code works, but the drawer does not handle this very gracefully.
