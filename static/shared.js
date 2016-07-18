@@ -26,8 +26,8 @@ document.addEventListener('WebComponentsReady', function() {
     showOrHideProperties();
 
     // Handle toggle value
-    handleToggle("jsRootToggle");
-    handleToggle("ajaxToggle");
+    var jsRootState = handleToggle("jsRootToggle");
+    var ajaxState = handleToggle("ajaxToggle");
 
     // Remove flask flashes after a short period to ensure that it doens't clutter the screen
     removeFlashes();
@@ -57,6 +57,7 @@ function removeFlashes() {
 }
 
 function handleToggle(selectedToggle) {
+    var returnValue = true;
     if (storageAvailable("localStorage")) {
         var toggle = Polymer.dom(this.root).querySelector("#" + selectedToggle);
         // Check for value in local storage, and set it properly if it exists
@@ -67,6 +68,16 @@ function handleToggle(selectedToggle) {
 
             console.log("Local storage checked for " + selectedToggle +": " + localStorage.getItem(selectedToggle));
         }
+        else {
+            // Handle if there is no stored value - ie. a new user.
+            // Default is for ajax with jsroot disabled
+            if (selectedToggle === "jsRootToggle") {
+                $(toggle).prop("checked", false);
+            }
+            if (selectedToggle === "ajaxToggle") {
+                $(toggle).prop("checked", true);
+            }
+        }
 
         // Storage the change value in local storage
         $(toggle).click(function() {
@@ -75,10 +86,14 @@ function handleToggle(selectedToggle) {
 
             console.log("Local storage checked for " + selectedToggle +": " + localStorage.getItem(selectedToggle));
         });
+
+        returnValue = $(this).prop("checked");
     }
     else {
         console.log("ERROR: Local storage not supported!");
     }
+
+    return returnValue;
 }
 
 function setupDialog(buttonSelector, dialogSelector, relativePosition) {
@@ -289,6 +304,13 @@ function interceptLinks() {
                 // Assign the page (which will send it to the specified link)
                 window.location.href = pageToRequest;
 
+                // If ajax is disabled but jsroot is enabled, then we need to make another request for the jsroot content
+                /*if (ajaxState === false && jsRootState == true)
+                {
+                    // Fire event
+                    $(qaFunctionSelector).trigger("click");
+                }*/
+
                 // TODO: Update this more carefully to avoid adding unnecessary parameters
                 // Normalize to the html5 history
                 //var appendTohref = window.location.href;
@@ -305,7 +327,7 @@ function interceptLinks() {
             else {
                 console.log("ajax enabled link");
                 console.log("this: " + $(this).text());
-                console.log("current target: " + $(event.currentTarget).text());
+                //console.log("current target: " + $(event.currentTarget).text());
 
                 // Get the current page
                 var currentPage = window.location.pathname;
