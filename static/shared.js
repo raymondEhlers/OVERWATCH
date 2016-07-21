@@ -283,7 +283,7 @@ function interceptLinks() {
                     pageToRequest = currentPage;
                 }
 
-                if (!(histGroupName === undefined && histName === undefined)) {
+                if (!(histGroupName === undefined && histName === undefined && jsRoot === undefined)) {
                     console.log("Assigning parameters to href");
                     pageToRequest += "?" + params;
                     // TEST
@@ -364,33 +364,7 @@ function interceptLinks() {
                     // Setup jsRoot and get images
                     if (jsRoot === true)
                     {
-                        console.log("Handling js root request!");
-                        var requestedHists = Polymer.dom(this.root).querySelectorAll(".histogramContainer");
-
-                        $(requestedHists).each(function() {
-                            // TODO: Improve the robustness here
-                            requestAddress = $(this).data("filename");
-                            requestAddress = "/monitoring/protected/" + requestAddress;
-                            console.log("requestAddress: " + requestAddress);
-                            console.log("this: " + $(this).toString());
-                            var idToDrawIn = $(this).attr("id");
-                            console.log("idToDrawIn:" + idToDrawIn);
-                            // Reason that [0] is needed is currently unclear!
-                            var objectToDrawIn = $(this)[0];
-                            var req = JSROOT.NewHttpRequest(requestAddress, 'object', function(canvas) {
-                                // Plot the hist
-                                // Allow the div to resize properly
-                                // TODO: Improve registration with Polymer size changes!
-                                JSROOT.RegisterForResize(objectToDrawIn);
-                                // The 2 corresponds to the 2x2 grid above
-                                //if (layout != null) { console.log("2x2 this.cnt % 2: " + this.cnt); frame = layout.FindFrame("item" + this.cnt , true) }
-
-                                // redraw canvas at specified frame
-                                JSROOT.redraw(objectToDrawIn, canvas, "colz");
-                            });
-
-                            req.send(null);
-                        });
+                        jsRootReqeust();
                     }
 
                     // Update the title
@@ -439,6 +413,36 @@ function interceptLinks() {
 
         }
 
+    });
+}
+
+function jsRootReqeust() {
+    console.log("Handling js root request!");
+    var requestedHists = Polymer.dom(this.root).querySelectorAll(".histogramContainer");
+
+    $(requestedHists).each(function() {
+        // TODO: Improve the robustness here
+        requestAddress = $(this).data("filename");
+        requestAddress = "/monitoring/protected/" + requestAddress;
+        console.log("requestAddress: " + requestAddress);
+        console.log("this: " + $(this).toString());
+        var idToDrawIn = $(this).attr("id");
+        console.log("idToDrawIn:" + idToDrawIn);
+        // Reason that [0] is needed is currently unclear!
+        var objectToDrawIn = $(this)[0];
+        var req = JSROOT.NewHttpRequest(requestAddress, 'object', function(canvas) {
+            // Plot the hist
+            // Allow the div to resize properly
+            // TODO: Improve registration with Polymer size changes!
+            JSROOT.RegisterForResize(objectToDrawIn);
+            // The 2 corresponds to the 2x2 grid above
+            //if (layout != null) { console.log("2x2 this.cnt % 2: " + this.cnt); frame = layout.FindFrame("item" + this.cnt , true) }
+
+            // redraw canvas at specified frame
+            JSROOT.redraw(objectToDrawIn, canvas, "colz");
+        });
+
+        req.send(null);
     });
 }
 
