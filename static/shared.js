@@ -41,6 +41,12 @@ document.addEventListener('WebComponentsReady', function() {
 
     // Enables collapsing of containers with information
     collapsibleContainers();
+
+    console.log("jsRootState: " + jsRootState);
+    if (jsRootState === true)
+    {
+        jsRootReqeust();
+    }
 });
 
 function removeFlashes() {
@@ -79,7 +85,7 @@ function handleToggle(selectedToggle) {
             console.log("Local storage checked for " + selectedToggle +": " + localStorage.getItem(selectedToggle));
         });
 
-        returnValue = $(this).prop("checked");
+        returnValue = $(toggle).prop("checked");
     }
     else {
         console.log("ERROR: Local storage not supported!");
@@ -434,7 +440,8 @@ function jsRootReqeust() {
             // Plot the hist
             // Allow the div to resize properly
             // TODO: Improve registration with Polymer size changes!
-            JSROOT.RegisterForResize(objectToDrawIn);
+            // It currently doesn't work and generates errors on some reloads, so disable for now
+            //JSROOT.RegisterForResize(objectToDrawIn);
             // The 2 corresponds to the 2x2 grid above
             //if (layout != null) { console.log("2x2 this.cnt % 2: " + this.cnt); frame = layout.FindFrame("item" + this.cnt , true) }
 
