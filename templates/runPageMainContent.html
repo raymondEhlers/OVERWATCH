@@ -35,17 +35,21 @@
                         {% endfor %}
                     {% endif %}
                 {% endif %}
-                {# TODO: Improve this line! #}
+                {# TODO: Improve determining these fileanmes! #}
                 {%- set filenameImage = subsystem.imgDir.replace("data/", "") + "/" + hist.histName + ".png" -%}
                 {%- set filenameJSON = subsystem.jsonDir.replace("data/", "") + "/" + hist.histName + ".json" -%}
                 {# If grid, then add class #}
+                {%- set histogramContainerClasses = "histogramContainer" -%}
                 {% if histGroup.plotInGrid == True %}
+                    {# TODO: Determine how to properly show the grid with iron-flex-layout #}
                     <p>Grid!</p>
                 {% endif %}
-                <div id="{{ hist.histName }}" class="histogramContainer" data-filename="{{ filenameJSON }}">
+                <div id="{{ hist.histName }}" class="{{ histogramContainerClasses }}" data-filename="{{ filenameJSON }}">
                 {% if jsRoot != True %}
                     <img src="{{ url_for("protected", filename=filenameImage) }}" alt="{{ hist.histName }}">
                 {% else %}
+                    {# Provide indication that we are loading jsroot content #}
+                    {# It will disappear once jsroot loads the histogram #}
                     <p>Loading...</p>
                 {% endif %}
                 </div>
