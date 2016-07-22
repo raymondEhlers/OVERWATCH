@@ -6,12 +6,14 @@
         <a href="#" data-histgroup="{{ histGroup.selectionPattern }}" tabindex=-1>
             <paper-item><h3>{{ histGroup.prettyName }}</h3></paper-item>
         </a>
-        {%- for histName in histGroup.histList -%}
-            {% set hist = subsystem.hists[histName] %}
-            <a href="#" data-histname="{{ hist.histName }}" data-histgroup="{{ histGroup.selectionPattern }}" tabindex=-1>
-                <paper-item>{{ hist.prettyName }}</paper-item>
-            </a>
-        {%- endfor -%}
+        {%- if histGroup.plotInGrid == False -%}
+            {%- for histName in histGroup.histList -%}
+                {% set hist = subsystem.hists[histName] %}
+                <a href="#" data-histname="{{ hist.histName }}" data-histgroup="{{ histGroup.selectionPattern }}" tabindex=-1>
+                    <paper-item>{{ hist.prettyName }}</paper-item>
+                </a>
+            {%- endfor -%}
+        {%- endif -%}
     {%- endif -%}
 {% endfor %}
 </paper-listbox>

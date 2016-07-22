@@ -6,22 +6,24 @@
 </p>
 <hr />
 
-{% if useGrid %}
-    {# How to handle a grid #}
-{% else %}
-    {# NOTE: We cannot use loop.first because we loop through many empty histGroups! #}
-    {# See: https://stackoverflow.com/a/4880398 #}
-    {% set firstLoopCompleted = [] %}
-    {% for histGroupName, histGroup in subsystem.histGroups.iteritems() %}
-        {% if selectedHistGroup == histGroupName or (selectedHistGroup == None and firstLoopCompleted == []) %}
-            {%- for histName in histGroup.histList -%}
-                {% if firstLoopCompleted.append(1) %}{% endif %}
-                {%- set hist = subsystem.hists[histName] %}
-                {% if selectedHist == hist.histName or selectedHist == None %}
+{# NOTE: We cannot use loop.first because we loop through many empty histGroups! #}
+{# See: https://stackoverflow.com/a/4880398 #}
+{% set firstLoopCompleted = [] %}
+{% for histGroupName, histGroup in subsystem.histGroups.iteritems() %}
+    {% if selectedHistGroup == histGroupName or (selectedHistGroup == None and firstLoopCompleted == []) %}
+        {%- for histName in histGroup.histList -%}
+            {%- set hist = subsystem.hists[histName] %}
+            {% if selectedHist == hist.histName or selectedHist == None %}
+                {% if histGroup.plotInGrid == False or (histGroup.plotInGrid == True and firstLoopCompleted == []) %}
+                    {# Effective increments our counter #}
+                    {% if firstLoopCompleted.append(1) %}{% endif %}
                     <a class="anchor" data-histname="{{ hist.histName }}" data-histgroup="{{ histGroup.selectionPattern }}" name="{{ hist.histName }}"></a>
-                    <h2>{{ hist.prettyName }}</h2>
+                    {% if histGroup.plotInGrid == True -%}
+                        <h2>{{ histGroup.prettyName }}</h2>
+                    {%- else -%}
+                        <h2>{{ hist.prettyName }}</h2>
+                    {%- endif %}
                     {% if hist.information != dict() %}
-                        {# TODO: Update this container! We need a button to toggle it! #}
                         {% for label, info in hist.information.iteritems() %}
                         <paper-button class="collapsibleContainerButton" id="collapse{{ loop.index0 }}Button">
                             <div>{{ label }}</div>
@@ -32,16 +34,22 @@
                         </iron-collapse>
                         {% endfor %}
                     {% endif %}
-                    {# TODO: Improve this line! #}
-                    {%- set filenameImage = subsystem.imgDir.replace("data/", "") + "/" + hist.histName + ".png" -%}
-                    {%- set filenameJSON = subsystem.jsonDir.replace("data/", "") + "/" + hist.histName + ".json" -%}
-                    <div id="{{ hist.histName }}" class="histogramContainer" data-filename="{{ filenameJSON }}">
-                    {% if jsRoot != True %}
-                        <img src="{{ url_for("protected", filename=filenameImage) }}" alt="{{ hist.histName }}">
-                    {% endif %}
-                    </div>
                 {% endif %}
-            {% endfor -%}
-        {% endif %}
-    {% endfor %}
-{% endif %}
+                {# TODO: Improve this line! #}
+                {%- set filenameImage = subsystem.imgDir.replace("data/", "") + "/" + hist.histName + ".png" -%}
+                {%- set filenameJSON = subsystem.jsonDir.replace("data/", "") + "/" + hist.histName + ".json" -%}
+                {# If grid, then add class #}
+                {% if histGroup.plotInGrid == True %}
+                    <p>Grid!</p>
+                {% endif %}
+                <div id="{{ hist.histName }}" class="histogramContainer" data-filename="{{ filenameJSON }}">
+                {% if jsRoot != True %}
+                    <img src="{{ url_for("protected", filename=filenameImage) }}" alt="{{ hist.histName }}">
+                {% else %}
+                    <p>Loading...</p>
+                {% endif %}
+                </div>
+            {% endif %}
+        {% endfor -%}
+    {% endif %}
+{% endfor %}
