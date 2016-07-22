@@ -135,7 +135,7 @@ h2 {
     /* Ensures that headers do not overflow the width of the page */
     word-wrap: break-word;
 }
-img {
+img, .histogramContainer {
     /* Ensure images fit on the screen */
     max-width: 100%;
     /* Create a drop shadow-like effect for the image */
