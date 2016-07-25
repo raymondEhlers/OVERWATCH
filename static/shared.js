@@ -42,7 +42,7 @@ document.addEventListener('WebComponentsReady', function() {
     // Enables collapsing of containers with information
     collapsibleContainers();
 
-    console.log("jsRootState: " + jsRootState);
+    // Call jsroot if loaded without ajax
     if (jsRootState === true)
     {
         jsRootReqeust();

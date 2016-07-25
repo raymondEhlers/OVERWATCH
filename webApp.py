@@ -164,14 +164,26 @@ def index():
     print("request: {0}".format(request.args))
     ajaxRequest = routing.convertRequestToPythonBool("ajaxRequest")
 
+    try:
+        mostRecentRun = runs[runs.keys()[-1]]
+        #if mostRecentRun:
+        subsystemsInLastRun = mostRecentRun.subsystems
+        # We just take the last subsystem in a given run. Any will do
+        lastSubsystem = subsystemsInLastRun[subsystemsInLastRun.keys()[-1]]
+        runOngoing = lastSubsystem.newFile
+        runOngoingNumber = mostRecentRun.runNumber
+    except KeyError as e:
+        runOngoing = False
+        runOngoingNumber = ""
+
     if ajaxRequest == False:
         #return render_template(os.path.join("data", "runList.html"))
         # TODO: Check reversed more closely to ensure that it is doing what is expected!
-        return render_template("runList.html", runs=reversed(runs.values()), subsystemsWithRootFilesToShow = serverParameters.subsystemsWithRootFilesToShow)
+        return render_template("runList.html", runs=reversed(runs.values()), subsystemsWithRootFilesToShow = serverParameters.subsystemsWithRootFilesToShow, runOngoing = runOngoing, runOngoingNumber = runOngoingNumber)
         #return redirect(url_for("protected", filename="runList.html"))
     else:
         drawerContent = render_template("runListDrawer.html")
-        mainContent = render_template("runListMainContent.html", runs=reversed(runs.values()), subsystemsWithRootFilesToShow = serverParameters.subsystemsWithRootFilesToShow)
+        mainContent = render_template("runListMainContent.html", runs=reversed(runs.values()), subsystemsWithRootFilesToShow = serverParameters.subsystemsWithRootFilesToShow, runOngoing = runOngoing, runOngoingNumber = runOngoingNumber)
 
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 

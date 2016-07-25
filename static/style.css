@@ -50,6 +50,14 @@ hr {
     margin-right: auto;
 }
 
+/* Styles for displaying whether the run is ongoing */
+#runOngoing {
+    color: green;
+}
+#runNotOngoing {
+    color: red;
+}
+
 /* Responsive elements */
 /* Contains the time dependent merge. */
 .responsiveTimeDependentMerge {

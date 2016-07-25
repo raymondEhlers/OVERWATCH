@@ -1,6 +1,12 @@
 <paper-listbox>
     <paper-item>
-        Run Ongoing:
+        Run Ongoing: 
+        {% if runOngoing -%}
+            {{ runOngoingNumber }}
+            <paper-icon-button id="runOngoing" icon="icons:check"></paper-icon-button>
+        {%- else -%}
+            <paper-icon-button id="runNotOngoing" icon="icons:clear"></paper-icon-button>
+        {%- endif -%}
     </paper-item>
 </paper-listbox>
 {# <div id="drawerWidth" class="hideElement" data-width=256></div> #}
