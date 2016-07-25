@@ -1,0 +1,12 @@
+{% extends "layout.html" %}
+
+{% block title %}
+OVEREWATCH Status
+{% endblock %}
+
+{% block mainContent %}
+    <!-- This is the main content! -->
+    {% with statuses=statuses %}
+        {% include "statusMainContent.html" %}
+    {% endwith %}
+{% endblock %}

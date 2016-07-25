@@ -1,0 +1,5 @@
+<h1 id="mainContentTitle">OVERWATCH Status</h1>
+
+{% for statusTitle, status in statuses.iteritems() %}
+    <div>{{ statusTitle }}: {{ status }}</div>
+{% endfor %}

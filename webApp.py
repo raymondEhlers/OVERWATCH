@@ -15,6 +15,7 @@ import zipfile
 import subprocess
 import jinja2
 import json
+import collections 
 
 try:
     import cPickle as pickle
@@ -508,6 +509,34 @@ def testingDataArchive():
 
     # Return with a download link
     return redirect(url_for("protected", filename=zipFilename))
+
+###################################################
+@app.route("/status")
+@login_required
+def status():
+    """ Returns the status of the OVERWATCH sites """
+    if request.method == "POST":
+        # Responds to requests from other overwatch servers to display the status of the site
+        # TODO: Implement the responses
+        pass
+    else:
+        # Display the status page from the other sites
+        ajaxRequest = routing.convertRequestToPythonBool("ajaxRequest")
+
+        statuses = collections.OrderedDict()
+        # TODO: Actually query for these values
+        statuses["Yale"] = True
+        statuses["PDSF"] = False
+        statuses["CERN"] = True
+        statuses["Last received data"] = "%i minutes ago" % 15
+
+        if ajaxRequest == False:
+            return render_template("status.html", statuses = statuses)
+        else:
+            drawerContent = ""
+            mainContent = render_template("statusMainContent.html", statuses = statuses)
+
+            return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
 if __name__ == "__main__":
     # Support both the WSGI server mode, as well as standalone
