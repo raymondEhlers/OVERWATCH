@@ -183,7 +183,7 @@ def index():
         return render_template("runList.html", runs=reversed(runs.values()), subsystemsWithRootFilesToShow = serverParameters.subsystemsWithRootFilesToShow, runOngoing = runOngoing, runOngoingNumber = runOngoingNumber)
         #return redirect(url_for("protected", filename="runList.html"))
     else:
-        drawerContent = render_template("runListDrawer.html")
+        drawerContent = render_template("runListDrawer.html", runOngoing = runOngoing, runOngoingNumber = runOngoingNumber)
         mainContent = render_template("runListMainContent.html", runs=reversed(runs.values()), subsystemsWithRootFilesToShow = serverParameters.subsystemsWithRootFilesToShow, runOngoing = runOngoing, runOngoingNumber = runOngoingNumber)
 
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
