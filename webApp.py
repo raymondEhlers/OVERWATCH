@@ -349,6 +349,10 @@ def partialMerge():
     rendering the result template and returning the user to the same spot as in the previous page.
 
     """
+    print("request: {0}".format(request.args))
+    ajaxRequest = routing.convertRequestToPythonBool("ajaxRequest")
+    print("request: {0}".format(request.form))
+
     if request.method == "POST":
         # Validates the request
         (error, minTime, maxTime, runNumber, subsystem, scrollAmount) = validation.validatePartialMergePostRequest(request)

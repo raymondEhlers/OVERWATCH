@@ -36,6 +36,8 @@
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-dialog-scrollable/paper-dialog-scrollable.html") }}">
         <!-- Slide in the time slices menu -->
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-slider/paper-slider.html") }}">
+        <!-- For the form dialog -->
+        <link rel="import" href="{{ url_for("static", filename="bower_components/iron-form/iron-form.html") }}">
 
         <script type=text/javascript>
             $SCRIPT_ROOT = {{ request.script_root|tojson|safe  }};
@@ -189,19 +191,21 @@
 <paper-dialog id="propertiesDialog">
     <h2>Processing Settings</h2>
     <paper-dialog-scrollable>
-        <p>Time Dependent Merge</p>
-        <p>Min:</p>
-        <paper-slider value="2" max="255" editable></paper-slider>
-        <p>Max:</p>
-        <paper-slider value="50" max="255" editable></paper-slider>
-        <paper-toggle-button checked id="scaleHistsToggle">Scale by nEvents</paper-toggle-button>
-        <p>Hot channel threshold</p>
-        <paper-slider value="3" max="100" editable></paper-slider>
+        <form is="iron-form" id="partialMergeForm" method="post" action="/partialMerge">
+            <p>Time Dependent Merge</p>
+            <p>Min:</p>
+            <paper-slider name="minTime" value="2" max="255" editable></paper-slider>
+            <p>Max:</p>
+            <paper-slider name="maxTime" value="50" max="255" editable></paper-slider>
+            <paper-toggle-button name="scaleHists" checked id="scaleHistsToggle">Scale by nEvents</paper-toggle-button>
+            <p>Hot channel threshold</p>
+            <paper-slider name="hotChannelThreshold" value="3" max="100" editable></paper-slider>
+            <div class="buttons">
+                <paper-button dialog-dismiss>Cancel</paper-button>
+                <paper-button id="submitPartialMerge" dialog-confirm>Accept</paper-button>
+            </div>
+        </form>
     </paper-dialog-scrollable>
-    <div class="buttons">
-        <paper-button dialog-dismiss>Cancel</paper-button>
-        <paper-button dialog-confirm>Accept</paper-button>
-    </div>
 </paper-dialog>
 
 {# Defines direct access to the body block #}

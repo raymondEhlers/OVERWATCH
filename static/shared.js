@@ -29,6 +29,9 @@ document.addEventListener('WebComponentsReady', function() {
     var jsRootState = handleToggle("jsRootToggle");
     var ajaxState = handleToggle("ajaxToggle");
 
+    // Handle forms
+    handleFormSubmit("partialMergeForm", "submitPartialMerge");
+
     // Remove flask flashes after a short period to ensure that it doens't clutter the screen
     removeFlashes();
 
@@ -60,6 +63,17 @@ function removeFlashes() {
             flashes.style.display="none"
         }
     }, 5000)
+}
+
+function handleFormSubmit(selectedForm, selectedButton) {
+    var button = Polymer.dom(this.root).querySelector("#" + selectedButton);
+    console.log("button: " + $(button).text());
+    $(button).click(function() {
+        //var form = Polymer.dom(this.root).querySelector("#" + selectedForm);
+        var form = document.querySelector("#" + selectedForm);
+        console.log("form: " + $(form).text());
+        form.submit();
+    });
 }
 
 function handleToggle(selectedToggle) {
