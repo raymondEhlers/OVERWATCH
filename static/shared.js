@@ -289,7 +289,8 @@ function interceptLinks() {
         }
         else {
             // Handles general requests
-            if (ajaxToggle.checked === false) {
+            var pageToRequest = $(this).attr("href");
+            if (ajaxToggle.checked === false || pageToRequest.search("logout") !== -1) {
                 console.log("ajax disabled link");
 
                 // Get the current page
