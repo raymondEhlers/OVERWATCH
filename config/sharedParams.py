@@ -13,10 +13,10 @@ class sharedParameters(object):
     #: List of subsystems.
     #: Each subsystem listed here will have an individual page for their respective histograms.
     #: The HLT _MUST_ be included here!
-    subsystemList = ["EMC", "HLT"]
+    subsystemList = ["EMC", "TPC", "HLT"]
 
     #: Each of these subsystems will also get an individual page for access to their respective ROOT files.
-    subsystemsWithRootFilesToShow = ["EMC", "HLT"]
+    subsystemsWithRootFilesToShow = ["EMC", "TPC", "HLT"]
 
     qaFunctionsList = {"EMC": ["determineMedianSlope", "checkForOutliers"]}
     #qaFunctionsList = {"EMC": ["determineMedianSlope", "checkForOutliers"], "HLT" : ["determineValue"], "TPC" : ["checkForOutliers"]}

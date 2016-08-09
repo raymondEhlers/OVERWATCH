@@ -41,7 +41,7 @@ def sortAndGenerateHtmlForHLTHists(outputHistNames, outputFormatting, subsystem 
     # Generate links to histograms below
     htmlText = ""
     htmlText += "<div class=\"contentDivider\">"
-    htmlText += "<h3>" + "HLT Histograms" + "</h3>\n"
+    htmlText += "<h3>" + "%s Histograms" % subsystem + "</h3>\n"
     htmlText += generateHtml.generateHtmlForHistLinkOnRunPage(outputHistNames, 0)
     htmlText += "</div>"
 

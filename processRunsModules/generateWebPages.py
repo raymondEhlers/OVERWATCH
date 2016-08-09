@@ -114,7 +114,11 @@ def writeToWebPage(dirPrefix, runDir, subsystem, outputHistNames, outputFormatti
     htmlText += "<p>Run %s started at %s (CERN time zone).</br>\n<a target=\"_blank\" href=\"%s\">Logbook entry</a></p>\n" % (str(runNumber), runStartTimeString, logbookLink)
 
     # Call the sort and generate function for the proper subsystem. See the docs in that submodules for details on the function.
-    htmlText += getattr(currentModule, "sortAndGenerateHtmlFor%sHists" % subsystem)(outputHistNames, outputFormatting, subsystem)
+    try:
+        sortAndGenerateFunction = getattr(currentModule, "sortAndGenerateHtmlFor%sHists" % subsystem)
+    except AttributeError as e:
+        sortAndGenerateFunction = getattr(currentModule, "sortAndGenerateHtmlFor%sHists" % "HLT")
+    htmlText += sortAndGenerateFunction(outputHistNames, outputFormatting, subsystem)
        
     # Close up html page
     if generateTemplate == False:
