@@ -36,7 +36,7 @@ document.addEventListener('WebComponentsReady', function() {
     removeFlashes();
 
     // Ensure that all links are routed properly (either through ajax or a normal link)
-    interceptLinks();
+    routeLinks();
 
     // Fired click event on qa page if the elements exist
     // TODO: Fire on each reload. Perhaps there is a function that is called either on load or on ajax request
@@ -48,7 +48,7 @@ document.addEventListener('WebComponentsReady', function() {
     // Call jsroot if loaded without ajax
     if (jsRootState === true)
     {
-        jsRootReqeust();
+        jsRootRequest();
     }
 });
 
@@ -228,29 +228,30 @@ function showOrHideMenuButton() {
     }
 }
 
-function interceptLinks() {
-    var drawer = Polymer.dom(this.root).querySelector("#drawerContent");
+function routeLinks() {
+    //var drawer = Polymer.dom(this.root).querySelector("#drawerContent");
     var linksToIntercept = Polymer.dom(this.root).querySelectorAll(".linksToIntercept");
-    var allLinks = Polymer.dom(drawer).querySelectorAll("a");
-    console.log("allLinks: " + allLinks);
+    //var allLinks = Polymer.dom(drawer).querySelectorAll("a");
+    //console.log("allLinks: " + allLinks);
     //console.log("linksToIntercept: " + linksToIntercept);
     //console.log("linksToIntercept[0]: " + linksToIntercept[0].outerHTML);
-    console.log("drawer: " + drawer);
+    //console.log("drawer: " + drawer);
     //$(allLinks).click(function(event) {
     // Uses event delegation
     //$(drawer).on("click", "a", function(event) {
     $(linksToIntercept).on("click", "a", function(event) {
         var ajaxToggle = Polymer.dom(this.root).querySelector("#ajaxToggle");
 
-        // Get hist group
+        // Get hist group name
         var histGroupName = $(this).data("histgroup");
         console.log("histGroupName: " + histGroupName);
-        // Get histogram
+        // Get histogram name
         var histName = $(this).data("histname");
         console.log("histName: " + histName);
 
-        // jsRoot toggle
+        // jsRoot toggle status
         var jsRootToggle = Polymer.dom(this.root).querySelector("#jsRootToggle");
+        // Convert to bool
         var jsRoot = ($(jsRootToggle).prop("checked") === true);
         console.log("jsRoot: " + jsRoot);
 
@@ -289,20 +290,25 @@ function interceptLinks() {
         }
         else {
             // Handles general requests
+            console.log("this: " + $(this).text());
+            //console.log("current target: " + $(event.currentTarget).text());
+
+            // Get the current page
+            var currentPage = window.location.pathname;
+            console.log("currentPage: " + currentPage);
+
+            // Determine where the request should be routed
+            var pageToRequest = $(this).attr("href");
+            console.log("pageToRequest: " + pageToRequest);
+            if (pageToRequest === "#") {
+                // Request the current page again with the proper GET request instead of with a #
+                console.log("Routing the requesting to the address of the current page.");
+                pageToRequest = currentPage;
+            }
+
             var pageToRequest = $(this).attr("href");
             if (ajaxToggle.checked === false || pageToRequest.search("logout") !== -1) {
                 console.log("ajax disabled link");
-
-                // Get the current page
-                var currentPage = window.location.pathname;
-                console.log("currentPage: " + currentPage);
-
-                var pageToRequest = $(this).attr("href");
-                console.log("pageToRequest: " + pageToRequest);
-                if (pageToRequest === "#") {
-                    // Request the current page again with the proper GET request
-                    pageToRequest = currentPage;
-                }
 
                 if (!(histGroupName === undefined && histName === undefined && jsRoot === undefined)) {
                     console.log("Assigning parameters to href");
@@ -339,76 +345,7 @@ function interceptLinks() {
             }
             else {
                 console.log("ajax enabled link");
-                console.log("this: " + $(this).text());
-                //console.log("current target: " + $(event.currentTarget).text());
-
-                // Get the current page
-                var currentPage = window.location.pathname;
-                console.log("currentPage: " + currentPage);
-
-                var pageToRequest = $(this).attr("href");
-                console.log("pageToRequest: " + pageToRequest);
-                if (pageToRequest === "#") {
-                    // Request the current page again with the proper GET request
-                    pageToRequest = currentPage;
-                }
-
-                // Call ajax
-                // See: https://stackoverflow.com/a/788501
-                console.log("Sending ajax request to " + pageToRequest);
-                $.get($SCRIPT_ROOT + pageToRequest, {
-                    ajaxRequest: true,
-                    jsRoot: jsRoot,
-                    histName: histName,
-                    histGroup: histGroupName
-                }, function(data) {
-                    // Already JSON!
-                    console.log(data)
-                    var drawerContent = $(data).prop("drawerContent");
-                    //console.log("drawerContent " + drawerContent);
-                    if (drawerContent !== undefined)
-                    {
-                        console.log("Replacing drawer content!");
-                        var drawerContainer = Polymer.dom(this.root).querySelector("#drawerContent");
-                        $(drawerContainer).html(drawerContent);
-                    }
-                    var mainContent = $(data).prop("mainContent");
-                    //console.log("mainContent: " + mainContent);
-                    if (mainContent !== undefined)
-                    {
-                        console.log("Replacing main content!");
-                        var mainContainer = Polymer.dom(this.root).querySelector("#mainContent");
-                        $(mainContainer).html(mainContent);
-                    }
-                    //$("#mainCont").replaceWith(data);
-                    
-                    // Setup jsRoot and get images
-                    if (jsRoot === true)
-                    {
-                        jsRootReqeust();
-                    }
-
-                    // Update the title
-                    var title = Polymer.dom(this.root).querySelector("#mainContentTitle");
-                    var titlesToSet = Polymer.dom(this.root).querySelectorAll(".title");
-                    $(titlesToSet).text($(title).text());
-
-                    // Remove the properties button if necessary
-                    // TODO: Improve the robustness here? (ie should this just be in a re-init function?)
-                    showOrHideProperties();
-
-                    // Init QA doc string since the normal loading procedure is not executed here
-                    // TODO: Improve the robustness here? (ie should this just be in a re-init function?)
-                    initQADocStrings();
-
-                    // Update the drawer width
-                    // Code works, but the drawer does not handle this very gracefully.
-                    // Better to leave this disabled.
-                    /*var drawerWidthObject = Polymer.dom(this.root).querySelector("#drawerWidth");
-                    var drawerWidth = $(drawerWidth).data("width");
-                    var drawer = Polymer.dom(this.root).querySelector("#drawerPanelId");
-                    $(drawer).prop("drawerWidth", drawerWidth);*/
-                });
+                ajaxRequest(pageToRequest, jsRoot, histName, histGroupName);
 
                 // Update the hash
                 //var href = $(this).attr("href");
@@ -437,7 +374,66 @@ function interceptLinks() {
     });
 }
 
-function jsRootReqeust() {
+function ajaxRequest(pageToRequest, jsRoot, histName, histGroupName) {
+    // Call ajax
+    // See: https://stackoverflow.com/a/788501
+    console.log("Sending ajax request to " + pageToRequest);
+    $.get($SCRIPT_ROOT + pageToRequest, {
+        ajaxRequest: true,
+        jsRoot: jsRoot,
+        histName: histName,
+        histGroup: histGroupName
+    }, function(data) {
+        // Already JSON!
+        console.log(data)
+        var drawerContent = $(data).prop("drawerContent");
+        //console.log("drawerContent " + drawerContent);
+        if (drawerContent !== undefined)
+        {
+            console.log("Replacing drawer content!");
+            var drawerContainer = Polymer.dom(this.root).querySelector("#drawerContent");
+            $(drawerContainer).html(drawerContent);
+        }
+        var mainContent = $(data).prop("mainContent");
+        //console.log("mainContent: " + mainContent);
+        if (mainContent !== undefined)
+        {
+            console.log("Replacing main content!");
+            var mainContainer = Polymer.dom(this.root).querySelector("#mainContent");
+            $(mainContainer).html(mainContent);
+        }
+        //$("#mainCont").replaceWith(data);
+
+        // Setup jsRoot and get images
+        if (jsRoot === true)
+        {
+            jsRootRequest();
+        }
+
+        // Update the title
+        var title = Polymer.dom(this.root).querySelector("#mainContentTitle");
+        var titlesToSet = Polymer.dom(this.root).querySelectorAll(".title");
+        $(titlesToSet).text($(title).text());
+
+        // Remove the properties button if necessary
+        // TODO: Improve the robustness here? (ie should this just be in a re-init function?)
+        showOrHideProperties();
+
+        // Init QA doc string since the normal loading procedure is not executed here
+        // TODO: Improve the robustness here? (ie should this just be in a re-init function?)
+        initQADocStrings();
+
+        // Update the drawer width
+        // Code works, but the drawer does not handle this very gracefully.
+        // Better to leave this disabled.
+        /*var drawerWidthObject = Polymer.dom(this.root).querySelector("#drawerWidth");
+          var drawerWidth = $(drawerWidth).data("width");
+          var drawer = Polymer.dom(this.root).querySelector("#drawerPanelId");
+          $(drawer).prop("drawerWidth", drawerWidth);*/
+    });
+}
+
+function jsRootRequest() {
     console.log("Handling js root request!");
     var requestedHists = Polymer.dom(this.root).querySelectorAll(".histogramContainer");
 
