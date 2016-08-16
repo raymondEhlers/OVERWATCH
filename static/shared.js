@@ -22,9 +22,6 @@ document.addEventListener('WebComponentsReady', function() {
     // Add a listener for further changes
     document.addEventListener("paper-responsive-change", showOrHideMenuButton);
 
-    // Ensure that we only show on run pages
-    showOrHideProperties();
-
     // Handle toggle value
     var jsRootState = handleToggle("jsRootToggle");
     var ajaxState = handleToggle("ajaxToggle");
@@ -38,19 +35,33 @@ document.addEventListener('WebComponentsReady', function() {
     // Ensure that all links are routed properly (either through ajax or a normal link)
     routeLinks();
 
-    // Fired click event on qa page if the elements exist
-    // TODO: Fire on each reload. Perhaps there is a function that is called either on load or on ajax request
-    initQADocStrings();
-
     // Enables collapsing of containers with information
     collapsibleContainers();
 
-    // Call jsroot if loaded without ajax
+    // Initialize the page
+    initPage(jsRootState);
+});
+
+// These functions need to be run every time the page is laoded.
+// Calling this function allows it to happen both on initial load and on ajax request
+function initPage(jsRootState) {
+    // Get the value of jsRootState if it is undefined
+    // See: https://stackoverflow.com/a/894877
+    jsRootState = typeof jsRootState !== 'undefined' ? jsRootState : ($(Polymer.dom(this.root).querySelector("#jsRootToggle")).prop("checked") === true);
+    console.log("jsRootState: " + jsRootState);
+
+    // Call jsroot if necessary
     if (jsRootState === true)
     {
         jsRootRequest();
     }
-});
+
+    // Ensure that we only show on run pages
+    showOrHideProperties();
+
+    // Fired click event on qa page if the elements exist
+    initQADocStrings();
+}
 
 function removeFlashes() {
     /* Removes flash after 5 seconds to avoid confusion */
@@ -240,31 +251,7 @@ function routeLinks() {
     // Uses event delegation
     //$(drawer).on("click", "a", function(event) {
     $(linksToIntercept).on("click", "a", function(event) {
-        var ajaxToggle = Polymer.dom(this.root).querySelector("#ajaxToggle");
-
-        // Get hist group name
-        var histGroupName = $(this).data("histgroup");
-        console.log("histGroupName: " + histGroupName);
-        // Get histogram name
-        var histName = $(this).data("histname");
-        console.log("histName: " + histName);
-
-        // jsRoot toggle status
-        var jsRootToggle = Polymer.dom(this.root).querySelector("#jsRootToggle");
-        // Convert to bool
-        var jsRoot = ($(jsRootToggle).prop("checked") === true);
-        console.log("jsRoot: " + jsRoot);
-
-        var params = jQuery.param({
-            jsRoot: jsRoot,
-            histGroup: histGroupName,
-            histName: histName
-        });
-
-        // Handle link requests
-        console.log("params: " + params);
-
-        // Prevent the link while we change where it is going
+        // Prevent the link from being evaluated directly
         event.preventDefault();
 
         var currentTarget = event.currentTarget;
@@ -272,26 +259,33 @@ function routeLinks() {
 
         // Handles qa function descriptions
         if ($(currentTarget).hasClass("qaFunctionSelector")) {
-            // Hide previous docstring
-            var hideDocstring = Polymer.dom(this.root).querySelector(".showDocstring");
-            if (hideDocstring !== null)
-            {
-                $(hideDocstring).removeClass("showDocstring");
-                $(hideDocstring).addClass("hideElement");
-            }
-
-            // Show new docstring
-            var funcName = $(currentTarget).data("funcname");
-            var subsystem = $(currentTarget).data("subsystem");
-            var targetDocstring = Polymer.dom(this.root).querySelector("#" + subsystem + funcName);
-            console.log("targetDocstring: " + $(targetDocstring).text());
-            $(targetDocstring).removeClass("hideElement");
-            $(targetDocstring).addClass("showDocstring");
+            handleQADocStrings(currentTarget);
         }
         else {
             // Handles general requests
             console.log("this: " + $(this).text());
-            //console.log("current target: " + $(event.currentTarget).text());
+
+            // Determine parameters for the request
+            // Get hist group name
+            var histGroupName = $(this).data("histgroup");
+            // Get histogram name
+            var histName = $(this).data("histname");
+            // ajax toggle status
+            var ajaxToggle = Polymer.dom(this.root).querySelector("#ajaxToggle");
+            // jsRoot toggle status and convert it to bool
+            var jsRootToggle = Polymer.dom(this.root).querySelector("#jsRootToggle");
+            var jsRoot = ($(jsRootToggle).prop("checked") === true);
+            /*console.log("histGroupName: " + histGroupName);
+            console.log("histName: " + histName);
+            console.log("ajaxToggle: " + ajaxToggle);
+            console.log("jsRoot: " + jsRoot);*/
+
+            var params = {
+                jsRoot: jsRoot,
+                histGroup: histGroupName,
+                histName: histName
+            };
+            console.log("params: " + $(params).text());
 
             // Get the current page
             var currentPage = window.location.pathname;
@@ -306,29 +300,20 @@ function routeLinks() {
                 pageToRequest = currentPage;
             }
 
-            var pageToRequest = $(this).attr("href");
             if (ajaxToggle.checked === false || pageToRequest.search("logout") !== -1) {
                 console.log("ajax disabled link");
 
                 if (!(histGroupName === undefined && histName === undefined && jsRoot === undefined)) {
                     console.log("Assigning parameters to href");
-                    pageToRequest += "?" + params;
-                    // TEST
-                    //pageToRequest += "#";
+                    pageToRequest += "?" + jQuery.param(params);
                 }
                 else {
                     console.log("No parameters to assign");
                 }
 
                 // Assign the page (which will send it to the specified link)
+                console.log("Requesting page: " + pageToRequest);
                 window.location.href = pageToRequest;
-
-                // If ajax is disabled but jsroot is enabled, then we need to make another request for the jsroot content
-                /*if (ajaxState === false && jsRootState == true)
-                {
-                    // Fire event
-                    $(qaFunctionSelector).trigger("click");
-                }*/
 
                 // TODO: Update this more carefully to avoid adding unnecessary parameters
                 // Normalize to the html5 history
@@ -345,75 +330,89 @@ function routeLinks() {
             }
             else {
                 console.log("ajax enabled link");
-                ajaxRequest(pageToRequest, jsRoot, histName, histGroupName);
+                // We don't want to take the returned params variable, because adding the ajaxRequest setting to the url will often
+                // break loading the page from a link (ie it will only return the drawer and main content, which we don't want in
+                // that situation).
+                ajaxRequest(pageToRequest, params);
 
                 // Update the hash
                 //var href = $(this).attr("href");
                 //console.log("href: " + href)
                 //window.location.hash = href;
-
-                // Update the current link
-                //window.location.href += "?" + params;
-                // See: https://stackoverflow.com/a/5607923
-                console.log("histGroupName: " + histGroupName);
-                if (!(histGroupName === undefined && histName === undefined)) {
-                    // Uses a relative path
-                    window.history.pushState("string", "Title", "?" + params);
-                }
-                else {
-                    // Uses a absolute path
-                    window.history.pushState("string", "Title", pageToRequest);
-                }
-
-                // Prevent further action
-                return false;
             }
 
+            // Update the history
+            //window.location.href += "?" + params;
+            // See: https://stackoverflow.com/a/5607923
+            //console.log("histGroupName: " + histGroupName);
+            if (!(histGroupName === undefined && histName === undefined)) {
+                // Uses a relative path
+                window.history.pushState("string", "Title", "?" + jQuery.param(params));
+            }
+            else {
+                // Uses a absolute path
+                window.history.pushState("string", "Title", pageToRequest);
+            }
+
+            // Prevent further action
+            return false;
         }
 
     });
 }
 
-function ajaxRequest(pageToRequest, jsRoot, histName, histGroupName) {
+function ajaxRequest(pageToRequest, params) {
     // Call ajax
     // See: https://stackoverflow.com/a/788501
     console.log("Sending ajax request to " + pageToRequest);
-    $.get($SCRIPT_ROOT + pageToRequest, {
-        ajaxRequest: true,
-        jsRoot: jsRoot,
-        histName: histName,
-        histGroup: histGroupName
-    }, function(data) {
-        // Already JSON!
+
+    // Params is copied by reference, so we need to copy the object explicitly
+    // Careful with this approach! It will mangle many objects, but it is fine for these purposes.
+    // See: https://stackoverflow.com/a/5344074
+    var localParams = JSON.parse(JSON.stringify(params));
+    // Set that we are sending an ajax request
+    localParams.ajaxRequest = true;
+
+    // Make the actual request and handle the return
+    $.get($SCRIPT_ROOT + pageToRequest, localParams, function(data) {
+        // data is already JSON!
         console.log(data)
+
+        // Replace the drawer content if we received a meaingful response
         var drawerContent = $(data).prop("drawerContent");
-        //console.log("drawerContent " + drawerContent);
+        // console.log("drawerContent " + drawerContent);
         if (drawerContent !== undefined)
         {
-            console.log("Replacing drawer content!");
+            //console.log("Replacing drawer content!");
             var drawerContainer = Polymer.dom(this.root).querySelector("#drawerContent");
             $(drawerContainer).html(drawerContent);
         }
+
+        // Replace the main content if we received a meaingful response
         var mainContent = $(data).prop("mainContent");
         //console.log("mainContent: " + mainContent);
         if (mainContent !== undefined)
         {
-            console.log("Replacing main content!");
+            //console.log("Replacing main content!");
             var mainContainer = Polymer.dom(this.root).querySelector("#mainContent");
             $(mainContainer).html(mainContent);
         }
-        //$("#mainCont").replaceWith(data);
 
-        // Setup jsRoot and get images
-        if (jsRoot === true)
+        // Request jsRoot files if necessary
+        // Note that this will create some additional ajax requests
+        if (localParams.jsRoot === true)
         {
             jsRootRequest();
         }
 
-        // Update the title
+        // Update the title in the top bar based on the title defined in the main content
+        // The title was likely updated by the new content
+        // TODO: Improve the robustness here? (ie should this just be in a re-init function?)
         var title = Polymer.dom(this.root).querySelector("#mainContentTitle");
         var titlesToSet = Polymer.dom(this.root).querySelectorAll(".title");
-        $(titlesToSet).text($(title).text());
+        if (title) {
+            $(titlesToSet).text($(title).text());
+        }
 
         // Remove the properties button if necessary
         // TODO: Improve the robustness here? (ie should this just be in a re-init function?)
@@ -427,10 +426,12 @@ function ajaxRequest(pageToRequest, jsRoot, histName, histGroupName) {
         // Code works, but the drawer does not handle this very gracefully.
         // Better to leave this disabled.
         /*var drawerWidthObject = Polymer.dom(this.root).querySelector("#drawerWidth");
-          var drawerWidth = $(drawerWidth).data("width");
-          var drawer = Polymer.dom(this.root).querySelector("#drawerPanelId");
-          $(drawer).prop("drawerWidth", drawerWidth);*/
+        var drawerWidth = $(drawerWidth).data("width");
+        var drawer = Polymer.dom(this.root).querySelector("#drawerPanelId");
+        $(drawer).prop("drawerWidth", drawerWidth);*/
     });
+
+    return localParams;
 }
 
 function jsRootRequest() {
@@ -442,7 +443,7 @@ function jsRootRequest() {
         requestAddress = $(this).data("filename");
         requestAddress = "/monitoring/protected/" + requestAddress;
         console.log("requestAddress: " + requestAddress);
-        console.log("this: " + $(this).toString());
+        //console.log("this: " + $(this).toString());
         var idToDrawIn = $(this).attr("id");
         console.log("idToDrawIn:" + idToDrawIn);
         // Reason that [0] is needed is currently unclear!
@@ -471,6 +472,31 @@ function initQADocStrings() {
     {
         // Fire event
         $(qaFunctionSelector).trigger("click");
+    }
+}
+
+function handleQADocStrings(currentTarget) {
+    // Hide previous docstring
+    var hideDocstring = Polymer.dom(this.root).querySelector(".showDocstring");
+    if (hideDocstring !== null) {
+        $(hideDocstring).removeClass("showDocstring");
+        $(hideDocstring).addClass("hideElement");
+    }
+    else {
+        console.log("Failed to hide existing docstring!");
+    }
+
+    // Show new docstring
+    var funcName = $(currentTarget).data("funcname");
+    var subsystem = $(currentTarget).data("subsystem");
+    var targetDocstring = Polymer.dom(this.root).querySelector("#" + subsystem + funcName);
+    if (targetDocstring !== null) {
+        //console.log("targetDocstring: " + $(targetDocstring).text());
+        $(targetDocstring).removeClass("hideElement");
+        $(targetDocstring).addClass("showDocstring");
+    }
+    else {
+        console.log("Target docstring #" + subsystem + funcName + "is null! Cannot set docstring!");
     }
 }
 
