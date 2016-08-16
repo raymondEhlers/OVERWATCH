@@ -56,6 +56,14 @@ function initPage(jsRootState) {
         jsRootRequest();
     }
 
+    // Update the title in the top bar based on the title defined in the main content
+    // The title was likely updated by the new content
+    var title = Polymer.dom(this.root).querySelector("#mainContentTitle");
+    var titlesToSet = Polymer.dom(this.root).querySelectorAll(".title");
+    if (title) {
+        $(titlesToSet).text($(title).text());
+    }
+
     // Ensure that we only show on run pages
     showOrHideProperties();
 
@@ -341,7 +349,7 @@ function routeLinks() {
                 //window.location.hash = href;
             }
 
-            // Update the history
+            // TODO: Update the history
             //window.location.href += "?" + params;
             // See: https://stackoverflow.com/a/5607923
             //console.log("histGroupName: " + histGroupName);
@@ -398,29 +406,9 @@ function ajaxRequest(pageToRequest, params) {
             $(mainContainer).html(mainContent);
         }
 
-        // Request jsRoot files if necessary
-        // Note that this will create some additional ajax requests
-        if (localParams.jsRoot === true)
-        {
-            jsRootRequest();
-        }
-
-        // Update the title in the top bar based on the title defined in the main content
-        // The title was likely updated by the new content
-        // TODO: Improve the robustness here? (ie should this just be in a re-init function?)
-        var title = Polymer.dom(this.root).querySelector("#mainContentTitle");
-        var titlesToSet = Polymer.dom(this.root).querySelectorAll(".title");
-        if (title) {
-            $(titlesToSet).text($(title).text());
-        }
-
-        // Remove the properties button if necessary
-        // TODO: Improve the robustness here? (ie should this just be in a re-init function?)
-        showOrHideProperties();
-
-        // Init QA doc string since the normal loading procedure is not executed here
-        // TODO: Improve the robustness here? (ie should this just be in a re-init function?)
-        initQADocStrings();
+        // Handle page initialization
+        // Note that this could create some additional ajax requests via jsRoot
+        initPage(localParams.jsRoot);
 
         // Update the drawer width
         // Code works, but the drawer does not handle this very gracefully.
@@ -481,9 +469,6 @@ function handleQADocStrings(currentTarget) {
     if (hideDocstring !== null) {
         $(hideDocstring).removeClass("showDocstring");
         $(hideDocstring).addClass("hideElement");
-    }
-    else {
-        console.log("Failed to hide existing docstring!");
     }
 
     // Show new docstring
