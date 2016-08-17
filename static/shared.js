@@ -40,6 +40,9 @@ document.addEventListener('WebComponentsReady', function() {
 
     // Initialize the page
     initPage(jsRootState);
+
+    // Setup function to handle changing pages
+    window.addEventListener("popstate", handleChangeInHistory);
 });
 
 // These functions need to be run every time the page is laoded.
@@ -79,9 +82,9 @@ function removeFlashes() {
         var flashes = document.getElementById("flashes")
         if (flashes != null)
         {
-            flashes.style.display="none"
+            flashes.style.display = "none";
         }
-    }, 5000)
+    }, 5000);
 }
 
 function handleFormSubmit(selectedForm, selectedButton) {
@@ -280,16 +283,17 @@ function routeLinks() {
             var histName = $(this).data("histname");
             // ajax toggle status
             var ajaxToggle = Polymer.dom(this.root).querySelector("#ajaxToggle");
+            var ajaxState = ($(ajaxToggle).prop("checked") === true);
             // jsRoot toggle status and convert it to bool
             var jsRootToggle = Polymer.dom(this.root).querySelector("#jsRootToggle");
-            var jsRoot = ($(jsRootToggle).prop("checked") === true);
+            var jsRootState = ($(jsRootToggle).prop("checked") === true);
             /*console.log("histGroupName: " + histGroupName);
             console.log("histName: " + histName);
-            console.log("ajaxToggle: " + ajaxToggle);
-            console.log("jsRoot: " + jsRoot);*/
+            console.log("ajaxState: " + ajaxState);
+            console.log("jsRootState: " + jsRootState);*/
 
             var params = {
-                jsRoot: jsRoot,
+                jsRoot: jsRootState,
                 histGroup: histGroupName,
                 histName: histName
             };
@@ -308,10 +312,10 @@ function routeLinks() {
                 pageToRequest = currentPage;
             }
 
-            if (ajaxToggle.checked === false || pageToRequest.search("logout") !== -1) {
+            if (ajaxState === false || pageToRequest.search("logout") !== -1) {
                 console.log("ajax disabled link");
 
-                if (!(histGroupName === undefined && histName === undefined && jsRoot === undefined)) {
+                if (!(histGroupName === undefined && histName === undefined && jsRootState === undefined)) {
                     console.log("Assigning parameters to href");
                     pageToRequest += "?" + jQuery.param(params);
                 }
@@ -353,13 +357,13 @@ function routeLinks() {
             //window.location.href += "?" + params;
             // See: https://stackoverflow.com/a/5607923
             //console.log("histGroupName: " + histGroupName);
-            if (!(histGroupName === undefined && histName === undefined)) {
+            if (!(histGroupName === undefined && histName === undefined && jsRootState === undefined)) {
                 // Uses a relative path
-                window.history.pushState("string", "Title", "?" + jQuery.param(params));
+                window.history.pushState(params, "Title", "?" + jQuery.param(params));
             }
             else {
                 // Uses a absolute path
-                window.history.pushState("string", "Title", pageToRequest);
+                window.history.pushState(params, "Title", pageToRequest);
             }
 
             // Prevent further action
@@ -484,6 +488,25 @@ function handleQADocStrings(currentTarget) {
         console.log("Target docstring #" + subsystem + funcName + "is null! Cannot set docstring!");
     }
 }
+
+// This function is only called when navigating within the site
+function handleChangeInHistory(eventState) {
+    var state = eventState.state;
+    console.log("eventState: " + JSON.stringify(state));
+
+    //handleGeneralRequest(state);
+}
+
+/*function handleGeneralRequest(params) {
+    // See: https://stackoverflow.com/a/894877
+    params = typeof params !== 'undefined' ? params : null;
+    if (params === null) {
+
+    }
+    else {
+        
+    }
+}*/
 
 function collapsibleContainers() {
     //var containers = Polymer.dom(this.root).querySelectorAll(".collapsibleContainerButton");
