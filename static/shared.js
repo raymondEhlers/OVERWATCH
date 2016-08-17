@@ -276,29 +276,6 @@ function routeLinks() {
             // Handles general requests
             console.log("this: " + $(this).text());
 
-            // Determine parameters for the request
-            // Get hist group name
-            var histGroupName = $(this).data("histgroup");
-            // Get histogram name
-            var histName = $(this).data("histname");
-            // ajax toggle status
-            var ajaxToggle = Polymer.dom(this.root).querySelector("#ajaxToggle");
-            var ajaxState = ($(ajaxToggle).prop("checked") === true);
-            // jsRoot toggle status and convert it to bool
-            var jsRootToggle = Polymer.dom(this.root).querySelector("#jsRootToggle");
-            var jsRootState = ($(jsRootToggle).prop("checked") === true);
-            /*console.log("histGroupName: " + histGroupName);
-            console.log("histName: " + histName);
-            console.log("ajaxState: " + ajaxState);
-            console.log("jsRootState: " + jsRootState);*/
-
-            var params = {
-                jsRoot: jsRootState,
-                histGroup: histGroupName,
-                histName: histName
-            };
-            console.log("params: " + $(params).text());
-
             // Get the current page
             var currentPage = window.location.pathname;
             console.log("currentPage: " + currentPage);
@@ -312,52 +289,28 @@ function routeLinks() {
                 pageToRequest = currentPage;
             }
 
-            if (ajaxState === false || pageToRequest.search("logout") !== -1) {
-                console.log("ajax disabled link");
+            // Determine parameters for the request
+            // Get hist group name
+            var histGroupName = $(this).data("histgroup");
+            // Get histogram name
+            var histName = $(this).data("histname");
+            /*console.log("histGroupName: " + histGroupName);
+            console.log("histName: " + histName);*/
 
-                if (!(histGroupName === undefined && histName === undefined && jsRootState === undefined)) {
-                    console.log("Assigning parameters to href");
-                    pageToRequest += "?" + jQuery.param(params);
-                }
-                else {
-                    console.log("No parameters to assign");
-                }
+            // jsRoot and ajax will be added when handling the general request
+            var params = {
+                histGroup: histGroupName,
+                histName: histName
+            };
 
-                // Assign the page (which will send it to the specified link)
-                console.log("Requesting page: " + pageToRequest);
-                window.location.href = pageToRequest;
+            // Handle the general request
+            handleGeneralRequest(params, pageToRequest);
 
-                // TODO: Update this more carefully to avoid adding unnecessary parameters
-                // Normalize to the html5 history
-                //var appendTohref = window.location.href;
-                // Used since href contains the previous parameters
-                // See: https://stackoverflow.com/a/6257480
-                /*var appendTohref = window.location.protocol + "//" + window.location.host + window.location.pathname;
-                console.log("appendTohref: " + appendTohref);
-                appendTohref += "?";
-                appendTohref += params;
-                console.log("appendTohref: " + appendTohref);
-                window.location.href = appendTohref;*/
-                //window.location.hash = hash;
-            }
-            else {
-                console.log("ajax enabled link");
-                // We don't want to take the returned params variable, because adding the ajaxRequest setting to the url will often
-                // break loading the page from a link (ie it will only return the drawer and main content, which we don't want in
-                // that situation).
-                ajaxRequest(pageToRequest, params);
-
-                // Update the hash
-                //var href = $(this).attr("href");
-                //console.log("href: " + href)
-                //window.location.hash = href;
-            }
-
-            // TODO: Update the history
-            //window.location.href += "?" + params;
-            // See: https://stackoverflow.com/a/5607923
-            //console.log("histGroupName: " + histGroupName);
-            if (!(histGroupName === undefined && histName === undefined && jsRootState === undefined)) {
+            // Update the history using the HTML5 history API
+            // We only do this here because we don't want to update the history when going backwards and forwards.
+            // The condition does not include jsRoot, because if it is the only defined parameter, then we just
+            // want to hide it. The value will be picked up for the toggle by the time of the request.
+            if (!(params.histGroup === undefined && params.histName === undefined)) {
                 // Uses a relative path
                 window.history.pushState(params, "Title", "?" + jQuery.param(params));
             }
@@ -369,7 +322,6 @@ function routeLinks() {
             // Prevent further action
             return false;
         }
-
     });
 }
 
@@ -494,19 +446,62 @@ function handleChangeInHistory(eventState) {
     var state = eventState.state;
     console.log("eventState: " + JSON.stringify(state));
 
-    //handleGeneralRequest(state);
+    handleGeneralRequest(state);
 }
 
-/*function handleGeneralRequest(params) {
+function handleGeneralRequest(params, pageToRequest) {
+    // Allow pageToRequest to be optional
     // See: https://stackoverflow.com/a/894877
-    params = typeof params !== 'undefined' ? params : null;
+    pageToRequest = typeof pageToRequest !== 'undefined' ? pageToRequest : window.location.pathname;
+
+    console.log("params passed for general request: " + JSON.stringify(params));
+
+    // Params are empty so we need to do a general request. In that case, we want an empty object
     if (params === null) {
+        params = {};
+    }
+
+    // ajax toggle status and convert it to bool
+    var ajaxToggle = Polymer.dom(this.root).querySelector("#ajaxToggle");
+    var ajaxState = ($(ajaxToggle).prop("checked") === true);
+    // jsRoot toggle status and convert it to bool
+    var jsRootToggle = Polymer.dom(this.root).querySelector("#jsRootToggle");
+    var jsRootState = ($(jsRootToggle).prop("checked") === true);
+    /*console.log("ajaxState: " + ajaxState);
+    console.log("jsRootState: " + jsRootState);*/
+
+    // This will ignore whatever was sent in the parameters and use whatever value the user has set.
+    // However, this seems preferable, because different users may have different desired settings,
+    // and it would be nice if the links adapted.
+    params.jsRoot = jsRootState;
+
+    console.log("params for general request: " + JSON.stringify(params));
+
+    if (ajaxState === false || pageToRequest.search("logout") !== -1) {
+        console.log("ajax disabled link");
+
+        // This should never fall through since jsRoot should always be defined, but it is left to be careful.
+        if (!(params.histGroup === undefined && params.histName === undefined && params.jsRoot === undefined)) {
+            console.log("Assigning parameters to href");
+            pageToRequest += "?" + jQuery.param(params);
+        }
+        else {
+            console.log("ERROR: No parameters to assign");
+        }
+
+        // Assign the page (which will send it to the specified link)
+        console.log("Requesting page: " + pageToRequest);
+        window.location.href = pageToRequest;
 
     }
     else {
-        
+        console.log("ajax enabled link");
+        // We don't want to take the returned params variable, because adding the ajaxRequest setting to the url
+        // will often break loading the page from a link (ie it will only return the drawer and main content,
+        // which we don't want in that situation).
+        ajaxRequest(pageToRequest, params);
     }
-}*/
+}
 
 function collapsibleContainers() {
     //var containers = Polymer.dom(this.root).querySelectorAll(".collapsibleContainerButton");
