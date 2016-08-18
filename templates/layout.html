@@ -62,22 +62,22 @@
         {# <!--<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">--> #}
         {# Favicon support from: realfavicongenerator.net #}
         {# TODO: Update paths with url_for? #}
-        <link rel="apple-touch-icon" sizes="180x180" href="/static/apple-touch-icon.png?v=1">
-        <link rel="icon" type="image/png" href="/static/favicon-32x32.png?v=1" sizes="32x32">
-        <link rel="icon" type="image/png" href="/static/favicon-16x16.png?v=1" sizes="16x16">
-        <link rel="manifest" href="/static/manifest.json?v=1">
-        <link rel="mask-icon" href="/static/safari-pinned-tab.svg?v=1" color="#003e72">
-        <link rel="shortcut icon" href="/static/favicon.ico?v=1">
-        <meta name="msapplication-config" content="/static/browserconfig.xml?v=1">
+        <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png?v=2">
+        <link rel="icon" type="image/png" href="/static/icons/favicon-32x32.png?v=2" sizes="32x32">
+        <link rel="icon" type="image/png" href="/static/icons/favicon-16x16.png?v=2" sizes="16x16">
+        <link rel="manifest" href="/static/icons/manifest.json?v=2">
+        <link rel="mask-icon" href="/static/icons/safari-pinned-tab.svg?v=2" color="#003e72">
+        <link rel="shortcut icon" href="/static/icons/favicon.ico?v=2">
+        <meta name="msapplication-config" content="/static/icons/browserconfig.xml?v=2">
         <meta name="theme-color" content="#003e72">
         {# Set color of nav bar #}
         {# See: https://stackoverflow.com/a/33193739 #}
         <!-- Blink, webkit -->
-        <meta name="theme-color" content="#C6E2FF">
+        {# <!--<meta name="theme-color" content="#C6E2FF">--> #}
         <!-- Windows phone -->
-        <meta name="msapplication-navbutton-color" content="#C6E2FF">
+        <meta name="msapplication-navbutton-color" content="#003e72">
         <!-- iOS (?) -->
-        <meta name="apple-mobile-web-app-status-bar-style" content="#C6E2FF">
+        <meta name="apple-mobile-web-app-status-bar-style" content="#003e72">
         {% block head %}{% endblock %}
     </head>
     <!-- unresolved causes the page not be to be shown until it is ready -->
