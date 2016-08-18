@@ -51,7 +51,7 @@ then
     # Additional settings
     # Sets the library path for both python and libffi
     export LD_LIBRARY_PATH="/project/projectdirs/alice/aliprodweb/python_bin/v2.7.11/lib:/project/projectdirs/alice/aliprodweb/essentials/install/lib64:$LD_LIBRARY_PATH"
-elif [[ "$HOSTNAME" == "aliceoverwatch" ]];
+elif [[ $(hostname -f) == *"aliceoverwatch"* && $(hostname -f) == *"yale"* ]];
 then
     # Define necessary variables
     projectPath="/opt/www/aliceoverwatch"
@@ -60,6 +60,19 @@ then
     location="Yale"
     buildType="root"
     role="server"
+
+    # Additional settings
+    # None!
+elif [[ $(hostname -f) == *"aliceoverwatch"* && $(hostname -f) == *"cern"* ]];
+then
+    # Define necessary variables
+    projectPath="/home/emcal/overwatch"
+    virtualEnvPath="/home/emcal/overwatch/.env/bin/activate"
+    location="overwatchCERN"
+    buildType="aliBuild"
+    role="processing"
+    # Not meaningful when using aliBuild
+    rootSysPath=""
 
     # Additional settings
     # None!
