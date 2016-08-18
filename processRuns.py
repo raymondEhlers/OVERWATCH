@@ -193,10 +193,13 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
 
             # Add to our list for printing to the webpage later
             # We only want to do this if we are actually printing the histogram
-            outputHistNames.append(hist.GetName())
+            outputName = hist.GetName()
+            # Replace any slashes with underscores to ensure that it can be used safely as a filename
+            outputName = outputName.replace("/", "_")
+            outputHistNames.append(outputName)
 
             # Save
-            outputFilename = outputFormatting % hist.GetName()
+            outputFilename = outputFormatting % outputName
             canvas.SaveAs(outputFilename)
 
     # Remove NEvents so that it doesn't get printed
