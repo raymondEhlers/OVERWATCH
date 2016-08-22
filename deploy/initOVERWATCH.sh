@@ -127,9 +127,18 @@ elif [[ "$buildType" == "aliBuild" ]];
 then
     # Setup ROOT using aliBuild
     # Setup aliBuild helper
+    export ALICE_WORK_DIR="/home/emcal/alice/sw"
     eval "`alienv shell-helper`"
 
-    eval "$(alienv load AliRoot/latest-aliMaster)"
+    if [[ "$sourcedScript" == true ]];
+    then
+        alienv load AliRoot/latest-aliMaster
+    else
+        eval "$(alienv load AliRoot/latest-aliMaster)"
+    fi
+
+    # List modules
+    alienv list
 
     # Setup python in root
     export PYTHONPATH="$ROOTSYS/lib"
