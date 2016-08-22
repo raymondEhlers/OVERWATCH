@@ -42,7 +42,7 @@ if [[ $HOSTNAME == *"pdsf"* || $HOSTNAME == *"sgn"* ]];
 then
     # Define necessary variables
     projectPath="/project/projectdirs/alice/aliprodweb/overwatch"
-    rootSysPath="/project/projectdirs/alice/aliprodweb/ROOT/"
+    softwarePath="/project/projectdirs/alice/aliprodweb/ROOT/"
     virtualEnvPath="/project/projectdirs/alice/aliprodweb/virtualenv/python_2_7_11/bin/activate"
     location="PDSF"
     buildType="root"
@@ -55,7 +55,7 @@ elif [[ $(hostname -f) == *"aliceoverwatch"* && $(hostname -f) == *"yale"* ]];
 then
     # Define necessary variables
     projectPath="/opt/www/aliceoverwatch"
-    rootSysPath="/opt/aliceSW/root/alice_v5-34-30/inst/"
+    softwarePath="/opt/aliceSW/root/alice_v5-34-30/inst/"
     virtualEnvPath="/opt/www/aliceoverwatch/.env/bin/activate"
     location="Yale"
     buildType="root"
@@ -71,8 +71,7 @@ then
     location="overwatchCERN"
     buildType="aliBuild"
     role="processing"
-    # Not meaningful when using aliBuild
-    rootSysPath=""
+    softwarePath="/home/emcal/alice/sw"
 
     # Additional settings
     # None!
@@ -84,8 +83,8 @@ then
     location="lbnl5"
     buildType="aliBuild"
     role="processing"
-    # Not meaningful when using aliBuild
-    rootSysPath=""
+    # Not necessarily meaningful when using aliBuild
+    softwarePath=""
 
     # Additional settings
     # None here, but more below (ie PYTHONPATH)
@@ -97,7 +96,7 @@ then
     location="lbnl3"
     buildType="alice-env"
     role="processing"
-    rootSysPath="/home/james/alice/"
+    softwarePath="/home/james/alice/"
 
     # Additional settings
     # None here, but more below (ie PYTHONPATH)
@@ -118,7 +117,7 @@ echo "INFO: Loading ROOT"
 if [[ "$buildType" == "root" ]];
 then
     # Setup ROOT using thisroot.sh
-    cd "$rootSysPath"
+    cd "$softwarePath"
     source bin/thisroot.sh
 
     # Return to the project directory
@@ -127,15 +126,18 @@ elif [[ "$buildType" == "aliBuild" ]];
 then
     # Setup ROOT using aliBuild
     # Setup aliBuild helper
-    export ALICE_WORK_DIR="/home/emcal/alice/sw"
+    if [[ -n "$softwarePath" ]];
+    then
+        export ALICE_WORK_DIR="$softwarePath"
+    fi
     eval "`alienv shell-helper`"
 
-    if [[ "$sourcedScript" == true ]];
-    then
+    #if [[ "$sourcedScript" == true ]];
+    #then
         alienv load AliRoot/latest-aliMaster
-    else
-        eval "$(alienv load AliRoot/latest-aliMaster)"
-    fi
+    #else
+    #    eval "$(alienv load AliRoot/latest-aliMaster)"
+    #fi
 
     # List modules
     alienv list
@@ -145,7 +147,7 @@ then
 elif [[ "$buildType" == "alice-env" ]];
 then
     # Load the alice environment
-    source "$rootSysPath"/alice-env.sh -n 1 -q
+    source "$softwarePath"/alice-env.sh -n 1 -q
 else
     echo "ERROR: Unrecognized build type $buildType! Exiting"
     safeExit 1
