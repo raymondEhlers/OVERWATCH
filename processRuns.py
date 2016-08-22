@@ -644,10 +644,13 @@ def processAllRuns():
                     if os.path.exists(os.path.join(dirPrefix, runDir, "HLT")):
                         fileLocationSubsystem = "HLT"
                         # Define subsystem path properly for this data arrangement
-                        subsystemPath.replace(subsystem, "HLT")
+                        subsystemPath = subsystemPath.replace(subsystem, "HLT")
                     else:
                         # Cannot create subsystem, since the HLT doesn't exist as a fall back
-                        print("Could not create subsystem {0} in {1} due to lacking HLT files.".format(subsystem, runDir))
+                        if subsystem == "HLT":
+                            print("Could not create subsystem {0} in {1} due to lacking HLT files.".format(subsystem, runDir))
+                        else:
+                            print("Could not create subsystem {0} in {1} due to lacking {0} and HLT files.".format(subsystem, runDir))
                         continue
 
                 print("Creating subsystem {0} in {1}".format(subsystem, runDir))
@@ -691,7 +694,7 @@ def processAllRuns():
                 run.subsystems[subsystem].files = files
 
                 # Add combined
-                combinedFilename = [filename for filename in os.listdir(subsystemPath) if "combined" in filename and ".root"in filename]
+                combinedFilename = [filename for filename in os.listdir(subsystemPath) if "combined" in filename and ".root" in filename]
                 if len(combinedFilename) > 1:
                     print("ERROR: Number of combined files in {0} is {1}, but should be 1! Exiting!".format(runDir, len(combinedFilename)))
                     exit(0)

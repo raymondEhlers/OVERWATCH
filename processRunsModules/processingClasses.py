@@ -80,7 +80,7 @@ class subsystemContainer(object):
             self.fileLocationSubsystem = fileLocationSubsystem
 
         if self.showRootFiles == True and self.subsystem != self.fileLocationSubsystem:
-                print("\tWARNING! It is requested to show ROOT files for subsystem %s, but the subsystem does not have specific data files. Using HLT data files!" % subsystem)
+            print("\tWARNING! It is requested to show ROOT files for subsystem %s, but the subsystem does not have specific data files. Using HLT data files!" % subsystem)
 
         # Files
         # Be certain to set these after the subsystem has been created!

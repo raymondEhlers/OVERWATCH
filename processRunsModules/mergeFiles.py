@@ -246,6 +246,10 @@ def mergeRootFiles(runs, dirPrefix, forceNewMerge = False, cumulativeMode = True
         for subsystem in run.subsystems:
             # Only merge if we there are new files to merge
             if run.subsystems[subsystem].newFile == True or forceNewMerge:
+                # Skip if the subsystem does not have it's own files
+                if run.subsystems[subsystem].subsystem != run.subsystems[subsystem].fileLocationSubsystem:
+                    continue
+
                 # Perform the merge
                 # This is the prefix for working with most files
                 filenamePrefix = os.path.join(currentDir, runDir, subsystem)
