@@ -90,7 +90,7 @@ def createEMCHistogramStacks(subsystem):
                 # See: https://stackoverflow.com/a/15411146
                 subsystem.histsAvailable.pop(histName, None)
             # Add a new hist object for the stack
-            subsystem.histsAvailable[histName] = processingClasses.histogramStackContainer(histName, histNames)
+            subsystem.histsAvailable[histName] = processingClasses.histogramContainer(histName, histNames)
             continue
         patchAmpSelector = "EMCalPatchAmpEMC"
         if patchAmpSelector in histName and patchAmpSelector.replace("EMCal", "DCal") in subsystem.histsInFile:
@@ -102,7 +102,7 @@ def createEMCHistogramStacks(subsystem):
                 # See: https://stackoverflow.com/a/15411146
                 subsystem.histsAvailable.pop(histName, None)
             # Add a new hist object for the stack
-            subsystem.histsAvailable[histName] = processingClasses.histogramStackContainer(histName, histNames)
+            subsystem.histsAvailable[histName] = processingClasses.histogramContainer(histName, histNames)
             continue
 
         # Just add if we don't want need to stack

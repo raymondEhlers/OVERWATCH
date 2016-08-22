@@ -186,8 +186,12 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             # Retrieve histogram and canvas
             hist = subsystem.hists[histName]
             hist.retrieveHistogram(fIn)
+            # TODO: Switch to a single canvas(?)
             if hist.canvas is None:
-                hist.canvas = TCanvas(hist.histName + "Canvas", hist.histName + "Canvas")
+                # Cannot have same name, otherwise the canvas will be replace, leading to segfaults
+                # Start of run should unique to each run!
+                hist.canvas = TCanvas("{0}Canvas{1}{2}".format(hist.histName, subsystem.subsystem, subsystem.startOfRun),
+                                      "{0}Canvas{1}{2}".format(hist.histName, subsystem.subsystem, subsystem.startOfRun))
             canvas = hist.canvas
             # Ensure we plot onto the right canvas
             canvas.cd()
@@ -230,7 +234,10 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             #outputHistNames.append(hist.GetName())
 
             # Save
-            outputFilename = outputFormatting % hist.histName
+            outputName = hist.histName
+            # Replace any slashes with underscores to ensure that it can be used safely as a filename
+            outputName = outputName.replace("/", "_")
+            outputFilename = outputFormatting % outputName
             canvas.SaveAs(outputFilename)
 
             # Write BufferJSON

@@ -198,6 +198,8 @@ class histogramContainer(object):
     
     """
     def __init__(self, histName, histList = None, prettyName = None):
+        # Replace any slashes with underscores to ensure that it can be used safely as a filename
+        #histName = histName.replace("/", "_")
         self.histName = histName
         # Only assign if meaningful
         if prettyName != None:
