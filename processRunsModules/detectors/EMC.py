@@ -636,36 +636,6 @@ def fastOROptions(subsystem, hist):
 
         hist.information["Fast OR Hot Channels ID"] = absIdList
 
-        # Create pave text to display above threshold values
-        # TODO: This should be saved with the element and written to the page rather than the image.
-        #        Such a change will require a change in architecture.
-        #pave = TPaveText(0.1, 0.7, 0.9, 0.2, "NB NDC")
-        #pave.SetTextAlign(13)
-        #pave.SetTextFont(43)
-        #pave.SetTextSize(12)
-        #pave.SetFillStyle(0)
-        #pave.SetTextColor(kRed)
-        #pave.SetBorderSize(0)
-        #SetOwnership(pave, False)
-
-        ## Add above threshold values to the pave text
-        #absIdText = ""
-        #for absId in absIdList:
-        #    if absIdText:
-        #        absIdText = "{0}, {1}".format(absIdText, absId)
-        #    else:
-        #        absIdText = "{0}".format(absId)
-        #    if len(absIdText) > 110:
-        #        pave.AddText(absIdText)
-        #        #print(absIdText)
-        #        absIdText = ""
-        ##print(hist.GetName())
-
-        ## Only draw if we have enough statistics!
-        #if subsystem.nEvents > 10000:
-        #    #print("Drawing hot fastORs!")
-        #    pave.Draw("same")
-
 ###################################################
 def patchAmpOptions(subsystem, hist):
     # Setup canvas as desired

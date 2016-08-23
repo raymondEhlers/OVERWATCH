@@ -1,4 +1,5 @@
-/* TODO: Remove some debug messages! */
+// Handles JS generally for OVERWATCH
+// Author: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
 
 // Handle all of the polymer elements!
 // To ensure that elements are ready on polyfilled browsers, wait for WebComponentsReady. 
