@@ -12,7 +12,7 @@ from __future__ import print_function
 from builtins import range
 
 # Used for QA functions
-from ROOT import ROOT, TH1, TH1F, THStack, TF1, gPad, TAxis, TGaxis, SetOwnership, TPaveText, TLegend, TLine, kRed, kBlue, kOpenCircle, kFullCircle
+from ROOT import ROOT, gStyle, TH1, TH1F, THStack, TF1, gPad, TAxis, TGaxis, SetOwnership, TPaveText, TLegend, TLine, kRed, kBlue, kOpenCircle, kFullCircle
 
 # Used for the outlier detection function
 import numpy
@@ -509,6 +509,8 @@ def labelSupermodules(hist):
     if "_SM" in hist.histName[-5:]:
         smNumber = hist.histName[hist.histName.find("_SM")+3:]
         hist.hist.SetTitle("SM {0}".format(smNumber))
+        # Show title
+        gStyle.SetOptTitle(1)
 
 ###################################################
 # Add a grid representing the TRUs to a canvas.
@@ -753,6 +755,8 @@ def findFunctionsForEMCHistogram(subsystem, hist):
     # TODO: Consider refactor on this line
     if processingParameters.debug == False:
         hist.hist.SetStats(False)
+        # Disable the title
+        gStyle.SetOptTitle(0)
 
     # Plot by SM
     if "SM" in hist.histName:

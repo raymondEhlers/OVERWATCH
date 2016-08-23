@@ -203,7 +203,8 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
                 canvas.SetLogz()
 
             # Setup and draw histogram
-            hist.hist.SetTitle("")
+            # Turn off title, but store the value
+            gStyle.SetOptTitle(0)
             hist.hist.Draw(hist.drawOptions)
             canvas.Update()
 
