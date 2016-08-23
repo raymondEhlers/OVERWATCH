@@ -110,6 +110,7 @@ class subsystemContainer(object):
         self.histGroups = collections.OrderedDict()
         # Should be accessed through the group usually, but this provides direct access
         self.histsInFile = sortedcontainers.SortedDict()
+        # All hists, including those which were created, along with those in the file
         self.histsAvailable = sortedcontainers.SortedDict()
         # Hists list that should be used
         self.hists = sortedcontainers.SortedDict()

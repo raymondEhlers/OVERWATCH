@@ -84,72 +84,69 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
     keysInFile.Sort()
 
     # Get histograms and sort them if they do not exist in the subsystem
-    # TODO: Consider a condition where this is not necessary
-    for key in keysInFile:
-        classOfObject = gROOT.GetClass(key.GetClassName())
-        #if classOfObject.InheritsFrom("TH1"):
-        if classOfObject.InheritsFrom(TH1.Class()):
-            # Create histogram object
-            hist = processingClasses.histogramContainer(key.GetName())
-            hist.hist = None
-            hist.canvas = None
-            #hist.hist = key.ReadObj()
-            #hist.canvas = TCanvas(key.GetName() + "Canvas", key.GetName() + "Canvas")
-            # Shouldn't be needed, because I keep a reference to it
-            #SetOwnership(hist.canvas, False)
-            subsystem.histsInFile[hist.histName] = hist
-            
-            # Set nEvents
-            #if subsystem.nEvents is None and "events" in hist.histName.lower():
-            if "events" in hist.histName.lower():
-                subsystem.nEvents = key.ReadObj().GetBinContent(1)
+    # Only need to do this the first time for each run
+    if not subsystem.hists:
+        for key in keysInFile:
+            classOfObject = gROOT.GetClass(key.GetClassName())
+            #if classOfObject.InheritsFrom("TH1"):
+            if classOfObject.InheritsFrom(TH1.Class()):
+                # Create histogram object
+                hist = processingClasses.histogramContainer(key.GetName())
+                hist.hist = None
+                hist.canvas = None
+                #hist.hist = key.ReadObj()
+                #hist.canvas = TCanvas(key.GetName() + "Canvas", key.GetName() + "Canvas")
+                # Shouldn't be needed, because I keep a reference to it
+                #SetOwnership(hist.canvas, False)
+                subsystem.histsInFile[hist.histName] = hist
 
-    # Create the subsystem stacks
-    # TODO: Consider a condition where this is not necessary
-    qa.createHistogramStacks(subsystem)
+                # Set nEvents
+                #if subsystem.nEvents is None and "events" in hist.histName.lower():
+                if "events" in hist.histName.lower():
+                    subsystem.nEvents = key.ReadObj().GetBinContent(1)
 
-    # Customize histogram traits
-    # TODO: Consider a condition where this is not necessary
-    qa.setHistogramOptions(subsystem)
+        # Create the subsystem stacks
+        qa.createHistogramStacks(subsystem)
 
-    # Create histogram sorting groups
-    # TODO: Consider a condition where this is not necessary
-    if subsystem.histGroups == sortedcontainers.SortedDict():
-        sortingSuccess = qa.createHistGroups(subsystem)
-        if sortingSuccess is False:
-            if processingParameters.beVerbose:
-                print("Subsystem {0} does not have a sorting function. Adding all histograms into one group!".format(subsystem.subsystem))
+        # Customize histogram traits
+        qa.setHistogramOptions(subsystem)
 
-            if subsystem.fileLocationSubsystem != subsystem.subsystem:
-                selection = subsystem.subsystem
+        # Create histogram sorting groups
+        if subsystem.histGroups == sortedcontainers.SortedDict():
+            sortingSuccess = qa.createHistGroups(subsystem)
+            if sortingSuccess is False:
+                if processingParameters.beVerbose:
+                    print("Subsystem {0} does not have a sorting function. Adding all histograms into one group!".format(subsystem.subsystem))
+
+                if subsystem.fileLocationSubsystem != subsystem.subsystem:
+                    selection = subsystem.subsystem
+                else:
+                    selection = ""
+                print("selection: {0}".format(selection))
+                subsystem.histGroups[subsystem.subsystem] = processingClasses.histogramGroupContainer(subsystem.subsystem + " Histograms", selection)
+
+        # Finally classify into the groups and determine which functions to apply
+        for hist in subsystem.histsAvailable.values():
+            # Add the histogram name to the proper group
+            classifiedHist = False
+            for group in subsystem.histGroups.values():
+                if group.selectionPattern in hist.histName:
+                    group.histList.append(hist.histName)
+                    classifiedHist = True
+                    # Break so that we don't have multiple copies of hists!
+                    break
+
+            # TEMP
+            print("{2} hist: {0} - classified: {1}".format(hist.histName, classifiedHist, subsystem.subsystem))
+
+            if classifiedHist:
+                # Determine the functions (qa and monitoring) to apply
+                qa.findFunctionsForHist(subsystem, hist)
+                # Add it to the subsystem
+                subsystem.hists[hist.histName] = hist
             else:
-                selection = ""
-            print("selection: {0}".format(selection))
-            subsystem.histGroups[subsystem.subsystem] = processingClasses.histogramGroupContainer(subsystem.subsystem + " Histograms", selection)
-
-    # Finally classify into the groups and determine which functions to apply
-    # TODO: Consider a condition where this is not necessary
-    for hist in subsystem.histsAvailable.values():
-        # Add the histogram name to the proper group
-        classifiedHist = False
-        for group in subsystem.histGroups.values():
-            if group.selectionPattern in hist.histName:
-                group.histList.append(hist.histName)
-                classifiedHist = True
-                # Break so that we don't have multiple copies of hists!
-                break
-
-        # TEMP
-        print("{2} hist: {0} - classified: {1}".format(hist.histName, classifiedHist, subsystem.subsystem))
-
-        if classifiedHist:
-            # Determine the functions (qa and monitoring) to apply
-            qa.findFunctionsForHist(subsystem, hist)
-            # Add it to the subsystem
-            subsystem.hists[hist.histName] = hist
-        else:
-            if processingParameters.beVerbose:
-                print("Skipping histogram {0} since it is not classifiable for subsystem {1}".format(hist.histName, subsystem.subsystem))
+                if processingParameters.beVerbose:
+                    print("Skipping histogram {0} since it is not classifiable for subsystem {1}".format(hist.histName, subsystem.subsystem))
 
     # TODO: Run a check on nEvents in the previous file somewhere to see if we have repeated data.
     #       Repeated data occurs when the number of events is the same between two files. In that case,
