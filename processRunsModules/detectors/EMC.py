@@ -21,7 +21,6 @@ import numpy
 import itertools
 
 # Used for sorting and generating html
-from processRunsModules import generateHtml
 from processRunsModules import processingClasses
 
 # For retrieving debug configuration
@@ -137,8 +136,9 @@ def createEMCHistogramGroups(subsystem):
 
 ###################################################
 def setEMCHistogramOptions(subsystem):
-
-    # TODO: Set the histogram draw options
+    """ Set general hist object options.
+    
+    Drawing and additional options must be set later."""
 
     # Set the histogram pretty names
     # We can remove the first 12 characters
@@ -146,109 +146,109 @@ def setEMCHistogramOptions(subsystem):
         hist.prettyName = hist.histName[12:]
 
 ###################################################
-def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem = "EMC"):
-    """ Sorts and displays EMC histograms.
+#def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem = "EMC"):
+#    """ Sorts and displays EMC histograms.
+#
+#    Heavily relies on :func:`~processRunsModules.generateHtml.generateHtmlForHistLinkOnRunPage`
+#    and :func:`~processRunsModules.generateHtml.generateHtmlForHistOnRunPage`.
+#    Check out code for specifics on how the images are sorted and the pages are formatted.
+#
+#    Args:
+#        outputHistNames (list): List of histograms to add to the page. Typically, these have
+#            been printed from ROOT files.
+#        outputFormatting (str): Specially formatted string which contains a generic path to the printed histograms.
+#            The string contains "%s" to print the filename contained in listOfHists. It also includes the file
+#            extension. Ex: "img/%s.png"
+#        subsystem (str): The current subsystem by three letter, all capital name. Here it should always be ``EMC``.
+#            Default: "EMC"
+#
+#    Returns:
+#        str: HTML containing all of the EMC histograms, with proper formatting and links from the top of the page to the named images.
+#
+#    """
 
-    Heavily relies on :func:`~processRunsModules.generateHtml.generateHtmlForHistLinkOnRunPage`
-    and :func:`~processRunsModules.generateHtml.generateHtmlForHistOnRunPage`.
-    Check out code for specifics on how the images are sorted and the pages are formatted.
+    ## Group filenames
+    #for filename in outputHistNames:
+    #    for group in groupedHists:
+    #        if group.selectionPattern in filename:
+    #            group.histList.append(filename)
+    #            # Break so that we don't have multiple copies of hists!
+    #            break
 
-    Args:
-        outputHistNames (list): List of histograms to add to the page. Typically, these have
-            been printed from ROOT files.
-        outputFormatting (str): Specially formatted string which contains a generic path to the printed histograms.
-            The string contains "%s" to print the filename contained in listOfHists. It also includes the file
-            extension. Ex: "img/%s.png"
-        subsystem (str): The current subsystem by three letter, all capital name. Here it should always be ``EMC``.
-            Default: "EMC"
+    ## Sort
+    #for group in groupedHists:
+    #    if group.histList == []:
+    #        continue
+    #    if group.plotInGrid == True:
+    #        # If we do not sort more carefully, then it will go 1, 10, 11, .., 2, 3, 4,..
+    #        # since the numbers are contained in strings.
+    #        # NOTE: This find could cause sorting problems if plotInGridSelectionPattern is not in the hist names!
+    #        # However, this would mean that the object has been set up incorrectly
+    #        # NOTE: Reverse so that we plot SMs in descending order
+    #        group.histList = sorted(group.histList, key=lambda x: int(x[x.find(group.plotInGridSelectionPattern) + len(group.plotInGridSelectionPattern):]), reverse=True)
+    #        group.histList = sortSMsInPhysicalOrder(group.histList)
+    #    else:
+    #        # Sort hists
+    #        group.histList.sort()
 
-    Returns:
-        str: HTML containing all of the EMC histograms, with proper formatting and links from the top of the page to the named images.
+    ## Links to histograms
+    #htmlText = ""
+    #htmlText += "<div class=\"contentDivider\">\n"
+    ## Get the proper label for the plots by SM section
+    ## This depends on all SM plots being processed first
+    #for group in groupedHists:
+    #    if group.plotInGrid == True and group.histList != []:
+    #        htmlText += "<h3>Plots By SM</h3>\n"
+    #        # We only want to make the label once
+    #        break
 
-    """
+    ## Generate the actual links
+    #for group in groupedHists:
+    #    # We don't want to generate any links if there are no hists in the category
+    #    if group.histList == []:
+    #        continue
 
-    # Group filenames
-    for filename in outputHistNames:
-        for group in groupedHists:
-            if group.selectionPattern in filename:
-                group.histList.append(filename)
-                # Break so that we don't have multiple copies of hists!
-                break
+    #    if group.plotInGrid == True:
+    #        # Create a link to the group that will be displayed in a grid
+    #        # Seperate out into EMCal and DCal
+    #        # EMCal
+    #        htmlText += generateHtml.generateHtmlForPlotInGridLinks(group.name + " - EMCal")
+    #        # DCal
+    #        htmlText += generateHtml.generateHtmlForPlotInGridLinks(group.name + " -  DCal")
+    #    else:
+    #        # Create label for group
+    #        htmlText += "<h3>" + group.name + "</h3>\n"
+    #        startOfName = 12
+    #        if group.selectionPattern == "":
+    #            startOfName = 0
+    #        # Create links to all hists in the group
+    #        htmlText += generateHtml.generateHtmlForHistLinkOnRunPage(group.histList, startOfName)
 
-    # Sort
-    for group in groupedHists:
-        if group.histList == []:
-            continue
-        if group.plotInGrid == True:
-            # If we do not sort more carefully, then it will go 1, 10, 11, .., 2, 3, 4,..
-            # since the numbers are contained in strings.
-            # NOTE: This find could cause sorting problems if plotInGridSelectionPattern is not in the hist names!
-            # However, this would mean that the object has been set up incorrectly
-            # NOTE: Reverse so that we plot SMs in descending order
-            group.histList = sorted(group.histList, key=lambda x: int(x[x.find(group.plotInGridSelectionPattern) + len(group.plotInGridSelectionPattern):]), reverse=True)
-            group.histList = sortSMsInPhysicalOrder(group.histList)
-        else:
-            # Sort hists
-            group.histList.sort()
+    ## Close the div
+    #htmlText += "</div>\n"
 
-    # Links to histograms
-    htmlText = ""
-    htmlText += "<div class=\"contentDivider\">\n"
-    # Get the proper label for the plots by SM section
-    # This depends on all SM plots being processed first
-    for group in groupedHists:
-        if group.plotInGrid == True and group.histList != []:
-            htmlText += "<h3>Plots By SM</h3>\n"
-            # We only want to make the label once
-            break
+    ## Display histograms in the same order as anchors
+    #for group in groupedHists:
+    #    # We don't want to add any images if there are no hists in the category
+    #    if group.histList == []:
+    #        continue
 
-    # Generate the actual links
-    for group in groupedHists:
-        # We don't want to generate any links if there are no hists in the category
-        if group.histList == []:
-            continue
+    #    if group.plotInGrid == True:
+    #        # Add images in a grid
+    #        # Seperate out into EMCal and DCal
+    #        # EMCal
+    #        htmlText += generateHtml.generateHtmlForPlotInGrid(group.histList[8:], group.name + " - EMCal", outputFormatting, nColumns = 2)
+    #        # DCal
+    #        htmlText += generateHtml.generateHtmlForPlotInGrid(group.histList[:8], group.name + " -  DCal", outputFormatting, nColumns = 2)
+    #    else:
+    #        # This ensures that we don't cut the names of the non-EMC hists
+    #        startOfName = 12
+    #        if group.selectionPattern == "":
+    #            startOfName = 0
+    #        # Add images for this group
+    #        htmlText += generateHtml.generateHtmlForHistOnRunPage(group.histList, outputFormatting, startOfName)
 
-        if group.plotInGrid == True:
-            # Create a link to the group that will be displayed in a grid
-            # Seperate out into EMCal and DCal
-            # EMCal
-            htmlText += generateHtml.generateHtmlForPlotInGridLinks(group.name + " - EMCal")
-            # DCal
-            htmlText += generateHtml.generateHtmlForPlotInGridLinks(group.name + " -  DCal")
-        else:
-            # Create label for group
-            htmlText += "<h3>" + group.name + "</h3>\n"
-            startOfName = 12
-            if group.selectionPattern == "":
-                startOfName = 0
-            # Create links to all hists in the group
-            htmlText += generateHtml.generateHtmlForHistLinkOnRunPage(group.histList, startOfName)
-
-    # Close the div
-    htmlText += "</div>\n"
-
-    # Display histograms in the same order as anchors
-    for group in groupedHists:
-        # We don't want to add any images if there are no hists in the category
-        if group.histList == []:
-            continue
-
-        if group.plotInGrid == True:
-            # Add images in a grid
-            # Seperate out into EMCal and DCal
-            # EMCal
-            htmlText += generateHtml.generateHtmlForPlotInGrid(group.histList[8:], group.name + " - EMCal", outputFormatting, nColumns = 2)
-            # DCal
-            htmlText += generateHtml.generateHtmlForPlotInGrid(group.histList[:8], group.name + " -  DCal", outputFormatting, nColumns = 2)
-        else:
-            # This ensures that we don't cut the names of the non-EMC hists
-            startOfName = 12
-            if group.selectionPattern == "":
-                startOfName = 0
-            # Add images for this group
-            htmlText += generateHtml.generateHtmlForHistOnRunPage(group.histList, outputFormatting, startOfName)
-
-    return htmlText
+    #return htmlText
 
 
 ######################################################################################################

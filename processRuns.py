@@ -41,7 +41,6 @@ from config.processingParams import processingParameters
 
 # Module includes
 from processRunsModules import utilities
-from processRunsModules import generateWebPages
 from processRunsModules import mergeFiles
 from processRunsModules import qa
 from processRunsModules import processingClasses
@@ -511,12 +510,12 @@ def processPartialRun(timeSliceRunNumber, minTimeRequested, maxTimeRequested, su
     timeKeys = sorted(mergeDict.keys())
 
     # Generate the output html, writing out how long was merged
-    generateWebPages.writeToWebPage(baseDirName, runDir, subsystem.subsystem, outputHistNames, outputFormattingWeb, timeKeys[0], maxTimeMinutes, minTimeRequested, maxTimeRequested, actualTimeBetween)
-    if templateDataDirName != None:
-        # templateDataDirPrefix is already set to the time slice dir, so we can just use it.
-        if not os.path.exists(templateDataDirPrefix):
-            os.makedirs(templateDataDirPrefix)
-        generateWebPages.writeToWebPage(templateDataDirPrefix, runDir, subsystem.subsystem, outputHistNames, outputFormattingWeb, timeKeys[0], maxTimeMinutes, minTimeRequested, maxTimeRequested, actualTimeBetween, generateTemplate = True)
+    #generateWebPages.writeToWebPage(baseDirName, runDir, subsystem.subsystem, outputHistNames, outputFormattingWeb, timeKeys[0], maxTimeMinutes, minTimeRequested, maxTimeRequested, actualTimeBetween)
+    #if templateDataDirName != None:
+    #    # templateDataDirPrefix is already set to the time slice dir, so we can just use it.
+    #    if not os.path.exists(templateDataDirPrefix):
+    #        os.makedirs(templateDataDirPrefix)
+    #    generateWebPages.writeToWebPage(templateDataDirPrefix, runDir, subsystem.subsystem, outputHistNames, outputFormattingWeb, timeKeys[0], maxTimeMinutes, minTimeRequested, maxTimeRequested, actualTimeBetween, generateTemplate = True)
 
     # We don't need to write to the main webpage since this is an inner page that would not show up there anyway
 
@@ -822,12 +821,12 @@ def processAllRuns():
 
     # Now write the webpage in the root directory
     # Static page
-    generateWebPages.writeRootWebPage(dirPrefix, subsystems)
-    if templateDataDirName != None:
-        # Templated page
-        generateWebPages.writeRootWebPage(templateDataDirPrefix, subsystems, generateTemplate = True)
+    #generateWebPages.writeRootWebPage(dirPrefix, subsystems)
+    #if templateDataDirName != None:
+    #    # Templated page
+    #    generateWebPages.writeRootWebPage(templateDataDirPrefix, subsystems, generateTemplate = True)
 
-    print("Finished processing! Webpage available at: %s/runList.html" % os.path.abspath(dirPrefix))
+    #print("Finished processing! Webpage available at: %s/runList.html" % os.path.abspath(dirPrefix))
 
     # Send data to pdsf via rsync
     if sendData == True:
