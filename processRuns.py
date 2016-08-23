@@ -87,6 +87,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
                 hist = processingClasses.histogramContainer(key.GetName())
                 hist.hist = None
                 hist.canvas = None
+                hist.histType = classOfObject
                 #hist.hist = key.ReadObj()
                 #hist.canvas = TCanvas("{0}Canvas{1}{2}".format(hist.histName, subsystem.subsystem, subsystem.startOfRun),
                 #                      "{0}Canvas{1}{2}".format(hist.histName, subsystem.subsystem, subsystem.startOfRun))
@@ -160,19 +161,10 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             # Ensure we plot onto the right canvas
             canvas.cd()
 
-            # Allows curotmization of draw options for 2D hists
-            # TODO: This probably should be moved elsewhere. In particular, this should be defined in the
-            # detector subsystem. It would be different from others in that they are more general options.
-            # Perhaps setGeneral(EMC)DrawOptions()?
-            if hist.hist.InheritsFrom("TH2"):
-                hist.drawOptions += " colz"
-                canvas.SetLogz()
-
             # Setup and draw histogram
             # Turn off title, but store the value
             gStyle.SetOptTitle(0)
             hist.hist.Draw(hist.drawOptions)
-            canvas.Update()
 
             # Call functions for each hist
             #print("Functions to apply: {0}".format(hist.functionsToApply))
@@ -180,16 +172,15 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
                 #print("Calling func: {0}".format(func))
                 func(subsystem, hist)
 
-            # Various checks and QA that are performed on hists
-            skipPrinting = qa.checkHist(hist.hist, qaContainer)
+            if qaContainer:
+                # Various checks and QA that are performed on hists
+                skipPrinting = qa.checkHist(hist.hist, qaContainer)
 
-            # TODO: Determine whether the qa function check is still needed!
-            # Skips printing out the histogram
-            if skipPrinting == True:
-                #if processingParameters.beVerbose == True and qaContainer.qaFunctionName == "":
-                if processingParameters.beVerbose:
-                    print("Skip printing histogram {0}".format(hist.GetName()))
-                continue
+                # Skips printing out the histogram
+                if skipPrinting == True:
+                    if processingParameters.beVerbose:
+                        print("Skip printing histogram {0}".format(hist.GetName()))
+                    continue
 
             # Filter here for hists in the subsystem if subsystem != fileLocationSubsystem
             # Thus, we can filter the proper subsystems for subsystems that don't have their own data files

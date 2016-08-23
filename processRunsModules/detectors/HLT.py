@@ -7,14 +7,19 @@ This currently serves as a catch all for unsorted histograms. No additional QA f
 
 """
 
+import ROOT
+
 ######################################################################################################
 ######################################################################################################
 # QA Functions
 ######################################################################################################
 ######################################################################################################
 
-###################################################
-def setHLTDrawOptions(hist, qaContainer):
+def generalHLTOptions(subsystem, hist):
     # Show HLT titles (by request from Mikolaj)
-    if "EMC" not in hist.GetName():
-        gStyle.SetOptTitle(1)
+    if "EMC" not in hist.histName:
+        ROOT.gStyle.SetOptTitle(1)
+
+def findFunctionsForHLTHistogram(subsystem, hist):
+    # General HLT Options
+    hist.functionsToApply.append(generalHLTOptions)

@@ -211,6 +211,7 @@ class histogramContainer(object):
         self.histList = histList
         self.information = dict()
         self.hist = None
+        self.histType = None
         self.drawOptions = ""
         # Contains the canvas where the hist may be plotted, along with additional content
         self.canvas = None

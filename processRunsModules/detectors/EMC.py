@@ -12,7 +12,7 @@ from __future__ import print_function
 from builtins import range
 
 # Used for QA functions
-from ROOT import ROOT, gStyle, TH1, TH1F, THStack, TF1, gPad, TAxis, TGaxis, SetOwnership, TPaveText, TLegend, TLine, kRed, kBlue, kOpenCircle, kFullCircle
+from ROOT import ROOT, gStyle, TH1, TH2, TH1F, THStack, TF1, gPad, TAxis, TGaxis, SetOwnership, TPaveText, TLegend, TLine, kRed, kBlue, kOpenCircle, kFullCircle
 
 # Used for the outlier detection function
 import numpy
@@ -138,12 +138,34 @@ def createEMCHistogramGroups(subsystem):
 def setEMCHistogramOptions(subsystem):
     """ Set general hist object options.
     
-    Drawing and additional options must be set later."""
+    Canvas and additional options must be set later."""
 
     # Set the histogram pretty names
     # We can remove the first 12 characters
     for hist in subsystem.histsAvailable.values():
         hist.prettyName = hist.histName[12:]
+
+        # Set colz for any TH2 hists
+        if hist.histType.InheritsFrom(TH2.Class()):
+            hist.drawOptions += " colz"
+
+###################################################
+def generalEMCOptions(subsystem, hist):
+    # Set options for when not debugging
+    if processingParameters.debug == False:
+        # Disable hist stats
+        hist.hist.SetStats(False)
+
+    # Disable the title
+    gStyle.SetOptTitle(0)
+
+    # Allows curotmization of draw options for 2D hists
+    if hist.hist.InheritsFrom(TH2.Class()):
+        hist.canvas.SetLogz()
+
+    # Updates the canvas, as Update() does not seem to work
+    # See: https://root.cern.ch/root/roottalk/roottalk02/3965.html
+    hist.canvas.Modified()
 
 ###################################################
 #def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem = "EMC"):
@@ -456,11 +478,6 @@ def properlyPlotPatchSpectra(subsystem, hist):
     """
     hist.canvas.SetLogy()
     hist.canvas.SetGrid(1,1)
-    #else:
-    #    if processingParameters.debug == False:
-    #        hist.SetStats(False)
-    #    gPad.SetLogy(0)
-    #    gPad.SetGrid(0,0)
 
 ###################################################
 # Add Energy Axis to Patch Amplitude Spectra
@@ -718,16 +735,10 @@ def patchAmpOptions(subsystem, hist):
 # Add drawing options to plots
 # Plots come in 4 types: PlotbySM, Plot2D, Plot1D, PlotMaxMatch
 ###################################################
-#def setEMCDrawOptions(hist, qaContainer):
 def findFunctionsForEMCHistogram(subsystem, hist):
 
-    # Disable hist stats when not debugging.
-    # Always true, so leave it here, even if it is perhaps not totally appropriate for function
-    # TODO: Consider refactor on this line
-    if processingParameters.debug == False:
-        hist.hist.SetStats(False)
-        # Disable the title
-        gStyle.SetOptTitle(0)
+    # General EMC Options
+    hist.functionsToApply.append(generalEMCOptions)
 
     # Plot by SM
     if "SM" in hist.histName:

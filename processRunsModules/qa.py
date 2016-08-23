@@ -52,7 +52,7 @@ def createHistogramStacks(subsystem):
 
 ###################################################
 def setHistogramOptions(subsystem):
-    """ Properly routes histogram stack function for each subsystem
+    """ Properly routes histogram options function for each subsystem
     
     """
     functionName = "set" + subsystem.subsystem + "HistogramOptions"
@@ -63,8 +63,6 @@ def setHistogramOptions(subsystem):
         print("Could not find histogram stack function for subsystem {0}.".format(subsystem.subsystem))
         # Ensure that the histograms propagate to the next dict if there is not stack function!
         subsystem.histsAvailable = subsystem.histsInFile
-
-
 
 ###################################################
 def findFunctionsForHist(subsystem, hist):
@@ -96,23 +94,11 @@ def checkHist(hist, qaContainer):
     """
     #print "called checkHist()"
     skipPrinting = False
-    if qaContainer.qaFunctionName is not "":
-        # Python functions to apply for processing a particular QA function
-        # Only a single function is selected on the QA page, so no loop is necessary
-        # (ie only one call can be made).
-        skipPrinting = getattr(currentModule, qaContainer.qaFunctionName)(hist, qaContainer)
-    else:
-        # Functions to always apply when processing
-        # We loop here because multiple functions could be desired here
-        # We do not want to skip printing here, so the default value is fine and
-        # the return value is ignored.
-        for functionName in processingParameters.qaFunctionsToAlwaysApply:
-            #print dir(currentModule)
-            returnValue = False
-            returnValue = getattr(currentModule, functionName)(hist, qaContainer)
-            # If we get one return to skip printing, then must skip printing regardless of the other functions
-            if returnValue == True:
-                skipPrinting = True
+
+    # Python functions to apply for processing a particular QA function
+    # Only a single function is selected on the QA page, so no loop is necessary
+    # (ie only one call can be made).
+    skipPrinting = getattr(currentModule, qaContainer.qaFunctionName)(hist, qaContainer)
 
     return skipPrinting
 
