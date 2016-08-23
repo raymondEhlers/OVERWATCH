@@ -311,34 +311,36 @@ function ajaxRequest(pageToRequest, params) {
     return localParams;
 }
 
+// Handle jsRoot requests
 function jsRootRequest() {
     console.log("Handling js root request!");
+    // Find all histograms that should be requested
     var requestedHists = Polymer.dom(this.root).querySelectorAll(".histogramContainer");
 
+    // Request each jsRoot object
     $(requestedHists).each(function() {
-        // TODO: Improve the robustness here
-        requestAddress = $(this).data("filename");
-        requestAddress = "/monitoring/protected/" + requestAddress;
+        // Determine the request address
+        // Set the base request URL
+        requestAddress = "/monitoring/protected/";
+        // Add the filename from the histogram container corresponding to the request
+        requestAddress += $(this).data("filename");
         console.log("requestAddress: " + requestAddress);
-        //console.log("this: " + $(this).toString());
-        var idToDrawIn = $(this).attr("id");
-        console.log("idToDrawIn:" + idToDrawIn);
-        // Reason that [0] is needed is currently unclear!
-        var objectToDrawIn = $(this)[0];
-        var req = JSROOT.NewHttpRequest(requestAddress, 'object', function(canvas) {
-            // Plot the hist
-            // Allow the div to resize properly
-            // TODO: Improve registration with Polymer size changes!
-            // It currently doesn't work and generates errors on some reloads, so disable for now
-            //JSROOT.RegisterForResize(objectToDrawIn);
-            // The 2 corresponds to the 2x2 grid above
-            //if (layout != null) { console.log("2x2 this.cnt % 2: " + this.cnt); frame = layout.FindFrame("item" + this.cnt , true) }
 
-            // redraw canvas at specified frame
-            JSROOT.redraw(objectToDrawIn, canvas, "colz");
+        // Sets where the hist will be drawn
+        var objectToDrawIn = this;
+        // Define the request
+        var req = JSROOT.NewHttpRequest(requestAddress, 'object', function(jsRootObj) {
+            // Plot the jsRootObj
+            // jsRootObj is the object returned by jsRoot
+            // For a grid, one would have to set one the required divs beforehand.
+            // Then select the corresponding one to draw in after each request
+
+            // (re)draw jsRootObj at specified frame "objectToDrawIn"
+            JSROOT.redraw(objectToDrawIn, jsRootObj, "colz");
         });
 
-        req.send(null);
+        // Actually send the request
+        req.send();
     });
 }
 
