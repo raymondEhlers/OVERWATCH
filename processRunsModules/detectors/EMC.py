@@ -73,36 +73,37 @@ def sortSMsInPhysicalOrder(histList):
     return tempList
 
 ###################################################
+def checkForEMCHistStack(subsystem, histName, skipList, selector):
+    if selector in histName and selector.replace("EMCal", "DCal") in subsystem.histsInFile:
+        # Don't add to the availableHists
+        histNames = [histName, histName.replace("EMCal", "DCal")]
+        skipList.extend(histName)
+        # Remove hists if they exist (EMCal shouldn't, but DCal could)
+        for name in histName:
+            # See: https://stackoverflow.com/a/15411146
+            subsystem.histsAvailable.pop(histName, None)
+        # Add a new hist object for the stack
+        subsystem.histsAvailable[histName] = processingClasses.histogramContainer(histName, histNames)
+
+        return True
+
+    # Return false otherwise
+    return False
+
+###################################################
 def createEMCHistogramStacks(subsystem):
     skipList = []
     for histName in subsystem.histsInFile:
         # Skip if we have already put it into another stack
         if histName in skipList:
             continue
-        # TODO: Refactor these functions
-        patchAmpSelector = "EMCalMaxPatchAmpEMC"
-        if patchAmpSelector in histName and patchAmpSelector.replace("EMCal", "DCal") in subsystem.histsInFile:
-            # Don't add to the availableHists 
-            histNames = [histName, histName.replace("EMCal", "DCal")]
-            skipList.extend(histName)
-            # Remove hists if they exist (EMCal shouldn't, but DCal could)
-            for name in histName:
-                # See: https://stackoverflow.com/a/15411146
-                subsystem.histsAvailable.pop(histName, None)
-            # Add a new hist object for the stack
-            subsystem.histsAvailable[histName] = processingClasses.histogramContainer(histName, histNames)
+        # Stack for EMCalMaxPatchAmp
+        result = checkForEMCHistStack(subsystem, histName, skipList, "EMCalMaxPatchAmpEMC")
+        if result:
             continue
-        patchAmpSelector = "EMCalPatchAmpEMC"
-        if patchAmpSelector in histName and patchAmpSelector.replace("EMCal", "DCal") in subsystem.histsInFile:
-            # Don't add to the availableHists 
-            histNames = [histName, histName.replace("EMCal", "DCal")]
-            skipList.extend(histName)
-            # Remove hists if they exist (EMCal shouldn't, but DCal could)
-            for name in histName:
-                # See: https://stackoverflow.com/a/15411146
-                subsystem.histsAvailable.pop(histName, None)
-            # Add a new hist object for the stack
-            subsystem.histsAvailable[histName] = processingClasses.histogramContainer(histName, histNames)
+        # Stack for EMCalPatchAmp
+        result = checkForEMCHistStack(subsystem, histName, skipList, "EMCalPatchAmpEMC")
+        if result:
             continue
 
         # Just add if we don't want need to stack
