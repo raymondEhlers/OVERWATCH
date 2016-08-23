@@ -178,18 +178,20 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
     #            print("NEvents: {0}".format(nEvents.GetBinContent(1)))
     #            qaContainer.addHist(nEvents, "NEvents")
 
+    # Cannot have same name as other canvases, otherwise the canvas will be replaced, leading to segfaults
+    # Start of run should unique to each run!
+    canvas = TCanvas("{0}Canvas{1}{2}".format("processRuns", subsystem.subsystem, subsystem.startOfRun),
+                     "{0}Canvas{1}{2}".format("processRuns", subsystem.subsystem, subsystem.startOfRun))
     for histGroup in subsystem.histGroups.values():
         for histName in histGroup.histList:
             # Retrieve histogram and canvas
             hist = subsystem.hists[histName]
             hist.retrieveHistogram(fIn)
-            # TODO: Switch to a single canvas(?)
             if hist.canvas is None:
-                # Cannot have same name, otherwise the canvas will be replace, leading to segfaults
-                # Start of run should unique to each run!
-                hist.canvas = TCanvas("{0}Canvas{1}{2}".format(hist.histName, subsystem.subsystem, subsystem.startOfRun),
-                                      "{0}Canvas{1}{2}".format(hist.histName, subsystem.subsystem, subsystem.startOfRun))
-            canvas = hist.canvas
+                # Reset canvas and make it accessible through the hist object
+                hist.canvas = canvas
+                canvas.Clear()
+
             # Ensure we plot onto the right canvas
             canvas.cd()
 
@@ -227,10 +229,6 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             #if subsystem.subsystem != subsystem.fileLocationSubsystem and subsystem.subsystem not in hist.GetName():
             #    continue
 
-            # Add to our list for printing to the webpage later
-            # We only want to do this if we are actually printing the histogram
-            #outputHistNames.append(hist.GetName())
-
             # Save
             outputName = hist.histName
             # Replace any slashes with underscores to ensure that it can be used safely as a filename
@@ -248,20 +246,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             # Clear hist and canvas so that we can successfully save
             hist.hist = None
             hist.canvas = None
-            canvas = None
-
-    # Clear canvases at the end to ensure that we don't carry them around
-    # Otherwise, we get "TCanvas::Constructor:0: RuntimeWarning: Deleting canvas with same name: EMCTRQA_histCMPosEMCREBKGCanvas" from the TCanvas constructor deleting the previous canvas with the same name.
-    # TODO: Think of a better solution
-    #removeCanvases = subsystem.histsAvailable.copy()
-    #removeCanvases.update(subsystem.histsInFile)
-    #for hist in removeCanvases.values():
-    #    if hist.canvas is not None:
-    #        # See: https://wlav.web.cern.ch/wlav/pyroot/memory.html#id2540226
-    #        hist.canvas.IsA().Destructor( hist.canvas )
-    #        hist.canvas = None
-    #    if hist.hist is not None:
-    #        hist.hist = None
+            #canvas = None
 
     # Useful information: https://root.cern.ch/phpBB3/viewtopic.php?t=11049
     #for key in keysInFile:
