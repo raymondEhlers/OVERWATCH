@@ -107,9 +107,9 @@ function setFormValues() {
     var form = Polymer.dom(this.root).querySelector("#partialMergeForm");
 
     if (form !== undefined && mainContent !== undefined) {
-        setFormMaxValue(form, "minTimeMergeInput", formValues, "mintimemax", "max");
-        setFormMaxValue(form, "maxTimeMergeInput", formValues, "maxtimemax", "max", true);
-        setFormMaxValue(form, "hotChannelThreshold", formValues, "hotchannelthreshold", "value");
+        //setFormMaxValue(form, "minTimeMergeInput", formValues, "mintimemax", "max");
+        //setFormMaxValue(form, "maxTimeMergeInput", formValues, "maxtimemax", "max", true);
+        //setFormMaxValue(form, "hotChannelThreshold", formValues, "hotchannelthreshold", "value");
 
         // Set max to max value
     }
@@ -229,6 +229,12 @@ function routeLinks() {
     // Uses event delegation
     //$(drawer).on("click", "a", function(event) {
     $(linksToIntercept).on("click", "a", function(event) {
+        // Handle download links properly
+        // If the "download" attribute exists, then instead of handling with ajax, we just let it run as normal
+        if ($(this).attr("download") !== undefined) {
+            return;
+        }
+
         // Prevent the link from being evaluated directly
         event.preventDefault();
 
