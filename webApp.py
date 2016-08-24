@@ -68,8 +68,6 @@ loginManager.login_view = "login"
 # Load data
 # TODO: Improve mechanism!
 runs = pickle.load( open(os.path.join(serverParameters.protectedFolder, "runs.p"), "rb") )
-# Find available templates on startup
-serverParameters.availabeRunPageTemplates = [name for name in os.listdir(serverParameters.templateFolder) if "runPage.html" in name]
 
 ###################################################
 @loginManager.user_loader
@@ -215,36 +213,32 @@ def runPage(runNumber, subsystem, requestedFileType):
     if ajaxRequest == False:
         if requestedFileType == "runPage":
             runPageName = subsystem + "runPage.html"
-            if runPageName not in serverParameters.availabeRunPageTemplates:
+            if runPageName not in serverParameters.availableRunPageTemplates:
                 runPageName = runPageName.replace(subsystem, "")
 
             try:
                 returnValue = render_template(runPageName, run=runs[runDir], subsystemName=subsystem, selectedHistGroup=requestedHistGroup, selectedHist = requestedHist, jsRoot = jsRoot, useGrid=False)
             except jinja2.exceptions.TemplateNotFound as e:
                 returnValue = render_template("error.html", errors={"Template Error": ["Request template: \"{0}\", but it was not found!".format(e.name)]})
-            return returnValue
         elif requestedFileType == "rootFiles":
-            # TODO: Consider splitting these functions?
-            return render_template("rootfiles.html", run=runs[runDir], subsystem=subsystem)
+            returnValue = render_template("rootfiles.html", run=runs[runDir], subsystem=subsystem)
+        else:
+            returnValue = render_template("error.html", errors={"Request Error": ["Requested: {0}. Must request either runPage or rootFiles!".format(requestedFileType)]})
 
-        return render_template("error.html", errors={"Request Error": ["Requested: {0}. Must request either runPage or rootFiles!".format(requestedFileType)]})
+        return returnValue
     else:
-        # result = handleAjax(page, enableDrawer, enableMainContent, args...)
-        # TODO: This should be refactored into a function!
         print("requestedHistGroup: {0}".format(requestedHistGroup))
         if requestedFileType == "runPage":
             drawerContent = render_template("runPageDrawer.html", run=runs[runDir], subsystem=runs[runDir].subsystems[subsystem], selectedHistGroup = requestedHistGroup, selectedHist = requestedHist, jsRoot = jsRoot, useGrid=False)
             mainContent = render_template("runPageMainContent.html", run=runs[runDir], subsystem=runs[runDir].subsystems[subsystem], selectedHistGroup = requestedHistGroup, selectedHist = requestedHist, jsRoot = jsRoot, useGrid=False)
-
-            return jsonify(drawerContent = drawerContent, mainContent = mainContent)
         elif requestedFileType == "rootFiles":
             drawerContent = ""
             mainContent = render_template("rootfilesMainContent.html", run=runs[runDir], subsystem=subsystem)
+        else:
+            drawerContent = ""
+            mainContent =  render_template("errorMainContent.html", errors={"Request Error": ["Requested: {0}. Must request either runPage or rootFiles!".format(requestedFileType)]})
 
-            return jsonify(drawerContent = drawerContent, mainContent = mainContent)
-
-        drawerContent = ""
-        mainContent =  render_template("errorMainContent.html", errors={"Request Error": ["Requested: {0}. Must request either runPage or rootFiles!".format(requestedFileType)]})
+        return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
 ###################################################
 @app.route("/<path:runPath>")
@@ -290,6 +284,7 @@ def protected(filename):
 
     """
     print("filename", filename)
+    print("request.args: ", request.args)
     # Ignore the time GET parameter that is sometimes passed- just to avoid the cache when required
     #if request.args.get("time"):
     #    print "timeParameter:", request.args.get("time")

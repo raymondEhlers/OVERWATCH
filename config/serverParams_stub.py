@@ -116,6 +116,9 @@ class serverParameters(object):
         :attr:`config.sharedParams.sharedParameters.qaFunctionsList`
     """
 
+    #: Subsystems which have templates available (determined on startup)
+    availableRunPageTemplates = [name for name in os.listdir(templateFolder) if "runPage.html" in name]
+
 print("\nServer Parameters:")
 print("ipAddress:", serverParameters.ipAddress)
 print("port:", serverParameters.port)
@@ -128,3 +131,4 @@ print("templateFolder:", serverParameters.templateFolder)
 print("debug:", serverParameters.debug)
 print("subsystemList:", serverParameters.subsystemList)
 print("qaFunctionsList:", serverParameters.qaFunctionsList)
+print("availableRunPageTemplates:", serverParameters.availableRunPageTemplates)
