@@ -651,6 +651,7 @@ def fastOROptions(subsystem, hist):
                 # Translate back from bin number (1, Nbins() + 1) to fastOR ID (0, Nbins())
                 absIdList.append(iBin - 1)
 
+        hist.information["Threshold"] = threshold
         hist.information["Fast OR Hot Channels ID"] = absIdList
 
 ###################################################
