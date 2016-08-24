@@ -157,9 +157,13 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
                 # Reset canvas and make it accessible through the hist object
                 hist.canvas = canvas
                 canvas.Clear()
+                # Reset log status, since clear does not do this
+                canvas.SetLogx(False)
+                canvas.SetLogy(False)
+                canvas.SetLogz(False)
 
             # Ensure we plot onto the right canvas
-            canvas.cd()
+            hist.canvas.cd()
 
             # Setup and draw histogram
             # Turn off title, but store the value
@@ -192,7 +196,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             # Replace any slashes with underscores to ensure that it can be used safely as a filename
             outputName = outputName.replace("/", "_")
             outputFilename = outputFormatting % outputName
-            canvas.SaveAs(outputFilename)
+            hist.canvas.SaveAs(outputFilename)
 
             # Write BufferJSON
             jsonBufferFile = outputFilename.replace("img", "json").replace("png","json")
