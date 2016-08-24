@@ -71,6 +71,9 @@ function initPage(jsRootState) {
     // Ensure that we only show on run pages
     showOrHideProperties();
 
+    // Sets the max limits of the form
+    setFormValues();
+
     // Fired click event on qa page if the elements exist
     initQADocStrings();
 }
@@ -97,6 +100,37 @@ function handleFormSubmit(selectedForm, selectedButton) {
         console.log("form: " + $(form).text());
         form.submit();
     });
+}
+
+function setFormValues() {
+    var formValues = Polymer.dom(this.root).querySelector("#timeDependentMergeValues");
+    var form = Polymer.dom(this.root).querySelector("#partialMergeForm");
+
+    if (form !== undefined && mainContent !== undefined) {
+        setFormMaxValue(form, "minTimeMergeInput", formValues, "mintimemax", "max");
+        setFormMaxValue(form, "maxTimeMergeInput", formValues, "maxtimemax", "max", true);
+        setFormMaxValue(form, "hotChannelThreshold", formValues, "hotchannelthreshold", "value");
+
+        // Set max to max value
+    }
+}
+
+function setFormMaxValue(form, currentValueSelector, formValues, newValueDataName, valueType, setValue) {
+    // Default to not setting the value to the max
+    setValue = typeof setValue !== 'undefined' ? setValue : false;
+
+    // Retrieve the objects
+    var currentValue = $(form).children("#" + currentValueSelector);
+    var newValue = $(formValues).data(newValueDataName);
+    // Set the values
+    if (currentValue !== undefined && newValue !== undefined) {
+        /*console.log("currentValue: " + $(currentValue).prop(valueType));
+        console.log("newValue: " + newValue);*/
+        $(currentValue).prop(valueType, newValue);
+        if (setValue === true) {
+            $(currentValue).prop("value", newValue);
+        }
+    }
 }
 
 function handleToggle(selectedToggle) {
@@ -442,7 +476,6 @@ function collapsibleContainers() {
     //var containers = Polymer.dom(this.root).querySelectorAll(".collapsibleContainerButton");
     var containers = Polymer.dom(this.root).querySelectorAll("#mainContent");
 
-    //$(containers).on("click", function(event) {
     $(containers).on("click", ".collapsibleContainerButton", function(event) {
         // Prevent the link while we change where it is going
         event.preventDefault();

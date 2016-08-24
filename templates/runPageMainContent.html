@@ -65,4 +65,4 @@
 {% endfor %}
 
 {# Content for time dependent merge #}
-<div class="hideElement" id="timeDependentMergeValues" data-mintimemax="{{ subsystem.runLength }}" data-maxtimemax="{{ subsystem.runLength }}" data-hotchannelthreshold="{%- if threshold != [] -%}{{ threshold[0] }}{%- endif -%}"></div>
+<div class="hideElement" id="timeDependentMergeValues" data-mintimemax="{{ subsystem.runLength }}" data-maxtimemax="{{ subsystem.runLength }}" data-hotchannelthreshold="{%- if threshold != [] -%}{{ threshold[0]*1000 }}{%- else -%}0{%- endif -%}"></div>
