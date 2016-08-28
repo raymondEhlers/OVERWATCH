@@ -191,19 +191,19 @@
 <paper-dialog id="propertiesDialog">
     <h2>Processing Settings</h2>
     <paper-dialog-scrollable>
-        <form is="iron-form" id="partialMergeForm" method="post" action="/partialMerge">
+        <form is="iron-form" id="timeSlicesForm" method="post" action="/partialMerge">
             <p>Time Dependent Merge</p>
             <p>Min:</p>
-            <paper-slider name="minTime" id="minTimeMergeInput" value="0" max="255" editable></paper-slider>
+            <paper-slider id="timeSlicesFormMinTime" name="minTime" value="0" max="255" editable></paper-slider>
             <p>Max:</p>
-            <paper-slider name="maxTime" id="maxTimeMergeInput" value="0" max="255" editable></paper-slider>
-            <paper-toggle-button name="scaleHists" checked id="scaleHistsToggle">Scale by nEvents</paper-toggle-button>
+            <paper-slider id="timeSlicesFormMaxTime" name="maxTime" value="0" max="255" editable></paper-slider>
+            <paper-toggle-button id="scaleHistsToggle"name="scaleHists" checked >Scale by nEvents</paper-toggle-button>
             <p>Hot channel threshold (x1000)</p>
-            <paper-slider name="hotChannelThreshold" id="hotChannelThreshold" value="0" max="100" editable></paper-slider>
-            <input id="formHistGroupName" name="histGroup" type="hidden" value="val"/>
-            <input id="formHistName" name="histName" type="hidden" value="val"/>
-            <input id="formRunNumber" name="runNumber" type="hidden" value="val"/>
-            <input id="formSubsystem" name="subsystem" type="hidden" value="val"/>
+            <paper-slider id="timeSlicesFormHotChannelThreshold" name="hotChannelThreshold" value="0" max="100" editable></paper-slider>
+            <input id="timeSlicesFormHistGroupName" name="histGroup" type="hidden" value="val"/>
+            <input id="timeSlicesFoormHistName" name="histName" type="hidden" value="val"/>
+            <input id="timeSlicesFormRunNumber" name="runNumber" type="hidden" value="val"/>
+            <input id="timeSlicesFormSubsystem" name="subsystem" type="hidden" value="val"/>
             <div class="buttons">
                 <paper-button dialog-dismiss>Cancel</paper-button>
                 <paper-button id="submitPartialMerge" dialog-confirm>Accept</paper-button>

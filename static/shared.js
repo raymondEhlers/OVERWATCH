@@ -72,7 +72,7 @@ function initPage(jsRootState) {
     showOrHideProperties();
 
     // Sets the max limits of the form
-    setFormValues();
+    setTimeSlicesFormValues();
 
     // Fired click event on qa page if the elements exist
     initQADocStrings();
@@ -104,30 +104,33 @@ function handleFormSubmit(selectedForm, selectedButton) {
     });
 }
 
-function setFormValues() {
-    var formValues = Polymer.dom(this.root).querySelector("#timeDependentMergeValues");
-    var form = Polymer.dom(this.root).querySelector("#partialMergeForm");
+function setTimeSlicesFormValues() {
+    var formValues = Polymer.dom(this.root).querySelector("#timeSlicesValues");
+    var form = Polymer.dom(this.root).querySelector("#timeSlicesForm");
 
     if (form !== undefined && mainContent !== undefined) {
-        setFormMaxValue(form, "minTimeMergeInput", formValues, "mintimemax", "max");
-        setFormMaxValue(form, "maxTimeMergeInput", formValues, "maxtimemax", "value");
-        setFormMaxValue(form, "maxTimeMergeInput", formValues, "maxtimemax", "max");
-        setFormMaxValue(form, "hotChannelThreshold", formValues, "hotchannelthreshold", "value");
-        setFormMaxValue(form, "formHistGroupName", formValues, "histgroup", "value");
-        setFormMaxValue(form, "formHistName", formValues, "histname", "value");
-        setFormMaxValue(form, "formRunNumber", formValues, "runnumber", "value");
-        setFormMaxValue(form, "formSubsystem", formValues, "subsystem", "value");
+        setTimeSlicesFormValue(form, formValues, "timeSlicesFormMinTime", "", "value");
+        setTimeSlicesFormValue(form, formValues, "timeSlicesFormMinTime", "runLength", "max");
+        setTimeSlicesFormValue(form, formValues, "timeSlicesFormMaxTime", "", "value");
+        setTimeSlicesFormValue(form, formValues, "timeSlicesFormMaxTime", "runLength", "max");
+        setTimeSlicesFormValue(form, formValues, "timeSlicesFormHotChannelThreshold", "", "value");
+        setTimeSlicesFormValue(form, formValues, "timeSlicesFormHistGroupName", "", "value");
+        setTimeSlicesFormValue(form, formValues, "timeSlicesFormHistName", "", "value");
+        setTimeSlicesFormValue(form, formValues, "timeSlicesFormRunNumber", "", "value");
+        setTimeSlicesFormValue(form, formValues, "timeSlicesFormSubsystem", "", "value");
     }
 }
 
-function setFormMaxValue(form, currentValueSelector, formValues, newValueDataName, valueType) {
+function setTimeSlicesFormValue(form, formValues, formValueSelector, newValueDataName, valueType) {
     // Retrieve the objects
-    var currentValue = $(form).children("#" + currentValueSelector);
+    var currentValue = $(form).children("#" + formValueSelector);
+    // Format the string if necessary (it will work fine even if it's an empty string
+    newValueDataName = formValueSelector.replace("timeSlicesForm", "").toLowerCase();
     var newValue = $(formValues).data(newValueDataName);
     // Set the values
     if (currentValue && newValue) {
-        console.log("currentValue: " + $(currentValue).prop(valueType));
-        console.log("newValue: " + newValue);
+        /*console.log("currentValue: " + $(currentValue).prop(valueType));
+        console.log("newValue: " + newValue);*/
         $(currentValue).prop(valueType, newValue);
     }
 }
