@@ -663,7 +663,7 @@ def processAllRuns():
             # Determine img dir and input file
             #imgDir = os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem, "img")
             #combinedFile = next(name for name in os.listdir(os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem)) if "combined" in name)
-            inputFilename = os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem, subsystem.combinedFile.filename)
+            inputFilename = subsystem.combinedFile.filename
 
             #if os.path.exists(inputFilename):
             #    # Does not always append, since a run number could come up multiple times when processing

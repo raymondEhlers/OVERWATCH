@@ -236,10 +236,7 @@ def mergeRootFiles(runs, dirPrefix, forceNewMerge = False, cumulativeMode = True
 
     """
 
-    if dirPrefix == "":
-        currentDir = os.getcwd()
-    else:
-        currentDir = os.path.abspath(dirPrefix)
+    currentDir = dirPrefix
 
     # Process runs
     for runDir, run in runs.iteritems():

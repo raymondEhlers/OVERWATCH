@@ -8,7 +8,6 @@
 
 <ul class="listColumns">
     {% if subsystemObject.combinedFile != None %}
-    {# TODO: Fix bug here! It gives the full path to the combined file! #}
     {# TODO: Determine a better way to remove the "data" part of the path! #}
     <li><a href="{{ url_for("protected", filename=subsystemObject.combinedFile.filename.replace("data/", "")) }}" download>Combined file created at {{ subsystemObject.prettyPrintUnixTime(subsystemObject.combinedFile.fileTime) }}</a></li>
     {% endif %}
