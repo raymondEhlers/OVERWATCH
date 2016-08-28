@@ -18,7 +18,7 @@
                 {% if histGroup.plotInGrid == False or (histGroup.plotInGrid == True and firstLoopCompleted == []) %}
                     {# Effective increments our counter #}
                     {% if firstLoopCompleted.append(1) %}{% endif %}
-                    <a class="anchor" data-histname="{{ hist.histName }}" data-histgroup="{{ histGroup.selectionPattern }}" name="{{ hist.histName }}"></a>
+                    <a class="histAnchor" data-histname="{{ hist.histName }}" data-histgroup="{{ histGroup.selectionPattern }}" name="{{ hist.histName }}"></a>
                     {% if histGroup.plotInGrid == True -%}
                         <h2>{{ histGroup.prettyName }}</h2>
                     {%- else -%}
@@ -65,4 +65,4 @@
 {% endfor %}
 
 {# Content for time dependent merge #}
-<div class="hideElement" id="timeDependentMergeValues" data-mintimemax="{{ subsystem.runLength }}" data-maxtimemax="{{ subsystem.runLength }}" data-hotchannelthreshold="{%- if threshold != [] -%}{{ threshold[0]*1000 }}{%- else -%}0{%- endif -%}"></div>
+<div class="hideElement" id="timeDependentMergeValues" data-mintimemax="{{ subsystem.runLength }}" data-maxtimemax="{{ subsystem.runLength }}" data-hotchannelthreshold="{%- if threshold != [] -%}{{ threshold[0]*1000 }}{%- else -%}0{%- endif -%}" data-runnumber="{{ run.runNumber }}" data-subsystem="{{ subsystem.subsystem }}"></div>

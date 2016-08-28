@@ -68,7 +68,6 @@ def validatePartialMergePostRequest(request):
         maxTime = float(request.form["maxTime"])
         runNumber = int(request.form["runNumber"])
         subsystem = request.form["subsystem"]
-        scrollAmount = float(request.form["scrollAmount"])
     # See: https://stackoverflow.com/a/23139085
     except KeyError as e:
         # Format is:
@@ -88,13 +87,11 @@ def validatePartialMergePostRequest(request):
             error.setdefault("runNumber", []).append(str(runNumber) + "is less than 0 and not a valid run number!")
         if subsystem not in serverParameters.subsystemList:
             error.setdefault("qaFunction:", []).append("Subsystem " + subsystem + " not available in qa function list!")
-        if scrollAmount < 0:
-            error.setdefault("scrollAmount", []).append(str(scrollAmount) + "is less than 0 and not a valid scroll distance!")
     # Handle an unexpected exception
     except Exception as e:
         error.setdefault("generalError", []).append("Unknown exception! " + str(e))
 
-    return (error, minTime, maxTime, runNumber, subsystem, scrollAmount)
+    return (error, minTime, maxTime, runNumber, subsystem)
 
 ###################################################
 def validateQAPostRequest(request, runList):

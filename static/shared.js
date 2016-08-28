@@ -94,10 +94,35 @@ function removeFlashes() {
 function handleFormSubmit(selectedForm, selectedButton) {
     var button = Polymer.dom(this.root).querySelector("#" + selectedButton);
     console.log("button: " + $(button).text());
+    var form = document.querySelector("#" + selectedForm);
     $(button).click(function() {
         //var form = Polymer.dom(this.root).querySelector("#" + selectedForm);
-        var form = document.querySelector("#" + selectedForm);
+        //var form = document.querySelector("#" + selectedForm);
         console.log("form: " + $(form).text());
+
+        // The first one will be fine for our purposes
+        //var histInfo = Polymer.dom(this.root).querySelector(".histAnchor");
+        var histInfo = document.querySelector(".histAnchor");
+        var histGroupName = $(histInfo).data("histgroup");
+        var histName = $(histInfo).data("histname");
+
+        /*var params = this.request.params;
+        params.histName = histName;
+        params.histGroupName = histGroupName;
+        this.request.params = params;*/
+        console.log("histGroupName: " + histGroupName);
+        console.log("histName: " + histName);
+
+        // Hist group
+        $('<input />').attr("type", "hidden")
+                      .attr("name", "histGroup")
+                      .attr("value", histGroupName)
+                      .appendTo(this);
+        // Hist name
+        $('<input />').attr("type", "hidden")
+                      .attr("name", "histName")
+                      .attr("value", histName)
+                      .appendTo(this);
         form.submit();
     });
 }
@@ -107,11 +132,11 @@ function setFormValues() {
     var form = Polymer.dom(this.root).querySelector("#partialMergeForm");
 
     if (form !== undefined && mainContent !== undefined) {
-        //setFormMaxValue(form, "minTimeMergeInput", formValues, "mintimemax", "max");
-        //setFormMaxValue(form, "maxTimeMergeInput", formValues, "maxtimemax", "max", true);
-        //setFormMaxValue(form, "hotChannelThreshold", formValues, "hotchannelthreshold", "value");
-
-        // Set max to max value
+        setFormMaxValue(form, "minTimeMergeInput", formValues, "mintimemax", "max");
+        setFormMaxValue(form, "maxTimeMergeInput", formValues, "maxtimemax", "max", true);
+        setFormMaxValue(form, "hotChannelThreshold", formValues, "hotchannelthreshold", "value");
+        setFormMaxValue(form, "formRunNumber", formValues, "runnumber", "value");
+        setFormMaxValue(form, "formSubsystem", formValues, "subsystem", "value");
     }
 }
 
@@ -123,13 +148,14 @@ function setFormMaxValue(form, currentValueSelector, formValues, newValueDataNam
     var currentValue = $(form).children("#" + currentValueSelector);
     var newValue = $(formValues).data(newValueDataName);
     // Set the values
-    if (currentValue !== undefined && newValue !== undefined) {
-        /*console.log("currentValue: " + $(currentValue).prop(valueType));
-        console.log("newValue: " + newValue);*/
+    if (currentValue && newValue) {
+        console.log("currentValue: " + $(currentValue).prop(valueType));
+        console.log("newValue: " + newValue);
         $(currentValue).prop(valueType, newValue);
         if (setValue === true) {
             $(currentValue).prop("value", newValue);
         }
+        console.log("currentValue after: " + $(currentValue).prop(valueType));
     }
 }
 

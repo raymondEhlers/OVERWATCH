@@ -149,6 +149,14 @@ def contact():
         mainContent = render_template("contactMainContent.html")
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
+# TEMP
+###################################################
+@app.route("/favicon.ico")
+def favicon():
+    """ Browsers always try to load the Favicon, so this suppresses the errors about not finding one. """
+    return ""
+# END TEMP
+
 ######################################################################################################
 # Authenticated Routes
 ######################################################################################################
@@ -176,10 +184,7 @@ def index():
         runOngoingNumber = ""
 
     if ajaxRequest == False:
-        #return render_template(os.path.join("data", "runList.html"))
-        # TODO: Check reversed more closely to ensure that it is doing what is expected!
         return render_template("runList.html", runs=reversed(runs.values()), subsystemsWithRootFilesToShow = serverParameters.subsystemsWithRootFilesToShow, runOngoing = runOngoing, runOngoingNumber = runOngoingNumber)
-        #return redirect(url_for("protected", filename="runList.html"))
     else:
         drawerContent = render_template("runListDrawer.html", runOngoing = runOngoing, runOngoingNumber = runOngoingNumber)
         mainContent = render_template("runListMainContent.html", runs=reversed(runs.values()), subsystemsWithRootFilesToShow = serverParameters.subsystemsWithRootFilesToShow, runOngoing = runOngoing, runOngoingNumber = runOngoingNumber)
@@ -193,12 +198,12 @@ def runPage(runNumber, subsystem, requestedFileType):
     """ Serves the run pages and root files for a request run
     
     """
-    # TODO: Validate these inputs!!!
     runDir = "Run{0}".format(runNumber)
     jsRoot = routing.convertRequestToPythonBool("jsRoot")
     ajaxRequest = routing.convertRequestToPythonBool("ajaxRequest")
     print("request: {0}".format(request.args))
     print("runDir: {0}, subsytsem: {1}, requestedFileType: {2}, ajaxRequest: {3}, jsRoot: {4}".format(runDir, subsystem, requestedFileType, ajaxRequest, jsRoot))
+    # TODO: Validate these values
     requestedHistGroup = request.args.get("histGroup", None, type=str)
     requestedHist = request.args.get("histName", None, type=str)
 
@@ -247,7 +252,7 @@ def showRuns(runPath):
     """ This handles the routing for serving most files, especially for partial merging and for serving ROOT files.
 
     In such cases, the path is requested and must be handled (ie ``localhost:port/Run123/HLT/HLTRootFiles.html``).
-    In the case of templates, the template is rendered. Anchors (which are from partial merges) are handled specially.
+    In the case of templates, the template is rendered.
     If the path is to a ROOT file or we are using static html files then the request is forwarded to
     :func:`.protected()`. This also covers any other files, such as images, although most of those directly
     call url_for("protected").
@@ -256,13 +261,8 @@ def showRuns(runPath):
         This function ensures that the user is logged in before it serves the file.
     """
     # Hnaldes partial merges and rendering templates that are accessed by path.
+    print("runPath: {0}".format(runPath))
     if serverParameters.dynamicContent and ".root" not in runPath:
-        # Handle anchor. Should only occur for timeSlices
-        if "#" in runPath:
-            anchor = runPath[runPath.find("#"):]
-            print("anchor:", anchor)
-            return render_template(os.path.join("data",runPath), scrollAmount=anchor)
-
         print("runPath:", runPath)
         return render_template(os.path.join("data",runPath))
     else:
@@ -350,27 +350,21 @@ def partialMerge():
 
     if request.method == "POST":
         # Validates the request
-        (error, minTime, maxTime, runNumber, subsystem, scrollAmount) = validation.validatePartialMergePostRequest(request)
+        (error, minTime, maxTime, runNumber, subsystem) = validation.validatePartialMergePostRequest(request)
 
         if error == {}:
-            # Properly format the scrolling variable to be recognized by javascript
-            scrollAmount = "scrollTo" + str(scrollAmount)
-
             # Print input values
             print("minTime", minTime)
             print("maxTime", maxTime)
             print("runNumber", runNumber)
             print("subsystem", subsystem)
-            print("scrollAmount", scrollAmount)
 
             # Process the partial merge
             returnPath = processRuns.processPartialRun(runNumber, minTime, maxTime, subsystem)
 
             print("returnPath", returnPath)
 
-            # Passes what usually goes into the anchor as an argument to the template.
-            # This is because render_template does not work with an anchor.
-            return redirect(url_for("showRuns", runPath=returnPath, _anchor=scrollAmount))
+            return redirect(url_for("showRuns", runPath=returnPath))
         else:
             print("Error:", error)
             return render_template("error.html", errors=error)
