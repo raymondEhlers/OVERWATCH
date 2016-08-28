@@ -99,30 +99,7 @@ function handleFormSubmit(selectedForm, selectedButton) {
         //var form = Polymer.dom(this.root).querySelector("#" + selectedForm);
         //var form = document.querySelector("#" + selectedForm);
         console.log("form: " + $(form).text());
-
-        // The first one will be fine for our purposes
-        //var histInfo = Polymer.dom(this.root).querySelector(".histAnchor");
-        var histInfo = document.querySelector(".histAnchor");
-        var histGroupName = $(histInfo).data("histgroup");
-        var histName = $(histInfo).data("histname");
-
-        /*var params = this.request.params;
-        params.histName = histName;
-        params.histGroupName = histGroupName;
-        this.request.params = params;*/
-        console.log("histGroupName: " + histGroupName);
-        console.log("histName: " + histName);
-
-        // Hist group
-        $('<input />').attr("type", "hidden")
-                      .attr("name", "histGroup")
-                      .attr("value", histGroupName)
-                      .appendTo(this);
-        // Hist name
-        $('<input />').attr("type", "hidden")
-                      .attr("name", "histName")
-                      .attr("value", histName)
-                      .appendTo(this);
+        
         form.submit();
     });
 }
@@ -133,17 +110,17 @@ function setFormValues() {
 
     if (form !== undefined && mainContent !== undefined) {
         setFormMaxValue(form, "minTimeMergeInput", formValues, "mintimemax", "max");
-        setFormMaxValue(form, "maxTimeMergeInput", formValues, "maxtimemax", "max", true);
+        setFormMaxValue(form, "maxTimeMergeInput", formValues, "maxtimemax", "value");
+        setFormMaxValue(form, "maxTimeMergeInput", formValues, "maxtimemax", "max");
         setFormMaxValue(form, "hotChannelThreshold", formValues, "hotchannelthreshold", "value");
+        setFormMaxValue(form, "formHistGroupName", formValues, "histgroup", "value");
+        setFormMaxValue(form, "formHistName", formValues, "histname", "value");
         setFormMaxValue(form, "formRunNumber", formValues, "runnumber", "value");
         setFormMaxValue(form, "formSubsystem", formValues, "subsystem", "value");
     }
 }
 
-function setFormMaxValue(form, currentValueSelector, formValues, newValueDataName, valueType, setValue) {
-    // Default to not setting the value to the max
-    setValue = typeof setValue !== 'undefined' ? setValue : false;
-
+function setFormMaxValue(form, currentValueSelector, formValues, newValueDataName, valueType) {
     // Retrieve the objects
     var currentValue = $(form).children("#" + currentValueSelector);
     var newValue = $(formValues).data(newValueDataName);
@@ -152,10 +129,6 @@ function setFormMaxValue(form, currentValueSelector, formValues, newValueDataNam
         console.log("currentValue: " + $(currentValue).prop(valueType));
         console.log("newValue: " + newValue);
         $(currentValue).prop(valueType, newValue);
-        if (setValue === true) {
-            $(currentValue).prop("value", newValue);
-        }
-        console.log("currentValue after: " + $(currentValue).prop(valueType));
     }
 }
 
