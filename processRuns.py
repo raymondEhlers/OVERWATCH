@@ -436,28 +436,7 @@ def processPartialRun(timeSliceRunNumber, minTimeRequested, maxTimeRequested, su
     if errors:
         return errors
 
-    # Setup necessary directories
-    #baseDirName = inputFilename.replace(".root", "")
-    #if not os.path.exists(baseDirName):
-    #    os.makedirs(baseDirName)
-
-    #imgDir = os.path.join(baseDirName, "img")
-    #if not os.path.exists(imgDir):
-    #    os.makedirs(imgDir)
-
-    # Setup templates
-    # Determine template dirPrefix
-    #if processingParameters.templateDataDirName != None:
-    #    templateDataDirPrefix = baseDirName.replace(os.path.basename(dirPrefix), processingParameters.templateDataDirName)
-    #    # Create directory to store the templates if necessary
-    #    if not os.path.exists(templateDataDirPrefix):
-    #        os.makedirs(templateDataDirPrefix)
-
     # Print variables for log
-    #print("baseDirName: %s" % baseDirName)
-    #print("imgDir: %s" % imgDir)
-    #print("templateDataDirPrefix: %s" % templateDataDirPrefix)
-    #print("actualTimeBetween: %d" % actualTimeBetween)
     if processingParameters.beVerbose:
         print("minTimeRequested: {0}, maxTimeRequested: {1}".format(minTimeRequested, maxTimeRequested))
         print("subsystem.subsystem: {0}, subsystem.fileLocationSubsystem: {1}".format(subsystem.subsystem, subsystem.fileLocationSubsystem))
@@ -471,40 +450,10 @@ def processPartialRun(timeSliceRunNumber, minTimeRequested, maxTimeRequested, su
     outputHistNames = processRootFile(os.path.join(run.subsystems[subsystem].baseDir, timeSlice.filename.filename),
                                       outputFormattingSave, subsystem)
 
-    # This func is mostly used just for the properties of the output
-    # We do not need the precise files that are being merged.
-    #[mergeDict, maxTimeMinutes] = utilities.createFileDictionary(dirPrefix, runDir, subsystem.fileLocationSubsystem)
-
-    # Setup to write output page
-    #outputFormattingWeb =  os.path.join("img", "%s") + processingParameters.fileExtension
-    # timeKeys[0] is the start time of the run in unix time
-    #timeKeys = sorted(mergeDict.keys())
-
-    # Generate the output html, writing out how long was merged
-    #generateWebPages.writeToWebPage(baseDirName, runDir, subsystem.subsystem, outputHistNames, outputFormattingWeb, timeKeys[0], maxTimeMinutes, minTimeRequested, maxTimeRequested, actualTimeBetween)
-    #if processingParameters.templateDataDirName != None:
-    #    # templateDataDirPrefix is already set to the time slice dir, so we can just use it.
-    #    if not os.path.exists(templateDataDirPrefix):
-    #        os.makedirs(templateDataDirPrefix)
-    #    generateWebPages.writeToWebPage(templateDataDirPrefix, runDir, subsystem.subsystem, outputHistNames, outputFormattingWeb, timeKeys[0], maxTimeMinutes, minTimeRequested, maxTimeRequested, actualTimeBetween, generateTemplate = True)
-
-    # We don't need to write to the main webpage since this is an inner page that would not show up there anyway
-
-    # Return the path to the file
-    #returnPath = os.path.join(baseDirName, subsystem.subsystem + "output.html")
-    #returnPath = returnPath[returnPath.find(dirPrefix) + len(dirPrefix):]
-    ## Remove leading slash if it is present
-    #if returnPath[0] == "/":
-    #    returnPath = returnPath[1:]
-
     print("Finished processing {0}!".format(run.prettyName))
 
     # No errors, so return nothing
     return None
-
-    #if processingParameters.beVerbose:
-    #    print(returnPath)
-    #return returnPath
 
 ###################################################
 def createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir):
@@ -604,15 +553,6 @@ def processAllRuns():
 
     """
     dirPrefix = processingParameters.dirPrefix
-
-    # Setup before processing data
-    # Determine templateDataDirPrefix
-    #if processingParameters.templateDataDirName != None:
-    #    templateDataDirPrefix = os.path.join(os.path.dirname(dirPrefix), processingParameters.templateDataDirName)
-    #    print("templateDataDirPrefix:", templateDataDirPrefix)
-    #    # Create directory to store the templates if necessary
-    #    if not os.path.exists(templateDataDirPrefix):
-    #        os.makedirs(templateDataDirPrefix)
 
     # Create runs list
     runs = sortedcontainers.SortedDict()

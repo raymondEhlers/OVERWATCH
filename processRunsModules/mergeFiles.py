@@ -51,73 +51,18 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlices = None):
     # Merging using root
     merger = TFileMerger()
 
-    ## Convert filter time to seconds, so it can be added to unix time
-    #minTimeSec = minTimeMinutes*60
-    #maxTimeSec = maxTimeMinutes*60
-
-    ## Get min and max possible time ranges
-    #minFileTime = run.subsystems[subsystem].startOfRun
-    #maxFileTime = run.subsystems[subsystem].endOfRun
-
-    ## User filter time, in unix time
-    #minTimeCutUnix = minTimeSec + minFileTime 
-    #maxTimeCutUnix = maxTimeSec + minFileTime
-
-    ## If max filter time is greater than max file time, merge up to and including last file
-    #if maxTimeCutUnix > maxFileTime:
-    #    maxTimeCutUnix = maxFileTime
-    #    print("ERROR: Input max time exceeds data! It has been reset to the maximum allowed.")
-
-    ## If input time range out of range, return 0
-    #isTimeSlice = minTimeMinutes != -1 and maxTimeMinutes != -1
-    #if timeSlices:
-    #    print("Filtering time window! Min:{0}, Max: {1}".format(minTimeMinutes,maxTimeMinutes)) 
-    #    if minTimeMinutes < 0:
-    #        print("Input time range exceeds time range of data!")
-    #        return 0
-    #    if minTimeCutUnix > maxTimeCutUnix:
-    #        print("Max time must be greater than Min time!")
-    #        return 0
-
-    # Filter files by input time range
-    # Need this check because 
-    
+    # Determines which files are needed to merge
     if timeSlices:
         filesToMerge = timeSlices.filesToMerge
     else:
         filesToMerge == []
         for fileCont in run.subsystems[subsystem].files.values():
-            #if timeSlices:
-            #    if fileCont.fileTime >= minTimeCutUnix and fileCont.fileTime <= maxTimeCutUnix and fileCont.combinedFile == False:
-            #        # The file is in the time range, so we keep it
-            #        filesToMerge.append(fileCont)
-            #else:
             # This is not necessary since combined files are not stored in files anymore
             #if fileCont.combinedFile == False:
             filesToMerge.append(fileCont)
 
     # Sort files by time
     filesToMerge.sort(key=lambda x: x.fileTime)
-
-    ## Get min and max time stamp remaining
-    #minFilteredTimeStamp = filesToMerge[0].fileTime
-    #maxFilteredTimeStamp = filesToMerge[-1].fileTime
-    ## // means integer division
-    #actualFilterTimeMin = (maxFilteredTimeStamp - minFilteredTimeStamp)//60
-    #if timeSlices:
-    #    # Check if it already exists and return if that is the case
-    #    for timeSlice in runs.subsystems[subsystem].timeSlices.values():
-    #        if timeSlice.minTime == minFilteredTimeStamp and timeSlice.maxTime = maxFilteredTimeStamp:
-    #            # TODO: Determine proper return value
-    #            return []
-
-    #    # Determine index by UUID to ensure that there is no clash
-    #    timeSlicesCont = processingClasses.timeSliceContainer(minFilteredTimeStamp,
-    #                                                          maxFilteredTimeStamp,
-    #                                                          run.subsystems[subsystem].runLength)
-    #    runs.subsystems[subsystem].timeSlices[uuid.uuid4()] = timeSlicesCont
-
-    #    mergedFile = os.path.join(currentDir, run.runDir, subsystem.fileLocationSubsystem, timeSlicesCont.filename.filename)
 
     # If in cumulativeMode, we subtract the earliest file from the latest file, unless 
     # the beginning of the time slice is the start of the run. In that case, case we don't
