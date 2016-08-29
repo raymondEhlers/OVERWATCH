@@ -1,0 +1,18 @@
+{% extends "layout.html" %}
+
+{% block title %}
+OVERWATCH Run List
+{% endblock %}
+
+{% block drawer %}
+    <!-- This is the drawer menu -->
+    {% include "runListDrawer.html" %}
+{% endblock %}
+
+{% block mainContent %}
+    <!-- This is the main content! -->
+    {% with title=self.title(),runs=runs %}
+        {% include "runListMainContent.html" %}
+    {% endwith %}
+{% endblock %}
+
