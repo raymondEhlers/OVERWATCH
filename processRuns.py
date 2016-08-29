@@ -195,11 +195,11 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             outputName = hist.histName
             # Replace any slashes with underscores to ensure that it can be used safely as a filename
             outputName = outputName.replace("/", "_")
-            outputFilename = outputFormatting % outputName
+            outputFilename = outputFormatting.format(subsystem.imgDir, outputName, processingParameters.fileExtension)
             hist.canvas.SaveAs(outputFilename)
 
             # Write BufferJSON
-            jsonBufferFile = outputFilename.replace("img", "json").replace("png","json")
+            jsonBufferFile = outputFormatting.format(subsystem.jsonDir, outputName, "json")
             #print("jsonBufferFile: {0}".format(jsonBufferFile))
             # GZip is performed by the web server, not here!
             with open(jsonBufferFile, "wb") as f:
@@ -323,6 +323,64 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
     return returnValues
 
 ###################################################
+def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes):
+    # Convert filter time to seconds, so it can be added to unix time
+    minTimeSec = minTimeMinutes*60
+    maxTimeSec = maxTimeMinutes*60
+
+    # Get min and max possible time ranges
+    minFileTime = run.subsystems[subsystem].startOfRun
+    maxFileTime = run.subsystems[subsystem].endOfRun
+
+    # User filter time, in unix time
+    minTimeCutUnix = minTimeSec + minFileTime
+    maxTimeCutUnix = maxTimeSec + minFileTime
+
+    # If max filter time is greater than max file time, merge up to and including last file
+    if maxTimeCutUnix > maxFileTime:
+        print("ERROR: Input max time exceeds data! It has been reset to the maximum allowed.")
+        maxTimeCutUnix = maxFileTime
+
+    # If input time range out of range, return 0
+    print("Filtering time window! Min:{0}, Max: {1}".format(minTimeMinutes,maxTimeMinutes)) 
+    if minTimeMinutes < 0:
+        print("Minimum input time less than 0!")
+        return (None, None, {"Request Error": ["Miniumum input time of \"{0}\" is less than 0!".format(minTimeMinutes)]})
+    if minTimeCutUnix > maxTimeCutUnix:
+        print("Max time must be greater than Min time!")
+        return (None, None, {"Request Error": ["Max time of \"{0}\" must be greater than the min time of {1}!".format(maxTimeMinutes, minTimeMinutes)]})
+
+    # Filter files by input time range
+    filesToMerge = []
+    for fileCont in run.subsystems[subsystem].files.values():
+        if fileCont.fileTime >= minTimeCutUnix and fileCont.fileTime <= maxTimeCutUnix and fileCont.combinedFile == False:
+            # The file is in the time range, so we keep it
+            filesToMerge.append(fileCont)
+
+    # Sort files by time
+    filesToMerge.sort(key=lambda x: x.fileTime)
+
+    # Get min and max time stamp remaining
+    minFilteredTimeStamp = filesToMerge[0].fileTime
+    maxFilteredTimeStamp = filesToMerge[-1].fileTime
+
+    # Check if it already exists and return if that is the case
+    for key, timeSlice in runs.subsystems[subsystem].timeSlices.iteritems():
+        if timeSlice.minTime == minFilteredTimeStamp and timeSlice.maxTime == maxFilteredTimeStamp:
+            # Already exists - we don't need to remerge or reprocess
+            return (key, False, None)
+
+    # Determine index by UUID to ensure that there is no clash
+    timeSlicesCont = processingClasses.timeSliceContainer(minFilteredTimeStamp,
+                                                          maxFilteredTimeStamp,
+                                                          run.subsystems[subsystem].runLength,
+                                                          filesToMerge)
+    uuidDictKey = uuid.uuid4()
+    runs.subsystems[subsystem].timeSlices[uuidDictKey] = timeSlicesCont
+
+    return (uuidDictKey, True, None)
+
+###################################################
 def processPartialRun(timeSliceRunNumber, minTimeRequested, maxTimeRequested, subsystemName):
     """ Processes a given run using only data in a given time range.
 
@@ -338,78 +396,93 @@ def processPartialRun(timeSliceRunNumber, minTimeRequested, maxTimeRequested, su
         str: Path to the run page that was generated.
 
     """
-    # Load general configuration options
-    (fileExtension, beVerbose, forceReprocessing, forceNewMerge, sendData, remoteUsername, cumulativeMode, templateDataDirName, dirPrefix, subsystemList, subsystemsWithRootFilesToShow) = processingParameters.defineRunProperties()
-
-    # Takes histos from dirPrefix and moves them into Run dir structure, with a subdir for each subsystem
-    # While this function should be fast, we want this to run to ensure that time slices use the most recent data
-    # available in performed on a run this is ongoing
-    utilities.moveRootFiles(dirPrefix, subsystemList)
-
     # Setup start runDir string of the form "Run#"
     runDir = "Run" + str(timeSliceRunNumber)
     print("Processing %s" % runDir)
 
-    # Create run dir dict structure necessary for the subsystem properties class
-    # Find directories that exist for each subsystem
-    subsystemRunDirDict = {}
-    for subsystem in [subsystemName, "HLT"]:
-        subsystemRunDirDict[subsystem] = []
-        if os.path.exists(os.path.join(dirPrefix, runDir, subsystem)):
-            subsystemRunDirDict[subsystem].append(runDir)
+    # Load run information
+    if runDir in runs:
+        run = runs[runDir]
+    else:
+        return {"Request Error": ["Requested Run {0}, but there is no run information on it! Please check that it is a valid run and retry in a few minutes!".format(timeSliceRunNumber)]}
 
-    # Setup subsystem properties
-    subsystem = subsystemProperties(subsystem = subsystemName, runDirs = subsystemRunDirDict)
+    # Get subsystem
+    subsystem = run.subsystems[subsystemName]
+
+    # Setup dirPrefix
+    dirPrefix = processingParameters.dirPrefix
+
+    # Takes histos from dirPrefix and moves them into Run dir structure, with a subdir for each subsystem
+    # While this function should be fast, we want this to run to ensure that time slices use the most recent data
+    # available in performed on a run this is ongoing
+    runDict = utilities.moveRootFiles(dirPrefix, processingParameters.subsystemList)
+
+    # Little should happen here since few, if any files, should be moved
+    processMovedFilesIntoRuns(runs, runDict)
+
+    # Validate and create time slice
+    (timeSlice, newlyCreated, errors) = validateAndCreateNewTimeSlice(run, subsystem, minTimeRequested, maxTimeRequested)
+    if errors:
+        return errors
+    # It has already been merged and processed
+    if not newlyCreated:
+        return None
 
     # Merge only the partial run.
-    (actualTimeBetween, inputFilename) = mergeFiles.merge(dirPrefix, runDir, subsystem.fileLocationSubsystem, cumulativeMode, minTimeRequested, maxTimeRequested)
+    # Return if there were errors in merging
+    errors = mergeFiles.merge(dirPrefix, run, subsystem,
+                              cumulativeMode = processingParameters.cumulativeMode,
+                              timeSlice = timeSlice)
+    if errors:
+        return errors
 
     # Setup necessary directories
-    baseDirName = inputFilename.replace(".root", "")
-    if not os.path.exists(baseDirName):
-        os.makedirs(baseDirName)
+    #baseDirName = inputFilename.replace(".root", "")
+    #if not os.path.exists(baseDirName):
+    #    os.makedirs(baseDirName)
 
-    imgDir = os.path.join(baseDirName, "img")
-    if not os.path.exists(imgDir):
-        os.makedirs(imgDir)
+    #imgDir = os.path.join(baseDirName, "img")
+    #if not os.path.exists(imgDir):
+    #    os.makedirs(imgDir)
 
     # Setup templates
     # Determine template dirPrefix
-    if templateDataDirName != None:
-        templateDataDirPrefix = baseDirName.replace(os.path.basename(dirPrefix), templateDataDirName)
-        # Create directory to store the templates if necessary
-        if not os.path.exists(templateDataDirPrefix):
-            os.makedirs(templateDataDirPrefix)
+    #if processingParameters.templateDataDirName != None:
+    #    templateDataDirPrefix = baseDirName.replace(os.path.basename(dirPrefix), processingParameters.templateDataDirName)
+    #    # Create directory to store the templates if necessary
+    #    if not os.path.exists(templateDataDirPrefix):
+    #        os.makedirs(templateDataDirPrefix)
 
     # Print variables for log
-    print("baseDirName: %s" % baseDirName)
-    print("imgDir: %s" % imgDir)
-    print("templateDataDirPrefix: %s" % templateDataDirPrefix)
-    print("actualTimeBetween: %d" % actualTimeBetween)
-    if beVerbose:
-        print("minTimeRequested: %d" % minTimeRequested)
-        print("maxTimeRequested: %d" % maxTimeRequested)
-        print("subsystem.subsystem: %s" % subsystem.subsystem)
-        print("subsystem.fileLocationSubsystem: %s" % subsystem.fileLocationSubsystem)
+    #print("baseDirName: %s" % baseDirName)
+    #print("imgDir: %s" % imgDir)
+    #print("templateDataDirPrefix: %s" % templateDataDirPrefix)
+    #print("actualTimeBetween: %d" % actualTimeBetween)
+    if processingParameters.beVerbose:
+        print("minTimeRequested: {0}, maxTimeRequested: {1}".format(minTimeRequested, maxTimeRequested))
+        print("subsystem.subsystem: {0}, subsystem.fileLocationSubsystem: {1}".format(subsystem.subsystem, subsystem.fileLocationSubsystem))
 
     # Generate the histograms
-    outputFormattingSave = os.path.join(imgDir, "%s") + fileExtension
-    if beVerbose:
+    outputFormattingSave = os.path.join("%s", "%s.timeSlice.{0}.{1}.{2}.%s".format(timeSlice.minTime,
+                                                                                   timeSlice.maxTime,
+                                                                                   processingParameters.fileExtension))
+    if processingParameters.beVerbose:
         print("outputFormattingSave: %s" % outputFormattingSave)
-    outputHistNames = processRootFile(inputFilename, outputFormattingSave, subsystem)
+    outputHistNames = processRootFile(os.path.join(run.subsystems[subsystem].baseDir, timeSlice.filename.filename),
+                                      outputFormattingSave, subsystem)
 
     # This func is mostly used just for the properties of the output
     # We do not need the precise files that are being merged.
-    [mergeDict, maxTimeMinutes] = utilities.createFileDictionary(dirPrefix, runDir, subsystem.fileLocationSubsystem)
+    #[mergeDict, maxTimeMinutes] = utilities.createFileDictionary(dirPrefix, runDir, subsystem.fileLocationSubsystem)
 
     # Setup to write output page
-    outputFormattingWeb =  os.path.join("img", "%s") + fileExtension
+    #outputFormattingWeb =  os.path.join("img", "%s") + processingParameters.fileExtension
     # timeKeys[0] is the start time of the run in unix time
-    timeKeys = sorted(mergeDict.keys())
+    #timeKeys = sorted(mergeDict.keys())
 
     # Generate the output html, writing out how long was merged
     #generateWebPages.writeToWebPage(baseDirName, runDir, subsystem.subsystem, outputHistNames, outputFormattingWeb, timeKeys[0], maxTimeMinutes, minTimeRequested, maxTimeRequested, actualTimeBetween)
-    #if templateDataDirName != None:
+    #if processingParameters.templateDataDirName != None:
     #    # templateDataDirPrefix is already set to the time slice dir, so we can just use it.
     #    if not os.path.exists(templateDataDirPrefix):
     #        os.makedirs(templateDataDirPrefix)
@@ -418,19 +491,24 @@ def processPartialRun(timeSliceRunNumber, minTimeRequested, maxTimeRequested, su
     # We don't need to write to the main webpage since this is an inner page that would not show up there anyway
 
     # Return the path to the file
-    returnPath = os.path.join(baseDirName, subsystem.subsystem + "output.html")
-    returnPath = returnPath[returnPath.find(dirPrefix) + len(dirPrefix):]
-    # Remove leading slash if it is present
-    if returnPath[0] == "/":
-        returnPath = returnPath[1:]
+    #returnPath = os.path.join(baseDirName, subsystem.subsystem + "output.html")
+    #returnPath = returnPath[returnPath.find(dirPrefix) + len(dirPrefix):]
+    ## Remove leading slash if it is present
+    #if returnPath[0] == "/":
+    #    returnPath = returnPath[1:]
 
-    print("Finished processing run %i!" % timeSliceRunNumber)
+    print("Finished processing {0}!".format(run.prettyName))
 
-    if beVerbose:
-        print(returnPath)
-    return returnPath
+    # No errors, so return nothing
+    return None
 
+    #if processingParameters.beVerbose:
+    #    print(returnPath)
+    #return returnPath
+
+###################################################
 def createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir):
+    """ Creates a new subsystem based on the information from the merge. """
     if subsystem in runDict.subsystems:
         fileLocationSubsystem = subsystem
     else:
@@ -465,6 +543,38 @@ def createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir):
     runs[runDir].subsystems[subsystem].newFile = True
 
 ###################################################
+def processMovedFilesIntoRuns(runs, runDict):
+    for runDir in runDict:
+        if runDir in runs:
+            run = runs[runDir]
+            # Update each subsystem and note that it needs to be reprocessed
+            for subsystemName in processingParameters.subsystemList:
+                if subsystemName in runs.subsystems:
+                    # Update the existing subsystem
+                    subsystem = run.subsystems[subsystemName]
+                    subsystem.newFile = True
+                    for filename in runDict[runDir][subsystem]:
+                        subsystem.files[utilities.extractTimeStampFromFilename(filename)] = processingClasses.fileContainer(filename = filename, startOfRun = subsystem.startOfRun)
+
+                    # Update time stamps
+                    fileKeys = subsystem.files.keys()
+                    # This should rarely change, but in principle we could get a new file that we missed.
+                    subsystem.startOfRun = fileKeys[0]
+                    print("INFO: Previous EOR: {0}\tNew: {1}".format(subsystem.endOfRun, fileKeys[-1]))
+                    subsystem.endOfRun = fileKeys[-1]
+                else:
+                    # Create a new subsystem
+                    createNewSubsystemFromMergeInformation(runs, subsystemName, runDict, runDir)
+
+        else:
+            runs[runDir] = processingClasses.runContainer( runDir = runDir,
+                                                           fileMode = processingParameters.cumulativeMode)
+            # Add files and subsystems.
+            # We are creating runs here, so we already have all the information that we need from moving the files
+            for subsystem in processingParameters.subsystemList:
+                createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir)
+
+###################################################
 def processAllRuns():
     """ Process all available data and write out individual run pages and a run list.
 
@@ -497,12 +607,12 @@ def processAllRuns():
 
     # Setup before processing data
     # Determine templateDataDirPrefix
-    if processingParameters.templateDataDirName != None:
-        templateDataDirPrefix = os.path.join(os.path.dirname(dirPrefix), processingParameters.templateDataDirName)
-        print("templateDataDirPrefix:", templateDataDirPrefix)
-        # Create directory to store the templates if necessary
-        if not os.path.exists(templateDataDirPrefix):
-            os.makedirs(templateDataDirPrefix)
+    #if processingParameters.templateDataDirName != None:
+    #    templateDataDirPrefix = os.path.join(os.path.dirname(dirPrefix), processingParameters.templateDataDirName)
+    #    print("templateDataDirPrefix:", templateDataDirPrefix)
+    #    # Create directory to store the templates if necessary
+    #    if not os.path.exists(templateDataDirPrefix):
+    #        os.makedirs(templateDataDirPrefix)
 
     # Create runs list
     runs = sortedcontainers.SortedDict()
@@ -582,36 +692,8 @@ def processAllRuns():
     print("INFO: Files moved: {0}".format(runDict))
 
     # Now process the results from moving the files and add them into the runs list
-    for runDir in runDict:
-        if runDir in runs:
-            run = runs[runDir]
-            # Update each subsystem and note that it needs to be reprocessed
-            for subsystemName in processingParameters.subsystemList:
-                if subsystemName in runs.subsystems:
-                    # Update the existing subsystem
-                    subsystem = run.subsystems[subsystemName]
-                    subsystem.newFile = True
-                    for filename in runDict[runDir][subsystem]:
-                        subsystem.files[utilities.extractTimeStampFromFilename(filename)] = processingClasses.fileContainer(filename = filename, startOfRun = subsystem.startOfRun)
+    processMovedFilesIntoRuns(runs, runDict)
 
-                    # Update time stamps
-                    fileKeys = subsystem.files.keys()
-                    # This should rarely change, but in principle we could get a new file that we missed.
-                    subsystem.startOfRun = fileKeys[0]
-                    print("INFO: Previous EOR: {0}\tNew: {1}".format(subsystem.endOfRun, fileKeys[-1]))
-                    subsystem.endOfRun = fileKeys[-1]
-                else:
-                    # Create a new subsystem
-                    createNewSubsystemFromMergeInformation(runs, subsystemName, runDict, runDir)
-
-        else:
-            runs[runDir] = processingClasses.runContainer( runDir = runDir,
-                                                           fileMode = processingParameters.cumulativeMode)
-            # Add files and subsystems.
-            # We are creating runs here, so we already have all the information that we need from moving the files
-            for subsystem in processingParameters.subsystemList:
-                createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir)
-                
     # DEBUG
     print("DEBUG:")
     if processingParameters.beVerbose:
@@ -632,7 +714,8 @@ def processAllRuns():
             if subsystem.newFile == True or processingParameters.forceReprocessing == True:
                 # Process combined root file: plot histos and save in imgDir
                 print("INFO: About to process %s, %s" % (runDir, subsystem.subsystem))
-                outputFormattingSave = os.path.join(subsystem.imgDir, "%s" + processingParameters.fileExtension) 
+                #outputFormattingSave = os.path.join(subsystem.imgDir, "%s" + processingParameters.fileExtension) 
+                outputFormattingSave = os.path.join("%s", "%s.%s") 
                 processRootFile(subsystem.combinedFile.filename, outputFormattingSave, subsystem)
             else:
                 # We often want to skip this point since most runs will not need to be processed most times
@@ -650,9 +733,9 @@ def processAllRuns():
     # Send data to pdsf via rsync
     if sendData == True:
         print("INFO: Preparing to send data")
-        utilities.rsyncData(dirPrefix, remoteUsername, processingParameters.remoteSystems, processingParameters.remoteFileLocations)
+        utilities.rsyncData(dirPrefix, processingParameters.remoteUsername, processingParameters.remoteSystems, processingParameters.remoteFileLocations)
         if templateDataDirName != None:
-            utilities.rsyncData(templateDataDirName, remoteUsername, processingParameters.remoteSystems, processingParameters.remoteFileLocations)
+            utilities.rsyncData(templateDataDirName, processingParameters.remoteUsername, processingParameters.remoteSystems, processingParameters.remoteFileLocations)
         
 # Allows the function to be invoked automatically when run with python while not invoked when loaded as a module
 if __name__ == "__main__":

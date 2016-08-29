@@ -31,6 +31,10 @@ def extractTimeStampFromFilename(filename):
         # This will be the length of the run
         timeString = filename.split(".")[3]
         return int(timeString)
+    elif "timeSlice" in filename:
+        # This will be the length of the time slice
+        timeString = filename.split(".")
+        return int(timeString[2]) - int(timeString[1])
     else:
         timeString = filename.split(".")[1]
         timeStamp = time.strptime(timeString, "%Y_%m_%d_%H_%M_%S")

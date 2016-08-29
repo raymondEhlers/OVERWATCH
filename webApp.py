@@ -350,17 +350,20 @@ def partialMerge():
 
     if request.method == "POST":
         # Validates the request
-        (error, minTime, maxTime, runNumber, subsystem) = validation.validatePartialMergePostRequest(request)
+        (error, minTime, maxTime, runNumber, subsystem, histGroup, histName) = validation.validatePartialMergePostRequest(request)
 
         if error == {}:
             # Print input values
-            print("minTime", minTime)
-            print("maxTime", maxTime)
-            print("runNumber", runNumber)
-            print("subsystem", subsystem)
+            print("minTime: {0}".format(minTime))
+            print("maxTime: {0}".format(maxTime))
+            print("runNumber: {0}".format(runNumber))
+            print("subsystem: {0}".format(subsystem))
+            print("histGroup: {0}".format(histGroup))
+            print("histName: {0}".format(histName))
 
             # Process the partial merge
-            returnPath = processRuns.processPartialRun(runNumber, minTime, maxTime, subsystem)
+            # TODO: Handle if we return an error
+            returnPath = processRuns.processPartialRun(runNumber, minTime, maxTime, subsystem, histGroup, histName)
 
             print("returnPath", returnPath)
 

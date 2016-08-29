@@ -86,14 +86,16 @@ class subsystemContainer(object):
         # Be certain to set these after the subsystem has been created!
         # Contains all files for that particular run
         self.files = sortedcontainers.SortedDict()
+        self.timeSlices = dict()
         # Only one combined file, so we do not need a dict!
         self.combinedFile = None
 
         # Directories
         # Depends on whether the subsystem actually contains the files!
-        self.imgDir = os.path.join(processingParameters.dirPrefix, runDir, self.fileLocationSubsystem, "img")
+        self.baseDir = os.path.join(processingParameters.dirPrefix, runDir, self.fileLocationSubsystem)
+        self.imgDir = os.path.join(self.baseDir, "img")
         print("imgDir: {0}".format(self.imgDir))
-        self.jsonDir = self.imgDir.replace("img", "json")
+        self.jsonDir = os.path.join(self.baseDir, "json")
         # Ensure that they exist
         if not os.path.exists(self.imgDir):
             os.makedirs(self.imgDir)
@@ -136,20 +138,47 @@ class subsystemContainer(object):
         return timeString
 
 ###################################################
+class timeSliceContainer(object):
+    """ Time slice information container
+
+    """
+    def __init__(self, minUnixTime, maxUnixTime, startOfRun, filesToMerge):
+        # Hold times
+        self.minTime = minUnixTime
+        self.maxTime = maxUnixTime
+        self.minTimeMinutes = (self.minTime - startOfRun)//60
+        self.maxTimeMinutes = (self.maxTime - startOfRun)//60
+
+        # File containers of the files to merge
+        self.filesToMerge = filesToMerge
+
+        # Create filename
+        self.filename = fileContainer("timeSlice.{0}.{1}.root".format(self.minTime, self.maxTime))
+
+###################################################
 class fileContainer(object):
     """ File information container
     
     """
-    def __init__(self, filename, startOfRun):
+    def __init__(self, filename, startOfRun = None):
         self.filename = filename
+
+        # Determine types of file
+        self.combinedFile = False
+        self.timeSlice = False
         if "combined" in self.filename:
             self.combinedFile = True
-        else:
-            self.combinedFile = False
+        elif "timeSlice" in self.filename:
+            self.timeSlice = True
 
         # The combined file time will be the length of the run
+        # The time slice will be the length of the time slice
         self.fileTime = utilities.extractTimeStampFromFilename(self.filename)
-        self.timeIntoRun = self.fileTime - startOfRun
+        if startOfRun:
+            self.timeIntoRun = self.fileTime - startOfRun
+        else:
+            # Show a clearly invalid time, since timeIntoRun doesn't make much sense for a time slice
+            self.timeIntoRun = -1
 
 ###################################################
 class histogramGroupContainer(object):
