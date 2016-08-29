@@ -109,6 +109,9 @@ class serverParameters(object):
     #: Each subsystem listed here will have an individual page for their respective histograms.
     subsystemList = sharedParameters.subsystemList
 
+    #: Subsystems with ROOT files to show
+    subsystemsWithRootFilesToShow = sharedParameters.subsystemsWithRootFilesToShow
+
     qaFunctionsList = sharedParameters.qaFunctionsList
     """ Define which functions are accessible from the QA page.
 
