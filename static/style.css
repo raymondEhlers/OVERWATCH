@@ -31,6 +31,10 @@ hr {
     display: none;
 }
 
+.flexElement {
+    display: flex;
+}
+
 /* Allow drawer and main content to scroll */
 .scrollableContainer {
     height: 100%;

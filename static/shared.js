@@ -28,7 +28,7 @@ document.addEventListener('WebComponentsReady', function() {
     var ajaxState = handleToggle("ajaxToggle");
 
     // Handle forms
-    handleFormSubmit("partialMergeForm", "submitPartialMerge");
+    handleFormSubmit("timeSlicesForm", "submitTimeSlices");
 
     // Remove flask flashes after a short period to ensure that it doens't clutter the screen
     removeFlashes();
@@ -98,10 +98,36 @@ function handleFormSubmit(selectedForm, selectedButton) {
     $(button).click(function() {
         //var form = Polymer.dom(this.root).querySelector("#" + selectedForm);
         //var form = document.querySelector("#" + selectedForm);
-        console.log("form: " + $(form).text());
+        //console.log("form: " + $(form).text());
+
+        // Show spinning wheel
+        // For some reason, Polymer does not work here...
+        //console.log("Showing spinner")
+        var spinner = document.querySelectorAll("#loadingSpinnerContainer");
+        console.log("spinner: " + spinner);
+        $(spinner).addClass("flexElement");
         
         form.submit();
     });
+
+    form.addEventListener("iron-form-response", function(event) {
+        // See: https://github.com/PolymerElements/iron-form/issues/112
+        console.log("event.detail.response: " + JSON.stringify(event.detail.response));
+        var data = event.detail.response;
+
+        // For some reason, Polymer does not work here...
+        //var jsRootToggle = Polymer.dom(this.root).querySelector("#jsRootToggle");
+        var jsRootToggle = document.querySelector("#jsRootToggle");
+        var jsRootState = ($(jsRootToggle).prop("checked") === true);
+        /*console.log("jsRootToggle: "+ jsRootToggle);
+        console.log("jsRootState: " + jsRootState);*/
+        var params = {
+            jsRoot: jsRootState
+        };
+        // handleAjaxRequest() returns a function, which we then pass our data to that returned function.
+        var handlingFunction = handleAjaxResponse(params);
+        handlingFunction(data);
+    })
 }
 
 function setTimeSlicesFormValues() {
@@ -305,6 +331,11 @@ function ajaxRequest(pageToRequest, params) {
     // See: https://stackoverflow.com/a/788501
     console.log("Sending ajax request to " + pageToRequest);
 
+    // Show spinning wheel
+    //console.log("Showing spinner")
+    var spinner = Polymer.dom(this.root).querySelectorAll("#loadingSpinnerContainer");
+    $(spinner).addClass("flexElement");
+
     // Params is copied by reference, so we need to copy the object explicitly
     // Careful with this approach! It will mangle many objects, but it is fine for these purposes.
     // See: https://stackoverflow.com/a/5344074
@@ -313,7 +344,13 @@ function ajaxRequest(pageToRequest, params) {
     localParams.ajaxRequest = true;
 
     // Make the actual request and handle the return
-    $.get($SCRIPT_ROOT + pageToRequest, localParams, function(data) {
+    $.get($SCRIPT_ROOT + pageToRequest, localParams, handleAjaxResponse(localParams));
+
+    return localParams;
+}
+
+var handleAjaxResponse = function (localParams) {
+    return function(data) {
         // data is already JSON!
         console.log(data)
 
@@ -348,9 +385,12 @@ function ajaxRequest(pageToRequest, params) {
         var drawerWidth = $(drawerWidth).data("width");
         var drawer = Polymer.dom(this.root).querySelector("#drawerPanelId");
         $(drawer).prop("drawerWidth", drawerWidth);*/
-    });
 
-    return localParams;
+        // Hide spinner once we are done!
+        var spinner = Polymer.dom(this.root).querySelectorAll("#loadingSpinnerContainer");
+        //console.log("hiding spinner");
+        $(spinner).removeClass("flexElement");
+    }
 }
 
 // Handle jsRoot requests
@@ -496,7 +536,7 @@ function collapsibleContainers() {
         console.log("containerName: " + containerName);
 
         // Toggle container
-        // Polyer.dom() does not work for some reason...
+        // Polymer.dom() does not work for some reason...
         //var container = Polymer.dom(this.root).querySelector("#" + containerName);
         var container = $(currentTarget).siblings("#" + containerName);
         container.toggle();

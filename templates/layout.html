@@ -23,8 +23,10 @@
         <!-- Icons in menu -->
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-icon-button/paper-icon-button.html") }}">
         <link rel="import" href="{{ url_for("static", filename="bower_components/iron-icons/iron-icons.html") }}">
-        <!-- Toggle buttons (jsroot) -->
+        <!-- Toggle buttons -->
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-toggle-button/paper-toggle-button.html") }}">
+        <!-- Spinner when loading -->
+        <link rel="import" href="{{ url_for("static", filename="bower_components/paper-spinner/paper-spinner-lite.html") }}">
         <!-- List links and content in drawer -->
         <link rel="import" href="{{ url_for("static", filename="bower_components/paper-listbox/paper-listbox.html") }}">
         <!-- Items in the drawer -->
@@ -163,6 +165,9 @@
         </div>
 
         <div main>
+            <div id="loadingSpinnerContainer" class="hideElement" style="height: 100%; width: 100%; background-color: rgba(255, 255, 255, .4); justify-content: center;">
+                <paper-spinner-lite active style="align-self: center;"></paper-spinner-lite>
+            </div>
             <!-- Ensures that we can scroll in the header! -->
             <div class="scrollableContainer">
                 <div class="mainContentContainer">
@@ -206,7 +211,7 @@
             <input id="timeSlicesFormSubsystem" name="subsystem" type="hidden" value="val"/>
             <div class="buttons">
                 <paper-button dialog-dismiss>Cancel</paper-button>
-                <paper-button id="submitPartialMerge" dialog-confirm>Accept</paper-button>
+                <paper-button id="submitTimeSlices" dialog-confirm>Accept</paper-button>
             </div>
         </form>
     </paper-dialog-scrollable>
