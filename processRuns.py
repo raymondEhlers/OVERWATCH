@@ -195,11 +195,11 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             outputName = hist.histName
             # Replace any slashes with underscores to ensure that it can be used safely as a filename
             outputName = outputName.replace("/", "_")
-            outputFilename = outputFormatting.format(subsystem.imgDir, outputName, processingParameters.fileExtension)
+            outputFilename = outputFormatting % (subsystem.imgDir, outputName, processingParameters.fileExtension)
             hist.canvas.SaveAs(outputFilename)
 
             # Write BufferJSON
-            jsonBufferFile = outputFormatting.format(subsystem.jsonDir, outputName, "json")
+            jsonBufferFile = outputFormatting % (subsystem.jsonDir, outputName, "json")
             #print("jsonBufferFile: {0}".format(jsonBufferFile))
             # GZip is performed by the web server, not here!
             with open(jsonBufferFile, "wb") as f:

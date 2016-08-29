@@ -244,7 +244,7 @@ def moveFiles(subsystemDict, dirPrefix):
 
             # Create dict for subsystem if it doesn't exist, and then create a list for the run if it doesn't exist
             # See: https://stackoverflow.com/a/12906014
-            runsDict.setdefault(runString, {}).setdefault(subsystem, []).append(newFilename)
+            runsDict.setdefault(runString, {}).setdefault(key, []).append(newFilename)
 
     return runsDict
 

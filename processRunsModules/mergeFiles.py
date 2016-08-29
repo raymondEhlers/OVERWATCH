@@ -55,7 +55,7 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlices = None):
     if timeSlices:
         filesToMerge = timeSlices.filesToMerge
     else:
-        filesToMerge == []
+        filesToMerge = []
         for fileCont in run.subsystems[subsystem].files.values():
             # This is not necessary since combined files are not stored in files anymore
             #if fileCont.combinedFile == False:
@@ -99,7 +99,8 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlices = None):
         outfile = os.path.join(currentDir, run.subsystems[subsystem].baseDir, timeSlices.filename.filename)
     else:
         # Define convenient variable
-        outfile = os.path.join(currentDir, run.runDir, subsystem.fileLocationSubsystem, "hists.combined.%i.%i.root" % (numberOfFiles, maxFilteredTimeStamp))
+        maxFilteredTimeStamp = filesToMerge[-1].fileTime
+        outfile = os.path.join(currentDir, run.runDir, run.subsystems[subsystem].fileLocationSubsystem, "hists.combined.%i.%i.root" % (numberOfFiles, maxFilteredTimeStamp))
     print("Number of files to be merged: %i" % numberOfFiles)
     print("Output file: %s" % outfile)
 
