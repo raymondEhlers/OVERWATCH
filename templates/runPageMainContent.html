@@ -50,7 +50,7 @@
                     {# TODO: Determine how to properly show the grid with iron-flex-layout #}
                     <p>Grid!</p>
                 {% endif %}
-                <div id="{{ hist.histName }}" class="{{ histogramContainerClasses }}" data-filename="{{ filenameJSON }}">
+                <div id="{{ hist.histName }}" class="{%- if jsRoot == True -%}{{ histogramContainerClasses }}{%- endif -%}" data-filename="{{ filenameJSON }}">
                 {% if jsRoot != True %}
                     <img src="{{ url_for("protected", filename=filenameImage) }}" alt="{{ hist.histName }}">
                 {% else %}
