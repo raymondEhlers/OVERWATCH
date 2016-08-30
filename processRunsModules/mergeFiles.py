@@ -21,7 +21,7 @@ from . import processingClasses
 from . import utilities
 
 ###################################################
-def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlices = None):
+def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlice = None):
     """ Merge function: for a given run and subsystem, merges files appropriately into a combined file.  
 
     Merge is only performed if we have received new files in the specificed run.
@@ -52,11 +52,11 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlices = None):
     merger = TFileMerger()
 
     # Determines which files are needed to merge
-    if timeSlices:
-        filesToMerge = timeSlices.filesToMerge
+    if timeSlice:
+        filesToMerge = timeSlice.filesToMerge
     else:
         filesToMerge = []
-        for fileCont in run.subsystems[subsystem].files.values():
+        for fileCont in subsystem.files.values():
             # This is not necessary since combined files are not stored in files anymore
             #if fileCont.combinedFile == False:
             filesToMerge.append(fileCont)
@@ -68,11 +68,11 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlices = None):
     # the beginning of the time slice is the start of the run. In that case, case we don't
     # subtract anything from the most recent
     # (if >0, we should subtract the first file; if =0, we should include everything)
-    if cumulativeMode and timeSlices and timeSlices.minTime == run.subsystems[subsystem].starOfRun:
+    if cumulativeMode and timeSlice and timeSlice.minTime == subsystem.startOfRun:
         earliestFile = filesToMerge[0].filename
         latestFile = filesToMerge[-1].filename
         # Subtract latestFile from earliestFile
-        timeSlicesFilename = os.path.join(currentDir, run.subsystems[subsystem].baseDir, timeSlices.filename.filename)
+        timeSlicesFilename = os.path.join(currentDir, subsystem.baseDir, timeSlice.filename.filename)
         subtractFiles(earliestFile, latestFile, timeSlicesFilename)
         print("Completed time slicing with result stored in {0}!\nMerging complete!".format(timeSlicesFilename))
         return None
@@ -95,28 +95,29 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlices = None):
             print("ERROR: Problems encountered when adding files to merger!")
             return {"Merge Error": ["Problems encountered when adding files to merger! Number of input files ({0}) do not match number in merger ({1})!".format(len(filesToMerge), numberOfFiles)]}
 
-    if timeSlices:
-        outfile = os.path.join(currentDir, run.subsystems[subsystem].baseDir, timeSlices.filename.filename)
+    if timeSlice:
+        filePath = os.path.join(subsystem.baseDir, timeSlice.filename.filename)
     else:
         # Define convenient variable
         maxFilteredTimeStamp = filesToMerge[-1].fileTime
-        outfile = os.path.join(currentDir, run.runDir, run.subsystems[subsystem].fileLocationSubsystem, "hists.combined.%i.%i.root" % (numberOfFiles, maxFilteredTimeStamp))
-    print("Number of files to be merged: %i" % numberOfFiles)
-    print("Output file: %s" % outfile)
+        filePath = os.path.join(run.runDir, subsystem.fileLocationSubsystem, "hists.combined.%i.%i.root" % (numberOfFiles, maxFilteredTimeStamp))
+    outFile = os.path.join(currentDir, filePath)
+    print("Number of files to be merged: {0}".format(numberOfFiles))
+    print("Output file: {0}".format(outFile))
 
     # Set the output and perform the actual merge
     if numberOfFiles == 1:
         # Avoid errors with TFileMerger and only one file.
         # Plus, performance should be better
-        shutil.copy(filesToMerge[0].filename, outfile)
+        shutil.copy(filesToMerge[0].filename, outFile)
     else:
-        merger.OutputFile(outfile)
+        merger.OutputFile(outFile)
         merger.Merge()
     print("Merging complete!")
 
     # Add combined file to the subsystem
-    run.subsystems[subsystem].combinedFile = processingClasses.fileContainer(outfile,
-                                                                            startOfRun = run.subsystems[subsystem].startOfRun)
+    if not timeSlice:
+        subsystem.combinedFile = processingClasses.fileContainer(filePath, startOfRun = subsystem.startOfRun)
     return None
 
 ###################################################
@@ -221,7 +222,7 @@ def mergeRootFiles(runs, dirPrefix, forceNewMerge = False, cumulativeMode = True
                     run.subsystems[subsystem].combinedFile = None
 
                 # Perform the actual merge
-                merge(currentDir, run, subsystem, cumulativeMode)
+                merge(currentDir, run, run.subsystems[subsystem], cumulativeMode)
 
                 # We have successfully merged
                 # Still considered a newFile until we have processed, so don't change state here

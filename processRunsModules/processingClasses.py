@@ -92,15 +92,15 @@ class subsystemContainer(object):
 
         # Directories
         # Depends on whether the subsystem actually contains the files!
-        self.baseDir = os.path.join(processingParameters.dirPrefix, runDir, self.fileLocationSubsystem)
+        self.baseDir = os.path.join(runDir, self.fileLocationSubsystem)
         self.imgDir = os.path.join(self.baseDir, "img")
         print("imgDir: {0}".format(self.imgDir))
         self.jsonDir = os.path.join(self.baseDir, "json")
         # Ensure that they exist
-        if not os.path.exists(self.imgDir):
-            os.makedirs(self.imgDir)
-        if not os.path.exists(self.jsonDir):
-            os.makedirs(self.jsonDir)
+        if not os.path.exists(os.path.join(processingParameters.dirPrefix, self.imgDir)):
+            os.makedirs(os.path.join(processingParameters.dirPrefix, self.imgDir))
+        if not os.path.exists(os.path.join(processingParameters.dirPrefix, self.jsonDir)):
+            os.makedirs(os.path.join(processingParameters.dirPrefix, self.jsonDir))
 
         # Times
         self.startOfRun = startOfRun

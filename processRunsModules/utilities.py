@@ -65,7 +65,7 @@ def createFileDictionary(currentDir, runDir, subsystem):
 
     # Add uncombined .root files to mergeDict, then sort by timestamp
     for name in os.listdir(os.path.join(currentDir, runDir, subsystem)):
-        if ".root" in name and "combined" not in name:
+        if ".root" in name and "combined" not in name and "timeSlice" not in name:
             filename  = os.path.join(filenamePrefix, name)
             mergeDict[extractTimeStampFromFilename(filename)] = filename 
 

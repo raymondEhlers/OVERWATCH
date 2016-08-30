@@ -30,6 +30,7 @@ gROOT.ProcessLine("gErrorIgnoreLevel = kWarning;")
 import os
 import time
 import sortedcontainers
+import uuid
 try:
     import cPickle as pickle
     #import pickle
@@ -195,11 +196,15 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             outputName = hist.histName
             # Replace any slashes with underscores to ensure that it can be used safely as a filename
             outputName = outputName.replace("/", "_")
-            outputFilename = outputFormatting % (subsystem.imgDir, outputName, processingParameters.fileExtension)
+            outputFilename = outputFormatting % (os.path.join(processingParameters.dirPrefix, subsystem.imgDir),
+                                                 outputName,
+                                                 processingParameters.fileExtension)
             hist.canvas.SaveAs(outputFilename)
 
             # Write BufferJSON
-            jsonBufferFile = outputFormatting % (subsystem.jsonDir, outputName, "json")
+            jsonBufferFile = outputFormatting % (os.path.join(processingParameters.dirPrefix, subsystem.jsonDir),
+                                                 outputName,
+                                                 "json")
             #print("jsonBufferFile: {0}".format(jsonBufferFile))
             # GZip is performed by the web server, not here!
             with open(jsonBufferFile, "wb") as f:
@@ -324,13 +329,18 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
 
 ###################################################
 def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes):
+    # Return immediately if it is just a full time request
+    # TODO: We will need to continue here if we change settings
+    if minTimeMinutes == 0 and maxTimeMinutes == subsystem.runLength:
+        return ("fullProcessing", False, None)
+
     # Convert filter time to seconds, so it can be added to unix time
     minTimeSec = minTimeMinutes*60
     maxTimeSec = maxTimeMinutes*60
 
     # Get min and max possible time ranges
-    minFileTime = run.subsystems[subsystem].startOfRun
-    maxFileTime = run.subsystems[subsystem].endOfRun
+    minFileTime = subsystem.startOfRun
+    maxFileTime = subsystem.endOfRun
 
     # User filter time, in unix time
     minTimeCutUnix = minTimeSec + minFileTime
@@ -352,20 +362,22 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
 
     # Filter files by input time range
     filesToMerge = []
-    for fileCont in run.subsystems[subsystem].files.values():
+    for fileCont in subsystem.files.values():
         if fileCont.fileTime >= minTimeCutUnix and fileCont.fileTime <= maxTimeCutUnix and fileCont.combinedFile == False:
             # The file is in the time range, so we keep it
             filesToMerge.append(fileCont)
 
     # Sort files by time
     filesToMerge.sort(key=lambda x: x.fileTime)
+    
+    print("filesToMerge: {0}".format(filesToMerge))
 
     # Get min and max time stamp remaining
     minFilteredTimeStamp = filesToMerge[0].fileTime
     maxFilteredTimeStamp = filesToMerge[-1].fileTime
 
     # Check if it already exists and return if that is the case
-    for key, timeSlice in runs.subsystems[subsystem].timeSlices.iteritems():
+    for key, timeSlice in subsystem.timeSlices.iteritems():
         if timeSlice.minTime == minFilteredTimeStamp and timeSlice.maxTime == maxFilteredTimeStamp:
             # Already exists - we don't need to remerge or reprocess
             return (key, False, None)
@@ -373,10 +385,10 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
     # Determine index by UUID to ensure that there is no clash
     timeSlicesCont = processingClasses.timeSliceContainer(minFilteredTimeStamp,
                                                           maxFilteredTimeStamp,
-                                                          run.subsystems[subsystem].runLength,
+                                                          subsystem.runLength,
                                                           filesToMerge)
     uuidDictKey = uuid.uuid4()
-    runs.subsystems[subsystem].timeSlices[uuidDictKey] = timeSlicesCont
+    subsystem.timeSlices[uuidDictKey] = timeSlicesCont
 
     return (uuidDictKey, True, None)
 
@@ -400,6 +412,10 @@ def processPartialRun(timeSliceRunNumber, minTimeRequested, maxTimeRequested, su
     runDir = "Run" + str(timeSliceRunNumber)
     print("Processing %s" % runDir)
 
+    # TEMP
+    runs = pickle.load( open(os.path.join("data", "runs.p"), "rb") )
+    # ENDTEMP
+
     # Load run information
     if runDir in runs:
         run = runs[runDir]
@@ -408,6 +424,7 @@ def processPartialRun(timeSliceRunNumber, minTimeRequested, maxTimeRequested, su
 
     # Get subsystem
     subsystem = run.subsystems[subsystemName]
+    print("subsystem.baseDir: {0}".format(subsystem.baseDir))
 
     # Setup dirPrefix
     dirPrefix = processingParameters.dirPrefix
@@ -420,13 +437,18 @@ def processPartialRun(timeSliceRunNumber, minTimeRequested, maxTimeRequested, su
     # Little should happen here since few, if any files, should be moved
     processMovedFilesIntoRuns(runs, runDict)
 
+    print("runLength: {0}".format(subsystem.runLength))
+
     # Validate and create time slice
-    (timeSlice, newlyCreated, errors) = validateAndCreateNewTimeSlice(run, subsystem, minTimeRequested, maxTimeRequested)
+    (timeSliceKey, newlyCreated, errors) = validateAndCreateNewTimeSlice(run, subsystem, minTimeRequested, maxTimeRequested)
     if errors:
         return errors
     # It has already been merged and processed
     if not newlyCreated:
-        return None
+        # This is the UUID
+        return timeSliceKey
+
+    timeSlice = subsystem.timeSlices[timeSliceKey]
 
     # Merge only the partial run.
     # Return if there were errors in merging
@@ -442,18 +464,23 @@ def processPartialRun(timeSliceRunNumber, minTimeRequested, maxTimeRequested, su
         print("subsystem.subsystem: {0}, subsystem.fileLocationSubsystem: {1}".format(subsystem.subsystem, subsystem.fileLocationSubsystem))
 
     # Generate the histograms
-    outputFormattingSave = os.path.join("%s", "%s.timeSlice.{0}.{1}.{2}.%s".format(timeSlice.minTime,
+    outputFormattingSave = os.path.join("%s", "timeSlice.{0}.{1}.%s.%s.{2}".format(timeSlice.minTime,
                                                                                    timeSlice.maxTime,
                                                                                    processingParameters.fileExtension))
     if processingParameters.beVerbose:
-        print("outputFormattingSave: %s" % outputFormattingSave)
-    outputHistNames = processRootFile(os.path.join(run.subsystems[subsystem].baseDir, timeSlice.filename.filename),
+        print("outputFormattingSave: {0}".format(outputFormattingSave))
+        print("path: {0}".format(os.path.join(processingParameters.dirPrefix,
+                                                   subsystem.baseDir,
+                                                   timeSlice.filename.filename) ))
+    outputHistNames = processRootFile(os.path.join(processingParameters.dirPrefix,
+                                                   subsystem.baseDir,
+                                                   timeSlice.filename.filename),
                                       outputFormattingSave, subsystem)
 
     print("Finished processing {0}!".format(run.prettyName))
 
-    # No errors, so return nothing
-    return None
+    # No errors, so return the key
+    return timeSliceKey
 
 ###################################################
 def createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir):
@@ -469,7 +496,12 @@ def createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir):
 
     filenames = sorted(runDict[runDir].subsystems[fileLocationSubsystem])
     startOfRun = utilities.extractTimeStampFromFilename(filenames[0])
-    runLength = utilities.extractTimeStampFromFilename(filenames[-1])
+    endOfRun = utilities.extractTimeStampFromFilename(filenames[-1])
+    print("runLength filename: {0}".format(filename[-1]))
+    # Convert run length into the length of the run in minutes
+    # TODO: Check this carefully for the proper length! See createFileDictionary()
+    runLength = (endOfRun - startOfRun)//60
+    print("runLength: {0}".format(runLength))
 
     # Create the subsystem
     showRootFiles = False
@@ -516,8 +548,8 @@ def processMovedFilesIntoRuns(runs, runDict):
                     createNewSubsystemFromMergeInformation(runs, subsystemName, runDict, runDir)
 
         else:
-            runs[runDir] = processingClasses.runContainer( runDir = runDir,
-                                                           fileMode = processingParameters.cumulativeMode)
+            runs[runDir] = processingClasses.runContainer(runDir = runDir,
+                                                          fileMode = processingParameters.cumulativeMode)
             # Add files and subsystems.
             # We are creating runs here, so we already have all the information that we need from moving the files
             for subsystem in processingParameters.subsystemList:
@@ -590,6 +622,7 @@ def processAllRuns():
                 print("Creating subsystem {0} in {1}".format(subsystem, runDir))
                 # Retrieve the files for a given directory
                 [filenamesDict, runLength] = utilities.createFileDictionary(dirPrefix, runDir, fileLocationSubsystem)
+                #print("runLength: {0}, filenamesDict: {1}".format(runLength, filenamesDict))
                 startOfRun = utilities.extractTimeStampFromFilename(filenamesDict[filenamesDict.keys()[0]])
 
                 # Now create the subsystem
@@ -653,25 +686,25 @@ def processAllRuns():
             # Process if there is a new file or if forceReprocessing
             if subsystem.newFile == True or processingParameters.forceReprocessing == True:
                 # Process combined root file: plot histos and save in imgDir
-                print("INFO: About to process %s, %s" % (runDir, subsystem.subsystem))
+                print("INFO: About to process {0}, {1}".format(runDir, subsystem.subsystem))
                 #outputFormattingSave = os.path.join(subsystem.imgDir, "%s" + processingParameters.fileExtension) 
                 outputFormattingSave = os.path.join("%s", "%s.%s") 
-                processRootFile(subsystem.combinedFile.filename, outputFormattingSave, subsystem)
+                processRootFile(os.path.join(processingParameters.dirPrefix, subsystem.combinedFile.filename),
+                                outputFormattingSave,
+                                subsystem)
             else:
                 # We often want to skip this point since most runs will not need to be processed most times
                 if beVerbose:
-                    print("INFO: Don't need to process %s. It has already been processed" % runDir)
+                    print("INFO: Don't need to process {0}. It has already been processed".format(runDir))
 
     # Save the dict out
     pickle.dump(runs, open(os.path.join(processingParameters.dirPrefix, "runs.p"), "wb"))
     #pickle.dump(runs["Run123456"], open(os.path.join(processingParameters.dirPrefix, "runs.p"), "wb"))
     
-    exit(0)
-
     print("INFO: Finished processing!")
 
     # Send data to pdsf via rsync
-    if sendData == True:
+    if processingParameters.sendData == True:
         print("INFO: Preparing to send data")
         utilities.rsyncData(dirPrefix, processingParameters.remoteUsername, processingParameters.remoteSystems, processingParameters.remoteFileLocations)
         if templateDataDirName != None:
@@ -680,7 +713,14 @@ def processAllRuns():
 # Allows the function to be invoked automatically when run with python while not invoked when loaded as a module
 if __name__ == "__main__":
     # Process all of the run data
-    processAllRuns()
+    #processAllRuns()
     # Function calls that be used for debugging
     #processQA("Run246272", "Run246980", "EMC", "determineMedianSlope")
-    #processPartialRun(123457, 0, 5, "EMC")
+    returnValue = processPartialRun(300005, 0, 5, "EMC")
+    print("0-5: {0}".format(returnValue))
+    returnValue = processPartialRun(300005, 0, 4, "EMC")
+    print("0-4: {0}".format(returnValue))
+    returnValue = processPartialRun(300005, 0, 4, "EMC")
+    print("repeat 0-4: {0}".format(returnValue))
+    returnValue = processPartialRun(300005, 1, 5, "EMC")
+    print("1-5: {0}".format(returnValue))

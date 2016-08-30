@@ -349,6 +349,9 @@ def partialMerge():
     print("request: {0}".format(request.form))
 
     if request.method == "POST":
+        # TEMP
+        return jsonify(testData = "testData")
+
         # Validates the request
         (error, minTime, maxTime, runNumber, subsystem, histGroup, histName) = validation.validatePartialMergePostRequest(request)
 
