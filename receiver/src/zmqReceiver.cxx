@@ -148,8 +148,16 @@ void zmqReceiver::ReceiveData()
   // Close message
   alizmq_msg_close(&message);
 
-  // Write Data
-  WriteToFile();
+  // The HLT sends run number 0 after it is has reset receivers at the end of a run.
+  // We shouldn't bother writing out the file in that case.
+  if (fRunNumber != 0)
+  {
+    // Write Data
+    WriteToFile();
+  }
+  else {
+    Printf("fRunNumber == 0. Not printing, since this is not a real run!");
+  }
 }
 
 //______________________________________________________________________________
