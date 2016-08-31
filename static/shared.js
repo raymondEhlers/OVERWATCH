@@ -135,10 +135,10 @@ function setTimeSlicesFormValues() {
     var form = Polymer.dom(this.root).querySelector("#timeSlicesForm");
 
     if (form !== undefined && mainContent !== undefined) {
-        setTimeSlicesFormValue(form, formValues, "timeSlicesFormMinTime", "", "value");
         setTimeSlicesFormValue(form, formValues, "timeSlicesFormMinTime", "runLength", "max");
-        setTimeSlicesFormValue(form, formValues, "timeSlicesFormMaxTime", "", "value");
+        setTimeSlicesFormValue(form, formValues, "timeSlicesFormMinTime", "", "value");
         setTimeSlicesFormValue(form, formValues, "timeSlicesFormMaxTime", "runLength", "max");
+        setTimeSlicesFormValue(form, formValues, "timeSlicesFormMaxTime", "", "value");
         setTimeSlicesFormValue(form, formValues, "timeSlicesFormHotChannelThreshold", "", "value");
         setTimeSlicesFormValue(form, formValues, "timeSlicesFormHistGroupName", "", "value");
         setTimeSlicesFormValue(form, formValues, "timeSlicesFormHistName", "", "value");
@@ -156,10 +156,18 @@ function setTimeSlicesFormValue(form, formValues, formValueSelector, newValueDat
     }
     newValueDataName = newValueDataName.replace("timeSlicesForm", "").toLowerCase();
     var newValue = $(formValues).data(newValueDataName);
+    // Help handle 0. The form does not handle it well...
+    // Instead, just take a small value to indicate that there is nothing more.
+    if (newValue === 0 && valueType === "max") {
+        console.log("Reassign a 0 to 0.5 for a max value!");
+        newValue = 0.5;
+    }
+    /*console.log("currentValue: " + $(currentValue).prop(valueType));
+    console.log("newValue: " + newValue);*/
     // Set the values
-    if (currentValue && newValue) {
-        /*console.log("currentValue: " + $(currentValue).prop(valueType));
-        console.log("newValue: " + newValue);*/
+    // Need to check explicitly, because otherwise this fails on 0...
+    if (currentValue !== undefined && currentValue !== null && newValue !== undefined && newValue !== null) {
+        //console.log("Assigning!");
         $(currentValue).prop(valueType, newValue);
     }
 }

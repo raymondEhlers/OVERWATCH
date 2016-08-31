@@ -466,9 +466,7 @@ def processTimeSlices(timeSliceRunNumber, minTimeRequested, maxTimeRequested, su
         print("subsystem.subsystem: {0}, subsystem.fileLocationSubsystem: {1}".format(subsystem.subsystem, subsystem.fileLocationSubsystem))
 
     # Generate the histograms
-    outputFormattingSave = os.path.join("%s", "timeSlice.{0}.{1}.%s.%s.{2}".format(timeSlice.minUnixTimeAvailable,
-                                                                                   timeSlice.maxUnixTimeAvailable,
-                                                                                   processingParameters.fileExtension))
+    outputFormattingSave = os.path.join("%s", "{0}.%s.%s".format(timeSlice.filenamePrefix))
     if processingParameters.beVerbose:
         print("outputFormattingSave: {0}".format(outputFormattingSave))
         print("path: {0}".format(os.path.join(processingParameters.dirPrefix,

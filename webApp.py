@@ -192,9 +192,9 @@ def index():
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
 ###################################################
-@app.route("/Run<int:runNumber>/<string:subsystem>/<string:requestedFileType>", methods=["GET"])
+@app.route("/Run<int:runNumber>/<string:subsystemName>/<string:requestedFileType>", methods=["GET"])
 @login_required
-def runPage(runNumber, subsystem, requestedFileType):
+def runPage(runNumber, subsystemName, requestedFileType):
     """ Serves the run pages and root files for a request run
     
     """
@@ -202,7 +202,7 @@ def runPage(runNumber, subsystem, requestedFileType):
     jsRoot = routing.convertRequestToPythonBool("jsRoot")
     ajaxRequest = routing.convertRequestToPythonBool("ajaxRequest")
     print("request: {0}".format(request.args))
-    print("runDir: {0}, subsytsem: {1}, requestedFileType: {2}, ajaxRequest: {3}, jsRoot: {4}".format(runDir, subsystem, requestedFileType, ajaxRequest, jsRoot))
+    print("runDir: {0}, subsytsem: {1}, requestedFileType: {2}, ajaxRequest: {3}, jsRoot: {4}".format(runDir, subsystemName, requestedFileType, ajaxRequest, jsRoot))
     # TODO: Validate these values
     requestedHistGroup = request.args.get("histGroup", None, type=str)
     requestedHist = request.args.get("histName", None, type=str)
@@ -215,36 +215,55 @@ def runPage(runNumber, subsystem, requestedFileType):
         requestedHistGroup = None
     if requestedHist == "" or requestedHist == "None":
         requestedHist = None
-    if timeSliceKey == "" or timeSliceKey == "None":
-        timeSliceKey = None
+    if timeSliceKey == "" or timeSliceKey == "None" or timeSliceKey == None:
+        timeSlice = None
+    else:
+        timeSlice = runs[runDir].subsystems[subsystemName].timeSlices[timeSliceKey]
 
     print("ajaxRequest: {0}, jsRoot: {1}".format(ajaxRequest,jsRoot))
 
+    # Sets the filenames for the json and img files
+    # Create these templates here so we don't have inside of the template
+    subsystem = runs[runDir].subsystems[subsystemName]
+    jsonFilenameTemplate = os.path.join(subsystem.jsonDir, "{0}.json")
+    if timeSlice:
+        jsonFilenameTemplate = jsonFilenameTemplate.format(timeSlice.filenamePrefix + ".{0}")
+    imgFilenameTemplate = os.path.join(subsystem.imgDir, "{0}." + serverParameters.fileExtension)
+
     if ajaxRequest == False:
         if requestedFileType == "runPage":
-            runPageName = subsystem + "runPage.html"
+            runPageName = subsystemName + "runPage.html"
             if runPageName not in serverParameters.availableRunPageTemplates:
-                runPageName = runPageName.replace(subsystem, "")
+                runPageName = runPageName.replace(subsystemName, "")
 
             try:
-                returnValue = render_template(runPageName, run=runs[runDir], subsystemName=subsystem, selectedHistGroup=requestedHistGroup, selectedHist = requestedHist, jsRoot = jsRoot, timeSliceKey = timeSliceKey, useGrid=False)
+                returnValue = render_template(runPageName, run=runs[runDir], subsystem = runs[runDir].subsystems[subsystemName],
+                                              selectedHistGroup=requestedHistGroup, selectedHist = requestedHist,
+                                              jsonFilenameTemplate = jsonFilenameTemplate, imgFilenameTemplate = imgFilenameTemplate,
+                                              jsRoot = jsRoot, timeSlice = timeSlice, useGrid=False)
             except jinja2.exceptions.TemplateNotFound as e:
                 returnValue = render_template("error.html", errors={"Template Error": ["Request template: \"{0}\", but it was not found!".format(e.name)]})
         elif requestedFileType == "rootFiles":
-            returnValue = render_template("rootfiles.html", run=runs[runDir], subsystem=subsystem)
+            returnValue = render_template("rootfiles.html", run=runs[runDir], subsystem=subsystemName)
         else:
             returnValue = render_template("error.html", errors={"Request Error": ["Requested: {0}. Must request either runPage or rootFiles!".format(requestedFileType)]})
 
         return returnValue
     else:
-        print("requestedHistGroup: {0}, requestedHist: {1}, timeSliceKey: {2}".format(requestedHistGroup, requestedHist, timeSliceKey))
-        print("runs[runDir].subsystems[subsystem].timeSlices: {0}".format(runs[runDir].subsystems[subsystem].timeSlices))
+        print("requestedHistGroup: {0}, requestedHist: {1}, timeSliceKey: {2}, timeSlice: {3}".format(requestedHistGroup, requestedHist, timeSliceKey, timeSlice))
+        print("runs[runDir].subsystems[subsystemName].timeSlices: {0}".format(runs[runDir].subsystems[subsystemName].timeSlices))
         if requestedFileType == "runPage":
-            drawerContent = render_template("runPageDrawer.html", run=runs[runDir], subsystem=runs[runDir].subsystems[subsystem], selectedHistGroup = requestedHistGroup, selectedHist = requestedHist, jsRoot = jsRoot, timeSliceKey = timeSliceKey, useGrid=False)
-            mainContent = render_template("runPageMainContent.html", run=runs[runDir], subsystem=runs[runDir].subsystems[subsystem], selectedHistGroup = requestedHistGroup, selectedHist = requestedHist, jsRoot = jsRoot, timeSliceKey = timeSliceKey, useGrid=False)
+            drawerContent = render_template("runPageDrawer.html", run=runs[runDir], subsystem=runs[runDir].subsystems[subsystemName],
+                                            selectedHistGroup = requestedHistGroup, selectedHist = requestedHist,
+                                            jsonFilenameTemplate = jsonFilenameTemplate, imgFilenameTemplate = imgFilenameTemplate,
+                                            jsRoot = jsRoot, timeSlice = timeSlice, useGrid=False)
+            mainContent = render_template("runPageMainContent.html", run=runs[runDir], subsystem=runs[runDir].subsystems[subsystemName],
+                                          selectedHistGroup = requestedHistGroup, selectedHist = requestedHist,
+                                          jsonFilenameTemplate = jsonFilenameTemplate, imgFilenameTemplate = imgFilenameTemplate,
+                                          jsRoot = jsRoot, timeSlice = timeSlice, useGrid=False)
         elif requestedFileType == "rootFiles":
             drawerContent = ""
-            mainContent = render_template("rootfilesMainContent.html", run=runs[runDir], subsystem=subsystem)
+            mainContent = render_template("rootfilesMainContent.html", run=runs[runDir], subsystem=subsystemName)
         else:
             drawerContent = ""
             mainContent =  render_template("errorMainContent.html", errors={"Request Error": ["Requested: {0}. Must request either runPage or rootFiles!".format(requestedFileType)]})
@@ -384,9 +403,10 @@ def partialMerge():
                 # TODO: Add jsRoot
                 return redirect(url_for("runPage",
                                         runNumber = int(filter(str.isdigit, runNumber.encode("ascii", "ignore"))),
-                                        subsystem = subsystem,
+                                        subsystemName = subsystem,
                                         requestedFileType = "runPage",
                                         ajaxRequest = json.dumps(True),
+                                        jsRoot = json.dumps(True),  # TEMP!!
                                         histGroup = histGroup,
                                         histName = histName,
                                         timeSliceKey = timeSliceKey))

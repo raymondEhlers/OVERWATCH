@@ -16,7 +16,7 @@ class processingParameters(object):
     """
 
     #: The file extension to use when printing ROOT files.
-    fileExtension = "png"
+    fileExtension = sharedParameters.fileExtension
 
     #: Print additional messages while processing.
     beVerbose = True

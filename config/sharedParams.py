@@ -51,3 +51,6 @@ class sharedParameters(object):
 
     #: The name of the templates folder on the disk.
     templateFolderName = "templates"
+
+    #: The file extension to use when printing ROOT files.
+    fileExtension = "png"

@@ -4,13 +4,11 @@
     {{ run.prettyName }} started at {{ subsystem.prettyPrintUnixTime(subsystem.startOfRun) }} (CERN time zone).</br>
    <a target="_blank" href="https://alice-logbook.cern.ch/logbook/date_online.php?p_cont=rund&p_run={{ run.runNumber }}">Logbook entry</a>
 </p>
-{%- if timeSliceKey != None -%}
-{%- set timeSlice = subsystem.timeSlices[timeSliceKey] -%}
+{%- if timeSlice != None -%}
 <p>
-    {#timeSliceKey: {{ timeSliceKey }}
-    subsystem.timeSlices: {{ subsystem.timeSlices }}
+    {#subsystem.timeSlices: {{ subsystem.timeSlices }}
     timeSlice: {{ timeSlice }} #}
-    Time slice (key: {{ timeSliceKey }}) requested {{ timeSlice.timeInMinutesRounded(timeSlice.minUnixTimeRequested) }} to {{ timeSlice.timeInMinutesRounded(timeSlice.maxUnixTimeRequested) }} minutes and returned {{ timeSlice.timeInMinutesRounded(timeSlice.minUnixTimeAvailable) }} to {{ timeSlice.timeInMinutesRounded(timeSlice.maxUnixTimeAvailable) }}.
+    Time slice requested {{ timeSlice.timeInMinutesRounded(timeSlice.minUnixTimeRequested) }} to {{ timeSlice.timeInMinutesRounded(timeSlice.maxUnixTimeRequested) }} minutes and returned {{ timeSlice.timeInMinutesRounded(timeSlice.minUnixTimeAvailable) }} to {{ timeSlice.timeInMinutesRounded(timeSlice.maxUnixTimeAvailable) }}.
 </p>
 {%- endif -%}
 <hr />
@@ -50,18 +48,15 @@
                         {% endfor %}
                     {% endif %}
                 {% endif %}
-                {# TODO: Improve determining these fileanmes! #}
-                {%- set filenameImage = subsystem.imgDir + "/" + hist.histName.replace("/", "_") + ".png" -%}
-                {%- set filenameJSON = subsystem.jsonDir + "/" + hist.histName.replace("/", "_") + ".json" -%}
                 {# If grid, then add class #}
                 {%- set histogramContainerClasses = "histogramContainer" -%}
                 {% if histGroup.plotInGrid == True %}
                     {# TODO: Determine how to properly show the grid with iron-flex-layout #}
                     <p>Grid!</p>
                 {% endif %}
-                <div id="{{ hist.histName }}" class="{%- if jsRoot == True -%}{{ histogramContainerClasses }}{%- endif -%}" data-filename="{{ filenameJSON }}">
+                <div id="{{ hist.histName }}" class="{%- if jsRoot == True -%}{{ histogramContainerClasses }}{%- endif -%}" data-filename="{{ jsonFilenameTemplate.format(hist.histName.replace("/", "_")) }}">
                 {% if jsRoot != True %}
-                    <img src="{{ url_for("protected", filename=filenameImage) }}" alt="{{ hist.histName }}">
+                    <img src="{{ url_for("protected", filename=imgFilenameTemplate.format(hist.histName.replace("/", "_"))) }}" alt="{{ hist.histName }}">
                 {% else %}
                     {# Provide indication that we are loading jsroot content #}
                     {# It will disappear once jsroot loads the histogram #}

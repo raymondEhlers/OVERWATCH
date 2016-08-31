@@ -6,20 +6,14 @@
 {{ run.prettyName }}
 {% endblock %}
 
-{% set subsystem = run.subsystems[subsystemName] %}
-
 {% block drawer %}
     <!-- This is the drawer menu -->
-    {% with subsystem=subsystem %}
-        {% include "runPageDrawer.html" %}
-    {% endwith %}
+    {% include "runPageDrawer.html" %}
 {% endblock %}
 
 {% block mainContent %}
     <!-- This is the main content! -->
-    {% with subsystem=subsystem %}
-        {% include "runPageMainContent.html" %}
-    {% endwith %}
+    {% include "runPageMainContent.html" %}
 {% endblock %}
 
 {% block body %}

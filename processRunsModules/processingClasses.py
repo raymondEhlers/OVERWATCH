@@ -156,8 +156,11 @@ class timeSliceContainer(object):
         # File containers of the files to merge
         self.filesToMerge = filesToMerge
 
+        # Filename prefix for saving out files
+        self.filenamePrefix = "timeSlice.{0}.{1}".format(self.minUnixTimeAvailable, self.maxUnixTimeAvailable)
+
         # Create filename
-        self.filename = fileContainer("timeSlice.{0}.{1}.root".format(self.minUnixTimeAvailable, self.maxUnixTimeAvailable))
+        self.filename = fileContainer(self.filenamePrefix + ".root")
 
     def timeInMinutes(self, inputTime):
         print("inputTime: {0}, startOfRun: {1}".format(inputTime, self.startOfRun))
