@@ -206,6 +206,7 @@ def runPage(runNumber, subsystem, requestedFileType):
     # TODO: Validate these values
     requestedHistGroup = request.args.get("histGroup", None, type=str)
     requestedHist = request.args.get("histName", None, type=str)
+    timeSliceKey = request.args.get("timeSliceKey", None, type=str)
 
     # Empty strings should be treated as None
     # The "None" strings are from the timeSlicesValues div on the runPage.
@@ -214,6 +215,8 @@ def runPage(runNumber, subsystem, requestedFileType):
         requestedHistGroup = None
     if requestedHist == "" or requestedHist == "None":
         requestedHist = None
+    if timeSliceKey == "" or timeSliceKey == "None":
+        timeSliceKey = None
 
     print("ajaxRequest: {0}, jsRoot: {1}".format(ajaxRequest,jsRoot))
 
@@ -224,7 +227,7 @@ def runPage(runNumber, subsystem, requestedFileType):
                 runPageName = runPageName.replace(subsystem, "")
 
             try:
-                returnValue = render_template(runPageName, run=runs[runDir], subsystemName=subsystem, selectedHistGroup=requestedHistGroup, selectedHist = requestedHist, jsRoot = jsRoot, useGrid=False)
+                returnValue = render_template(runPageName, run=runs[runDir], subsystemName=subsystem, selectedHistGroup=requestedHistGroup, selectedHist = requestedHist, jsRoot = jsRoot, timeSliceKey = timeSliceKey, useGrid=False)
             except jinja2.exceptions.TemplateNotFound as e:
                 returnValue = render_template("error.html", errors={"Template Error": ["Request template: \"{0}\", but it was not found!".format(e.name)]})
         elif requestedFileType == "rootFiles":
@@ -234,10 +237,11 @@ def runPage(runNumber, subsystem, requestedFileType):
 
         return returnValue
     else:
-        print("requestedHistGroup: {0}, requestedHist: {1}".format(requestedHistGroup, requestedHist))
+        print("requestedHistGroup: {0}, requestedHist: {1}, timeSliceKey: {2}".format(requestedHistGroup, requestedHist, timeSliceKey))
+        print("runs[runDir].subsystems[subsystem].timeSlices: {0}".format(runs[runDir].subsystems[subsystem].timeSlices))
         if requestedFileType == "runPage":
-            drawerContent = render_template("runPageDrawer.html", run=runs[runDir], subsystem=runs[runDir].subsystems[subsystem], selectedHistGroup = requestedHistGroup, selectedHist = requestedHist, jsRoot = jsRoot, useGrid=False)
-            mainContent = render_template("runPageMainContent.html", run=runs[runDir], subsystem=runs[runDir].subsystems[subsystem], selectedHistGroup = requestedHistGroup, selectedHist = requestedHist, jsRoot = jsRoot, useGrid=False)
+            drawerContent = render_template("runPageDrawer.html", run=runs[runDir], subsystem=runs[runDir].subsystems[subsystem], selectedHistGroup = requestedHistGroup, selectedHist = requestedHist, jsRoot = jsRoot, timeSliceKey = timeSliceKey, useGrid=False)
+            mainContent = render_template("runPageMainContent.html", run=runs[runDir], subsystem=runs[runDir].subsystems[subsystem], selectedHistGroup = requestedHistGroup, selectedHist = requestedHist, jsRoot = jsRoot, timeSliceKey = timeSliceKey, useGrid=False)
         elif requestedFileType == "rootFiles":
             drawerContent = ""
             mainContent = render_template("rootfilesMainContent.html", run=runs[runDir], subsystem=subsystem)
@@ -370,8 +374,12 @@ def partialMerge():
             returnValue = processRuns.processTimeSlices(runNumber, minTime, maxTime, subsystem, runs)
 
             print("returnValue: {0}".format(returnValue))
+            print("runs[runDir].subsystems[subsystem].timeSlices: {0}".format(runs[runNumber].subsystems[subsystem].timeSlices))
 
             if not isinstance(returnValue, collections.Mapping):
+                timeSliceKey = returnValue
+                if timeSliceKey == "fullProcessing":
+                    timeSliceKey = None
                 # We always want to use ajax here
                 # TODO: Add jsRoot
                 return redirect(url_for("runPage",
@@ -380,7 +388,8 @@ def partialMerge():
                                         requestedFileType = "runPage",
                                         ajaxRequest = json.dumps(True),
                                         histGroup = histGroup,
-                                        histName = histName))
+                                        histName = histName,
+                                        timeSliceKey = timeSliceKey))
                 #return redirect(url_for("showRuns", runPath=returnPath))
             else:
                 # Fall through to return an error

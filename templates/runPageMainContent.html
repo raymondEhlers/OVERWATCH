@@ -4,6 +4,15 @@
     {{ run.prettyName }} started at {{ subsystem.prettyPrintUnixTime(subsystem.startOfRun) }} (CERN time zone).</br>
    <a target="_blank" href="https://alice-logbook.cern.ch/logbook/date_online.php?p_cont=rund&p_run={{ run.runNumber }}">Logbook entry</a>
 </p>
+{%- if timeSliceKey != None -%}
+{%- set timeSlice = subsystem.timeSlices[timeSliceKey] -%}
+<p>
+    {#timeSliceKey: {{ timeSliceKey }}
+    subsystem.timeSlices: {{ subsystem.timeSlices }}
+    timeSlice: {{ timeSlice }} #}
+    Time slice (key: {{ timeSliceKey }}) requested from {{ timeSlice.minTimeMinutesRounded() }} to {{ timeSlice.maxTimeMinutesRounded() }}.
+</p>
+{%- endif -%}
 <hr />
 
 {# NOTE: We cannot use loop.first because we loop through many empty histGroups! #}

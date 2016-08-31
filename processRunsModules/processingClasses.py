@@ -147,14 +147,29 @@ class timeSliceContainer(object):
         # Hold times
         self.minTime = minUnixTime
         self.maxTime = maxUnixTime
-        self.minTimeMinutes = (self.minTime - startOfRun)//60
-        self.maxTimeMinutes = (self.maxTime - startOfRun)//60
+        # In unix time
+        self.startOfRun = startOfRun
+        #self.minTimeMinutes = (self.minTime - startOfRun)//60
+        #self.maxTimeMinutes = (self.maxTime - startOfRun)//60
+        #self.minTimeMinutesRounded = round()
 
         # File containers of the files to merge
         self.filesToMerge = filesToMerge
 
         # Create filename
         self.filename = fileContainer("timeSlice.{0}.{1}.root".format(self.minTime, self.maxTime))
+
+    def minTimeMinutes(self):
+        return (self.minTime - self.startOfRun)//60
+
+    def maxTimeMinutes(self):
+        return (self.maxTime - self.startOfRun)//60
+
+    def minTimeMinutesRounded(self):
+        return round(self.minTimeMinutes())
+
+    def maxTimeMinutesRounded(self):
+        return round(self.maxTimeMinutes())
 
 ###################################################
 class fileContainer(object):

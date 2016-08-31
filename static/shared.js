@@ -151,7 +151,10 @@ function setTimeSlicesFormValue(form, formValues, formValueSelector, newValueDat
     // Retrieve the objects
     var currentValue = $(form).children("#" + formValueSelector);
     // Format the string if necessary (it will work fine even if it's an empty string
-    newValueDataName = formValueSelector.replace("timeSlicesForm", "").toLowerCase();
+    if (newValueDataName === "") {
+        newValueDataName = formValueSelector;
+    }
+    newValueDataName = newValueDataName.replace("timeSlicesForm", "").toLowerCase();
     var newValue = $(formValues).data(newValueDataName);
     // Set the values
     if (currentValue && newValue) {

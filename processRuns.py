@@ -390,7 +390,7 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
                                                           maxFilteredTimeStamp,
                                                           subsystem.runLength,
                                                           filesToMerge)
-    uuidDictKey = uuid.uuid4()
+    uuidDictKey = str(uuid.uuid4())
     subsystem.timeSlices[uuidDictKey] = timeSlicesCont
 
     return (uuidDictKey, True, None)

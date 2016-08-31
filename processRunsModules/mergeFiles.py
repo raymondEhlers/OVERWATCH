@@ -73,7 +73,9 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlice = None):
         latestFile = filesToMerge[-1].filename
         # Subtract latestFile from earliestFile
         timeSlicesFilename = os.path.join(currentDir, subsystem.baseDir, timeSlice.filename.filename)
-        subtractFiles(earliestFile, latestFile, timeSlicesFilename)
+        subtractFiles(os.path.join(currentDir, earliestFile),
+                      os.path.join(currentDir, latestFile),
+                      timeSlicesFilename)
         print("Completed time slicing with result stored in {0}!\nMerging complete!".format(timeSlicesFilename))
         return None
 
@@ -100,7 +102,7 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlice = None):
     else:
         # Define convenient variable
         maxFilteredTimeStamp = filesToMerge[-1].fileTime
-        filePath = os.path.join(run.runDir, subsystem.fileLocationSubsystem, "hists.combined.%i.%i.root" % (numberOfFiles, maxFilteredTimeStamp))
+        filePath = os.path.join(subsystem.baseDir, "hists.combined.%i.%i.root" % (numberOfFiles, maxFilteredTimeStamp))
     outFile = os.path.join(currentDir, filePath)
     print("Number of files to be merged: {0}".format(numberOfFiles))
     print("Output file: {0}".format(outFile))
