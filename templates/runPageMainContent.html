@@ -37,11 +37,11 @@
                         {%- if label == "Threshold" -%}
                             {% if threshold.append(info) %}{% endif %}
                         {%- endif -%}
-                        <paper-button class="collapsibleContainerButton" id="collapse{{ loop.index0 }}Button">
+                        <paper-button class="collapsibleContainerButton" id="collapse{{ loop.index0 }}Button{{ hist.histName }}">
                             <div>{{ label }}</div>
                             <paper-icon-button class="collapsibleContainerIcon" icon="icons:arrow-drop-down"></paper-icon-button>
                         </paper-button>
-                        <iron-collapse class="collapsibleContainer" id="collapse{{ loop.index0 }}">
+                        <iron-collapse class="collapsibleContainer" id="collapse{{ loop.index0 }}{{ hist.histName }}">
                             <div>{{ info }}</div>
                         </iron-collapse>
                         <br />
