@@ -57,7 +57,7 @@ class subsystemContainer(object):
 
     """
 
-    def __init__(self, subsystem, runDir, startOfRun, runLength, showRootFiles = False, fileLocationSubsystem = None):
+    def __init__(self, subsystem, runDir, startOfRun, endOfRun, showRootFiles = False, fileLocationSubsystem = None):
         """ Initializes subsystem properties.
 
         It does safety and sanity checks on a number of variables.
@@ -104,8 +104,9 @@ class subsystemContainer(object):
 
         # Times
         self.startOfRun = startOfRun
-        self.runLength = runLength
-        self.endOfRun = self.startOfRun + runLength*60 # runLength is in minutes
+        self.endOfRun = endOfRun
+        # runLength is in minutes
+        self.runLength = (endOfRun - startOfRun)/60
 
         # Histograms
         #self.histGroups = sortedcontainers.SortedDict()

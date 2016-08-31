@@ -329,27 +329,20 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
 
 ###################################################
 def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes):
-    # Return immediately if it is just a full time request
-    # TODO: We will need to continue here if we change settings
-    if minTimeMinutes == 0 and maxTimeMinutes == subsystem.runLength:
-        return ("fullProcessing", False, None)
-
-    # Convert filter time to seconds, so it can be added to unix time
-    minTimeSec = minTimeMinutes*60
-    maxTimeSec = maxTimeMinutes*60
-
-    # Get min and max possible time ranges
-    minFileTime = subsystem.startOfRun
-    maxFileTime = subsystem.endOfRun
-
-    # User filter time, in unix time
-    minTimeCutUnix = minTimeSec + minFileTime
-    maxTimeCutUnix = maxTimeSec + minFileTime
+    # User filter time, in unix time. This makes it possible to compare to the startOfRun and endOfRun times
+    minTimeCutUnix = minTimeMinutes*60 + subsystem.startOfRun
+    maxTimeCutUnix = maxTimeMinutes*60 + subsystem.startOfRun
 
     # If max filter time is greater than max file time, merge up to and including last file
-    if maxTimeCutUnix > maxFileTime:
+    if maxTimeCutUnix > subsystem.endOfRun:
         print("ERROR: Input max time exceeds data! It has been reset to the maximum allowed.")
-        maxTimeCutUnix = maxFileTime
+        maxTimeMinutes = subsystem.runLength
+        maxTimeCutUnix = subsystem.endOfRun
+
+    # Return immediately if it is just a full time request
+    # TODO: We will need to continue here if we change settings
+    if minTimeMinutes == 0 and maxTimeMinutes == round(subsystem.runLength):
+        return ("fullProcessing", False, None)
 
     # If input time range out of range, return 0
     print("Filtering time window! Min:{0}, Max: {1}".format(minTimeMinutes,maxTimeMinutes)) 
@@ -363,21 +356,31 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
     # Filter files by input time range
     filesToMerge = []
     for fileCont in subsystem.files.values():
-        if fileCont.fileTime >= minTimeCutUnix and fileCont.fileTime <= maxTimeCutUnix and fileCont.combinedFile == False:
+        #print("fileCont.fileTime: {0}, minTimeCutUnix: {1}, maxTimeCutUnix: {2}".format(fileCont.fileTime, minTimeCutUnix, maxTimeCutUnix))
+        print("fileCont.timeIntoRun (minutes): {0}, minTimeMinutes: {1}, maxTimeMinutes: {2}".format(round(fileCont.timeIntoRun/60), minTimeMinutes, maxTimeMinutes))
+        #if fileCont.fileTime >= minTimeCutUnix and fileCont.fileTime <= maxTimeCutUnix and fileCont.combinedFile == False:
+        # It is important to make this check in such a way that we can round to the nearest minute.
+        if round(fileCont.timeIntoRun/60) >= minTimeMinutes and round(fileCont.timeIntoRun/60) <= maxTimeMinutes and fileCont.combinedFile == False:
             # The file is in the time range, so we keep it
             filesToMerge.append(fileCont)
+
+    # If filesToMerge is empty, then the time range has no files. We need to report as such
+    if filesToMerge == []:
+         return (None, None, {"Request Error": ["No files are available in requested range of {0}-{1}! Please make another request with a different range".format(minTimeMinutes, maxTimeMinutes)]})
 
     # Sort files by time
     filesToMerge.sort(key=lambda x: x.fileTime)
     
-    print("filesToMerge: {0}".format(filesToMerge))
+    #print("filesToMerge: {0}, times: {1}".format(filesToMerge, [x.fileTime for x in filesToMerge]))
 
     # Get min and max time stamp remaining
     minFilteredTimeStamp = filesToMerge[0].fileTime
     maxFilteredTimeStamp = filesToMerge[-1].fileTime
 
     # Check if it already exists and return if that is the case
+    #print("subsystem.timeSlice: {0}".format(subsystem.timeSlices))
     for key, timeSlice in subsystem.timeSlices.iteritems():
+        #print("minFilteredTimeStamp: {0}, maxFilteredTimeStamp: {1}, timeSlice.minTime: {2}, timeSlice.maxTime: {3}".format(minFilteredTimeStamp, maxFilteredTimeStamp, timeSlice.minTime, timeSlice.maxTime))
         if timeSlice.minTime == minFilteredTimeStamp and timeSlice.maxTime == maxFilteredTimeStamp:
             # Already exists - we don't need to remerge or reprocess
             return (key, False, None)
@@ -393,8 +396,8 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
     return (uuidDictKey, True, None)
 
 ###################################################
-def processPartialRun(timeSliceRunNumber, minTimeRequested, maxTimeRequested, subsystemName):
-    """ Processes a given run using only data in a given time range.
+def processTimeSlices(timeSliceRunNumber, minTimeRequested, maxTimeRequested, subsystemName, runs):
+    """ Processes a given run using only data in a given time range (ie time slices).
 
     Usually invoked via the web app on a particular run page.
 
@@ -411,10 +414,6 @@ def processPartialRun(timeSliceRunNumber, minTimeRequested, maxTimeRequested, su
     # Setup start runDir string of the form "Run#"
     runDir = "Run" + str(timeSliceRunNumber)
     print("Processing %s" % runDir)
-
-    # TEMP
-    runs = pickle.load( open(os.path.join("data", "runs.p"), "rb") )
-    # ENDTEMP
 
     # Load run information
     if runDir in runs:
@@ -498,10 +497,6 @@ def createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir):
     startOfRun = utilities.extractTimeStampFromFilename(filenames[0])
     endOfRun = utilities.extractTimeStampFromFilename(filenames[-1])
     print("runLength filename: {0}".format(filename[-1]))
-    # Convert run length into the length of the run in minutes
-    # TODO: Check this carefully for the proper length! See createFileDictionary()
-    runLength = (endOfRun - startOfRun)//60
-    print("runLength: {0}".format(runLength))
 
     # Create the subsystem
     showRootFiles = False
@@ -510,7 +505,7 @@ def createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir):
     runs[runDir].subsystems[subsystem] = processingClasses.subsystemContainer(subsystem = subsystem,
                                                                               runDir = runDir,
                                                                               startOfRun = startOfRun,
-                                                                              runLength = runLength,
+                                                                              endOfRun = endOfRun,
                                                                               showRootFiles = showRootFiles,
                                                                               fileLocationSubsystem = fileLocationSubsystem)
 
@@ -623,7 +618,11 @@ def processAllRuns():
                 # Retrieve the files for a given directory
                 [filenamesDict, runLength] = utilities.createFileDictionary(dirPrefix, runDir, fileLocationSubsystem)
                 #print("runLength: {0}, filenamesDict: {1}".format(runLength, filenamesDict))
-                startOfRun = utilities.extractTimeStampFromFilename(filenamesDict[filenamesDict.keys()[0]])
+                sortedKeys = sorted(filenamesDict.keys())
+                startOfRun = utilities.extractTimeStampFromFilename(filenamesDict[sortedKeys[0]])
+                endOfRun = utilities.extractTimeStampFromFilename(filenamesDict[sortedKeys[-1]])
+                #print("filenamesDict.keys(): {0}".format(filenamesDict.keys()))
+                print("startOfRun: {0}, endOfRun: {1}, runLength: {2}".format(startOfRun, endOfRun, (endOfRun - startOfRun)/60))
 
                 # Now create the subsystem
                 showRootFiles = False
@@ -632,7 +631,7 @@ def processAllRuns():
                 run.subsystems[subsystem] = processingClasses.subsystemContainer(subsystem = subsystem,
                                                                                  runDir = run.runDir,
                                                                                  startOfRun = startOfRun,
-                                                                                 runLength = runLength,
+                                                                                 endOfRun = endOfRun,
                                                                                  showRootFiles = showRootFiles,
                                                                                  fileLocationSubsystem = fileLocationSubsystem)
 
@@ -713,14 +712,31 @@ def processAllRuns():
 # Allows the function to be invoked automatically when run with python while not invoked when loaded as a module
 if __name__ == "__main__":
     # Process all of the run data
-    #processAllRuns()
+    processAllRuns()
     # Function calls that be used for debugging
     #processQA("Run246272", "Run246980", "EMC", "determineMedianSlope")
-    returnValue = processPartialRun(300005, 0, 5, "EMC")
-    print("0-5: {0}".format(returnValue))
-    returnValue = processPartialRun(300005, 0, 4, "EMC")
-    print("0-4: {0}".format(returnValue))
-    returnValue = processPartialRun(300005, 0, 4, "EMC")
-    print("repeat 0-4: {0}".format(returnValue))
-    returnValue = processPartialRun(300005, 1, 5, "EMC")
-    print("1-5: {0}".format(returnValue))
+
+    ## Test processTimeSlices()
+    ## TEMP
+    #runs = pickle.load( open(os.path.join("data", "runs.p"), "rb") )
+    ## ENDTEMP
+
+    #print("\n\t\t0-4:")
+    #returnValue = processTimeSlices(300005, 0, 4, "EMC", runs)
+    #print("0-4 UUID: {0}".format(returnValue))
+
+    #print("\n\t\t0-3:")
+    #returnValue = processTimeSlices(300005, 0, 3, "EMC", runs)
+    #print("0-3 UUID: {0}".format(returnValue))
+
+    #print("\n\t\t0-3 repeat:")
+    #returnValue = processTimeSlices(300005, 0, 3, "EMC", runs)
+    #print("0-3 repeat UUID: {0}".format(returnValue))
+
+    #print("\n\t\t1-4:")
+    #returnValue = processTimeSlices(300005, 1, 4, "EMC", runs)
+    #print("1-4 UUID: {0}".format(returnValue))
+
+    #print("\n\t\t1-3:")
+    #returnValue = processTimeSlices(300005, 1, 3, "EMC", runs)
+    #print("1-3 UUID: {0}".format(returnValue))

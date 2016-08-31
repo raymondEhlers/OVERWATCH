@@ -366,7 +366,7 @@ def partialMerge():
 
             # Process the partial merge
             # TODO: Handle if we return an error
-            returnPath = processRuns.processPartialRun(runNumber, minTime, maxTime, subsystem, histGroup, histName)
+            returnPath = processRuns.processTimeSlices(runNumber, minTime, maxTime, subsystem, histGroup, histName)
 
             print("returnPath", returnPath)
 
