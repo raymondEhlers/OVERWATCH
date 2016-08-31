@@ -42,8 +42,8 @@
                     {% endif %}
                 {% endif %}
                 {# TODO: Improve determining these fileanmes! #}
-                {%- set filenameImage = subsystem.imgDir.replace("data/", "") + "/" + hist.histName.replace("/", "_") + ".png" -%}
-                {%- set filenameJSON = subsystem.jsonDir.replace("data/", "") + "/" + hist.histName.replace("/", "_") + ".json" -%}
+                {%- set filenameImage = subsystem.imgDir + "/" + hist.histName.replace("/", "_") + ".png" -%}
+                {%- set filenameJSON = subsystem.jsonDir + "/" + hist.histName.replace("/", "_") + ".json" -%}
                 {# If grid, then add class #}
                 {%- set histogramContainerClasses = "histogramContainer" -%}
                 {% if histGroup.plotInGrid == True %}

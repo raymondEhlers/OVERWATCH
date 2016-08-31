@@ -109,7 +109,7 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlice = None):
     if numberOfFiles == 1:
         # Avoid errors with TFileMerger and only one file.
         # Plus, performance should be better
-        shutil.copy(filesToMerge[0].filename, outFile)
+        shutil.copy(os.path.join(currentDir, filesToMerge[0].filename), outFile)
     else:
         merger.OutputFile(outFile)
         merger.Merge()

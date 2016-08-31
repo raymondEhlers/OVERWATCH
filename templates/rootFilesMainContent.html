@@ -8,11 +8,10 @@
 
 <ul class="listColumns">
     {% if subsystemObject.combinedFile != None %}
-    {# TODO: Determine a better way to remove the "data" part of the path! #}
-    <li><a href="{{ url_for("protected", filename=subsystemObject.combinedFile.filename.replace("data/", "")) }}" download>Combined file created at {{ subsystemObject.prettyPrintUnixTime(subsystemObject.combinedFile.fileTime) }}</a></li>
+    <li><a href="{{ url_for("protected", filename=subsystemObject.combinedFile.filename) }}" download>Combined file created at {{ subsystemObject.prettyPrintUnixTime(subsystemObject.combinedFile.fileTime) }}</a></li>
     {% endif %}
     {% for fileCont in subsystemObject.files.values() %}
-    <li><a href="{{ url_for("protected", filename=fileCont.filename.replace("data/", "")) }}" download>
+    <li><a href="{{ url_for("protected", filename=fileCont.filename) }}" download>
         {{ subsystemObject.prettyPrintUnixTime(fileCont.fileTime) }}</a></li>
     {% endfor %}
 </ul>

@@ -58,7 +58,7 @@ def createFileDictionary(currentDir, runDir, subsystem):
 
     """
 
-    filenamePrefix = os.path.join(currentDir, runDir, subsystem)
+    filenamePrefix = os.path.join(runDir, subsystem)
 
     # Store unmerged filenames and their unix timestamps in dictionary
     mergeDict = {}

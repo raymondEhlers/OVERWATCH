@@ -622,7 +622,7 @@ def processAllRuns():
                 sortedKeys = sorted(filenamesDict.keys())
                 startOfRun = utilities.extractTimeStampFromFilename(filenamesDict[sortedKeys[0]])
                 endOfRun = utilities.extractTimeStampFromFilename(filenamesDict[sortedKeys[-1]])
-                #print("filenamesDict.keys(): {0}".format(filenamesDict.keys()))
+                #print("filenamesDict.values(): {0}".format(filenamesDict.values()))
                 print("startOfRun: {0}, endOfRun: {1}, runLength: {2}".format(startOfRun, endOfRun, (endOfRun - startOfRun)/60))
 
                 # Now create the subsystem
