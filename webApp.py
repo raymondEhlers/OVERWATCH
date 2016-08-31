@@ -208,9 +208,11 @@ def runPage(runNumber, subsystem, requestedFileType):
     requestedHist = request.args.get("histName", None, type=str)
 
     # Empty strings should be treated as None
-    if requestedHistGroup == "":
+    # The "None" strings are from the timeSlicesValues div on the runPage.
+    #  TODO: This approach should be updated!
+    if requestedHistGroup == "" or requestedHistGroup == "None":
         requestedHistGroup = None
-    if requestedHist == "":
+    if requestedHist == "" or requestedHist == "None":
         requestedHist = None
 
     print("ajaxRequest: {0}, jsRoot: {1}".format(ajaxRequest,jsRoot))
@@ -232,7 +234,7 @@ def runPage(runNumber, subsystem, requestedFileType):
 
         return returnValue
     else:
-        print("requestedHistGroup: {0}".format(requestedHistGroup))
+        print("requestedHistGroup: {0}, requestedHist: {1}".format(requestedHistGroup, requestedHist))
         if requestedFileType == "runPage":
             drawerContent = render_template("runPageDrawer.html", run=runs[runDir], subsystem=runs[runDir].subsystems[subsystem], selectedHistGroup = requestedHistGroup, selectedHist = requestedHist, jsRoot = jsRoot, useGrid=False)
             mainContent = render_template("runPageMainContent.html", run=runs[runDir], subsystem=runs[runDir].subsystems[subsystem], selectedHistGroup = requestedHistGroup, selectedHist = requestedHist, jsRoot = jsRoot, useGrid=False)
@@ -344,13 +346,13 @@ def partialMerge():
     rendering the result template and returning the user to the same spot as in the previous page.
 
     """
-    print("request: {0}".format(request.args))
+    print("request.args: {0}".format(request.args))
     ajaxRequest = routing.convertRequestToPythonBool("ajaxRequest")
-    print("request: {0}".format(request.form))
+    print("request.form: {0}".format(request.form))
 
     if request.method == "POST":
         # TEMP
-        return jsonify(testData = "testData")
+        #return jsonify(testData = "testData")
 
         # Validates the request
         (error, minTime, maxTime, runNumber, subsystem, histGroup, histName) = validation.validatePartialMergePostRequest(request)
@@ -365,17 +367,34 @@ def partialMerge():
             print("histName: {0}".format(histName))
 
             # Process the partial merge
-            # TODO: Handle if we return an error
-            returnPath = processRuns.processTimeSlices(runNumber, minTime, maxTime, subsystem, histGroup, histName)
+            returnValue = processRuns.processTimeSlices(runNumber, minTime, maxTime, subsystem, runs)
 
-            print("returnPath", returnPath)
+            print("returnValue: {0}".format(returnValue))
 
-            return redirect(url_for("showRuns", runPath=returnPath))
-        else:
-            print("Error:", error)
-            return render_template("error.html", errors=error)
+            if not isinstance(returnValue, collections.Mapping):
+                # We always want to use ajax here
+                # TODO: Add jsRoot
+                return redirect(url_for("runPage",
+                                        runNumber = int(filter(str.isdigit, runNumber.encode("ascii", "ignore"))),
+                                        subsystem = subsystem,
+                                        requestedFileType = "runPage",
+                                        ajaxRequest = json.dumps(True),
+                                        histGroup = histGroup,
+                                        histName = histName))
+                #return redirect(url_for("showRuns", runPath=returnPath))
+            else:
+                # Fall through to return an error
+                error = returnValue
+
+        print("Time slices error:", error)
+        drawerContent = ""
+        mainContent = render_template("errorMainContent.html", errors=error)
+
+        # We always want to use ajax here
+        return jsonify(mainContent = mainContent, drawerContent = "")
+
     else:
-        return render_template("error.html", errors={"error": ["Need to access through other web page"]})
+        return render_template("error.html", errors={"error": ["Need to access through a run page!"]})
 
 ###################################################
 @app.route("/processQA", methods=["GET", "POST"])

@@ -66,8 +66,11 @@ def validatePartialMergePostRequest(request):
     try:
         minTime = float(request.form["minTime"])
         maxTime = float(request.form["maxTime"])
-        runNumber = int(request.form["runNumber"])
+        #runNumber = int(request.form["runNumber"])
+        runNumber = request.form["runNumber"]
         subsystem = request.form["subsystem"]
+        histGroup = request.form["histGroup"]
+        histName = request.form["histName"]
     # See: https://stackoverflow.com/a/23139085
     except KeyError as e:
         # Format is:
@@ -83,15 +86,16 @@ def validatePartialMergePostRequest(request):
             error.setdefault("maxTime", []).append(str(maxTime) + " less than 0!")
         if minTime > maxTime:
             error.setdefault("minTime", []).append("minTime " + str(minTime) + " is greater than maxTime " + str(maxTime))
-        if runNumber < 0:
-            error.setdefault("runNumber", []).append(str(runNumber) + "is less than 0 and not a valid run number!")
+        if int(filter(str.isdigit, runNumber.encode("ascii", "ignore"))) < 0:
+            error.setdefault("runNumber", []).append("{0} is less than 0 and not a valid run number!".format(runNumber))
         if subsystem not in serverParameters.subsystemList:
             error.setdefault("qaFunction:", []).append("Subsystem " + subsystem + " not available in qa function list!")
+        # TODO: Validate histGroup and histName!
     # Handle an unexpected exception
     except Exception as e:
         error.setdefault("generalError", []).append("Unknown exception! " + str(e))
 
-    return (error, minTime, maxTime, runNumber, subsystem)
+    return (error, minTime, maxTime, runNumber, subsystem, histGroup, histName)
 
 ###################################################
 def validateQAPostRequest(request, runList):

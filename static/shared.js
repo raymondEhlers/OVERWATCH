@@ -104,7 +104,7 @@ function handleFormSubmit(selectedForm, selectedButton) {
         // For some reason, Polymer does not work here...
         //console.log("Showing spinner")
         var spinner = document.querySelectorAll("#loadingSpinnerContainer");
-        console.log("spinner: " + spinner);
+        //console.log("spinner: " + spinner);
         $(spinner).addClass("flexElement");
         
         form.submit();

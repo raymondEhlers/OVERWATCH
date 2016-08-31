@@ -66,4 +66,4 @@
 
 {# Content for time dependent merge #}
 {# TODO: Set minTime and maxTime (which are the default value of the sliders) dynamic for time slices #}
-<div class="hideElement" id="timeSlicesValues" data-mintime="0" data-maxtime="{{ subsystem.runLength }}" data-runlength="{{ subsystem.runLength }}" data-hotchannelthreshold="{%- if threshold != [] -%}{{ threshold[0]*1000 }}{%- else -%}0{%- endif -%}" data-runnumber="{{ run.runDir }}" data-subsystem="{{ subsystem.subsystem }}" data-histname="{{ selectedHist }}" data-histgroup="{{ selectedHistGroup }}"></div>
+<div class="hideElement" id="timeSlicesValues" data-mintime="0" data-maxtime="{{ subsystem.runLength }}" data-runlength="{{ subsystem.runLength }}" data-hotchannelthreshold="{%- if threshold != [] -%}{{ threshold[0]*1000 }}{%- else -%}0{%- endif -%}" data-runnumber="{{ run.runDir }}" data-subsystem="{{ subsystem.subsystem }}" data-histname="{{ selectedHist }}" data-histgroupname="{{ selectedHistGroup }}"></div>

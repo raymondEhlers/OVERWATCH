@@ -402,7 +402,7 @@ def processTimeSlices(timeSliceRunNumber, minTimeRequested, maxTimeRequested, su
     Usually invoked via the web app on a particular run page.
 
     Args:
-        timeSliceRunNumber (int): The run number to be processed.
+        timeSliceRunNumber (str): The run dir to be processed.
         minTimeRequested (int): The requested start time of the merge in minutes.
         maxTimeRequested (int): The requested end time of the merge in minutes.
         subsystemName (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
@@ -412,7 +412,8 @@ def processTimeSlices(timeSliceRunNumber, minTimeRequested, maxTimeRequested, su
 
     """
     # Setup start runDir string of the form "Run#"
-    runDir = "Run" + str(timeSliceRunNumber)
+    #runDir = "Run" + str(timeSliceRunNumber)
+    runDir = timeSliceRunNumber
     print("Processing %s" % runDir)
 
     # Load run information
@@ -722,21 +723,21 @@ if __name__ == "__main__":
     ## ENDTEMP
 
     #print("\n\t\t0-4:")
-    #returnValue = processTimeSlices(300005, 0, 4, "EMC", runs)
+    #returnValue = processTimeSlices("Run300005", 0, 4, "EMC", runs)
     #print("0-4 UUID: {0}".format(returnValue))
 
     #print("\n\t\t0-3:")
-    #returnValue = processTimeSlices(300005, 0, 3, "EMC", runs)
+    #returnValue = processTimeSlices("Run300005", 0, 3, "EMC", runs)
     #print("0-3 UUID: {0}".format(returnValue))
 
     #print("\n\t\t0-3 repeat:")
-    #returnValue = processTimeSlices(300005, 0, 3, "EMC", runs)
+    #returnValue = processTimeSlices("Run300005", 0, 3, "EMC", runs)
     #print("0-3 repeat UUID: {0}".format(returnValue))
 
     #print("\n\t\t1-4:")
-    #returnValue = processTimeSlices(300005, 1, 4, "EMC", runs)
+    #returnValue = processTimeSlices("Run300005", 1, 4, "EMC", runs)
     #print("1-4 UUID: {0}".format(returnValue))
 
     #print("\n\t\t1-3:")
-    #returnValue = processTimeSlices(300005, 1, 3, "EMC", runs)
+    #returnValue = processTimeSlices("Run300005", 1, 3, "EMC", runs)
     #print("1-3 UUID: {0}".format(returnValue))
