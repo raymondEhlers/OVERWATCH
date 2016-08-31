@@ -143,33 +143,28 @@ class timeSliceContainer(object):
     """ Time slice information container
 
     """
-    def __init__(self, minUnixTime, maxUnixTime, startOfRun, filesToMerge):
-        # Hold times
-        self.minTime = minUnixTime
-        self.maxTime = maxUnixTime
-        # In unix time
+    def __init__(self, minUnixTimeRequested, maxUnixTimeRequested, minUnixTimeAvailable, maxUnixTimeAvailable, startOfRun, filesToMerge):
+        # Requested times
+        self.minUnixTimeRequested = minUnixTimeRequested
+        self.maxUnixTimeRequested = maxUnixTimeRequested
+        # Available times
+        self.minUnixTimeAvailable = minUnixTimeAvailable
+        self.maxUnixTimeAvailable = maxUnixTimeAvailable
+        # Start of run is also in unix time
         self.startOfRun = startOfRun
-        #self.minTimeMinutes = (self.minTime - startOfRun)//60
-        #self.maxTimeMinutes = (self.maxTime - startOfRun)//60
-        #self.minTimeMinutesRounded = round()
 
         # File containers of the files to merge
         self.filesToMerge = filesToMerge
 
         # Create filename
-        self.filename = fileContainer("timeSlice.{0}.{1}.root".format(self.minTime, self.maxTime))
+        self.filename = fileContainer("timeSlice.{0}.{1}.root".format(self.minUnixTimeAvailable, self.maxUnixTimeAvailable))
 
-    def minTimeMinutes(self):
-        return (self.minTime - self.startOfRun)//60
+    def timeInMinutes(self, inputTime):
+        print("inputTime: {0}, startOfRun: {1}".format(inputTime, self.startOfRun))
+        return (inputTime - self.startOfRun)//60
 
-    def maxTimeMinutes(self):
-        return (self.maxTime - self.startOfRun)//60
-
-    def minTimeMinutesRounded(self):
-        return round(self.minTimeMinutes())
-
-    def maxTimeMinutesRounded(self):
-        return round(self.maxTimeMinutes())
+    def timeInMinutesRounded(self, inputTime):
+        return round(self.timeInMinutes(inputTime))
 
 ###################################################
 class fileContainer(object):

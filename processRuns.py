@@ -381,15 +381,17 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
     #print("subsystem.timeSlice: {0}".format(subsystem.timeSlices))
     for key, timeSlice in subsystem.timeSlices.iteritems():
         #print("minFilteredTimeStamp: {0}, maxFilteredTimeStamp: {1}, timeSlice.minTime: {2}, timeSlice.maxTime: {3}".format(minFilteredTimeStamp, maxFilteredTimeStamp, timeSlice.minTime, timeSlice.maxTime))
-        if timeSlice.minTime == minFilteredTimeStamp and timeSlice.maxTime == maxFilteredTimeStamp:
+        if timeSlice.minUnixTimeAvailable == minFilteredTimeStamp and timeSlice.maxUnixTimeAvailable == maxFilteredTimeStamp:
             # Already exists - we don't need to remerge or reprocess
             return (key, False, None)
 
     # Determine index by UUID to ensure that there is no clash
-    timeSlicesCont = processingClasses.timeSliceContainer(minFilteredTimeStamp,
-                                                          maxFilteredTimeStamp,
-                                                          subsystem.runLength,
-                                                          filesToMerge)
+    timeSlicesCont = processingClasses.timeSliceContainer(minUnixTimeRequested = minTimeCutUnix,
+                                                          maxUnixTimeRequested = maxTimeCutUnix,
+                                                          minUnixTimeAvailable = minFilteredTimeStamp,
+                                                          maxUnixTimeAvailable = maxFilteredTimeStamp,
+                                                          startOfRun = subsystem.startOfRun,
+                                                          filesToMerge = filesToMerge)
     uuidDictKey = str(uuid.uuid4())
     subsystem.timeSlices[uuidDictKey] = timeSlicesCont
 
@@ -464,8 +466,8 @@ def processTimeSlices(timeSliceRunNumber, minTimeRequested, maxTimeRequested, su
         print("subsystem.subsystem: {0}, subsystem.fileLocationSubsystem: {1}".format(subsystem.subsystem, subsystem.fileLocationSubsystem))
 
     # Generate the histograms
-    outputFormattingSave = os.path.join("%s", "timeSlice.{0}.{1}.%s.%s.{2}".format(timeSlice.minTime,
-                                                                                   timeSlice.maxTime,
+    outputFormattingSave = os.path.join("%s", "timeSlice.{0}.{1}.%s.%s.{2}".format(timeSlice.minUnixTimeAvailable,
+                                                                                   timeSlice.maxUnixTimeAvailable,
                                                                                    processingParameters.fileExtension))
     if processingParameters.beVerbose:
         print("outputFormattingSave: {0}".format(outputFormattingSave))

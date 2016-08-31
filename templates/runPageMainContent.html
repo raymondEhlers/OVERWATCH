@@ -10,7 +10,7 @@
     {#timeSliceKey: {{ timeSliceKey }}
     subsystem.timeSlices: {{ subsystem.timeSlices }}
     timeSlice: {{ timeSlice }} #}
-    Time slice (key: {{ timeSliceKey }}) requested from {{ timeSlice.minTimeMinutesRounded() }} to {{ timeSlice.maxTimeMinutesRounded() }}.
+    Time slice (key: {{ timeSliceKey }}) requested {{ timeSlice.timeInMinutesRounded(timeSlice.minUnixTimeRequested) }} to {{ timeSlice.timeInMinutesRounded(timeSlice.maxUnixTimeRequested) }} minutes and returned {{ timeSlice.timeInMinutesRounded(timeSlice.minUnixTimeAvailable) }} to {{ timeSlice.timeInMinutesRounded(timeSlice.maxUnixTimeAvailable) }}.
 </p>
 {%- endif -%}
 <hr />

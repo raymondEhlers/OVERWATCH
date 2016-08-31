@@ -68,7 +68,7 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlice = None):
     # the beginning of the time slice is the start of the run. In that case, case we don't
     # subtract anything from the most recent
     # (if >0, we should subtract the first file; if =0, we should include everything)
-    if cumulativeMode and timeSlice and timeSlice.minTime == subsystem.startOfRun:
+    if cumulativeMode and timeSlice and timeSlice.minUnixTimeAvailable == subsystem.startOfRun:
         earliestFile = filesToMerge[0].filename
         latestFile = filesToMerge[-1].filename
         # Subtract latestFile from earliestFile
