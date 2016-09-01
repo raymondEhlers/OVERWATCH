@@ -11,12 +11,11 @@ or read from file.
 from __future__ import print_function
 
 # Database
+import BTrees.OOBTree
 import persistent
 
 import os
 import time
-import sortedcontainers
-import collections
 
 from processRunsModules import utilities
 from config.processingParams import processingParameters
@@ -33,7 +32,7 @@ class runContainer(persistent.Persistent):
         # Need to rework the qa container 
         #self.qaContainer = qa.qaFunctionContainer
         self.mode = fileMode
-        self.subsystems = collections.OrderedDict()
+        self.subsystems = BTrees.OOBTree.BTree()
 
 ###################################################
 class subsystemContainer(persistent.Persistent):
@@ -88,8 +87,8 @@ class subsystemContainer(persistent.Persistent):
         # Files
         # Be certain to set these after the subsystem has been created!
         # Contains all files for that particular run
-        self.files = sortedcontainers.SortedDict()
-        self.timeSlices = dict()
+        self.files = BTrees.OOBTree.BTree()
+        self.timeSlices = persistent.mapping.PersistentMapping()
         # Only one combined file, so we do not need a dict!
         self.combinedFile = None
 
@@ -112,14 +111,13 @@ class subsystemContainer(persistent.Persistent):
         self.runLength = (endOfRun - startOfRun)/60
 
         # Histograms
-        #self.histGroups = sortedcontainers.SortedDict()
-        self.histGroups = collections.OrderedDict()
+        self.histGroups = persistent.list.PersistentList()
         # Should be accessed through the group usually, but this provides direct access
-        self.histsInFile = sortedcontainers.SortedDict()
+        self.histsInFile = BTrees.OOBTree.BTree()
         # All hists, including those which were created, along with those in the file
-        self.histsAvailable = sortedcontainers.SortedDict()
+        self.histsAvailable = BTrees.OOBTree.BTree()
         # Hists list that should be used
-        self.hists = sortedcontainers.SortedDict()
+        self.hists = BTrees.OOBTree.BTree()
 
         # Need to rework the qa container 
         #self.qaContainer = qa.qaFunctionContainer
@@ -230,7 +228,7 @@ class histogramGroupContainer(persistent.Persistent):
         self.prettyName = prettyName
         self.selectionPattern = groupSelectionPattern
         self.plotInGridSelectionPattern = plotInGridSelectionPattern
-        self.histList = []
+        self.histList = persistent.list.PersistentList()
 
         # So that it is not necessary to check the list every time
         if self.plotInGridSelectionPattern in self.selectionPattern:
@@ -255,13 +253,13 @@ class histogramContainer(persistent.Persistent):
             self.prettyName = self.histName
 
         self.histList = histList
-        self.information = dict()
+        self.information = persistent.mapping.PersistentMapping()
         self.hist = None
         self.histType = None
         self.drawOptions = ""
         # Contains the canvas where the hist may be plotted, along with additional content
         self.canvas = None
-        self.functionsToApply = []
+        self.functionsToApply = persistent.list.PersistentList()
 
     def retrieveHistogram(self, fIn):
         if self.histList is not None:

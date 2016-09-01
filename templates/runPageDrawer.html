@@ -1,7 +1,6 @@
 <paper-listbox>
-{% for histGroup in subsystem.histGroups.values() -%}
+{% for histGroup in subsystem.histGroups -%}
     {%- if histGroup.histList != [] -%}
-        {#<p> {{ histGroup }} </p>#}
         {# groupSelectionPatten should always be a valid proxy for a valid link #}
         <a href="#" data-histgroup="{{ histGroup.selectionPattern }}" tabindex=-1>
             <paper-item><h3>{{ histGroup.prettyName }}</h3></paper-item>

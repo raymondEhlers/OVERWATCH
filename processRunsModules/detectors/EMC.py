@@ -113,26 +113,26 @@ def createEMCHistogramGroups(subsystem):
     # Sort the filenames of the histograms into catagories for better presentation
     # The order in which these are added is the order in which they are processed!
     # Plot by SM
-    subsystem.histGroups["FEEvsTRU_SM"] = processingClasses.histogramGroupContainer("FEE vs TRU", "FEEvsTRU_SM", "_SM")
-    subsystem.histGroups["FEEvsSTU_SM"] = processingClasses.histogramGroupContainer("FEE vs STU", "FEEvsSTU_SM", "_SM")
-    subsystem.histGroups["FastORL0_SM"] = processingClasses.histogramGroupContainer("FastOR L0 (hits with ADC > 0)", "FastORL0_SM", "_SM")
-    subsystem.histGroups["FastORL0Amp_SM"] = processingClasses.histogramGroupContainer("FastOR L0 Amp (hits weighted with ADC value)", "FastORL0Amp_SM", "_SM")
-    subsystem.histGroups["FastORL0LargeAmp_SM"] = processingClasses.histogramGroupContainer("FastOR L0 Large Amp (hits above 400 ADC)", "FastORL0LargeAmp_SM", "_SM")
-    subsystem.histGroups["FastORL1_SM"] = processingClasses.histogramGroupContainer("FastOR L1 (hits with ADC > 0)", "FastORL1_SM", "_SM")
-    subsystem.histGroups["FastORL1Amp_SM"] = processingClasses.histogramGroupContainer("FastOR L1 Amp (hits weighted with ADC value)", "FastORL1Amp_SM", "_SM")
-    subsystem.histGroups["FastORL1LargeAmp_SM"] = processingClasses.histogramGroupContainer("FastOR L1 Large Amp (hits above 400 ADC)", "FastORL1LargeAmp_SM", "_SM")
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FEE vs TRU", "FEEvsTRU_SM", "_SM"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FEE vs STU", "FEEvsSTU_SM", "_SM"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L0 (hits with ADC > 0)", "FastORL0_SM", "_SM"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L0 Amp (hits weighted with ADC value)", "FastORL0Amp_SM", "_SM"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L0 Large Amp (hits above 400 ADC)", "FastORL0LargeAmp_SM", "_SM"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L1 (hits with ADC > 0)", "FastORL1_SM", "_SM"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L1 Amp (hits weighted with ADC value)", "FastORL1Amp_SM", "_SM"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L1 Large Amp (hits above 400 ADC)", "FastORL1LargeAmp_SM", "_SM"))
     # Trigger classes
-    subsystem.histGroups["GAL"] = processingClasses.histogramGroupContainer("Gamma Trigger Low", "GAL")
-    subsystem.histGroups["GAH"] = processingClasses.histogramGroupContainer("Gamma Trigger High", "GAH")
-    subsystem.histGroups["JEL"] = processingClasses.histogramGroupContainer("Jet Trigger Low", "JEL")
-    subsystem.histGroups["JEH"] = processingClasses.histogramGroupContainer("Jet Trigger High", "JEH")
-    subsystem.histGroups["EMCL0"] = processingClasses.histogramGroupContainer("L0", "EMCL0")
-    subsystem.histGroups["BKG"] = processingClasses.histogramGroupContainer("Background", "BKG")
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Gamma Trigger Low", "GAL"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Gamma Trigger High", "GAH"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Jet Trigger Low", "JEL"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Jet Trigger High", "JEH"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("L0", "EMCL0"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Background", "BKG"))
     # Other EMC
-    subsystem.histGroups["FastOR"] = processingClasses.histogramGroupContainer("FastOR", "FastOR")
-    subsystem.histGroups["EMC"] = processingClasses.histogramGroupContainer("Other EMC", "EMC")
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR", "FastOR"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Other EMC", "EMC"))
     # Catch all of the other hists
-    subsystem.histGroups["NonEMC"] = processingClasses.histogramGroupContainer("Non EMC", "")
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Non EMC", ""))
 
 ###################################################
 def setEMCHistogramOptions(subsystem):

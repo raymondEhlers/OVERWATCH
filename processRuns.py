@@ -40,6 +40,7 @@ except ImportError:
 # ZODB
 import ZODB, ZODB.FileStorage
 import BTrees.OOBTree
+import persistent
 import transaction
 
 # System logging(?)
@@ -119,7 +120,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
         qa.setHistogramOptions(subsystem)
 
         # Create histogram sorting groups
-        if subsystem.histGroups == sortedcontainers.SortedDict():
+        if not subsystem.histGroups:
             sortingSuccess = qa.createHistGroups(subsystem)
             if sortingSuccess is False:
                 if processingParameters.beVerbose:
@@ -130,13 +131,13 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
                 else:
                     selection = ""
                 print("selection: {0}".format(selection))
-                subsystem.histGroups[subsystem.subsystem] = processingClasses.histogramGroupContainer(subsystem.subsystem + " Histograms", selection)
+                subsystem.histGroups.append(processingClasses.histogramGroupContainer(subsystem.subsystem + " Histograms", selection))
 
         # Finally classify into the groups and determine which functions to apply
         for hist in subsystem.histsAvailable.values():
             # Add the histogram name to the proper group
             classifiedHist = False
-            for group in subsystem.histGroups.values():
+            for group in subsystem.histGroups:
                 if group.selectionPattern in hist.histName:
                     group.histList.append(hist.histName)
                     classifiedHist = True
@@ -160,7 +161,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
     canvas = TCanvas("{0}Canvas{1}{2}".format("processRuns", subsystem.subsystem, subsystem.startOfRun),
                      "{0}Canvas{1}{2}".format("processRuns", subsystem.subsystem, subsystem.startOfRun))
     # Loop over histograms and draw
-    for histGroup in subsystem.histGroups.values():
+    for histGroup in subsystem.histGroups:
         for histName in histGroup.histList:
             # Retrieve histogram and canvas
             hist = subsystem.hists[histName]
@@ -522,10 +523,11 @@ def createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir):
                                                                               fileLocationSubsystem = fileLocationSubsystem)
 
     # Handle files
-    files = sortedcontainers.SortedDict()
+    #files = sortedcontainers.SortedDict()
+    subsystemFiles = runs[runDir].subsystems[subsystem].files
     for filename in filenames:
-        files[utilities.extractTimeStampFromFilename(filenmae)] = processingClasses.fileContainer(filename, startOfRun)
-    runs[runDir].subsystems[subsystem].files = files
+        subsystemFiles[utilities.extractTimeStampFromFilename(filenmae)] = processingClasses.fileContainer(filename, startOfRun)
+    #runs[runDir].subsystems[subsystem].files = files
 
     # Flag that there are new files
     runs[runDir].subsystems[subsystem].newFile = True
@@ -667,16 +669,17 @@ def processAllRuns():
                                                                                  fileLocationSubsystem = fileLocationSubsystem)
 
                 # Handle files and create file containers
-                files = sortedcontainers.SortedDict()
+                #files = sortedcontainers.SortedDict()
+                subsystemFiles = run.subsystems[subsystem].files
 
                 for key in filenamesDict:
-                    files[key] = processingClasses.fileContainer(filenamesDict[key], startOfRun)
+                    subsystemFiles[key] = processingClasses.fileContainer(filenamesDict[key], startOfRun)
 
-                print("DEBUG: files length: {0}".format(len(files)))
+                print("DEBUG: files length: {0}".format(len(subsystemFiles)))
 
                 # And add the files to the subsystem
                 # Since a run was just appended, accessing the last element should always be fine
-                run.subsystems[subsystem].files = files
+                #run.subsystems[subsystem].files = files
 
                 # Add combined
                 combinedFilename = [filename for filename in os.listdir(subsystemPath) if "combined" in filename and ".root" in filename]
