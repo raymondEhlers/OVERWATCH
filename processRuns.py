@@ -601,14 +601,14 @@ def processAllRuns():
 
     # Create runs list
     #runs = sortedcontainers.SortedDict()
-    if hasattr(dbRoot, "runs"):
+    if dbRoot.has_key("runs"):
         # The objects exist, so just use the stored copy and update it.
         print("Utilizing existing database!")
-        runs = dbRoot.runs
+        runs = dbRoot["runs"]
     else:
         # Create the runs tree to store the information
-        dbRoot.runs = BTrees.OOBTree.BTree()
-        runs = dbRoot.runs
+        dbRoot["runs"] = BTrees.OOBTree.BTree()
+        runs = dbRoot["runs"]
 
         # The objects don't exist, so we need to create them.
         # This will be a slow process, so the results should be stored
@@ -676,7 +676,7 @@ def processAllRuns():
                     print("ERROR: Number of combined files in {0} is {1}, but should be 1! Exiting!".format(runDir, len(combinedFilename)))
                     exit(0)
                 if len(combinedFilename) == 1:
-                    run.subsystems[subsystem].combinedFile = processingClasses.fileContainer(combinedFilename[0], startOfRun)
+                    run.subsystems[subsystem].combinedFile = processingClasses.fileContainer(os.path.join(runDir, fileLocationSubsystem, combinedFilename[0]), startOfRun)
                 else:
                     print("INFO: No combined file in {0}".format(runDir))
 
