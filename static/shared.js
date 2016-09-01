@@ -110,23 +110,34 @@ function handleFormSubmit(selectedForm, selectedButton) {
         form.submit();
     });
 
+    form.addEventListener("iron-form-error", function(event) {
+        /*console.log("Error in iron-form!");
+        console.log("event.detail.error:" + event.detail.error);*/
+
+        // Create a fake data response so that we can propogate the error
+        data = {};
+        data.mainContent = event.detail.error;
+        data.mainContent += ". Please content the admin with information about what you were doing so that the error can be fixed! Thank you!";
+
+        handleAjaxResponse()(data);
+    });
+
     form.addEventListener("iron-form-response", function(event) {
         // See: https://github.com/PolymerElements/iron-form/issues/112
-        console.log("event.detail.response: " + JSON.stringify(event.detail.response));
+        //console.log("event.detail.response: " + JSON.stringify(event.detail.response));
         var data = event.detail.response;
 
-        // For some reason, Polymer does not work here...
-        //var jsRootToggle = Polymer.dom(this.root).querySelector("#jsRootToggle");
-        var jsRootToggle = document.querySelector("#jsRootToggle");
-        var jsRootState = ($(jsRootToggle).prop("checked") === true);
-        /*console.log("jsRootToggle: "+ jsRootToggle);
-        console.log("jsRootState: " + jsRootState);*/
-        var params = {
-            jsRoot: jsRootState
-        };
-        // handleAjaxRequest() returns a function, which we then pass our data to that returned function.
-        var handlingFunction = handleAjaxResponse(params);
-        handlingFunction(data);
+        /*console.log("status: " + event.detail.status);
+        if (event.detail.status === 200) {
+            console.log("Successful request!");
+        }*/
+        if (event.detail.status === 500) {
+            console.log("Internal server error! ");
+            // This should render in the main window
+            data.mainContent = "500: Internal Server Error!";
+        }
+
+        handleAjaxResponse()(data);
     })
 }
 
@@ -355,12 +366,25 @@ function ajaxRequest(pageToRequest, params) {
     localParams.ajaxRequest = true;
 
     // Make the actual request and handle the return
-    $.get($SCRIPT_ROOT + pageToRequest, localParams, handleAjaxResponse(localParams));
+    $.get($SCRIPT_ROOT + pageToRequest, localParams, handleAjaxResponse(localParams)).fail(function(jqXHR, textStatus, errorThrown) {
+        var data = {};
+        data.mainContent = textStatus + ": " + errorThrown;
+        data.mainContent += ". Please content the admin with information about what you were doing so that the error can be fixed! Thank you!";
+
+        handleAjaxResponse()(data);
+    });
 
     return localParams;
 }
 
 var handleAjaxResponse = function (localParams) {
+    localParams = typeof localParams !== 'undefined' ? localParams : {};
+    //console.log("localParams: " + JSON.stringify(localParams));
+    if (jQuery.isEmptyObject(localParams)) {
+        /*console.log("localParams is empty, so adding jsRoot value!");*/
+        localParams.jsRoot = $(Polymer.dom(this.root).querySelector("#jsRootToggle")).prop("checked") === true;
+    }
+    //console.log("localParams.jsRoot: " + localParams.jsRoot);
     return function(data) {
         // data is already JSON!
         console.log(data)
