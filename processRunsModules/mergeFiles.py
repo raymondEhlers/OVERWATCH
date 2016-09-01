@@ -205,9 +205,6 @@ def mergeRootFiles(runs, dirPrefix, forceNewMerge = False, cumulativeMode = True
                     continue
 
                 # Perform the merge
-                # This is the prefix for working with most files
-                filenamePrefix = os.path.join(currentDir, runDir, subsystem)
-
                 # Check for a combined file. The file has a name of the form hists.combined.(number of uncombined
                 #  files in directory).(timestamp of combined file).root
                 combinedFile = run.subsystems[subsystem].combinedFile
@@ -219,7 +216,7 @@ def mergeRootFiles(runs, dirPrefix, forceNewMerge = False, cumulativeMode = True
                 print("Need to merge {0}, {1} again".format(runDir, subsystem))
                 if combinedFile:
                     print("Removing previous merged file %s" % combinedFile.filename)
-                    os.remove(os.path.join(filenamePrefix, combinedFile.filename))
+                    os.remove(os.path.join(currentDir, combinedFile.filename))
                     # Remove from the file list
                     run.subsystems[subsystem].combinedFile = None
 

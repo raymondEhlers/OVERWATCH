@@ -10,6 +10,9 @@ or read from file.
 
 from __future__ import print_function
 
+# Database
+import persistent
+
 import os
 import time
 import sortedcontainers
@@ -19,7 +22,7 @@ from processRunsModules import utilities
 from config.processingParams import processingParameters
 
 ###################################################
-class runContainer(object):
+class runContainer(persistent.Persistent):
     """ Contains an individual run
 
     """
@@ -33,7 +36,7 @@ class runContainer(object):
         self.subsystems = collections.OrderedDict()
 
 ###################################################
-class subsystemContainer(object):
+class subsystemContainer(persistent.Persistent):
     """ Subsystem container class.
 
     Defines properties of each subsystem in a consistent place.
@@ -139,7 +142,7 @@ class subsystemContainer(object):
         return timeString
 
 ###################################################
-class timeSliceContainer(object):
+class timeSliceContainer(persistent.Persistent):
     """ Time slice information container
 
     """
@@ -170,7 +173,7 @@ class timeSliceContainer(object):
         return round(self.timeInMinutes(inputTime))
 
 ###################################################
-class fileContainer(object):
+class fileContainer(persistent.Persistent):
     """ File information container
     
     """
@@ -195,7 +198,7 @@ class fileContainer(object):
             self.timeIntoRun = -1
 
 ###################################################
-class histogramGroupContainer(object):
+class histogramGroupContainer(persistent.Persistent):
     """ Class to handle sorting of objects.
 
     This class can select a group of histograms and store their names in a list. It also stores a more
@@ -237,7 +240,7 @@ class histogramGroupContainer(object):
 
 
 ###################################################
-class histogramContainer(object):
+class histogramContainer(persistent.Persistent):
     """ Histogram information container
     
     """
@@ -273,7 +276,7 @@ class histogramContainer(object):
             self.hist = fIn.GetKey(self.histName).ReadObj()
 
 ###################################################
-class qaFunctionContainer(object):
+class qaFunctionContainer(persistent.Persistent):
     """ QA Container class
 
     Args:

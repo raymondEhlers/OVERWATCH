@@ -10,6 +10,9 @@ Flask-Login
 Flask-Bcrypt
 bcrypt
 
+# Database
+ZODB
+
 # Processing
 numpy
 sortedcontainers

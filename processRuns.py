@@ -37,6 +37,16 @@ try:
 except ImportError:
     import pickle
 
+# ZODB
+import ZODB, ZODB.FileStorage
+import BTrees.OOBTree
+import transaction
+
+# System logging(?)
+# See: https://stackoverflow.com/a/346501
+import logging
+logging.basicConfig()
+
 # Config
 from config.processingParams import processingParameters
 
@@ -582,12 +592,24 @@ def processAllRuns():
     """
     dirPrefix = processingParameters.dirPrefix
 
+    # Get the database
+    #storage = ZODB.FileStorage.FileStorage(os.path.join(dirPrefix,"overwatch.fs"))
+    #db = ZODB.DB(storage)
+    #connection = db.open()
+    connection = ZODB.connection(os.path.join(dirPrefix, "overwatch.fs"))
+    dbRoot = connection.root()
+
     # Create runs list
-    runs = sortedcontainers.SortedDict()
-    if os.path.exists(os.path.join(dirPrefix, "objectStore.db")):
+    #runs = sortedcontainers.SortedDict()
+    if hasattr(dbRoot, "runs"):
         # The objects exist, so just use the stored copy and update it.
-        pass
+        print("Utilizing existing database!")
+        runs = dbRoot.runs
     else:
+        # Create the runs tree to store the information
+        dbRoot.runs = BTrees.OOBTree.BTree()
+        runs = dbRoot.runs
+
         # The objects don't exist, so we need to create them.
         # This will be a slow process, so the results should be stored
         for runDir in utilities.findCurrentRunDirs(dirPrefix):
@@ -657,7 +679,12 @@ def processAllRuns():
                     run.subsystems[subsystem].combinedFile = processingClasses.fileContainer(combinedFilename[0], startOfRun)
                 else:
                     print("INFO: No combined file in {0}".format(runDir))
-                        
+
+        # Commit any changes made to the database
+        transaction.commit()
+
+    print("runs: {0}".format(list(runs.keys())))
+
     # Start of processing data
     # Takes histos from dirPrefix and moves them into Run dir structure, with a subdir for each subsystem
     runDict = utilities.moveRootFiles(dirPrefix, processingParameters.subsystemList)
@@ -670,8 +697,8 @@ def processAllRuns():
     # DEBUG
     print("DEBUG:")
     if processingParameters.beVerbose:
-        for runDir in runs:
-            for subsystem in runs[runDir].subsystems:
+        for runDir in runs.keys():
+            for subsystem in runs[runDir].subsystems.keys():
                 print("{0}, {1} has nFiles: {2}".format(runDir, subsystem, len(runs[runDir].subsystems[subsystem].files)))
 
     # Merge histograms over all runs, all subsystems if needed. Results in one combined file per subdir.
@@ -694,11 +721,14 @@ def processAllRuns():
                                 subsystem)
             else:
                 # We often want to skip this point since most runs will not need to be processed most times
-                if beVerbose:
+                if processingParameters.beVerbose:
                     print("INFO: Don't need to process {0}. It has already been processed".format(runDir))
 
+        # Commit after we have successfully processed a run
+        transaction.commit()
+
     # Save the dict out
-    pickle.dump(runs, open(os.path.join(processingParameters.dirPrefix, "runs.p"), "wb"))
+    #pickle.dump(runs, open(os.path.join(processingParameters.dirPrefix, "runs.p"), "wb"))
     #pickle.dump(runs["Run123456"], open(os.path.join(processingParameters.dirPrefix, "runs.p"), "wb"))
     
     print("INFO: Finished processing!")
@@ -709,6 +739,16 @@ def processAllRuns():
         utilities.rsyncData(dirPrefix, processingParameters.remoteUsername, processingParameters.remoteSystems, processingParameters.remoteFileLocations)
         if templateDataDirName != None:
             utilities.rsyncData(templateDataDirName, processingParameters.remoteUsername, processingParameters.remoteSystems, processingParameters.remoteFileLocations)
+
+    # Mark any new files are processed
+    for runDir, run in runs.items():
+        for subsystemName, subsystem in run.subsystems.items():
+            if subsystem.newFile == True:
+                subsystem.newFile = False
+
+    # Ensure that any additional changes are committed
+    transaction.commit()
+    connection.close()
         
 # Allows the function to be invoked automatically when run with python while not invoked when loaded as a module
 if __name__ == "__main__":
