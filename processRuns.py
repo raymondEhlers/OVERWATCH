@@ -43,9 +43,10 @@ import BTrees.OOBTree
 import transaction
 
 # System logging(?)
+# TODO: Investigate further - this seems useful
 # See: https://stackoverflow.com/a/346501
-import logging
-logging.basicConfig()
+#import logging
+#logging.basicConfig()
 
 # Config
 from config.processingParams import processingParameters
@@ -596,7 +597,7 @@ def processAllRuns():
     #storage = ZODB.FileStorage.FileStorage(os.path.join(dirPrefix,"overwatch.fs"))
     #db = ZODB.DB(storage)
     #connection = db.open()
-    connection = ZODB.connection(os.path.join(dirPrefix, "overwatch.fs"))
+    connection = ZODB.connection(processingParameters.databaseLocation)
     dbRoot = connection.root()
 
     # Create runs list
@@ -605,6 +606,13 @@ def processAllRuns():
         # The objects exist, so just use the stored copy and update it.
         print("Utilizing existing database!")
         runs = dbRoot["runs"]
+
+        # Files which were new are marked as such from the previous run,
+        # They are not anymore, so we mark them as processed
+        for runDir, run in runs.items():
+            for subsystemName, subsystem in run.subsystems.items():
+                if subsystem.newFile == True:
+                    subsystem.newFile = False
     else:
         # Create the runs tree to store the information
         dbRoot["runs"] = BTrees.OOBTree.BTree()
@@ -739,12 +747,6 @@ def processAllRuns():
         utilities.rsyncData(dirPrefix, processingParameters.remoteUsername, processingParameters.remoteSystems, processingParameters.remoteFileLocations)
         if templateDataDirName != None:
             utilities.rsyncData(templateDataDirName, processingParameters.remoteUsername, processingParameters.remoteSystems, processingParameters.remoteFileLocations)
-
-    # Mark any new files are processed
-    for runDir, run in runs.items():
-        for subsystemName, subsystem in run.subsystems.items():
-            if subsystem.newFile == True:
-                subsystem.newFile = False
 
     # Ensure that any additional changes are committed
     transaction.commit()

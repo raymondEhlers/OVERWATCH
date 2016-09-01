@@ -17,16 +17,11 @@ import jinja2
 import json
 import collections 
 
-try:
-    import cPickle as pickle
-    #import pickle
-except ImportError:
-    import pickle
-
 # Flask
 from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, Markup, jsonify
 from flask.ext.login import LoginManager, login_user, logout_user, login_required, current_user
 from flask.ext.bcrypt import Bcrypt
+from flask.ext.zodb import ZODB
 from flup.server.fcgi import WSGIServer
 
 # Server configuration
@@ -65,9 +60,9 @@ loginManager.init_app(app)
 # Tells the manager where to redirect when login is required.
 loginManager.login_view = "login"
 
-# Load data
-# TODO: Improve mechanism!
-runs = pickle.load( open(os.path.join(serverParameters.protectedFolder, "runs.p"), "rb") )
+# Setup database
+app.config["ZODB_STORAGE"] = "file://" + serverParameters.databaseLocation
+db = ZODB(app)
 
 ###################################################
 @loginManager.user_loader
@@ -171,6 +166,8 @@ def index():
     print("request: {0}".format(request.args))
     ajaxRequest = routing.convertRequestToPythonBool("ajaxRequest")
 
+    runs = db["runs"]
+
     try:
         mostRecentRun = runs[runs.keys()[-1]]
         #if mostRecentRun:
@@ -207,6 +204,10 @@ def runPage(runNumber, subsystemName, requestedFileType):
     requestedHistGroup = request.args.get("histGroup", None, type=str)
     requestedHist = request.args.get("histName", None, type=str)
     timeSliceKey = request.args.get("timeSliceKey", None, type=str)
+
+    runs = db["runs"]
+    # TODO: Switch to using just one run. It should be just fine.
+    #run = runs[runDir]
 
     # Empty strings should be treated as None
     # The "None" strings are from the timeSlicesValues div on the runPage.
@@ -389,6 +390,8 @@ def partialMerge():
             print("histGroup: {0}".format(histGroup))
             print("histName: {0}".format(histName))
 
+            runs = db["runs"]
+
             # Process the partial merge
             returnValue = processRuns.processTimeSlices(runNumber, minTime, maxTime, subsystem, runs)
 
@@ -445,6 +448,7 @@ def processQA():
     # This assumes that any folder that exists should have proper files.
     # However, this seems to be a fairly reasonable assumption and can be handled safely.
     #runList = utilities.findCurrentRunDirs(serverParameters.protectedFolder)
+    runs = db["runs"]
     runList = runs.keys()
     print("runList: {0}".format(runList))
 
@@ -512,6 +516,7 @@ def testingDataArchive():
         redirect: Redirects to the newly created file.
     """
     # Get the run list
+    # TODO: Update to use runs information
     runList = utilities.findCurrentRunDirs(serverParameters.protectedFolder)
 
     # Get the most recent runs first

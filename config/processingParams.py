@@ -46,6 +46,9 @@ class processingParameters(object):
     #: To turn off templates, set it to None.
     templateDataDirName = os.path.join(sharedParameters.templateFolderName, sharedParameters.dataFolderName)
 
+    #: The path to the database.
+    databaseLocation = sharedParameters.databaseLocation
+
     #: Specifies the prefix necessary to get to all of the folders.
     #: Don't include a trailing slash! (This may be mitigated by os.path calls, but not worth the
     #: risk in changing it).
@@ -117,6 +120,7 @@ print("remoteSystems:", processingParameters.remoteSystems)
 print("remoteFileLocations:", processingParameters.remoteFileLocations)
 print("cumulativeMode:", processingParameters.cumulativeMode)
 print("templateDataDirName:", processingParameters.templateDataDirName)
+print("databaseLocation:", processingParameters.databaseLocation)
 print("dirPrefix:", processingParameters.dirPrefix)
 print("modulesPath:", processingParameters.modulesPath)
 print("detectorsPath:", processingParameters.detectorsPath)

@@ -1,5 +1,7 @@
 ## Containers parameters shared between processingParameters and serverParameters
 
+import os
+
 class sharedParameters(object):
     """ Containers parameters shared between processingParameters and serverParameters.
 
@@ -51,6 +53,9 @@ class sharedParameters(object):
 
     #: The name of the templates folder on the disk.
     templateFolderName = "templates"
+
+    #: The path to the database.
+    databaseLocation = os.path.join(dataFolderName, "overwatch.fs")
 
     #: The file extension to use when printing ROOT files.
     fileExtension = "png"

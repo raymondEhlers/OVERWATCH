@@ -92,6 +92,9 @@ class serverParameters(object):
     #: templateFolder is the disk location of the template folder.
     templateFolder = os.path.join(basePath, sharedParameters.templateFolderName)
 
+    #: The path to the database.
+    databaseLocation = sharedParameters.databaseLocation
+
     #: The file extension to use when printing ROOT files.
     fileExtension = sharedParameters.fileExtension
 
@@ -134,6 +137,7 @@ print("staticFolder:", serverParameters.staticFolder)
 print("staticURLPath:", serverParameters.staticURLPath)
 print("protectedFolder:", serverParameters.protectedFolder)
 print("templateFolder:", serverParameters.templateFolder)
+print("databaseLocation:", serverParameters.databaseLocation)
 print("fileExtension:", serverParameters.fileExtension)
 print("docsFolder:", serverParameters.docsFolder)
 print("docsBuildFolder:", serverParameters.docsBuildFolder)

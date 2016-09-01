@@ -7,21 +7,24 @@ future
 # Flask
 flask
 Flask-Login
-Flask-Bcrypt
-bcrypt
 
 # Database
 ZODB
+Flask-ZODB
 
-# Processing
-numpy
-sortedcontainers
-# ROOT (required, but cannot be installed by pip)
+# Login
+bcrypt
+Flask-Bcrypt
 
 # WSGI
 flup6
 # Not necessarily required
 uwsgi
+
+# Processing
+numpy
+sortedcontainers
+# ROOT (required, but cannot be installed by pip)
 
 # Documentation
 sphinx
