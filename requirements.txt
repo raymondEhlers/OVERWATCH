@@ -23,7 +23,6 @@ uwsgi
 
 # Processing
 numpy
-sortedcontainers
 # ROOT (required, but cannot be installed by pip)
 
 # Documentation

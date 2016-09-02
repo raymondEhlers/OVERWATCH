@@ -29,7 +29,6 @@ gROOT.ProcessLine("gErrorIgnoreLevel = kWarning;")
 # General includes
 import os
 import time
-import sortedcontainers
 import uuid
 try:
     import cPickle as pickle
@@ -523,7 +522,6 @@ def createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir):
                                                                               fileLocationSubsystem = fileLocationSubsystem)
 
     # Handle files
-    #files = sortedcontainers.SortedDict()
     subsystemFiles = runs[runDir].subsystems[subsystem].files
     for filename in filenames:
         subsystemFiles[utilities.extractTimeStampFromFilename(filenmae)] = processingClasses.fileContainer(filename, startOfRun)
@@ -603,7 +601,6 @@ def processAllRuns():
     dbRoot = connection.root()
 
     # Create runs list
-    #runs = sortedcontainers.SortedDict()
     if dbRoot.has_key("runs"):
         # The objects exist, so just use the stored copy and update it.
         print("Utilizing existing database!")
@@ -669,7 +666,6 @@ def processAllRuns():
                                                                                  fileLocationSubsystem = fileLocationSubsystem)
 
                 # Handle files and create file containers
-                #files = sortedcontainers.SortedDict()
                 subsystemFiles = run.subsystems[subsystem].files
 
                 for key in filenamesDict:
