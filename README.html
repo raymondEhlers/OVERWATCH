@@ -63,13 +63,28 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <h2 id="setup-and-usage">Setup and Usage</h2>
 <p>This is a <code>python</code> based project, so pip (ie <code>pip install &lt;packageName&gt;</code>) is the recommended way to install dependencies.</p>
 <ol style="list-style-type: decimal">
-<li><p>Install dependencies: <code>flask Flask-Login Flask-Bcrypt bcrypt numpy flup future</code>. This can be accomplished by running <code>pip install -r requirements.txt</code>. If using the <em>Web App</em> as a WSGI server on PDSF, then <code>uwsgi</code> is also needed. It is not needed for a normal user.</p></li>
+<li><p>Install dependencies: <code>flask Flask-Login Flask-Bcrypt bcrypt numpy flup future</code>. This can be accomplished by running <code>pip install -r requirements.txt</code>. If using the <em>Web App</em> with a WSGI server, then <code>uwsgi</code> is also needed. It is not needed for a normal user.</p></li>
 <li><p>Optional, but recommended: Build the documentation. See <a href="#documentation">here</a>.</p></li>
 <li><p>Configure <em>Process Runs</em> and the <em>Web App</em> with files in the <code>config</code> directory. Copy <code>serverParams_stub</code> to <code>serverParams</code> so that it is usable. Begin configuring with the options in <code>sharedParams</code> file, and then configure <code>processingParams</code> and <code>serverParams</code> as necessary. Most defaults should be fine but at minimum, the <code>users</code> and <code>secretKey</code> must be configured in <code>serverParams</code>. Each option is extensively documented, which can be viewed in the source file or the documentation.</p></li>
 <li><p>Configure the directory structure. See <a href="#directory-structure">here</a>.</p></li>
 <li><p>Run <em>Process Runs</em> to process the available data. <code>python processRuns.py</code></p></li>
 <li><p>Run the <em>Web App</em> to look at the data in a better organized way. <code>python webApp.py</code>. It can then be accessed at <code>http://localhost:portNumber</code>, where <code>portNumber</code> is the port defined in the <code>serverParams</code> file.</p></li>
 </ol>
+<h2 id="setup-jsroot">Setup jsRoot</h2>
+<p>TODO: Explain this section.</p>
+<p>Copy the <code>scripts/</code> and <code>style/</code> directories from jsRoot into the <code>static/</code> directory of OVERWATCH!</p>
+<h2 id="creating-a-vulcanized-file-to-use-polymer.">Creating a vulcanized file to use polymer.</h2>
+<p>TODO: Expand on this section! This is not needed for normal users!! It should just work.</p>
+<p>Generate the vulcanized file with:</p>
+<div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="co"># Setup npm and bower</span>
+<span class="co"># Install node via a package manager - should include npm</span>
+<span class="co"># Install bower</span>
+<span class="kw">npm</span> install -g bower
+<span class="co"># Install the required polymer components via bower</span>
+<span class="kw">cd</span> static/
+<span class="kw">bower</span> install
+<span class="co"># From the OVERWATCH root, generate the vulcanized file</span>
+<span class="kw">vulcanize</span> -p . static/polymerComponents.html <span class="kw">&gt;</span> static/polymerComponents.vulcanized.html</code></pre></div>
 <h2 id="documentation">Documentation</h2>
 <p>Based on <code>sphinx-autodoc</code> generation, the documentation is generated from the docstrings in the code. While they can be viewed in the source files or via python, sphinx compiles them into HTML, facilitating a cleaner view of the information. To build the documentation,</p>
 <ol style="list-style-type: decimal">
@@ -212,33 +227,10 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
     └── <span class="kw">validation.py</span></code></pre></div>
 <h2 id="development-note">Development Note</h2>
 <p>This project was originally developed in the <a href="https://gitlab.cern.ch/ALICEYale/alice-yale-dev">alice-yale-dev</a> repository. All older development history is available there.</p>
-<h2 id="to-do">To do</h2>
-<p>There are a number of possible improvements for this project</p>
-<ul>
-<li>Allow additional user options for reprocessing via the time dependent merge. Additional options should include:
-<ul>
-<li>Option to disable scaling by nEvents.</li>
-<li>Option to change the hot channel warning threshold. This should be done generally enough such that other values could be set in the future.</li>
-</ul></li>
-<li><p>Implement better logging and error notification. It is all explained <a href="http://flask.pocoo.org/docs/0.10/errorhandling/">here</a>.</p></li>
-<li><p>Split out the QA and partial merge functions to use worker pools using something such as <code>celery</code>. This would require asynchronus loading of the images once the process is completed. One solution for</p></li>
-<li><p>Processing relies heavily on metadata. These operations can be very slow, particularly on slows disks. To resolve this, a database should be created (likely built using MongoDB) which caches and manages such metadata, thereby reducing the load on the disk. A longer term approach could store the data directly there, creating ROOT histograms (or some other visualization tool) on the fly.</p></li>
-<li><p>CERN Single Sign On (SSO) support. This would require a reworking of the authentication system. For more information, see <a href="https://alexpearce.me/2014/10/setting-up-flask-with-apache-and-shibboleth/">here</a>. This appears to be a very involved process. It may be simpler to implement using <code>SAML2</code>. See the CERN SSO page for more information.</p></li>
-</ul>
 <h2 id="authors">Authors</h2>
 <ul>
-<li><p><script type="text/javascript">
-<!--
-h='&#x63;&#x65;&#114;&#110;&#46;&#x63;&#104;';a='&#64;';n='&#114;&#x61;&#x79;&#x6d;&#x6f;&#110;&#100;&#46;&#x65;&#104;&#108;&#x65;&#114;&#x73;';e=n+a+h;
-document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'" clas'+'s="em' + 'ail">'+'&#82;&#x61;&#x79;&#x6d;&#x6f;&#110;&#100;&#32;&#x45;&#104;&#108;&#x65;&#114;&#x73;'+'<\/'+'a'+'>');
-// -->
-</script><noscript>Raymond Ehlers (raymond.ehlers at cern dot ch)</noscript>, Yale University</p></li>
-<li><p><script type="text/javascript">
-<!--
-h='&#x79;&#x61;&#108;&#x65;&#46;&#x65;&#100;&#x75;';a='&#64;';n='&#106;&#x61;&#x6d;&#x65;&#x73;&#46;&#x6d;&#x75;&#108;&#108;&#x69;&#x67;&#x61;&#110;';e=n+a+h;
-document.write('<a h'+'ref'+'="ma'+'ilto'+':'+e+'" clas'+'s="em' + 'ail">'+'&#74;&#x61;&#x6d;&#x65;&#x73;&#32;&#x4d;&#x75;&#108;&#108;&#x69;&#x67;&#x61;&#110;'+'<\/'+'a'+'>');
-// -->
-</script><noscript>James Mulligan (james.mulligan at yale dot edu)</noscript>, Yale University</p></li>
+<li><p><a href="mailto:raymond.ehlers@cern.ch">Raymond Ehlers</a>, Yale University</p></li>
+<li><p><a href="mailto:james.mulligan@yale.edu">James Mulligan</a>, Yale University</p></li>
 </ul>
 </body>
 </html>

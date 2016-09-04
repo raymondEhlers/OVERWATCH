@@ -287,6 +287,7 @@ def showRuns(runPath):
         This function ensures that the user is logged in before it serves the file.
     """
     # Hnaldes partial merges and rendering templates that are accessed by path.
+    # TODO: This can probably be removed!
     print("runPath: {0}".format(runPath))
     if serverParameters.dynamicContent and ".root" not in runPath:
         print("runPath:", runPath)
@@ -450,7 +451,7 @@ def processQA():
     #runList = utilities.findCurrentRunDirs(serverParameters.protectedFolder)
     runs = db["runs"]
     runList = runs.keys()
-    print("runList: {0}".format(runList))
+    print("runList: {0}".format(list(runList)))
 
     if request.method == "POST":
         # Validate post request

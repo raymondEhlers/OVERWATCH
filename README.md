@@ -30,7 +30,7 @@ This package has only had basic testing against python 3.
 
 This is a `python` based project, so pip (ie `pip install <packageName>`) is the recommended way to install dependencies.
 
- 1. Install dependencies: `flask Flask-Login Flask-Bcrypt bcrypt numpy flup future`. This can be accomplished by running `pip install -r requirements.txt`. If using the _Web App_ as a WSGI server on PDSF, then `uwsgi` is also needed. It is not needed for a normal user.
+ 1. Install dependencies: `flask Flask-Login Flask-Bcrypt bcrypt numpy flup future`. This can be accomplished by running `pip install -r requirements.txt`. If using the _Web App_ with a WSGI server, then `uwsgi` is also needed. It is not needed for a normal user.
 
  2. Optional, but recommended: Build the documentation. See [here](#documentation).
 
@@ -41,6 +41,30 @@ This is a `python` based project, so pip (ie `pip install <packageName>`) is the
  5. Run _Process Runs_ to process the available data. `python processRuns.py`
 
  6. Run the _Web App_ to look at the data in a better organized way. `python webApp.py`. It can then be accessed at `http://localhost:portNumber`, where `portNumber` is the port defined in the `serverParams` file.
+
+## Setup jsRoot
+
+TODO: Explain this section.
+
+Copy the ``scripts/`` and ``style/`` directories from jsRoot into the ``static/`` directory of OVERWATCH!
+
+## Creating a vulcanized file to use polymer.
+
+TODO: Expand on this section! This is not needed for normal users!! It should just work.
+
+Generate the vulcanized file with:
+
+```bash
+# Setup npm and bower
+# Install node via a package manager - should include npm
+# Install bower
+npm install -g bower
+# Install the required polymer components via bower
+cd static/
+bower install
+# From the OVERWATCH root, generate the vulcanized file
+vulcanize -p . static/polymerComponents.html > static/polymerComponents.vulcanized.html
+```
 
 ## Documentation
 
@@ -209,22 +233,6 @@ For reference, an example file structure is shown below.
 ## Development Note
 
 This project was originally developed in the [alice-yale-dev](https://gitlab.cern.ch/ALICEYale/alice-yale-dev) repository. All older development history is available there.
-
-## To do
-
-There are a number of possible improvements for this project
-
- - Allow additional user options for reprocessing via the time dependent merge. Additional options should include:
-     - Option to disable scaling by nEvents.
-     - Option to change the hot channel warning threshold. This should be done generally enough such that other values could be set in the future.
-
- - Implement better logging and error notification. It is all explained [here](http://flask.pocoo.org/docs/0.10/errorhandling/).
-
- - Split out the QA and partial merge functions to use worker pools using something such as `celery`. This would require asynchronus loading of the images once the process is completed. One solution for 
-
- - Processing relies heavily on metadata. These operations can be very slow, particularly on slows disks. To resolve this, a database should be created (likely built using MongoDB) which caches and manages such metadata, thereby reducing the load on the disk. A longer term approach could store the data directly there, creating ROOT histograms (or some other visualization tool) on the fly.
- 
- - CERN Single Sign On (SSO) support. This would require a reworking of the authentication system. For more information, see [here](https://alexpearce.me/2014/10/setting-up-flask-with-apache-and-shibboleth/). This appears to be a very involved process. It may be simpler to implement using `SAML2`. See the CERN SSO page for more information.
 
 ## Authors
 
