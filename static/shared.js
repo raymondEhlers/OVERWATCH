@@ -174,7 +174,7 @@ function setTimeSlicesFormValues() {
         setTimeSlicesFormValue(form, formValues, "timeSlicesFormHotChannelThreshold", "", "value");
         setTimeSlicesFormValue(form, formValues, "timeSlicesFormHistGroupName", "", "value");
         setTimeSlicesFormValue(form, formValues, "timeSlicesFormHistName", "", "value");
-        setTimeSlicesFormValue(form, formValues, "timeSlicesFormRunNumber", "", "value");
+        setTimeSlicesFormValue(form, formValues, "timeSlicesFormRunDir", "", "value");
         setTimeSlicesFormValue(form, formValues, "timeSlicesFormSubsystem", "", "value");
     }
 }

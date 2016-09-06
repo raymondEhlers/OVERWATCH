@@ -82,7 +82,7 @@ def login():
     After logging in, it should then forward them to resource they requested.
     """
     print("request: {0}".format(request.args))
-    ajaxRequest = routing.convertRequestToPythonBool("ajaxRequest")
+    ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
     errorValue = None
     nextValue = routing.getRedirectTarget()
@@ -135,7 +135,7 @@ def logout():
 @app.route("/contact")
 def contact():
     """ Simple contact page so we can provide support in the future."""
-    ajaxRequest = routing.convertRequestToPythonBool("ajaxRequest")
+    ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
     if ajaxRequest == False:
         return render_template("contact.html")
@@ -164,7 +164,7 @@ def index():
     
     """
     print("request: {0}".format(request.args))
-    ajaxRequest = routing.convertRequestToPythonBool("ajaxRequest")
+    ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
     runs = db["runs"]
 
@@ -195,35 +195,37 @@ def runPage(runNumber, subsystemName, requestedFileType):
     """ Serves the run pages and root files for a request run
     
     """
+    # Setup db information
+    runs = db["runs"]
+
     runDir = "Run{0}".format(runNumber)
-    jsRoot = routing.convertRequestToPythonBool("jsRoot")
-    ajaxRequest = routing.convertRequestToPythonBool("ajaxRequest")
+    if runDir in runs.keys():
+        # TODO: Switch to using just one run. It should be just fine.
+        #run = runs[runDir]
+        pass
+    else:
+        pass
+
+    jsRoot = validation.convertRequestToPythonBool("jsRoot", request.args)
+    ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
+    requestedHistGroup = validation.convertRequestToStringWhichMayBeEmpty("histGroup", request.args)
+    requestedHist = validation.convertRequestToStringWhichMayBeEmpty("histName", request.args)
+
     print("request: {0}".format(request.args))
-    print("runDir: {0}, subsytsem: {1}, requestedFileType: {2}, ajaxRequest: {3}, jsRoot: {4}".format(runDir, subsystemName, requestedFileType, ajaxRequest, jsRoot))
+    print("runDir: {0}, subsytsem: {1}, requestedFileType: {2},"
+          "ajaxRequest: {3}, jsRoot: {4}, requestedHistGroup: {5}, requestedHist: {6}".format(runDir,
+           subsystemName, requestedFileType, ajaxRequest, jsRoot, requestedHistGroup, requestedHist))
+
     # TODO: Validate these values
-    requestedHistGroup = request.args.get("histGroup", None, type=str)
-    requestedHist = request.args.get("histName", None, type=str)
     timeSliceKey = request.args.get("timeSliceKey", None, type=str)
 
-    runs = db["runs"]
-    # TODO: Switch to using just one run. It should be just fine.
-    #run = runs[runDir]
-
-    # Empty strings should be treated as None
-    # The "None" strings are from the timeSlicesValues div on the runPage.
-    #  TODO: This approach should be updated!
-    if requestedHistGroup == "" or requestedHistGroup == "None" or requestedHistGroup == None:
-        requestedHistGroup = None
-    if requestedHist == "" or requestedHist == "None" or requestedHist == None:
-        requestedHist = None
+    # TODO: This approach should be updated!
     if timeSliceKey == "" or timeSliceKey == "None" or timeSliceKey == None:
         timeSlice = None
     else:
         timeSliceKey = json.loads(timeSliceKey)
         print("timeSlices: {0}, timeSliceKey: {1}".format(runs[runDir].subsystems[subsystemName].timeSlices, timeSliceKey))
         timeSlice = runs[runDir].subsystems[subsystemName].timeSlices[timeSliceKey]
-
-    print("ajaxRequest: {0}, jsRoot: {1}".format(ajaxRequest,jsRoot))
 
     # Sets the filenames for the json and img files
     # Create these templates here so we don't have inside of the template
@@ -368,60 +370,58 @@ def rebuildDocs():
     return redirect(url_for("contact"))
 
 ###################################################
-@app.route("/partialMerge", methods=["GET", "POST"])
+@app.route("/timeSlice", methods=["GET", "POST"])
 @login_required
-def partialMerge():
-    """ Handles partial merges (time slices).
+def timeSlice():
+    """ Handles time slice requests.
 
     In the case of a GET request, it will throw an error, since the interface is built into the header of each
     individual run page. In the case of a POST request, it handles, validates, and processes the timing request,
     rendering the result template and returning the user to the same spot as in the previous page.
 
     """
-    print("request.args: {0}".format(request.args))
-    ajaxRequest = routing.convertRequestToPythonBool("ajaxRequest")
+    #print("request.args: {0}".format(request.args))
     print("request.form: {0}".format(request.form))
+    ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.form)
+    jsRoot = validation.convertRequestToPythonBool("jsRoot", request.form)
 
     if request.method == "POST":
-        # TEMP
-        #return jsonify(testData = "testData")
+        # Get the runs
+        runs = db["runs"]
 
         # Validates the request
-        (error, minTime, maxTime, runNumber, subsystem, histGroup, histName) = validation.validatePartialMergePostRequest(request)
+        # TODO: Handle scaleHists and hotChannelThreshold options!
+        (error, minTime, maxTime, runDir, subsystem, histGroup, histName) = validation.validateTimeSlicePostRequest(request, runs)
 
         if error == {}:
             # Print input values
             print("minTime: {0}".format(minTime))
             print("maxTime: {0}".format(maxTime))
-            print("runNumber: {0}".format(runNumber))
+            print("runDir: {0}".format(runDir))
             print("subsystem: {0}".format(subsystem))
             print("histGroup: {0}".format(histGroup))
             print("histName: {0}".format(histName))
 
-            runs = db["runs"]
-
-            # Process the partial merge
-            returnValue = processRuns.processTimeSlices(runNumber, minTime, maxTime, subsystem, runs)
+            # Process the time slice
+            returnValue = processRuns.processTimeSlices(runDir, minTime, maxTime, subsystem, runs)
 
             print("returnValue: {0}".format(returnValue))
-            print("runs[runDir].subsystems[subsystem].timeSlices: {0}".format(runs[runNumber].subsystems[subsystem].timeSlices))
+            print("runs[runDir].subsystems[subsystem].timeSlices: {0}".format(runs[runDir].subsystems[subsystem].timeSlices))
 
             if not isinstance(returnValue, collections.Mapping):
                 timeSliceKey = returnValue
                 if timeSliceKey == "fullProcessing":
                     timeSliceKey = None
                 # We always want to use ajax here
-                # TODO: Add jsRoot
                 return redirect(url_for("runPage",
-                                        runNumber = int(filter(str.isdigit, runNumber.encode("ascii", "ignore"))),
+                                        runNumber = runs[runDir].runNumber,
                                         subsystemName = subsystem,
                                         requestedFileType = "runPage",
                                         ajaxRequest = json.dumps(True),
-                                        jsRoot = json.dumps(True),  # TEMP!!
+                                        jsRoot = json.dumps(jsRoot),
                                         histGroup = histGroup,
                                         histName = histName,
                                         timeSliceKey = json.dumps(timeSliceKey)))
-                #return redirect(url_for("showRuns", runPath=returnPath))
             else:
                 # Fall through to return an error
                 error = returnValue
@@ -451,7 +451,7 @@ def processQA():
 
     """
     print("request: {0}".format(request.args))
-    ajaxRequest = routing.convertRequestToPythonBool("ajaxRequest")
+    ajaxRequest = validcation.convertRequestToPythonBool("ajaxRequest", request.args)
     # Variable is shared, so it is defined here
     # This assumes that any folder that exists should have proper files.
     # However, this seems to be a fairly reasonable assumption and can be handled safely.
@@ -581,7 +581,7 @@ def status():
         pass
     else:
         # Display the status page from the other sites
-        ajaxRequest = routing.convertRequestToPythonBool("ajaxRequest")
+        ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
         statuses = collections.OrderedDict()
         # TODO: Actually query for these values

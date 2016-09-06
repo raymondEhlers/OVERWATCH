@@ -64,7 +64,6 @@
         {# Disable favicon request. See: https://stackoverflow.com/a/13416784 #}
         {# <!--<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">--> #}
         {# Favicon support from: realfavicongenerator.net #}
-        {# TODO: Update paths with url_for? #}
         <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png?v=2">
         <link rel="icon" type="image/png" href="/static/icons/favicon-32x32.png?v=2" sizes="32x32">
         <link rel="icon" type="image/png" href="/static/icons/favicon-16x16.png?v=2" sizes="16x16">
@@ -156,7 +155,6 @@
                         <paper-item>Basic QA</paper-item>
                     </a>
                 </paper-listbox>
-                <!-- TODO: Improve this divider! -->
                 <hr />
                 {# Defines content in the drawer #}
                 <div id="drawerContent" class="linksToIntercept">
@@ -197,7 +195,7 @@
 <paper-dialog id="propertiesDialog">
     <h2>Processing Settings</h2>
     <paper-dialog-scrollable>
-        <form is="iron-form" id="timeSlicesForm" method="post" action="/partialMerge">
+        <form is="iron-form" id="timeSlicesForm" method="post" action="/timeSlice">
             <p>Time Dependent Merge</p>
             <p>Min:</p>
             <paper-slider id="timeSlicesFormMinTime" name="minTime" value="0" max="1" editable></paper-slider>
@@ -208,7 +206,7 @@
             <paper-slider id="timeSlicesFormHotChannelThreshold" name="hotChannelThreshold" value="0" max="100" editable></paper-slider>
             <input id="timeSlicesFormHistGroupName" name="histGroup" type="hidden" value="val"/>
             <input id="timeSlicesFormHistName" name="histName" type="hidden" value="val"/>
-            <input id="timeSlicesFormRunNumber" name="runNumber" type="hidden" value="val"/>
+            <input id="timeSlicesFormRunDir" name="runDir" type="hidden" value="val"/>
             <input id="timeSlicesFormSubsystem" name="subsystem" type="hidden" value="val"/>
             <div class="buttons">
                 <paper-button dialog-dismiss>Cancel</paper-button>
