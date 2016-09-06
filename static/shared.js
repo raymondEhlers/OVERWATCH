@@ -145,6 +145,14 @@ function handleFormSubmit(selectedForm, selectedButton) {
 
         localParams = {}
         localParams.timeSliceKey = data.timeSliceKey;
+        if (data.hasOwnProperty("histName") && data.histName !== "null") {
+            localParams.histName = data.histName;
+        }
+        if (data.hasOwnProperty("histGroup") && data.histGroup !== "null") {
+            localParams.histGroup = data.histGroup;
+        }
+        console.log("data: " + data);
+        console.log("localParams: " + JSON.stringify(localParams));
 
         // Staying on current page
         var currentPage = window.location.pathname;

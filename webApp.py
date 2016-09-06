@@ -212,9 +212,9 @@ def runPage(runNumber, subsystemName, requestedFileType):
     # Empty strings should be treated as None
     # The "None" strings are from the timeSlicesValues div on the runPage.
     #  TODO: This approach should be updated!
-    if requestedHistGroup == "" or requestedHistGroup == "None":
+    if requestedHistGroup == "" or requestedHistGroup == "None" or requestedHistGroup == None:
         requestedHistGroup = None
-    if requestedHist == "" or requestedHist == "None":
+    if requestedHist == "" or requestedHist == "None" or requestedHist == None:
         requestedHist = None
     if timeSliceKey == "" or timeSliceKey == "None" or timeSliceKey == None:
         timeSlice = None
@@ -271,7 +271,12 @@ def runPage(runNumber, subsystemName, requestedFileType):
             drawerContent = ""
             mainContent =  render_template("errorMainContent.html", errors={"Request Error": ["Requested: {0}. Must request either runPage or rootFiles!".format(requestedFileType)]})
 
-        return jsonify(drawerContent = drawerContent, mainContent = mainContent, timeSliceKey = json.dumps(timeSliceKey))
+        # Includes hist group and hist name for time slices since it is easier to pass it here than parse the get requests. Otherwise, they are ignored.
+        return jsonify(drawerContent = drawerContent,
+                       mainContent = mainContent,
+                       timeSliceKey = json.dumps(timeSliceKey),
+                       histName = requestedHist,
+                       histGroup = requestedHistGroup)
 
 ###################################################
 @app.route("/<path:runPath>")
