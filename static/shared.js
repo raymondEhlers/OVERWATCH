@@ -65,7 +65,11 @@ function initPage(jsRootState) {
     var title = Polymer.dom(this.root).querySelector("#mainContentTitle");
     var titlesToSet = Polymer.dom(this.root).querySelectorAll(".title");
     if (title) {
+        // Set the title in the toolbar
         $(titlesToSet).text($(title).text());
+
+        // Set page title
+        $('html head').find('title').text("ALICE OVERWATCH - " + $(title).text());
     }
 
     // Ensure that we only show on run pages
@@ -134,10 +138,18 @@ function handleFormSubmit(selectedForm, selectedButton) {
         if (event.detail.status === 500) {
             console.log("Internal server error! ");
             // This should render in the main window
-            data.mainContent = "500: Internal Server Error!";
+            data.mainContent = "500: Internal Server Error! Please content the admin with information about what you were doing so that the error can be fixed! Thank you!";
         }
 
         handleAjaxResponse()(data);
+
+        localParams = {}
+        localParams.timeSliceKey = data.timeSliceKey;
+
+        // Staying on current page
+        var currentPage = window.location.pathname;
+        console.log("currentPage: " + currentPage);
+        updateHistory(localParams, currentPage);
     })
 }
 
@@ -329,23 +341,41 @@ function routeLinks() {
             // Handle the general request
             handleGeneralRequest(params, pageToRequest);
 
-            // Update the history using the HTML5 history API
-            // We only do this here because we don't want to update the history when going backwards and forwards.
-            // The condition does not include jsRoot, because if it is the only defined parameter, then we just
-            // want to hide it. The value will be picked up for the toggle by the time of the request.
-            if (!(params.histGroup === undefined && params.histName === undefined)) {
-                // Uses a relative path
-                window.history.pushState(params, "Title", "?" + jQuery.param(params));
-            }
-            else {
-                // Uses a absolute path
-                window.history.pushState(params, "Title", pageToRequest);
-            }
+            updateHistory(params, pageToRequest);
 
             // Prevent further action
             return false;
         }
     });
+}
+
+function updateHistory(params, pageToRequest) {
+    // Update the history using the HTML5 history API
+    // We have to do this carefully because we don't want to update the history when going backwards and forwards.
+    // The condition does not include jsRoot, because if it is the only defined parameter, then we just
+    // want to hide it. The value will be picked up for the toggle by the time of the request.
+
+    // Make a copy in case the user wants to use params afterwards!
+    params = typeof params !== 'undefined' ? JSON.parse(JSON.stringify(params)) : {};
+
+    // Strip ajaxRequest if it is included!
+    // Otherwise, the url will include this and a full load of the page will only load the ajax..
+    if (params.hasOwnProperty("ajaxRequest")) {
+        delete params.ajaxRequest
+    }
+
+    if (!(jQuery.isEmptyObject(params))) {
+    //if (!(params.histGroup === undefined && params.histName === undefined)) {
+    //if (pageToRequest === null) {
+        // Include just the GET parameters
+        // Uses a relative path
+        window.history.pushState(params, "Title", "?" + jQuery.param(params));
+    }
+    else {
+        // Change the overall page (and does not include the GET parameters!)
+        // Uses a absolute path
+        window.history.pushState(params, "Title", pageToRequest);
+    }
 }
 
 function ajaxRequest(pageToRequest, params) {
@@ -379,12 +409,6 @@ function ajaxRequest(pageToRequest, params) {
 
 var handleAjaxResponse = function (localParams) {
     localParams = typeof localParams !== 'undefined' ? localParams : {};
-    //console.log("localParams: " + JSON.stringify(localParams));
-    if (jQuery.isEmptyObject(localParams)) {
-        /*console.log("localParams is empty, so adding jsRoot value!");*/
-        localParams.jsRoot = $(Polymer.dom(this.root).querySelector("#jsRootToggle")).prop("checked") === true;
-    }
-    //console.log("localParams.jsRoot: " + localParams.jsRoot);
     return function(data) {
         // data is already JSON!
         console.log(data)
@@ -411,6 +435,10 @@ var handleAjaxResponse = function (localParams) {
 
         // Handle page initialization
         // Note that this could create some additional ajax requests via jsRoot
+        if (!(localParams.hasOwnProperty("jsRoot"))) {
+            console.log("jsRoot is not in localParams, so adding jsRoot value!");
+            localParams.jsRoot = $(Polymer.dom(this.root).querySelector("#jsRootToggle")).prop("checked") === true;
+        }
         initPage(localParams.jsRoot);
 
         // Update the drawer width
@@ -532,10 +560,19 @@ function handleGeneralRequest(params, pageToRequest) {
     if (ajaxState === false || pageToRequest.search("logout") !== -1) {
         console.log("ajax disabled link");
 
+        // Make a copy in case the user wants to use params afterwards!
+        var localParams = JSON.parse(JSON.stringify(params));
+
+        // Strip ajaxRequest if it is included!
+        // Otherwise, the url will include this and a full load of the page will only load the ajax..
+        if (localParams.hasOwnProperty("ajaxRequest")) {
+            delete localParams.ajaxRequest
+        }
+
         // This should never fall through since jsRoot should always be defined, but it is left to be careful.
-        if (!(params.histGroup === undefined && params.histName === undefined && params.jsRoot === undefined)) {
+        if (!(jQuery.isEmptyObject(localParams))) {
             console.log("Assigning parameters to href");
-            pageToRequest += "?" + jQuery.param(params);
+            pageToRequest += "?" + jQuery.param(localParams);
         }
         else {
             console.log("ERROR: No parameters to assign");

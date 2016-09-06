@@ -219,6 +219,8 @@ def runPage(runNumber, subsystemName, requestedFileType):
     if timeSliceKey == "" or timeSliceKey == "None" or timeSliceKey == None:
         timeSlice = None
     else:
+        timeSliceKey = json.loads(timeSliceKey)
+        print("timeSlices: {0}, timeSliceKey: {1}".format(runs[runDir].subsystems[subsystemName].timeSlices, timeSliceKey))
         timeSlice = runs[runDir].subsystems[subsystemName].timeSlices[timeSliceKey]
 
     print("ajaxRequest: {0}, jsRoot: {1}".format(ajaxRequest,jsRoot))
@@ -269,7 +271,7 @@ def runPage(runNumber, subsystemName, requestedFileType):
             drawerContent = ""
             mainContent =  render_template("errorMainContent.html", errors={"Request Error": ["Requested: {0}. Must request either runPage or rootFiles!".format(requestedFileType)]})
 
-        return jsonify(drawerContent = drawerContent, mainContent = mainContent)
+        return jsonify(drawerContent = drawerContent, mainContent = mainContent, timeSliceKey = json.dumps(timeSliceKey))
 
 ###################################################
 @app.route("/<path:runPath>")
@@ -413,7 +415,7 @@ def partialMerge():
                                         jsRoot = json.dumps(True),  # TEMP!!
                                         histGroup = histGroup,
                                         histName = histName,
-                                        timeSliceKey = timeSliceKey))
+                                        timeSliceKey = json.dumps(timeSliceKey)))
                 #return redirect(url_for("showRuns", runPath=returnPath))
             else:
                 # Fall through to return an error
