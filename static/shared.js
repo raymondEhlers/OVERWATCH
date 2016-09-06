@@ -143,6 +143,7 @@ function handleFormSubmit(selectedForm, selectedButton) {
 
         handleAjaxResponse()(data);
 
+        // Determine the GET params for display in the history
         localParams = {}
         localParams.timeSliceKey = data.timeSliceKey;
         if (data.hasOwnProperty("histName") && data.histName !== "null") {
@@ -151,8 +152,8 @@ function handleFormSubmit(selectedForm, selectedButton) {
         if (data.hasOwnProperty("histGroup") && data.histGroup !== "null") {
             localParams.histGroup = data.histGroup;
         }
-        console.log("data: " + data);
-        console.log("localParams: " + JSON.stringify(localParams));
+        /*console.log("data: " + data);
+        console.log("localParams: " + JSON.stringify(localParams));*/
 
         // Staying on current page
         var currentPage = window.location.pathname;
@@ -364,25 +365,28 @@ function updateHistory(params, pageToRequest) {
     // want to hide it. The value will be picked up for the toggle by the time of the request.
 
     // Make a copy in case the user wants to use params afterwards!
-    params = typeof params !== 'undefined' ? JSON.parse(JSON.stringify(params)) : {};
+    var localParams = typeof params !== 'undefined' ? JSON.parse(JSON.stringify(params)) : {};
 
     // Strip ajaxRequest if it is included!
     // Otherwise, the url will include this and a full load of the page will only load the ajax..
-    if (params.hasOwnProperty("ajaxRequest")) {
-        delete params.ajaxRequest
+    if (localParams.hasOwnProperty("ajaxRequest")) {
+        delete localParams.ajaxRequest;
     }
 
-    if (!(jQuery.isEmptyObject(params))) {
-    //if (!(params.histGroup === undefined && params.histName === undefined)) {
-    //if (pageToRequest === null) {
+    // Remove jsRoot so that it does not disrupt routing. For instance, if it is true, but our setting is false,
+    //  then it doesn't send the img, but we never make the jsRoot request
+    if (localParams.hasOwnProperty("jsRoot")) {
+        delete localParams.jsRoot;
+    }
+
+    // As long as there are params other than ajaxRequest, then we should add them to the URL
+    if (!(jQuery.isEmptyObject(localParams))) {
         // Include just the GET parameters
-        // Uses a relative path
-        window.history.pushState(params, "Title", "?" + jQuery.param(params));
+        window.history.pushState(localParams, "Title", pageToRequest + "?" + jQuery.param(localParams));
     }
     else {
-        // Change the overall page (and does not include the GET parameters!)
-        // Uses a absolute path
-        window.history.pushState(params, "Title", pageToRequest);
+        // Change the overall page (and does not include the GET parameters, since they are null!)
+        window.history.pushState(localParams, "Title", pageToRequest);
     }
 }
 
@@ -542,7 +546,7 @@ function handleGeneralRequest(params, pageToRequest) {
     // See: https://stackoverflow.com/a/894877
     pageToRequest = typeof pageToRequest !== 'undefined' ? pageToRequest : window.location.pathname;
 
-    console.log("params passed for general request: " + JSON.stringify(params));
+    /*console.log("params passed for general request: " + JSON.stringify(params));*/
 
     // Params are empty so we need to do a general request. In that case, we want an empty object
     if (params === null) {
