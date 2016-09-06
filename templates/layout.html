@@ -5,7 +5,10 @@
 
         <!-- 1. Load webcomponents-lite.min.js for polyfill support. -->
         <!-- Cannot put in the polymer components because they are needed to use the import instruction! -->
+        {# If cannot load locally, load from CDN. From: https://github.com/download/polymer-cdn and https://stackoverflow.com/a/31484427 #}
+        {# Test for if it is loaded derived from: https://github.com/webcomponents/webcomponentsjs/issues/26 #}
         <script src="{{url_for("static", filename="bower_components/webcomponentsjs/webcomponents-lite.min.js") }}"></script>
+        <script> if(typeof HTMLImports === "undefined") { document.write('<script src="//cdn.rawgit.com/download/polymer-cdn/1.5.0/lib/webcomponentsjs/webcomponents-lite.min.js">\x3C/script>'); /*window.alert("Using CDN for webcomponents!");*/ }</script>
 
         <!-- 2. Use an HTML Import to bring in some elements. -->
         {# Import a file of vulcanized polymer components #}
@@ -28,7 +31,29 @@
         {# Loads jsRoot from locally if available, or CDN if not #}
         {# jsRoot 4.6 does not work correctly, so loading from the CDN isn't ideal... #}
         <script src="{{ url_for("static", filename="scripts/JSRootCore.js?2d") | replace("%3F", "?") }}" type="text/javascript"></script>
-        <script>JSROOT || document.write('<script src="//root.cern.ch/js/latest/scripts/JSRootCore.js?2d">\x3C/script>')</script>
+        <script>
+        if (typeof JSROOT === "undefined") {
+            // Remove the previous script tag, because it will mess up jsRoot from finding the proper src directory
+            var scripts = document.getElementsByTagName("script");
+            for (var n = 0; n < scripts.length; ++n) {
+                var srcElement = scripts[n];
+                var src = scripts[n].src;
+                if ( (src === undefined) || (typeof src !== 'string')) continue;
+
+                var pos = src.indexOf("scripts/JSRootCore.");
+                if (pos<0) continue;
+
+                // Remove the actual element
+                // There should only be one head!
+                var head = document.getElementsByTagName("head")[0];
+                console.log("head: " + head);
+                console.log("srcElement: " + srcElement);
+                head.removeChild(srcElement);
+            }
+            document.write('<script src="//root.cern.ch/js/latest/scripts/JSRootCore.js?2d">\x3C/script>');
+            /*window.alert("Using CDN for JSROOT!");*/
+        }
+        </script>
         <!--<script src="//root.cern.ch/js/latest/scripts/JSRootCore.js?2d" type="text/javascript"></script>
         <script>JSROOT || document.write('<script src="{{ url_for('static', filename='scripts/JSRootCore.js?2d') | replace('%3F', '?')}}">\x3C/script>')</script>-->
 
