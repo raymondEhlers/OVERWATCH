@@ -50,12 +50,13 @@
                     {% endif %}
                 {% endif %}
                 {# If grid, then add class #}
-                {%- set histogramContainerClasses = "histogramContainer" -%}
+                {# Set histogramContainer style when we using jsRoot to set the proper shadows #}
+                {%- set histogramContainerClasses = "histogramContainerStyle" -%}
                 {% if histGroup.plotInGrid == True %}
                     {# TODO: Determine how to properly show the grid with iron-flex-layout #}
                     <p>Grid!</p>
                 {% endif %}
-                <div id="{{ hist.histName }}" class="{{ histogramContainerClasses }}" data-filename="{{ jsonFilenameTemplate.format(hist.histName.replace("/", "_")) }}">
+                <div id="{{ hist.histName }}" class="histogramContainer {% if jsRoot == True %}{{ histogramContainerClasses }}{% endif %}" data-filename="{{ jsonFilenameTemplate.format(hist.histName.replace("/", "_")) }}">
                 {% if jsRoot != True %}
                     <img src="{{ url_for("protected", filename=imgFilenameTemplate.format(hist.histName.replace("/", "_"))) }}" alt="{{ hist.histName }}">
                 {% else %}
