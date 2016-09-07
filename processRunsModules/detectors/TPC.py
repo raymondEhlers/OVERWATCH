@@ -24,7 +24,7 @@ def findFunctionsForTPCHistogram(subsystem, hist):
     # General TPC Options
     hist.functionsToApply.append(generalTPCOptions)
 
-def createEMCHistogramGroups(subsystem):
+def createTPCHistogramGroups(subsystem):
     # Sort the filenames of the histograms into catagories for better presentation
     # The order in which these are added is the order in which they are processed!    
 
