@@ -144,13 +144,14 @@ def contact():
         mainContent = render_template("contactMainContent.html")
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
-# TEMP
 ###################################################
 @app.route("/favicon.ico")
 def favicon():
-    """ Browsers always try to load the Favicon, so this suppresses the errors about not finding one. """
-    return ""
-# END TEMP
+    """ Browsers always try to load the Favicon, so this suppresses the errors about not finding one.
+
+    However, the real way that this is generally loaded is via code in layout template!
+    """
+    return redirect(url_for("static", filename="icons/favicon.ico"))
 
 ######################################################################################################
 # Authenticated Routes
@@ -283,31 +284,6 @@ def runPage(runNumber, subsystemName, requestedFileType):
                        timeSliceKey = json.dumps(timeSliceKey),
                        histName = requestedHist,
                        histGroup = requestedHistGroup)
-
-###################################################
-@app.route("/<path:runPath>")
-@login_required
-def showRuns(runPath):
-    """ This handles the routing for serving most files, especially for partial merging and for serving ROOT files.
-
-    In such cases, the path is requested and must be handled (ie ``localhost:port/Run123/HLT/HLTRootFiles.html``).
-    In the case of templates, the template is rendered.
-    If the path is to a ROOT file or we are using static html files then the request is forwarded to
-    :func:`.protected()`. This also covers any other files, such as images, although most of those directly
-    call url_for("protected").
-
-    Note:
-        This function ensures that the user is logged in before it serves the file.
-    """
-    # Hnaldes partial merges and rendering templates that are accessed by path.
-    # TODO: This can probably be removed!
-    print("runPath: {0}".format(runPath))
-    if serverParameters.dynamicContent and ".root" not in runPath:
-        print("runPath:", runPath)
-        return render_template(os.path.join("data",runPath))
-    else:
-        # This handles ROOT files. It also handles static html files if dynamicContent is false.
-        return redirect(url_for("protected", filename=runPath))
 
 ###################################################
 @app.route("/monitoring/protected/<path:filename>")

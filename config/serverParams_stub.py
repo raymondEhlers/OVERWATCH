@@ -38,14 +38,6 @@ class serverParameters(object):
     #: Setup Bcrypt.
     bcryptLogRounds = 12
 
-    dynamicContent = True
-    """ Determine whether to use dynamic content (ie templates for the Run pages).
-    
-    If this is disabled, then static pages will be served for viewing the data.
-    The "/login", "/logout", "/testingData" and "/contant" pages will continue
-    to be rendered via templates. Time dependent merging will also continue to operate.
-    """
-
     _users = {"username": generate_password_hash("password", bcryptLogRounds)}
     """ Contains the users for authenticating on the server
     This could be more complex, but there isn't any point for such a simple project
