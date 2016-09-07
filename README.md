@@ -63,7 +63,7 @@ npm install -g bower
 cd static/
 bower install
 # From the OVERWATCH root, generate the vulcanized file
-vulcanize -p . static/polymerComponents.html > static/polymerComponents.vulcanized.html
+vulcanize --inline-scripts -p . static/polymerComponents.html > static/polymerComponents.vulcanized.html
 ```
 
 ## Documentation

@@ -84,7 +84,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <span class="kw">cd</span> static/
 <span class="kw">bower</span> install
 <span class="co"># From the OVERWATCH root, generate the vulcanized file</span>
-<span class="kw">vulcanize</span> -p . static/polymerComponents.html <span class="kw">&gt;</span> static/polymerComponents.vulcanized.html</code></pre></div>
+<span class="kw">vulcanize</span> --inline-scripts -p . static/polymerComponents.html <span class="kw">&gt;</span> static/polymerComponents.vulcanized.html</code></pre></div>
 <h2 id="documentation">Documentation</h2>
 <p>Based on <code>sphinx-autodoc</code> generation, the documentation is generated from the docstrings in the code. While they can be viewed in the source files or via python, sphinx compiles them into HTML, facilitating a cleaner view of the information. To build the documentation,</p>
 <ol style="list-style-type: decimal">

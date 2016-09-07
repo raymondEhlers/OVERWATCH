@@ -1,6 +1,7 @@
-<!DOCTYPE html><!-- Based on this site: https://zisismaras.me/polymer/2015/04/02/polymer-vulcanize.html --><html><head><meta charset="utf-8">
+<!DOCTYPE html><!-- Used by the layout template to load all needed polymer components --><!-- Based on the techinque at this site: https://zisismaras.me/polymer/2015/04/02/polymer-vulcanize.html --><html><head><meta charset="utf-8">
 
 <!-- 1. Load webcomponents-lite.min.js for polyfill support. -->
+<!-- Cannot do it here since the webcomponents are needed to use import! -->
 <!--<script src="/static/bower_components/webcomponentsjs/webcomponents-lite.min.js"></script>-->
 
 <!-- 2. Use an HTML Import to bring in some elements. -->
@@ -23135,7 +23136,7 @@ The complete set of authors may be found at http://polymer.github.io/AUTHORS.txt
 The complete set of contributors may be found at http://polymer.github.io/CONTRIBUTORS.txt
 Code distributed by Google as part of the polymer project is also
 subject to an additional IP rights grant found at http://polymer.github.io/PATENTS.txt
---><script src="/static/bower_components/promise-polyfill/Promise.js">/**
+--><script>/**
 @license
 Copyright (c) 2016 The Polymer Project Authors. All rights reserved.
 This code may only be used under the BSD style license found at http://polymer.github.io/LICENSE.txt
