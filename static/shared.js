@@ -145,7 +145,9 @@ function handleFormSubmit(selectedForm, selectedButton) {
 
         // Determine the GET params for display in the history
         localParams = {}
-        localParams.timeSliceKey = data.timeSliceKey;
+        if (data.hasOwnProperty("timeSliceKey") && data.timeSliceKey !== "null") {
+            localParams.timeSliceKey = data.timeSliceKey;
+        }
         if (data.hasOwnProperty("histName") && data.histName !== "null") {
             localParams.histName = data.histName;
         }

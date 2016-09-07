@@ -217,15 +217,19 @@ def runPage(runNumber, subsystemName, requestedFileType):
            subsystemName, requestedFileType, ajaxRequest, jsRoot, requestedHistGroup, requestedHist))
 
     # TODO: Validate these values
-    timeSliceKey = request.args.get("timeSliceKey", None, type=str)
-
     # TODO: This approach should be updated!
-    if timeSliceKey == "" or timeSliceKey == "None" or timeSliceKey == None:
+    timeSliceKey = request.args.get("timeSliceKey", None, type=str)
+    print("timeSliceKey: {0}".format(timeSliceKey))
+    if timeSliceKey == "" or timeSliceKey == "None" or timeSliceKey == None or timeSliceKey == "fullProcessing":
         timeSlice = None
     else:
         timeSliceKey = json.loads(timeSliceKey)
+
+    if timeSliceKey:
         print("timeSlices: {0}, timeSliceKey: {1}".format(runs[runDir].subsystems[subsystemName].timeSlices, timeSliceKey))
         timeSlice = runs[runDir].subsystems[subsystemName].timeSlices[timeSliceKey]
+    else:
+        timeSlice = None
 
     # Sets the filenames for the json and img files
     # Create these templates here so we don't have inside of the template
