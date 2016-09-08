@@ -170,6 +170,7 @@ def index():
     runs = db["runs"]
 
     try:
+        # TODO: Improvements are needed here...
         mostRecentRun = runs[runs.keys()[-1]]
         #if mostRecentRun:
         subsystemsInLastRun = mostRecentRun.subsystems
@@ -250,7 +251,7 @@ def runPage(runNumber, subsystemName, requestedFileType):
                 returnValue = render_template(runPageName, run=runs[runDir], subsystem = runs[runDir].subsystems[subsystemName],
                                               selectedHistGroup=requestedHistGroup, selectedHist = requestedHist,
                                               jsonFilenameTemplate = jsonFilenameTemplate, imgFilenameTemplate = imgFilenameTemplate,
-                                              jsRoot = jsRoot, timeSlice = timeSlice, useGrid=False)
+                                              jsRoot = jsRoot, timeSlice = timeSlice)
             except jinja2.exceptions.TemplateNotFound as e:
                 returnValue = render_template("error.html", errors={"Template Error": ["Request template: \"{0}\", but it was not found!".format(e.name)]})
         elif requestedFileType == "rootFiles":
@@ -266,11 +267,11 @@ def runPage(runNumber, subsystemName, requestedFileType):
             drawerContent = render_template("runPageDrawer.html", run=runs[runDir], subsystem=runs[runDir].subsystems[subsystemName],
                                             selectedHistGroup = requestedHistGroup, selectedHist = requestedHist,
                                             jsonFilenameTemplate = jsonFilenameTemplate, imgFilenameTemplate = imgFilenameTemplate,
-                                            jsRoot = jsRoot, timeSlice = timeSlice, useGrid=False)
+                                            jsRoot = jsRoot, timeSlice = timeSlice)
             mainContent = render_template("runPageMainContent.html", run=runs[runDir], subsystem=runs[runDir].subsystems[subsystemName],
                                           selectedHistGroup = requestedHistGroup, selectedHist = requestedHist,
                                           jsonFilenameTemplate = jsonFilenameTemplate, imgFilenameTemplate = imgFilenameTemplate,
-                                          jsRoot = jsRoot, timeSlice = timeSlice, useGrid=False)
+                                          jsRoot = jsRoot, timeSlice = timeSlice)
         elif requestedFileType == "rootFiles":
             drawerContent = ""
             mainContent = render_template("rootfilesMainContent.html", run=runs[runDir], subsystem=subsystemName)

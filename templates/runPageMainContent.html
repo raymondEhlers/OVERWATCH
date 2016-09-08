@@ -25,7 +25,6 @@
                 {% if histGroup.plotInGrid == False or (histGroup.plotInGrid == True and firstLoopCompleted == []) %}
                     {# Effective increments our counter #}
                     {% if firstLoopCompleted.append(1) %}{% endif %}
-                    {# TODO: Check if selectionPattern being an empty string is a problem! #}
                     <a class="histAnchor" data-histname="{{ hist.histName }}" data-histgroup="{{ histGroup.selectionPattern }}" name="{{ hist.histName }}"></a>
                     {% if histGroup.plotInGrid == True -%}
                         <h2>{{ histGroup.prettyName }}</h2>

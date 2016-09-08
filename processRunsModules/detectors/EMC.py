@@ -20,7 +20,7 @@ import numpy
 # Used to enumerate possible names in a list
 import itertools
 
-# Used for sorting and generating html
+# Basic processing classes
 from processRunsModules import processingClasses
 
 # For retrieving debug configuration
@@ -128,11 +128,15 @@ def createEMCHistogramGroups(subsystem):
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("Jet Trigger High", "JEH"))
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("L0", "EMCL0"))
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("Background", "BKG"))
-    # Other EMC
+    # FastOR
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR", "FastOR"))
+    # Other EMC
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("Other EMC", "EMC"))
+
     # Catch all of the other hists
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Non EMC", ""))
+    # NOTE: We only want to do this if we are using a subsystem that actually has a file. Otherwise, you end up with lots of irrelevant histograms
+    if subsystem.subsystem == subsystem.fileLocationSubsystem:
+        subsystem.histGroups.append(processingClasses.histogramGroupContainer("Non EMC", ""))
 
 ###################################################
 def setEMCHistogramOptions(subsystem):
@@ -143,7 +147,9 @@ def setEMCHistogramOptions(subsystem):
     # Set the histogram pretty names
     # We can remove the first 12 characters
     for hist in subsystem.histsAvailable.values():
-        hist.prettyName = hist.histName[12:]
+        # Truncate the prefix off EMC hists, but also protect against truncating non-EMC hists
+        if "EMC" in hist.histName:
+            hist.prettyName = hist.histName[12:]
 
         # Set colz for any TH2 hists
         if hist.histType.InheritsFrom(TH2.Class()):

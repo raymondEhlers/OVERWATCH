@@ -128,6 +128,8 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
                 if subsystem.fileLocationSubsystem != subsystem.subsystem:
                     selection = subsystem.subsystem
                 else:
+                    # NOTE: In addition to being a normal option, this ensures that the HLT will always catch all extra histograms from HLT files!
+                    # However, having this selection for other subsystems is dangerous, because it will include many unrelated hists
                     selection = ""
                 print("selection: {0}".format(selection))
                 subsystem.histGroups.append(processingClasses.histogramGroupContainer(subsystem.subsystem + " Histograms", selection))
@@ -720,8 +722,7 @@ def processAllRuns():
             # Process if there is a new file or if forceReprocessing
             if subsystem.newFile == True or processingParameters.forceReprocessing == True:
                 # Process combined root file: plot histos and save in imgDir
-                print("INFO: About to process {0}, {1}".format(runDir, subsystem.subsystem))
-                #outputFormattingSave = os.path.join(subsystem.imgDir, "%s" + processingParameters.fileExtension) 
+                print("INFO: About to process {0}, {1}".format(run.prettyName, subsystem.subsystem))
                 outputFormattingSave = os.path.join("%s", "%s.%s") 
                 processRootFile(os.path.join(processingParameters.dirPrefix, subsystem.combinedFile.filename),
                                 outputFormattingSave,
@@ -729,7 +730,7 @@ def processAllRuns():
             else:
                 # We often want to skip this point since most runs will not need to be processed most times
                 if processingParameters.beVerbose:
-                    print("INFO: Don't need to process {0}. It has already been processed".format(runDir))
+                    print("INFO: Don't need to process {0}. It has already been processed".format(run.prettyName))
 
         # Commit after we have successfully processed a run
         transaction.commit()

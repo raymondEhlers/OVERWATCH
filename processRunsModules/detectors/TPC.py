@@ -9,6 +9,9 @@ This currently serves as a catch all for unsorted histograms. No additional QA f
 
 import ROOT
 
+# Used for sorting and generating html
+from processRunsModules import processingClasses
+
 ######################################################################################################
 ######################################################################################################
 # QA Functions
@@ -28,16 +31,21 @@ def createTPCHistogramGroups(subsystem):
     # Sort the filenames of the histograms into catagories for better presentation
     # The order in which these are added is the order in which they are processed!    
 
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("clust", "clust"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("constrain", "constrain"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("TPC Cluster", "tpc_clust"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("TPC Constrain", "tpc_constrain"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("TPC Event RecVertex", "event_recvertex"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Match Tracking Efficiency", "match_trackingeff"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("All RecVertex", "all_recvertex"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Negative RecVertex", "neg_recvertex"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Positive RecVertex", "pos_recvertex"))
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("event_6", "event_6"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("event_recvertex", "event_recvertex"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("match_trackingeff", "match_trackingeff"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("all_recvertex", "all_recvertex"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("neg_recvertex", "neg_recvertex"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("pos_recvertex", "pos_recvertex"))
+
+    # Catch all other TPC hists
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Other TPC", "TPC"))
 
     # Catch all of the other hists
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Non TPC", ""))
+    # NOTE: We only want to do this if we are using a subsystem that actually has a file. Otherwise, you end up with lots of irrelevant histograms
+    if subsystem.subsystem == subsystem.fileLocationSubsystem:
+        subsystem.histGroups.append(processingClasses.histogramGroupContainer("Non TPC", ""))
 
 ################################################### 

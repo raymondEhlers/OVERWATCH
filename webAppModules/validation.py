@@ -230,7 +230,9 @@ def convertRequestToStringWhichMayBeEmpty(paramName, source):
     """
     paramValue = source.get(paramName, None, type=str)
     print("{0}: {1}".format(paramName, paramValue))
-    if paramValue == "" or paramValue == "None" or paramValue == None:
+    #if paramValue == "" or paramValue == "None" or paramValue == None:
+    # If we see "None", then we want to be certain that it is None!
+    if paramValue == "None":
         paramValue = None
     print("{0}: {1}".format(paramName, paramValue))
 

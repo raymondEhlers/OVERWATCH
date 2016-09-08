@@ -34,6 +34,7 @@ def createHistGroups(subsystem):
         return True
 
     # If it doens't work for any reason, return false so that we can create a default
+    print("Could not find histogram group creation function for subsystem {0}".format(subsystem.subsystem))
     return False
 
 ###################################################
@@ -60,7 +61,7 @@ def setHistogramOptions(subsystem):
     if histogramStackFunction is not None:
         histogramStackFunction(subsystem)
     else:
-        print("Could not find histogram stack function for subsystem {0}.".format(subsystem.subsystem))
+        print("Could not find histogram options function for subsystem {0}.".format(subsystem.subsystem))
         # Ensure that the histograms propagate to the next dict if there is not stack function!
         subsystem.histsAvailable = subsystem.histsInFile
 
