@@ -6,12 +6,14 @@ OVERWATCH Run List
 
 {% block drawer %}
     <!-- This is the drawer menu -->
-    {% include "runListDrawer.html" %}
+    {% with runs = drawerRuns %}
+        {% include "runListDrawer.html" %}
+    {% endwith %}
 {% endblock %}
 
 {% block mainContent %}
     <!-- This is the main content! -->
-    {% with title=self.title(),runs=runs %}
+    {% with runs = mainContentRuns %}
         {% include "runListMainContent.html" %}
     {% endwith %}
 {% endblock %}

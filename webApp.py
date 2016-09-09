@@ -180,11 +180,26 @@ def index():
     else:
         runOngoingNumber = ""
 
-    if ajaxRequest == False:
-        return render_template("runList.html", runs=reversed(runs.values()), subsystemsWithRootFilesToShow = serverParameters.subsystemsWithRootFilesToShow, runOngoing = runOngoing, runOngoingNumber = runOngoingNumber)
+    # Number of runs
+    numberOfRuns = len(runs.keys())
+    # We want 15 anchors
+    anchorFrequency = int(round(numberOfRuns/15.0))
+    print("anchorFrequency: {0}".format(anchorFrequency))
+
+    if ajaxRequest != True:
+        print("runs: %d" % len(runs.keys()))
+        return render_template("runList.html", drawerRuns = reversed(runs.values()), mainContentRuns = reversed(runs.values()),
+                                runOngoing = runOngoing,
+                                runOngoingNumber = runOngoingNumber,
+                                subsystemsWithRootFilesToShow = serverParameters.subsystemsWithRootFilesToShow,
+                                anchorFrequency = anchorFrequency)
     else:
-        drawerContent = render_template("runListDrawer.html", runOngoing = runOngoing, runOngoingNumber = runOngoingNumber)
-        mainContent = render_template("runListMainContent.html", runs=reversed(runs.values()), subsystemsWithRootFilesToShow = serverParameters.subsystemsWithRootFilesToShow, runOngoing = runOngoing, runOngoingNumber = runOngoingNumber)
+        drawerContent = render_template("runListDrawer.html", runs = reversed(runs.values()), runOngoing = runOngoing,
+                                         runOngoingNumber = runOngoingNumber, anchorFrequency = anchorFrequency)
+        mainContent = render_template("runListMainContent.html", runs = reversed(runs.values()), runOngoing = runOngoing,
+                                       runOngoingNumber = runOngoingNumber,
+                                       subsystemsWithRootFilesToShow = serverParameters.subsystemsWithRootFilesToShow,
+                                       anchorFrequency = anchorFrequency)
 
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
@@ -444,10 +459,7 @@ def processQA():
     """
     print("request: {0}".format(request.args))
     ajaxRequest = validcation.convertRequestToPythonBool("ajaxRequest", request.args)
-    # Variable is shared, so it is defined here
-    # This assumes that any folder that exists should have proper files.
-    # However, this seems to be a fairly reasonable assumption and can be handled safely.
-    #runList = utilities.findCurrentRunDirs(serverParameters.protectedFolder)
+
     runs = db["runs"]
     runList = runs.keys()
     print("runList: {0}".format(list(runList)))

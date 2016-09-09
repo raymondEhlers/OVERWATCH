@@ -46,6 +46,18 @@ class runContainer(persistent.Persistent):
 
         return returnValue
 
+    def timeStamp(self):
+        """ Returns a pretty time stamp from the last subsystem. """
+        returnValue = False
+        try:
+            # We just take the last subsystem in a given run. Any will do
+            lastSubsystem = self.subsystems[self.subsystems.keys()[-1]]
+            returnValue = lastSubsystem.prettyPrintUnixTime(lastSubsystem.startOfRun)
+        except KeyError as e:
+            returnValue = False
+
+        return returnValue
+
 ###################################################
 class subsystemContainer(persistent.Persistent):
     """ Subsystem container class.

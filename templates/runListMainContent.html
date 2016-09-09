@@ -2,6 +2,10 @@
 <hr />
 
 {% for run in runs %}
+    {# Create anchors to link to #}
+    {%- if loop.index % anchorFrequency == 0 -%}
+        <a name="{{ run.runDir }}"></a>
+    {%- endif -%}
     <table class="rootPageRunListTable">
     {% for subsystem in run.subsystems.values() %}
         <tr>
@@ -11,7 +15,7 @@
             <td></td>
             {% endif %}
             <td>
-                <a href="{{ url_for("runPage", runNumber = run.runNumber, subsystemName=subsystem.subsystem, requestedFileType="runPage") }}">{{ subsystem.subsystem }} Histograms</a>
+                <a href="{{ url_for("runPage", runNumber = run.runNumber, subsystemName = subsystem.subsystem, requestedFileType="runPage") }}">{{ subsystem.subsystem }} Histograms</a>
             </td>
         </tr>
         {% if subsystem.subsystem in subsystemsWithRootFilesToShow %}

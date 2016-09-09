@@ -7,8 +7,22 @@
         {%- else -%}
             <paper-icon-button id="runNotOngoing" icon="icons:clear"></paper-icon-button>
         {%- endif -%}
-
-        {# Add some markers, preferably by date! #}
     </paper-item>
+</paper-listbox>
+
+<paper-listbox>
+    {% for run in runs -%}
+        {%- if loop.index % anchorFrequency == 0 %}
+            {# NOTE: The order of the runs make look wrong, but the run numbers are still in the right order. #}
+            <a href="#{{ run.runDir  }}" tabindex=-1>
+                <paper-item>
+                    <paper-item-body two-line>
+                        <div>{{ run.prettyName }}</div>
+                        <div secondary>{{ run.timeStamp() }}</div>
+                    </paper-item-body>
+                </paper-item>
+            </a>
+        {% endif -%}
+    {%- endfor -%}
 </paper-listbox>
 {# <div id="drawerWidth" class="hideElement" data-width=256></div> #}

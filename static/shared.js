@@ -308,6 +308,13 @@ function routeLinks() {
             return;
         }
 
+        // Handle anchor links properly
+        // Just a normal anchor - we should allow it to continue
+        // NOTE: If it is just the hash, with nothing more, then it should continue!
+        if ($(this).attr("href").indexOf("#") >= 0 && $(this).attr("href").length > 1) {
+            return;
+        }
+
         // Prevent the link from being evaluated directly
         event.preventDefault();
 
