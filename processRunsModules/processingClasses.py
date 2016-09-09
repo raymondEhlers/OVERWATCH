@@ -34,6 +34,18 @@ class runContainer(persistent.Persistent):
         self.mode = fileMode
         self.subsystems = BTrees.OOBTree.BTree()
 
+    def isRunOngoing(self):
+        """ Checks if one of the subsystems has a new file, indicating that the run is ongoing. """
+        returnValue = False
+        try:
+            # We just take the last subsystem in a given run. Any will do
+            lastSubsystem = self.subsystems[self.subsystems.keys()[-1]]
+            returnValue = lastSubsystem.newFile
+        except KeyError as e:
+            returnValue = False
+
+        return returnValue
+
 ###################################################
 class subsystemContainer(persistent.Persistent):
     """ Subsystem container class.

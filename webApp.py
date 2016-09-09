@@ -169,17 +169,13 @@ def index():
 
     runs = db["runs"]
 
-    try:
-        # TODO: Improvements are needed here...
-        mostRecentRun = runs[runs.keys()[-1]]
-        #if mostRecentRun:
-        subsystemsInLastRun = mostRecentRun.subsystems
-        # We just take the last subsystem in a given run. Any will do
-        lastSubsystem = subsystemsInLastRun[subsystemsInLastRun.keys()[-1]]
-        runOngoing = lastSubsystem.newFile
+    # Determine if a run is ongoing
+    # To do so, we need the most recent run
+    mostRecentRun = runs[runs.keys()[-1]]
+    runOngoing = mostRecentRun.isRunOngoing()
+    if runOngoing:
         runOngoingNumber = mostRecentRun.runNumber
-    except KeyError as e:
-        runOngoing = False
+    else:
         runOngoingNumber = ""
 
     if ajaxRequest == False:
