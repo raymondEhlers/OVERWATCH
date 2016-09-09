@@ -527,20 +527,44 @@ def testingDataArchive():
 @login_required
 def status():
     """ Returns the status of the OVERWATCH sites """
+
+    # Get db
+    runs = db["runs"]
+
+    # Display the status page from the other sites
+    ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
+
     if request.method == "POST":
         # Responds to requests from other overwatch servers to display the status of the site
         # TODO: Implement the responses
         pass
     else:
-        # Display the status page from the other sites
-        ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
+        # Determine if a run is ongoing
+        # To do so, we need the most recent run
+        mostRecentRun = runs[runs.keys()[-1]]
+        runOngoing = mostRecentRun.isRunOngoing()
+        if runOngoing:
+            runOngoingNumber = mostRecentRun.prettyName
+        else:
+            runOngoingNumber = ""
+
+        receiverLogFilePath = os.path.join("receiver", "bin", "EMCReceiver.log")
+        if os.path.exists(receiverLogFilePath):
+            receiverLogLastModified = os.path.getmtime(receiverLogFilePath)
+            lastModified = time.time() - receiverLogLastModified
+            # Display in minutes
+            lastModified = lastModified//60
+            lastModifiedMessage = "{0} minutes ago".format(lastModified)
+        else:
+            lastModified = -1
+            lastModifiedMessage = "Error! Could not find receiver log information!"
 
         statuses = collections.OrderedDict()
         # TODO: Actually query for these values
         statuses["Yale"] = True
-        statuses["PDSF"] = False
         statuses["CERN"] = True
-        statuses["Last received data"] = "%i minutes ago" % 15
+        statuses["Last requested data"] = lastModifiedMessage
+        statuses["Ongoing run?"] = "{0} - {1}".format(runOngoing, runOngoingNumber)
 
         if ajaxRequest == False:
             return render_template("status.html", statuses = statuses)
