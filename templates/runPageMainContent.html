@@ -69,5 +69,10 @@
     {% endif %}
 {% endfor %}
 
+{# Should only get here if nothing was selected! #}
+{%- if firstLoopCompleted == [] -%}
+    <p>Error! No hist group (input: {{ selectedHistGroup }}) or hist (input: {{ selectedHist }}) was selected! Please try again with a different value or contact the admin!</p>
+{%- endif -%}
+
 {# Content for time slices #}
 <div class="hideElement" id="timeSlicesValues" data-mintime="{%- if timeSlice != None -%}{{ timeSlice.timeInMinutesRounded(timeSlice.minUnixTimeRequested) }}{%- else -%}0{%- endif -%}" data-maxtime="{%- if timeSlice != None -%}{{ timeSlice.timeInMinutesRounded(timeSlice.maxUnixTimeRequested) }}{%- else -%}{{ subsystem.runLength }}{%- endif -%}" data-runlength="{{ subsystem.runLength }}" data-hotchannelthreshold="{%- if threshold != [] -%}{{ threshold[0]*1000 }}{%- else -%}0{%- endif -%}" data-rundir="{{ run.runDir }}" data-subsystem="{{ subsystem.subsystem }}" data-histname="{{ selectedHist }}" data-histgroupname="{{ selectedHistGroup }}"></div>

@@ -124,7 +124,7 @@ def validateTimeSlicePostRequest(request, runs):
             if not foundHistGroup:
                 error.setdefault("histGroup", []).append("histGroup {0} is not available in {1}".format(histGroup, run.prettyName))
         else:
-            if histName and histName not in subsystem.histList:
+            if histName and histName not in subsystem.hists.keys():
                 error.setdefault("histName", []).append("histName {0} is not available in {1}".format(histName, run.prettyName))
 
     # Handle an unexpected exception
@@ -132,6 +132,54 @@ def validateTimeSlicePostRequest(request, runs):
         error.setdefault("generalError", []).append("Unknown exception! " + str(e))
 
     return (error, minTime, maxTime, runDir, subsystemName, histGroup, histName)
+
+###################################################
+def validateRunPage(runDir, subsystemName, requestedFileType, runs):
+    """ Validates requests to the run page (handling individual run pages and root files)
+
+    """
+    error = {}
+    try:
+        # Set and validate run
+        if runDir in runs.keys():
+            run = runs[runDir]
+        else:
+            error.setdefault("Run Dir", []).append("{0} is not a valid run dir! Please select a different run!".format(runDir))
+            # Invalidate and we cannot continue
+            return (error, None, None, None, None, None, None, None, None, None)
+
+        # Set subsystem and validate
+        if subsystemName in run.subsystems.keys():
+            subsystem = runs[runDir].subsystems[subsystemName]
+        else:
+            error.setdefault("Subsystem", []).append("{0} is not a valid subsystem in {1}!".format(subsystemName, run.prettyName))
+            # Invalidate and we cannot continue
+            return (error, None, None, None, None, None, None, None, None, None)
+
+        # Validate requested file type
+        if requestedFileType not in ["runPage", "rootFiles"]:
+            error.setdefault("Request Error", []).append("Requested: {0}. Must request either runPage or rootFiles!".format(requestedFileType))
+
+        # Determine request parameters
+        jsRoot = convertRequestToPythonBool("jsRoot", request.args)
+        ajaxRequest = convertRequestToPythonBool("ajaxRequest", request.args)
+        requestedHistGroup = convertRequestToStringWhichMayBeEmpty("histGroup", request.args)
+        requestedHist = convertRequestToStringWhichMayBeEmpty("histName", request.args)
+
+        # Retrieve time slice key and time slice object
+        (timeSliceKey, timeSlice) = retrieveAndValidateTimeSlice(subsystem, error)
+    except KeyError as e:
+        # Format is:
+        # errors = {'hello2': ['world', 'world2'], 'hello': ['world', 'world2']}
+        # See: https://stackoverflow.com/a/2052206
+        error.setdefault("keyError", []).append("Key error in " + e.args[0])
+    except Exception as e:
+        error.setdefault("generalError", []).append("Unknown exception! " + str(e))
+
+    if error == {}:
+        return (error, run, subsystem, requestedFileType, jsRoot, ajaxRequest, requestedHistGroup, requestedHist, timeSliceKey, timeSlice)
+    else:
+        return (error, None, None, None, None, None, None, None, None, None)
 
 ###################################################
 def validateQAPostRequest(request, runList):
@@ -232,8 +280,39 @@ def convertRequestToStringWhichMayBeEmpty(paramName, source):
     print("{0}: {1}".format(paramName, paramValue))
     #if paramValue == "" or paramValue == "None" or paramValue == None:
     # If we see "None", then we want to be certain that it is None!
-    if paramValue == "None":
+    # Otherwise, we will interpret an empty string as a None value!
+    if paramValue == "" or paramValue == "None":
         paramValue = None
+
+    # To get an empty string, we need to explicitly select one with this contrived value.
+    # We need to do this because it is possible for the group selection pattern to be an empty string,
+    # but that is not equal to no hist being selected in a request.
+    if paramValue == "nonSubsystemEmptyString":
+        paramValue = ""
     print("{0}: {1}".format(paramName, paramValue))
 
     return paramValue
+
+###################################################
+def retrieveAndValidateTimeSlice(subsystem, error):
+    """ Retrieves the time slice key and then returns the corresponding time slice (it is exists)
+    
+    """
+    timeSliceKey = request.args.get("timeSliceKey", "", type=str)
+    print("timeSliceKey: {0}".format(timeSliceKey))
+    if timeSliceKey == "" or timeSliceKey == "None" or timeSliceKey == "fullProcessing":
+        timeSlice = None
+    else:
+        timeSliceKey = json.loads(timeSliceKey)
+
+    # Select the time slice if the key is valid
+    if timeSliceKey:
+        #print("timeSlices: {0}, timeSliceKey: {1}".format(subsystem.timeSlices, timeSliceKey))
+        if timeSliceKey in subsystem.timeSlices.keys():
+            timeSlice = subsystem.timeSlices[timeSliceKey]
+        else:
+            error.setdefault("timeSliceKey", []).append("{0} is not a valid time slice key! Valid time slices include {1}. Please select a different time slice!".format(timeSliceKey, subsystem.timeSlices))
+    else:
+        timeSlice = None
+
+    return (timeSliceKey, timeSlice)

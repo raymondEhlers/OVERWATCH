@@ -2,13 +2,15 @@
 {% for histGroup in subsystem.histGroups -%}
     {%- if histGroup.histList != [] -%}
         {# groupSelectionPatten should always be a valid proxy for a valid link #}
-        <a href="#" data-histgroup="{{ histGroup.selectionPattern }}" tabindex=-1>
+        {# The value "nonSubsystemEmptyString" is interpreted in the validation function for the hist group, so it shouldn't show up anywhere else! #}
+        <a href="#" data-histgroup="{%- if histGroup.selectionPattern != "" -%}{{ histGroup.selectionPattern }}{%- else -%}nonSubsystemEmptyString{%- endif -%}" tabindex=-1>
             <paper-item><h3>{{ histGroup.prettyName }}</h3></paper-item>
         </a>
         {%- if histGroup.plotInGrid == False -%}
             {%- for histName in histGroup.histList -%}
                 {% set hist = subsystem.hists[histName] %}
-                <a href="#" data-histname="{{ hist.histName }}" data-histgroup="{{ histGroup.selectionPattern }}" tabindex=-1>
+                {# The value "nonSubsystemEmptyString" is interpreted in the validation function for the hist group, so it shouldn't show up anywhere else! #}
+                <a href="#" data-histname="{{ hist.histName }}" data-histgroup="{%- if histGroup.selectionPattern != "" -%}{{ histGroup.selectionPattern }}{%- else -%}nonSubsystemEmptyString{%- endif -%}" tabindex=-1>
                     <paper-item>{{ hist.prettyName }}</paper-item>
                 </a>
             {%- endfor -%}
