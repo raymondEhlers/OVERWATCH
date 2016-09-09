@@ -88,6 +88,8 @@ def validateTimeSlicePostRequest(request, runs):
             run = runs[runDir]
         else:
             error.setdefault("runDir", []).append("Run dir {0} is not available in runs!".format(runDir))
+            # Invalidate and we cannot continue
+            return (error, None, None, None, None, None, None)
 
         print("error: {0}".format(error))
 
@@ -96,6 +98,8 @@ def validateTimeSlicePostRequest(request, runs):
             subsystem = run.subsystems[subsystemName]
         else:
             error.setdefault("subsystem", []).append("Subsystem name {0} is not available in {1}!".format(subsystemName, run.prettyName))
+            # Invalidate and we cannot continue
+            return (error, None, None, None, None, None, None)
 
         # Check times
         if minTime < 0:
@@ -107,25 +111,7 @@ def validateTimeSlicePostRequest(request, runs):
 
         # Validate histGroup and histName
         # It could be valid for both to be None!
-        if histGroup:
-            print("histGroup: {0}".format(histGroup))
-            #if histGroup in [group.selectionPattern for group in subsystem.histGroups]:
-            foundHistGroup = False
-            for i, group in enumerate(subsystem.histGroups):
-                print("group.selectionPattern: {0}".format(group.selectionPattern))
-                if histGroup == group.selectionPattern:
-                    foundHistGroup = True
-                    if histName and histName not in subsystem.histGroups[i].histList:
-                        error.setdefault("histName", []).append("histName {0} is not available in histGroup {1} in {2}".format(histName, histGroup, run.prettyName))
-
-                    # Found group - we don't need to look at any more groups
-                    break
-
-            if not foundHistGroup:
-                error.setdefault("histGroup", []).append("histGroup {0} is not available in {1}".format(histGroup, run.prettyName))
-        else:
-            if histName and histName not in subsystem.hists.keys():
-                error.setdefault("histName", []).append("histName {0} is not available in {1}".format(histName, run.prettyName))
+        validateHistGroupAndHistName(histGroup, histName, subsystem, error)
 
     # Handle an unexpected exception
     except Exception as e:
@@ -292,6 +278,38 @@ def convertRequestToStringWhichMayBeEmpty(paramName, source):
     print("{0}: {1}".format(paramName, paramValue))
 
     return paramValue
+
+###################################################
+def validateHistGroupAndHistName(histGroup, histName, subsystem, error):
+    """ Validates hist group and hist name.
+
+    NOTE:
+        As of Sept 2016, this check is not performed on the run page because it seems unnecessary
+        and I (rehlers) am concerned about performace. This should be revisited in the future when
+        more is known about how the site performs.
+
+    NOTE:
+        It could be valid for both to be None!
+    """
+    if histGroup:
+        print("histGroup: {0}".format(histGroup))
+        #if histGroup in [group.selectionPattern for group in subsystem.histGroups]:
+        foundHistGroup = False
+        for i, group in enumerate(subsystem.histGroups):
+            print("group.selectionPattern: {0}".format(group.selectionPattern))
+            if histGroup == group.selectionPattern:
+                foundHistGroup = True
+                if histName and histName not in subsystem.histGroups[i].histList:
+                    error.setdefault("histName", []).append("histName {0} is not available in histGroup {1} in {2}".format(histName, histGroup, run.prettyName))
+
+                # Found group - we don't need to look at any more groups
+                break
+
+        if not foundHistGroup:
+            error.setdefault("histGroup", []).append("histGroup {0} is not available in {1}".format(histGroup, run.prettyName))
+    else:
+        if histName and histName not in subsystem.hists.keys():
+            error.setdefault("histName", []).append("histName {0} is not available in {1}".format(histName, run.prettyName))
 
 ###################################################
 def retrieveAndValidateTimeSlice(subsystem, error):
