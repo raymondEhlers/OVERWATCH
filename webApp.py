@@ -381,8 +381,8 @@ def timeSlice():
 
             if not isinstance(returnValue, collections.Mapping):
                 timeSliceKey = returnValue
-                if timeSliceKey == "fullProcessing":
-                    timeSliceKey = None
+                #if timeSliceKey == "fullProcessing":
+                #    timeSliceKey = None
                 # We always want to use ajax here
                 return redirect(url_for("runPage",
                                         runNumber = runs[runDir].runNumber,

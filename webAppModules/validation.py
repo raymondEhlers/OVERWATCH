@@ -300,19 +300,25 @@ def retrieveAndValidateTimeSlice(subsystem, error):
     """
     timeSliceKey = request.args.get("timeSliceKey", "", type=str)
     print("timeSliceKey: {0}".format(timeSliceKey))
-    if timeSliceKey == "" or timeSliceKey == "None" or timeSliceKey == "fullProcessing":
+    if timeSliceKey == "" or timeSliceKey == "None":
         timeSlice = None
+        timeSliceKey = None
     else:
         timeSliceKey = json.loads(timeSliceKey)
 
     # Select the time slice if the key is valid
     if timeSliceKey:
         #print("timeSlices: {0}, timeSliceKey: {1}".format(subsystem.timeSlices, timeSliceKey))
-        if timeSliceKey in subsystem.timeSlices.keys():
+        # Filter out "fullProcessing"
+        if timeSliceKey == "fullProcessing":
+            timeSlice = None
+        elif timeSliceKey in subsystem.timeSlices.keys():
             timeSlice = subsystem.timeSlices[timeSliceKey]
         else:
             error.setdefault("timeSliceKey", []).append("{0} is not a valid time slice key! Valid time slices include {1}. Please select a different time slice!".format(timeSliceKey, subsystem.timeSlices))
+            timeSlice = None
     else:
+        # Should be redundant, but left for completeness
         timeSlice = None
 
     return (timeSliceKey, timeSlice)
