@@ -16,6 +16,8 @@ import subprocess
 import jinja2
 import json
 import collections 
+# For server status
+import requests
 
 # Flask
 from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, Markup, jsonify
@@ -224,9 +226,10 @@ def runPage(runNumber, subsystemName, requestedFileType):
     else:
         print("Error: {0}".format(error))
 
-    if ajaxRequest == False:
+    if ajaxRequest != True:
         if error == {}:
             if requestedFileType == "runPage":
+                # Attempt to use a subsystem specific run page if available
                 runPageName = subsystemName + "runPage.html"
                 if runPageName not in serverParameters.availableRunPageTemplates:
                     runPageName = runPageName.replace(subsystemName, "")
@@ -238,30 +241,52 @@ def runPage(runNumber, subsystemName, requestedFileType):
                                                   imgFilenameTemplate = imgFilenameTemplate,
                                                   jsRoot = jsRoot, timeSlice = timeSlice)
                 except jinja2.exceptions.TemplateNotFound as e:
-                    returnValue = render_template("error.html", errors={"Template Error": ["Request template: \"{0}\", but it was not found!".format(e.name)]})
+                    error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
             elif requestedFileType == "rootFiles":
+                # Subsystem specific run pages are not available since they don't seem to be necessary
                 returnValue = render_template("rootfiles.html", run = run, subsystem = subsystemName)
-        else:
+            else:
+                # Redundant, but good to be careful
+                error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
+
+        print("error: {0}".format(error))
+        if error != {}:
             returnValue = render_template("error.html", errors = error)
 
         return returnValue
     else:
         if error == {}:
             if requestedFileType == "runPage":
-                drawerContent = render_template("runPageDrawer.html", run = run, subsystem = subsystem,
-                                                selectedHistGroup = requestedHistGroup, selectedHist = requestedHist,
-                                                jsonFilenameTemplate = jsonFilenameTemplate,
-                                                imgFilenameTemplate = imgFilenameTemplate,
-                                                jsRoot = jsRoot, timeSlice = timeSlice)
-                mainContent = render_template("runPageMainContent.html", run = run, subsystem = subsystem,
-                                              selectedHistGroup = requestedHistGroup, selectedHist = requestedHist,
-                                              jsonFilenameTemplate = jsonFilenameTemplate,
-                                              imgFilenameTemplate = imgFilenameTemplate,
-                                              jsRoot = jsRoot, timeSlice = timeSlice)
+               # Drawer
+                runPageDrawerName = subsystemName + "runPageDrawer.html"
+                if runPageDrawerName not in serverParameters.availableRunPageTemplates:
+                    runPageDrawerName = runPageDrawerName.replace(subsystemName, "")
+                # Main content
+                runPageMainContentName = subsystemName + "runPageMainContent.html"
+                if runPageMainContentName not in serverParameters.availableRunPageTemplates:
+                    runPageMainContentName = runPageMainContentName.replace(subsystemName, "")
+
+                try:
+                    drawerContent = render_template(runPageDrawerName, run = run, subsystem = subsystem,
+                                                    selectedHistGroup = requestedHistGroup, selectedHist = requestedHist,
+                                                    jsonFilenameTemplate = jsonFilenameTemplate,
+                                                    imgFilenameTemplate = imgFilenameTemplate,
+                                                    jsRoot = jsRoot, timeSlice = timeSlice)
+                    mainContent = render_template(runPageMainContentName, run = run, subsystem = subsystem,
+                                                  selectedHistGroup = requestedHistGroup, selectedHist = requestedHist,
+                                                  jsonFilenameTemplate = jsonFilenameTemplate,
+                                                  imgFilenameTemplate = imgFilenameTemplate,
+                                                  jsRoot = jsRoot, timeSlice = timeSlice)
+                except jinja2.exceptions.TemplateNotFound as e:
+                    error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
             elif requestedFileType == "rootFiles":
                 drawerContent = ""
                 mainContent = render_template("rootfilesMainContent.html", run = run, subsystem = subsystemName)
-        else:
+            else:
+                # Redundant, but good to be careful
+                error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
+
+        if error != {}:
             drawerContent = ""
             mainContent =  render_template("errorMainContent.html", errors = error)
 
@@ -559,9 +584,25 @@ def status():
             lastModified = -1
             lastModifiedMessage = "Error! Could not find receiver log information!"
 
+        # Example implementation
+        # TODO: Make this more flexible and make all requests with it!
+        serverError = {}
+        statusResult = ""
+        site = "http://127.0.0.1:8850"
+        try:
+            serverRequest = requests.get(site + "/status", timeout = 0.5)
+            if serverRequest.request_code != 200:
+                serverError.setdefault("Request error", []).append("Request to \"{0}\" returned error response {1}!".format(site, serverRequest.request_code))
+            else:
+                statusResult = "Site is up!"
+        except requests.exceptions.Timeout as e:
+            serverError.setdefault("Timeout error", []).append("Request to \"{0}\" timed out with error {1}!".format(site, e))
+
+        if serverError != {}:
+            statusResult = serverError
+
         statuses = collections.OrderedDict()
-        # TODO: Actually query for these values
-        statuses["Yale"] = True
+        statuses["Yale"] = "{0}".format(statusResult)
         statuses["CERN"] = True
         statuses["Last requested data"] = lastModifiedMessage
         statuses["Ongoing run?"] = "{0} - {1}".format(runOngoing, runOngoingNumber)

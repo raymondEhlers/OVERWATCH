@@ -16,6 +16,9 @@ Flask-ZODB
 bcrypt
 Flask-Bcrypt
 
+# Status page
+requests
+
 # WSGI
 flup6
 # Not necessarily required
