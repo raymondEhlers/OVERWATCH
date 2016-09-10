@@ -71,8 +71,9 @@ def redirectBack(endpoint, **values):
     # Also prevent downloading test data since it would lead to a confusing situation where the user stays
     # on the login page after logging in.
     # This logout and test data specific change is the only one made in these functions
-    if not target or not isSafeUrl(target) or target == url_for("logout") or target == url_for("testingDataArchive"):
+    if not target or not isSafeUrl(target) or "logout" in target or "testingDataArchive" in target:
         target = url_for(endpoint, **values)
+    #print("target for redirectBack: {0}".format(target))
     return redirect(target)
 
 

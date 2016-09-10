@@ -88,8 +88,10 @@ def login():
     Unauthenticated users are also redirected here if they try to access something restricted.
     After logging in, it should then forward them to resource they requested.
     """
-    print("request: {0}".format(request.args))
+    print("request.args: {0}".format(request.args))
+    print("request.form: {0}".format(request.form))
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
+    #previousUsername = validation.convertPreviousUsernameOrNextToValue("previousUsername", request.args)
     if "next" in request.args:
         # Check the next paramter
         nextParam = request.args.get("next", "", type=str)
@@ -134,6 +136,7 @@ def login():
                 login_user(validUser, remember=True)
 
                 flash("Login Success for %s." % validUser.id)
+                print("Login Success for %s." % validUser.id)
 
                 return routing.redirectBack("index")
             else:
@@ -174,13 +177,16 @@ def login():
 def logout():
     """ Logout function.
 
-    Redirects back to :func:`.index`, which leads back to the login page.
+    NOTE:
+        Careful in changing the routing, as this is hard coded in :func:`~webAppModules.routing.redirectBack()`!
+
+    Redirects back to :func:`.login`, which willl redirect back to index if the user is logged in.
     """
     previousUsername = current_user.id
     logout_user()
 
     flash("User logged out!")
-    return redirect(url_for("index", previousUsername = previousUsername))
+    return redirect(url_for("login", previousUsername = previousUsername))
 
 ###################################################
 @app.route("/contact")
@@ -569,6 +575,9 @@ def testingDataArchive():
     """ Creates a zip archive to download data for QA function testing.
 
     It will return at most the 5 most recent runs. The archive contains the combined file for all subsystems.
+
+    NOTE:
+        Careful in changing the routing, as this is hard coded in :func:`~webAppModules.routing.redirectBack()`!
 
     Args:
         None
