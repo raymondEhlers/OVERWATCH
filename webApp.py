@@ -91,31 +91,7 @@ def login():
     print("request.args: {0}".format(request.args))
     print("request.form: {0}".format(request.form))
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
-    #previousUsername = validation.convertPreviousUsernameOrNextToValue("previousUsername", request.args)
-    if "next" in request.args:
-        # Check the next paramter
-        nextParam = request.args.get("next", "", type=str)
-        print("nextParam: {0}".format(nextParam))
-        if nextParam != "":
-            nextParam = urlparse.urlparse(nextParam)
-            print("nextParam: {0}".format(nextParam))
-            # Get the actual parameters
-            params = urlparse.parse_qs(nextParam.query)
-            print("params: {0}".format(params))
-            try:
-                # Has a one entry list
-                previousUsername = params.get("previousUsername", "")[0]
-            except (KeyError, IndexError) as e:
-                print("Error in getting previousUsername: {0}".format(e.args[0]))
-                previousUsername = ""
-    else:
-        # Just try to get the previous username directly
-        previousUsername = request.args.get("previousUsername", "", type=str)
-
-    print("previousUsername: {0}".format(previousUsername))
-    #if previousUsername != "":
-    #    previousUsername = json.dumps(previousUsername)
-    print("previousUsername: {0}".format(previousUsername))
+    previousUsername = validation.extractValueFromNextOrRequest("previousUsername")
 
     errorValue = None
     nextValue = routing.getRedirectTarget()
@@ -135,8 +111,8 @@ def login():
                 # Login the user into flask
                 login_user(validUser, remember=True)
 
-                flash("Login Success for %s." % validUser.id)
-                print("Login Success for %s." % validUser.id)
+                flash("Login Success for {0}.".format(validUser.id))
+                print("Login Success for {0}.".format(validUser.id))
 
                 return routing.redirectBack("index")
             else:
@@ -160,8 +136,7 @@ def login():
 
     # If we visit the login page, but we are already authenticated, then send to the index page.
     if current_user.is_authenticated:
-        print("current_user.id: {0}".format(current_user.id))
-        print("Redirecting...")
+        print("Redirecting logged in user \"{0}\" to index...".format(current_user.id))
         return redirect(url_for("index", ajaxRequest = json.dumps(ajaxRequest)))
 
     if ajaxRequest == False:
@@ -221,7 +196,7 @@ def index():
     """ This is the main page for logged in users. It always redirects to the run list.
     
     """
-    print("request: {0}".format(request.args))
+    print("request.args: {0}".format(request.args))
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
     runs = db["runs"]
@@ -238,12 +213,12 @@ def index():
     # Number of runs
     numberOfRuns = len(runs.keys())
     # We want 15 anchors
+    # NOTE: We need to round it to an int to ensure that mod works.
     anchorFrequency = int(round(numberOfRuns/15.0))
-    print("anchorFrequency: {0}".format(anchorFrequency))
 
     if ajaxRequest != True:
-        print("runs: %d" % len(runs.keys()))
-        return render_template("runList.html", drawerRuns = reversed(runs.values()), mainContentRuns = reversed(runs.values()),
+        return render_template("runList.html", drawerRuns = reversed(runs.values()),
+                                mainContentRuns = reversed(runs.values()),
                                 runOngoing = runOngoing,
                                 runOngoingNumber = runOngoingNumber,
                                 subsystemsWithRootFilesToShow = serverParameters.subsystemsWithRootFilesToShow,

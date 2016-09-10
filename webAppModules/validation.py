@@ -340,3 +340,35 @@ def retrieveAndValidateTimeSlice(subsystem, error):
         timeSlice = None
 
     return (timeSliceKey, timeSlice)
+
+###################################################
+def extractValueFromNextOrRequest(paramName):
+    """ Extract value from the next parameter or directly from the request.
+    
+    """
+    # Attempt to extract from the next parameter if it exists
+    paramValue = ""
+    if "next" in request.args:
+        # Check the next paramter
+        nextParam = request.args.get("next", "", type=str)
+        #print("nextParam: {0}".format(nextParam))
+        if nextParam != "":
+            nextParam = urlparse.urlparse(nextParam)
+            #print("nextParam: {0}".format(nextParam))
+            # Get the actual parameters
+
+            params = urlparse.parse_qs(nextParam.query)
+            #print("params: {0}".format(params))
+            try:
+                # Has a one entry list
+                paramValue = params.get(paramName, "")[0]
+            except (KeyError, IndexError) as e:
+                print("Error in getting {0}: {1}".format(paramName, e.args[0]))
+                paramValue = ""
+
+    # Just try to extract directly if it isn't in the next parameter
+    if paramValue == "":
+        paramValue = request.args.get(paramName, "", type=str)
+    print("{0}: {1}".format(paramName, paramValue))
+
+    return paramValue
