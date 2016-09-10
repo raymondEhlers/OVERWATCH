@@ -63,21 +63,22 @@ class User(UserMixin):
     users = serverParameters._users
 
     @classmethod
-    def getUser(cls, id):
+    def getUser(cls, username):
         """ Retrieve the username and password of a user.
 
         Used by ``load_user()`` to maintain a logged in user session.
 
         Args:
-            id (str): Username to retrieve
+            username (str): Username to retrieve
 
         Returns:
             :class:`.User`: Returns an instance of the :class:`.User` class if the user exists. Otherwise, it
             returns None.
         """
-        tempUser = cls.users.get(id)
-        if tempUser:
-            return User(id, tempUser)
+        userPasswordHash = cls.users.get(username)
+        # If we can retrieve the hash, then it means that we have a valid user
+        if userPasswordHash:
+            return User(username, userPasswordHash)
         else:
             return None
 

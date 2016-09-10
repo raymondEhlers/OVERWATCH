@@ -18,9 +18,14 @@ import json
 import collections 
 # For server status
 import requests
+# Parse get requests
+try:
+    import urllib.parse as urlparse
+except ImportError:
+    import urlparse
 
 # Flask
-from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, Markup, jsonify
+from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, Markup, jsonify, session
 from flask.ext.login import LoginManager, login_user, logout_user, login_required, current_user
 from flask.ext.bcrypt import Bcrypt
 from flask.ext.zodb import ZODB
@@ -85,9 +90,35 @@ def login():
     """
     print("request: {0}".format(request.args))
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
+    if "next" in request.args:
+        # Check the next paramter
+        nextParam = request.args.get("next", "", type=str)
+        print("nextParam: {0}".format(nextParam))
+        if nextParam != "":
+            nextParam = urlparse.urlparse(nextParam)
+            print("nextParam: {0}".format(nextParam))
+            # Get the actual parameters
+            params = urlparse.parse_qs(nextParam.query)
+            print("params: {0}".format(params))
+            try:
+                # Has a one entry list
+                previousUsername = params.get("previousUsername", "")[0]
+            except (KeyError, IndexError) as e:
+                print("Error in getting previousUsername: {0}".format(e.args[0]))
+                previousUsername = ""
+    else:
+        # Just try to get the previous username directly
+        previousUsername = request.args.get("previousUsername", "", type=str)
+
+    print("previousUsername: {0}".format(previousUsername))
+    #if previousUsername != "":
+    #    previousUsername = json.dumps(previousUsername)
+    print("previousUsername: {0}".format(previousUsername))
 
     errorValue = None
     nextValue = routing.getRedirectTarget()
+
+    # A post request Attempt to login the user in
     if request.method == "POST":
         # Validate the request.
         (errorValue, username, password) = validation.validateLoginPostRequest(request)
@@ -108,8 +139,25 @@ def login():
             else:
                 errorValue = "Login failed with invalid credentials"
 
+    if previousUsername == serverParameters.defaultUsername:
+        print("Equal!")
+    print("serverParameters.defaultUsername: {0}".format(serverParameters.defaultUsername))
+    # If we are not authenticated and we have a default username set and the previous username is 
+    if not current_user.is_authenticated and serverParameters.defaultUsername and previousUsername != serverParameters.defaultUsername:
+        # Clear previous flashes which will be confusing to the user
+        # See: https://stackoverflow.com/a/19525521
+        session.pop('_flashes', None)
+        # Get the default user
+        defaultUser = auth.User.getUser(serverParameters.defaultUsername)
+        # Login the user into flask
+        login_user(defaultUser, remember=True)
+        # Note for the user
+        print("Logged into user \"{0}\" automatically!".format(current_user.id))
+        flash("Logged into user \"{0}\" automatically!".format(current_user.id))
+
     # If we visit the login page, but we are already authenticated, then send to the index page.
     if current_user.is_authenticated:
+        print("current_user.id: {0}".format(current_user.id))
         print("Redirecting...")
         return redirect(url_for("index", ajaxRequest = json.dumps(ajaxRequest)))
 
@@ -128,10 +176,11 @@ def logout():
 
     Redirects back to :func:`.index`, which leads back to the login page.
     """
+    previousUsername = current_user.id
     logout_user()
 
     flash("User logged out!")
-    return redirect(url_for("index"))
+    return redirect(url_for("index", previousUsername = previousUsername))
 
 ###################################################
 @app.route("/contact")

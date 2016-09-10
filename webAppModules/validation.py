@@ -35,8 +35,8 @@ def validateLoginPostRequest(request):
     """
     errorValue = None
     try:
-        username = request.form["username"]
-        password = request.form["password"]
+        username = request.form.get("username", type=str)
+        password = request.form.get("password", type=str)
     except KeyError as e:
         errorValue = "Key error in " + e.args[0] + ". Please enter a username and password in the form."
 

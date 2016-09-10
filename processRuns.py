@@ -30,11 +30,6 @@ gROOT.ProcessLine("gErrorIgnoreLevel = kWarning;")
 import os
 import time
 import uuid
-try:
-    import cPickle as pickle
-    #import pickle
-except ImportError:
-    import pickle
 
 # ZODB
 import ZODB, ZODB.FileStorage

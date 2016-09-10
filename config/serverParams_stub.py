@@ -38,6 +38,9 @@ class serverParameters(object):
     #: Setup Bcrypt.
     bcryptLogRounds = 12
 
+    #: Default user name
+    defaultUsername = ""
+
     _users = {"username": generate_password_hash("password", bcryptLogRounds)}
     """ Contains the users for authenticating on the server
     This could be more complex, but there isn't any point for such a simple project
@@ -124,6 +127,7 @@ print("\nServer Parameters:")
 print("ipAddress:", serverParameters.ipAddress)
 print("port:", serverParameters.port)
 print("bcryptLogRounds:", serverParameters.bcryptLogRounds)
+print("defaultUsername:", serverParameters.defaultUsername)
 print("basePath:", serverParameters.basePath)
 print("staticFolder:", serverParameters.staticFolder)
 print("staticURLPath:", serverParameters.staticURLPath)
