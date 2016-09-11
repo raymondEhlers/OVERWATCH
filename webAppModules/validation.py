@@ -72,6 +72,8 @@ def validateTimeSlicePostRequest(request, runs):
         maxTime = request.form.get("maxTime", None, type=float)
         runDir = request.form.get("runDir", None, type=str)
         subsystemName = request.form.get("subsystem", None, type=str)
+        scaleHists = request.form.get("scaleHists", False, type=str)
+        hotChannelThreshold = request.form.get("hotChannelThreshold", 0, type=int)
         histGroup = convertRequestToStringWhichMayBeEmpty("histGroup", request.form)
         histName = convertRequestToStringWhichMayBeEmpty("histName", request.form)
     # See: https://stackoverflow.com/a/23139085
@@ -89,9 +91,7 @@ def validateTimeSlicePostRequest(request, runs):
         else:
             error.setdefault("runDir", []).append("Run dir {0} is not available in runs!".format(runDir))
             # Invalidate and we cannot continue
-            return (error, None, None, None, None, None, None)
-
-        print("error: {0}".format(error))
+            return (error, None, None, None, None, None, None, None, None)
 
         # Retrieve subsystem
         if subsystemName in run.subsystems.keys():
@@ -99,7 +99,7 @@ def validateTimeSlicePostRequest(request, runs):
         else:
             error.setdefault("subsystem", []).append("Subsystem name {0} is not available in {1}!".format(subsystemName, run.prettyName))
             # Invalidate and we cannot continue
-            return (error, None, None, None, None, None, None)
+            return (error, None, None, None, None, None, None, None, None)
 
         # Check times
         if minTime < 0:
@@ -113,11 +113,21 @@ def validateTimeSlicePostRequest(request, runs):
         # It could be valid for both to be None!
         validateHistGroupAndHistName(histGroup, histName, subsystem, error)
 
+        # Processing options
+        # Ensure scaleHists is a bool
+        if scaleHists != False:
+            scaleHists = True
+
+        # Check hot channel threshold
+        # NOTE: The max hot channel threshold (hotChannelThreshold) :is also defined here!
+        if hotChannelThreshold < 0 or hotChannelThreshold > 1000:
+            error.setdefault("hotChannelThreshold", []).append("Hot channel threshold {0} is outside the possible range of 0-1000!".format(hotChannelThreshold))
+
     # Handle an unexpected exception
     except Exception as e:
         error.setdefault("generalError", []).append("Unknown exception! " + str(e))
 
-    return (error, minTime, maxTime, runDir, subsystemName, histGroup, histName)
+    return (error, minTime, maxTime, runDir, subsystemName, histGroup, histName, scaleHists, hotChannelThreshold)
 
 ###################################################
 def validateRunPage(runDir, subsystemName, requestedFileType, runs):

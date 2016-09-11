@@ -198,12 +198,12 @@
         <form is="iron-form" id="timeSlicesForm" method="post" action="/timeSlice">
             <p>Time Dependent Merge</p>
             <p>Min:</p>
-            <paper-slider id="timeSlicesFormMinTime" name="minTime" value="0" max="1" editable></paper-slider>
+            <paper-slider id="timeSlicesFormMinTime" name="minTime" value="0" max="1" editable pin></paper-slider>
             <p>Max:</p>
-            <paper-slider id="timeSlicesFormMaxTime" name="maxTime" value="0" max="1" editable></paper-slider>
+            <paper-slider id="timeSlicesFormMaxTime" name="maxTime" value="0" max="1" editable pin></paper-slider>
             <paper-toggle-button id="scaleHistsToggle"name="scaleHists" checked >Scale by nEvents</paper-toggle-button>
             <p>Hot channel threshold (x1000)</p>
-            <paper-slider id="timeSlicesFormHotChannelThreshold" name="hotChannelThreshold" value="0" max="100" editable></paper-slider>
+            <paper-slider id="timeSlicesFormHotChannelThreshold" name="hotChannelThreshold" value="0" max="1000" editable pin></paper-slider>
             <input id="timeSlicesFormHistGroupName" name="histGroup" type="hidden" value="val"/>
             <input id="timeSlicesFormHistName" name="histName" type="hidden" value="val"/>
             <input id="timeSlicesFormRunDir" name="runDir" type="hidden" value="val"/>

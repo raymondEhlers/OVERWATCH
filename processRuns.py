@@ -336,7 +336,7 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
     return returnValues
 
 ###################################################
-def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes):
+def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes, scaleHists, hotChannelThreshold):
     # User filter time, in unix time. This makes it possible to compare to the startOfRun and endOfRun times
     minTimeCutUnix = minTimeMinutes*60 + subsystem.startOfRun
     maxTimeCutUnix = maxTimeMinutes*60 + subsystem.startOfRun
@@ -348,6 +348,7 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
         maxTimeCutUnix = subsystem.endOfRun
 
     # Return immediately if it is just a full time request
+    # Store processing settings in dict? - It would have to be a user opt in feature
     # TODO: We will need to continue here if we change settings
     if minTimeMinutes == 0 and maxTimeMinutes == round(subsystem.runLength):
         return ("fullProcessing", False, None)
@@ -406,7 +407,7 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
     return (uuidDictKey, True, None)
 
 ###################################################
-def processTimeSlices(timeSliceRunNumber, minTimeRequested, maxTimeRequested, subsystemName, runs):
+def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequested, subsystemName, scaleHists = None, hotChannelThreshold = -1):
     """ Processes a given run using only data in a given time range (ie time slices).
 
     Usually invoked via the web app on a particular run page.
@@ -450,7 +451,7 @@ def processTimeSlices(timeSliceRunNumber, minTimeRequested, maxTimeRequested, su
     print("runLength: {0}".format(subsystem.runLength))
 
     # Validate and create time slice
-    (timeSliceKey, newlyCreated, errors) = validateAndCreateNewTimeSlice(run, subsystem, minTimeRequested, maxTimeRequested)
+    (timeSliceKey, newlyCreated, errors) = validateAndCreateNewTimeSlice(run, subsystem, minTimeRequested, maxTimeRequested, scaleHists, hotChannelThreshold)
     if errors:
         return errors
     # It has already been merged and processed
@@ -757,25 +758,27 @@ if __name__ == "__main__":
 
     ## Test processTimeSlices()
     ## TEMP
-    #runs = pickle.load( open(os.path.join("data", "runs.p"), "rb") )
+    #connection = ZODB.connection(processingParameters.databaseLocation)
+    #dbRoot = connection.root()
+    #runs = dbRoot["runs"]
     ## ENDTEMP
 
     #print("\n\t\t0-4:")
-    #returnValue = processTimeSlices("Run300005", 0, 4, "EMC", runs)
+    #returnValue = processTimeSlices(runs, "Run300005", 0, 4, "EMC")
     #print("0-4 UUID: {0}".format(returnValue))
 
     #print("\n\t\t0-3:")
-    #returnValue = processTimeSlices("Run300005", 0, 3, "EMC", runs)
+    #returnValue = processTimeSlices(runs, "Run300005", 0, 3, "EMC")
     #print("0-3 UUID: {0}".format(returnValue))
 
     #print("\n\t\t0-3 repeat:")
-    #returnValue = processTimeSlices("Run300005", 0, 3, "EMC", runs)
+    #returnValue = processTimeSlices(runs, "Run300005", 0, 3, "EMC")
     #print("0-3 repeat UUID: {0}".format(returnValue))
 
     #print("\n\t\t1-4:")
-    #returnValue = processTimeSlices("Run300005", 1, 4, "EMC", runs)
+    #returnValue = processTimeSlices(runs, "Run300005", 1, 4, "EMC")
     #print("1-4 UUID: {0}".format(returnValue))
 
     #print("\n\t\t1-3:")
-    #returnValue = processTimeSlices("Run300005", 1, 3, "EMC", runs)
+    #returnValue = processTimeSlices(runs, "Run300005", 1, 3, "EMC")
     #print("1-3 UUID: {0}".format(returnValue))

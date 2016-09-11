@@ -427,8 +427,7 @@ def timeSlice():
         runs = db["runs"]
 
         # Validates the request
-        # TODO: Handle scaleHists and hotChannelThreshold options!
-        (error, minTime, maxTime, runDir, subsystem, histGroup, histName) = validation.validateTimeSlicePostRequest(request, runs)
+        (error, minTime, maxTime, runDir, subsystem, histGroup, histName, scaleHists, hotChannelThreshold) = validation.validateTimeSlicePostRequest(request, runs)
 
         if error == {}:
             # Print input values
@@ -440,7 +439,7 @@ def timeSlice():
             print("histName: {0}".format(histName))
 
             # Process the time slice
-            returnValue = processRuns.processTimeSlices(runDir, minTime, maxTime, subsystem, runs)
+            returnValue = processRuns.processTimeSlices(runs, runDir, minTime, maxTime, subsystem, scaleHists, hotChannelThreshold)
 
             print("returnValue: {0}".format(returnValue))
             print("runs[runDir].subsystems[subsystem].timeSlices: {0}".format(runs[runDir].subsystems[subsystem].timeSlices))
