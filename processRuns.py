@@ -745,6 +745,19 @@ def processAllRuns():
         if templateDataDirName != None:
             utilities.rsyncData(templateDataDirName, processingParameters.remoteUsername, processingParameters.remoteSystems, processingParameters.remoteFileLocations)
 
+    # Update receiver last modified time if the log exists
+    receiverLogFileDir = os.path.join("receiver", "bin")
+    receiverLogFilePath = os.path.join(receiverLogFileDir,
+                                       next(( name for name in os.listdir(receiverLogFileDir) if "Receiver.log" in name), None))
+    if processingParameters.beVerbose:
+        print("INFO: receiverLogFilePath: {0}".format(receiverLogFilePath))
+
+    if receiverLogFilePath and os.path.exists(receiverLogFilePath):
+        if processingParameters.beVerbose:
+            print("INFO: Updating receiver log last modified time!")
+        receiverLogLastModified = os.path.getmtime(receiverLogFilePath)
+        dbRoot["receiverLogLastModified"] = receiverLogLastModified
+
     # Ensure that any additional changes are committed
     transaction.commit()
     connection.close()

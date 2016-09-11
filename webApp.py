@@ -614,22 +614,21 @@ def status():
     mostRecentRun = runs[runs.keys()[-1]]
     runOngoing = mostRecentRun.isRunOngoing()
     if runOngoing:
-        runOngoingNumber = mostRecentRun.prettyName
+        runOngoingNumber = "- " + mostRecentRun.prettyName
     else:
         runOngoingNumber = ""
     # Add to status
-    statuses["Ongoing run?"] = "{0} - {1}".format(runOngoing, runOngoingNumber)
+    statuses["Ongoing run?"] = "{0} {1}".format(runOngoing, runOngoingNumber)
 
-    receiverLogFilePath = os.path.join("receiver", "bin", "EMCReceiver.log")
-    if os.path.exists(receiverLogFilePath):
-        receiverLogLastModified = os.path.getmtime(receiverLogFilePath)
+    if db.has_key("receiverLogLastModified"):
+        receiverLogLastModified = db["receiverLogLastModified"]
         lastModified = time.time() - receiverLogLastModified
         # Display in minutes
-        lastModified = lastModified//60
+        lastModified = int(lastModified//60)
         lastModifiedMessage = "{0} minutes ago".format(lastModified)
     else:
         lastModified = -1
-        lastModifiedMessage = "Error! Could not find receiver log information!"
+        lastModifiedMessage = "Error! Could not retrieve receiver log information!"
     # Add to status
     statuses["Last requested data"] = lastModifiedMessage
 
