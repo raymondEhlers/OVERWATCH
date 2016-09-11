@@ -422,7 +422,7 @@ def timeSlice():
     """
     #print("request.args: {0}".format(request.args))
     print("request.form: {0}".format(request.form))
-    ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.form)
+    # We don't get ajaxRequest because this request should always be made via ajax
     jsRoot = validation.convertRequestToPythonBool("jsRoot", request.form)
 
     if request.method == "POST":
@@ -430,7 +430,7 @@ def timeSlice():
         runs = db["runs"]
 
         # Validates the request
-        (error, minTime, maxTime, runDir, subsystem, histGroup, histName, scaleHists, hotChannelThreshold) = validation.validateTimeSlicePostRequest(request, runs)
+        (error, minTime, maxTime, runDir, subsystem, histGroup, histName, inputProcessingOptions) = validation.validateTimeSlicePostRequest(request, runs)
 
         if error == {}:
             # Print input values
@@ -442,7 +442,7 @@ def timeSlice():
             print("histName: {0}".format(histName))
 
             # Process the time slice
-            returnValue = processRuns.processTimeSlices(runs, runDir, minTime, maxTime, subsystem, scaleHists, hotChannelThreshold)
+            returnValue = processRuns.processTimeSlices(runs, runDir, minTime, maxTime, subsystem, inputProcessingOptions)
 
             print("returnValue: {0}".format(returnValue))
             print("runs[runDir].subsystems[subsystem].timeSlices: {0}".format(runs[runDir].subsystems[subsystem].timeSlices))

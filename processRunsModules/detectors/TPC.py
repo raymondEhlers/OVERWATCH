@@ -14,11 +14,11 @@ from processRunsModules import processingClasses
 
 ######################################################################################################
 ######################################################################################################
-# QA Functions
+# Monitoring functions
 ######################################################################################################
 ######################################################################################################
 
-def generalTPCOptions(subsystem, hist):
+def generalTPCOptions(subsystem, hist, processingOptions):
     # Show TPC titles (by request from Mikolaj)
     if "EMC" not in hist.histName:
         ROOT.gStyle.SetOptTitle(1)
@@ -48,4 +48,3 @@ def createTPCHistogramGroups(subsystem):
     if subsystem.subsystem == subsystem.fileLocationSubsystem:
         subsystem.histGroups.append(processingClasses.histogramGroupContainer("Non TPC", ""))
 
-################################################### 

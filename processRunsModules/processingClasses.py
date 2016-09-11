@@ -154,6 +154,11 @@ class subsystemContainer(persistent.Persistent):
         # nEvents
         self.nEvents = 1
 
+        # Processing options
+        # Implemented by the detector to note how it was processed that may be changed during time slice processing
+        # This allows us return full processing when appropriate
+        self.processingOptions = persistent.mapping.PersistentMapping()
+
     @staticmethod
     def prettyPrintUnixTime(unixTime):
         """ Pretty print the unix time. Needed mostly in templates were arbitrary functions are not allowed.
@@ -188,8 +193,14 @@ class timeSliceContainer(persistent.Persistent):
         # Create filename
         self.filename = fileContainer(self.filenamePrefix + ".root")
 
+        # Processing options
+        # Implemented by the detector to note how it was processed that may be changed during time slice processing
+        # This allows us return full processing when appropriate
+        # Same as the type of options implemented in the subsystemContainer!
+        self.processingOptions = persistent.mapping.PersistentMapping()
+
     def timeInMinutes(self, inputTime):
-        print("inputTime: {0}, startOfRun: {1}".format(inputTime, self.startOfRun))
+        #print("inputTime: {0}, startOfRun: {1}".format(inputTime, self.startOfRun))
         return (inputTime - self.startOfRun)//60
 
     def timeInMinutesRounded(self, inputTime):

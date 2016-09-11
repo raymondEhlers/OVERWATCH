@@ -15,7 +15,7 @@ import ROOT
 ######################################################################################################
 ######################################################################################################
 
-def generalHLTOptions(subsystem, hist):
+def generalHLTOptions(subsystem, hist, processingOptions):
     # Show HLT titles (by request from Mikolaj)
     if "EMC" not in hist.histName:
         ROOT.gStyle.SetOptTitle(1)

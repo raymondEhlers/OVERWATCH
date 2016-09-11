@@ -155,8 +155,14 @@ def setEMCHistogramOptions(subsystem):
         if hist.histType.InheritsFrom(TH2.Class()):
             hist.drawOptions += " colz"
 
+    # Set general processing options
+    # Sets the histograms to scale if they are setup to scale by nEvents
+    subsystem.processingOptions["scaleHists"] = True
+    # Sets the hot channel threshold. 0 uses the default in the defined function
+    subsystem.processingOptions["hotChannelThreshold"] = 0
+
 ###################################################
-def generalEMCOptions(subsystem, hist):
+def generalEMCOptions(subsystem, hist, processingOptions):
     # Set options for when not debugging
     if processingParameters.debug == False:
         # Disable hist stats
@@ -467,7 +473,7 @@ def determineMedianSlope(hist, qaContainer):
 ###################################################
 # Plot Patch Spectra with logy and grad 
 ###################################################
-def properlyPlotPatchSpectra(subsystem, hist):
+def properlyPlotPatchSpectra(subsystem, hist, processingOptions):
     """ Sets logy and a grid to gPad for particular histograms.
 
     These conditions are set for "{EMCal,DCal}(Max)Patch{Energy,Amp}".
@@ -488,7 +494,7 @@ def properlyPlotPatchSpectra(subsystem, hist):
 ###################################################
 # Add Energy Axis to Patch Amplitude Spectra
 ###################################################
-def addEnergyAxisToPatches(subsystem, hist):
+def addEnergyAxisToPatches(subsystem, hist, processingOptions):
     """ Adds an additional axis showing the conversion from ADC counts to Energy.
 
     These conditions are set for "{EMCal,DCal}(Max)PatchAmp".
@@ -598,8 +604,9 @@ def addTRUGrid(subsystem, hist):
     line.Draw()
 
 ###################################################
-def edgePosOptions(subsystem, hist):
-    hist.hist.Scale(1. / subsystem.nEvents)
+def edgePosOptions(subsystem, hist, processingOptions):
+    if processingOptions["scaleHists"]:
+        hist.hist.Scale(1. / subsystem.nEvents)
     hist.hist.GetZaxis().SetTitle("entries / events")
 
     if hist.hist.InheritsFrom("TH2"):
@@ -607,26 +614,28 @@ def edgePosOptions(subsystem, hist):
         addTRUGrid(subsystem, hist)
 
 ###################################################
-def smOptions(subsystem, hist):
+def smOptions(subsystem, hist, processingOptions):
     #canvas.SetLogz(logz)
-    hist.hist.Scale(1. / subsystem.nEvents)
+    if processingOptions["scaleHists"]:
+        hist.hist.Scale(1. / subsystem.nEvents)
     labelSupermodules(hist)
 
 ###################################################
-def feeSMOptions(subsystem, hist):
+def feeSMOptions(subsystem, hist, processingOptions):
     hist.canvas.SetLogz(True)
     hist.hist.GetXaxis().SetRangeUser(0, 250)
     hist.hist.GetYaxis().SetRangeUser(0, 20)
 
 ###################################################
-def fastOROptions(subsystem, hist):
+def fastOROptions(subsystem, hist, processingOptions):
     # Handle the 2D hists
     if hist.hist.InheritsFrom("TH2"):
         # Add grid of TRU boundaries
         addTRUGrid(subsystem, hist)
 
         # Scale hist
-        hist.hist.Scale(1. / subsystem.nEvents)
+        if processingOptions["scaleHists"]:
+            hist.hist.Scale(1. / subsystem.nEvents)
         hist.hist.GetZaxis().SetTitle("entries / events")
     else:
         # Check thresholds for hot fastORs in 1D hists
@@ -640,9 +649,16 @@ def fastOROptions(subsystem, hist):
         else:
             threshold = 1e-2
 
+        # Set the threshold from the processing options if it was set!
+        if processingOptions["hotChannelThreshold"] > 0:
+            # Normalize by 1000, since it is displayed that way on the site to make it readable.
+            # ie. Map 0 to 1e3 -> 1e-3 to 1
+            threshold = processingOptions["hotChannelThreshold"]/1000.0
+
         # Set hist options
         hist.hist.Sumw2()
-        hist.hist.Scale(1. / subsystem.nEvents)
+        if processingOptions["scaleHists"]:
+            hist.hist.Scale(1. / subsystem.nEvents)
 
         # Set style
         hist.hist.SetMarkerStyle(kFullCircle)
@@ -661,7 +677,7 @@ def fastOROptions(subsystem, hist):
         hist.information["Fast OR Hot Channels ID"] = absIdList
 
 ###################################################
-def patchAmpOptions(subsystem, hist):
+def patchAmpOptions(subsystem, hist, processingOptions):
     # Setup canvas as desired
     hist.canvas.SetLogy(True)
     hist.canvas.SetGrid(1,1)
@@ -695,7 +711,8 @@ def patchAmpOptions(subsystem, hist):
             tempHist.SetLineColor(color)
             tempHist.SetMarkerColor(color)
 
-            tempHist.Scale(1./subsystem.nEvents)
+            if processingOptions["scaleHists"]:
+                tempHist.Scale(1./subsystem.nEvents)
             tempHist.GetYaxis().SetTitle("entries / events")
 
             # Draw hists
@@ -711,32 +728,7 @@ def patchAmpOptions(subsystem, hist):
         hist.canvas.Update()
 
         # Add energy axis
-        addEnergyAxisToPatches(subsystem, hist)
-
-        # Remove from QA container! (Not currently possible)
-
-        # NOTE: the histogram is named after the EMCal (we have sorted the order of hists so that DCal comes before EMCal)
-    #else:
-    #    if processingParameters.beVerbose == True:
-    #        print("Adding hist {0} for PatchAmp".format(hist.GetName()))
-    #    # Add histogram to save for later
-    #    # We clone to ensure there are no memory issues
-    #    qaContainer.addHist(hist.Clone(), hist.GetName())
-
-    #    if "EMCal" in hist.GetName():
-    #        # Needed to print EMC hist if the DCal equivalent does not exist
-    #        # Since the hists are sorted, the EMCal should never come up before the DCal one.
-    #        print("Keeping EMCal hist {0} since it seems to be unpaired with a DCal hist".format(hist.GetName()))
-
-    #        # Add energy axis
-    #        addEnergyAxisToPatches(hist)
-
-    #        # Still print the hist
-    #        return False
-    #    else:
-    #        # Don't print the individual histogram
-    #        # WARNING: This could cause unpaired DCal hists to disappear!
-    #        return True
+        addEnergyAxisToPatches(subsystem, hist, processingOptions)
 
 ###################################################
 # Add drawing options to plots

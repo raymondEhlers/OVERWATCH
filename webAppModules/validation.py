@@ -78,7 +78,7 @@ def validateTimeSlicePostRequest(request, runs):
         runDir = request.form.get("runDir", None, type=str)
         subsystemName = request.form.get("subsystem", None, type=str)
         scaleHists = request.form.get("scaleHists", False, type=str)
-        hotChannelThreshold = request.form.get("hotChannelThreshold", 0, type=int)
+        hotChannelThreshold = request.form.get("hotChannelThreshold", -1, type=int)
         histGroup = convertRequestToStringWhichMayBeEmpty("histGroup", request.form)
         histName = convertRequestToStringWhichMayBeEmpty("histName", request.form)
     # See: https://stackoverflow.com/a/23139085
@@ -119,20 +119,23 @@ def validateTimeSlicePostRequest(request, runs):
         validateHistGroupAndHistName(histGroup, histName, subsystem, error)
 
         # Processing options
+        inputProcessingOptions = {}
         # Ensure scaleHists is a bool
         if scaleHists != False:
             scaleHists = True
+        inputProcessingOptions["scaleHists"] = scaleHists
 
         # Check hot channel threshold
-        # NOTE: The max hot channel threshold (hotChannelThreshold) :is also defined here!
+        # NOTE: The max hot channel threshold (hotChannelThreshold) is also defined here!
         if hotChannelThreshold < 0 or hotChannelThreshold > 1000:
             error.setdefault("hotChannelThreshold", []).append("Hot channel threshold {0} is outside the possible range of 0-1000!".format(hotChannelThreshold))
+        inputProcessingOptions["hotChannelThreshold"] = hotChannelThreshold
 
     # Handle an unexpected exception
     except Exception as e:
         error.setdefault("generalError", []).append("Unknown exception! " + str(e))
 
-    return (error, minTime, maxTime, runDir, subsystemName, histGroup, histName, scaleHists, hotChannelThreshold)
+    return (error, minTime, maxTime, runDir, subsystemName, histGroup, histName, inputProcessingOptions)
 
 ###################################################
 def validateRunPage(runDir, subsystemName, requestedFileType, runs):
@@ -256,7 +259,8 @@ def convertRequestToPythonBool(paramName, source):
 
     This function is fairly similar to `convertRequestToStringWhichMayBeEmpty`.
     """
-    paramValue = request.args.get(paramName, False, type=str)
+    paramValue = source.get(paramName, False, type=str)
+    #print("{0}: {1}".format(paramName, paramValue))
     if paramValue != False:
         paramValue = json.loads(paramValue)
     print("{0}: {1}".format(paramName, paramValue))
@@ -278,7 +282,7 @@ def convertRequestToStringWhichMayBeEmpty(paramName, source):
     This function is fairly similar to `convertRequestToPythonBool`.
     """
     paramValue = source.get(paramName, None, type=str)
-    print("{0}: {1}".format(paramName, paramValue))
+    #print("{0}: {1}".format(paramName, paramValue))
     #if paramValue == "" or paramValue == "None" or paramValue == None:
     # If we see "None", then we want to be certain that it is None!
     # Otherwise, we will interpret an empty string as a None value!
@@ -307,11 +311,11 @@ def validateHistGroupAndHistName(histGroup, histName, subsystem, error):
         It could be valid for both to be None!
     """
     if histGroup:
-        print("histGroup: {0}".format(histGroup))
+        #print("histGroup: {0}".format(histGroup))
         #if histGroup in [group.selectionPattern for group in subsystem.histGroups]:
         foundHistGroup = False
         for i, group in enumerate(subsystem.histGroups):
-            print("group.selectionPattern: {0}".format(group.selectionPattern))
+            #print("group.selectionPattern: {0}".format(group.selectionPattern))
             if histGroup == group.selectionPattern:
                 foundHistGroup = True
                 if histName and histName not in subsystem.histGroups[i].histList:

@@ -114,6 +114,15 @@ function handleFormSubmit(selectedForm, selectedButton) {
         form.submit();
     });
 
+    // Append jsRoot to the form request
+    form.addEventListener('iron-form-presubmit', function() {
+        // Polymer dom doens't work here either...
+        var jsRoot = $(document.querySelector("#jsRootToggle")).prop("checked") === true;
+        // Append jsRoot to the request
+        this.request.body.jsRoot = jsRoot;
+        //console.log("this.request.body: " + JSON.stringify(this.request.body));
+    });
+
     form.addEventListener("iron-form-error", function(event) {
         /*console.log("Error in iron-form!");
         console.log("event.detail.error:" + event.detail.error);*/

@@ -53,7 +53,7 @@ from processRunsModules import qa
 from processRunsModules import processingClasses
 
 ###################################################
-def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
+def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, processingOptions = None):
     """ Process a given root file, printing out all histograms.
 
     The function also applies QA as appropriate (either always applied or from a particular QA request) via
@@ -152,6 +152,13 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
                 if processingParameters.beVerbose:
                     print("Skipping histogram {0} since it is not classifiable for subsystem {1}".format(hist.histName, subsystem.subsystem))
 
+    # Set the proper processing options
+    # If it was passed in, it was from time slices
+    if processingOptions == None:
+        processingOptions = subsystem.processingOptions
+    if processingOptions.beVerbose:
+        print("processingOptions: {0}".format(processingOptions))
+
     # Cannot have same name as other canvases, otherwise the canvas will be replaced, leading to segfaults
     # Start of run should unique to each run!
     canvas = TCanvas("{0}Canvas{1}{2}".format("processRuns", subsystem.subsystem, subsystem.startOfRun),
@@ -183,7 +190,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer=None):
             #print("Functions to apply: {0}".format(hist.functionsToApply))
             for func in hist.functionsToApply:
                 #print("Calling func: {0}".format(func))
-                func(subsystem, hist)
+                func(subsystem, hist, processingOptions)
 
             if qaContainer:
                 # Various checks and QA that are performed on hists
@@ -336,7 +343,25 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
     return returnValues
 
 ###################################################
-def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes, scaleHists, hotChannelThreshold):
+def compareProcessingOptionsDicts(inputProcessingOptions, processingOptions):
+    """ Compare an input and existing processing options dicts and return True if all input options are the same values as in the existing options.
+
+    NOTE:
+        The existing processing options can have more than entries than the input. Only the values in the input are checked.
+    
+    """
+    processingOptionsAreTheSame = True
+    for key,val in inputProcessingOptions.iteritems():
+        if key not in processingOptions:
+            return (None, None, {"Processing option error": ["Key \"{0}\" in inputProcessingOptions ({1}) is not in subsystem processingOptions {2}!".format(key, inputProcessingOptions, subsystem.processingOptions)]})
+        if val != processingOptions[key]:
+            processingOptionsAreTheSame = False
+            break
+
+    return processingOptionsAreTheSame
+
+###################################################
+def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes, inputProcessingOptions):
     # User filter time, in unix time. This makes it possible to compare to the startOfRun and endOfRun times
     minTimeCutUnix = minTimeMinutes*60 + subsystem.startOfRun
     maxTimeCutUnix = maxTimeMinutes*60 + subsystem.startOfRun
@@ -347,10 +372,9 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
         maxTimeMinutes = subsystem.runLength
         maxTimeCutUnix = subsystem.endOfRun
 
-    # Return immediately if it is just a full time request
-    # Store processing settings in dict? - It would have to be a user opt in feature
-    # TODO: We will need to continue here if we change settings
-    if minTimeMinutes == 0 and maxTimeMinutes == round(subsystem.runLength):
+    # Return immediately if it is just a full time request with the normal processing options
+    processingOptionsAreTheSame = compareProcessingOptionsDicts(inputProcessingOptions, subsystem.processingOptions)
+    if minTimeMinutes == 0 and maxTimeMinutes == round(subsystem.runLength) and processingOptionsAreTheSame:
         return ("fullProcessing", False, None)
 
     # If input time range out of range, return 0
@@ -390,24 +414,29 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
     #print("subsystem.timeSlice: {0}".format(subsystem.timeSlices))
     for key, timeSlice in subsystem.timeSlices.iteritems():
         #print("minFilteredTimeStamp: {0}, maxFilteredTimeStamp: {1}, timeSlice.minTime: {2}, timeSlice.maxTime: {3}".format(minFilteredTimeStamp, maxFilteredTimeStamp, timeSlice.minTime, timeSlice.maxTime))
-        if timeSlice.minUnixTimeAvailable == minFilteredTimeStamp and timeSlice.maxUnixTimeAvailable == maxFilteredTimeStamp:
+        processingOptionsAreTheSame = compareProcessingOptionsDicts(inputProcessingOptions, timeSlice.processingOptions)
+        if timeSlice.minUnixTimeAvailable == minFilteredTimeStamp and timeSlice.maxUnixTimeAvailable == maxFilteredTimeStamp and processingOptionsAreTheSame:
             # Already exists - we don't need to remerge or reprocess
             return (key, False, None)
 
     # Determine index by UUID to ensure that there is no clash
-    timeSlicesCont = processingClasses.timeSliceContainer(minUnixTimeRequested = minTimeCutUnix,
+    timeSliceCont = processingClasses.timeSliceContainer(minUnixTimeRequested = minTimeCutUnix,
                                                           maxUnixTimeRequested = maxTimeCutUnix,
                                                           minUnixTimeAvailable = minFilteredTimeStamp,
                                                           maxUnixTimeAvailable = maxFilteredTimeStamp,
                                                           startOfRun = subsystem.startOfRun,
                                                           filesToMerge = filesToMerge)
+    # Set the processing options in the time slice container
+    for key, val in inputProcessingOptions.iteritems():
+        timeSliceCont.processingOptions[key] = val
+
     uuidDictKey = str(uuid.uuid4())
-    subsystem.timeSlices[uuidDictKey] = timeSlicesCont
+    subsystem.timeSlices[uuidDictKey] = timeSliceCont
 
     return (uuidDictKey, True, None)
 
 ###################################################
-def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequested, subsystemName, scaleHists = None, hotChannelThreshold = -1):
+def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequested, subsystemName, inputProcessingOptions):
     """ Processes a given run using only data in a given time range (ie time slices).
 
     Usually invoked via the web app on a particular run page.
@@ -451,7 +480,7 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
     print("runLength: {0}".format(subsystem.runLength))
 
     # Validate and create time slice
-    (timeSliceKey, newlyCreated, errors) = validateAndCreateNewTimeSlice(run, subsystem, minTimeRequested, maxTimeRequested, scaleHists, hotChannelThreshold)
+    (timeSliceKey, newlyCreated, errors) = validateAndCreateNewTimeSlice(run, subsystem, minTimeRequested, maxTimeRequested, inputProcessingOptions)
     if errors:
         return errors
     # It has already been merged and processed
@@ -481,10 +510,13 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
         print("path: {0}".format(os.path.join(processingParameters.dirPrefix,
                                                    subsystem.baseDir,
                                                    timeSlice.filename.filename) ))
+        print("timeSlice.processingOptions: {0}".format(timeSlice.processingOptions))
     outputHistNames = processRootFile(os.path.join(processingParameters.dirPrefix,
                                                    subsystem.baseDir,
                                                    timeSlice.filename.filename),
-                                      outputFormattingSave, subsystem)
+                                      outputFormattingSave, subsystem,
+                                      qaContainer = None,
+                                      processingOptions = timeSlice.processingOptions)
 
     print("Finished processing {0}!".format(run.prettyName))
 
