@@ -9,6 +9,11 @@ These functions are important to ensure that only valid values are passed to the
 # General
 import json
 from flask import request
+# Parse GET parameters
+try:
+    import urllib.parse as urlparse
+except ImportError:
+    import urlparse
 
 # Config
 from config.serverParams import serverParameters

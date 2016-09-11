@@ -18,11 +18,6 @@ import json
 import collections 
 # For server status
 import requests
-# Parse get requests
-try:
-    import urllib.parse as urlparse
-except ImportError:
-    import urlparse
 
 # Flask
 from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, Markup, jsonify, session
@@ -184,6 +179,14 @@ def favicon():
     However, the real way that this is generally loaded is via code in layout template!
     """
     return redirect(url_for("static", filename="icons/favicon.ico"))
+
+###################################################
+@app.route("/statusQuery", methods=["POST"])
+def statusQuery():
+    """ Respond to a status query (separated so that it doesn't require a login!) """
+
+    # Responds to requests from other OVERWATCH servers to display the status of the site
+    return "Alive"
 
 ######################################################################################################
 # Authenticated Routes
@@ -603,61 +606,61 @@ def status():
     # Display the status page from the other sites
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
-    if request.method == "POST":
-        # Responds to requests from other overwatch servers to display the status of the site
-        # TODO: Implement the responses
-        pass
+    # Where the statuses will be collected
+    statuses = collections.OrderedDict()
+
+    # Determine if a run is ongoing
+    # To do so, we need the most recent run
+    mostRecentRun = runs[runs.keys()[-1]]
+    runOngoing = mostRecentRun.isRunOngoing()
+    if runOngoing:
+        runOngoingNumber = mostRecentRun.prettyName
     else:
-        # Determine if a run is ongoing
-        # To do so, we need the most recent run
-        mostRecentRun = runs[runs.keys()[-1]]
-        runOngoing = mostRecentRun.isRunOngoing()
-        if runOngoing:
-            runOngoingNumber = mostRecentRun.prettyName
-        else:
-            runOngoingNumber = ""
+        runOngoingNumber = ""
+    # Add to status
+    statuses["Ongoing run?"] = "{0} - {1}".format(runOngoing, runOngoingNumber)
 
-        receiverLogFilePath = os.path.join("receiver", "bin", "EMCReceiver.log")
-        if os.path.exists(receiverLogFilePath):
-            receiverLogLastModified = os.path.getmtime(receiverLogFilePath)
-            lastModified = time.time() - receiverLogLastModified
-            # Display in minutes
-            lastModified = lastModified//60
-            lastModifiedMessage = "{0} minutes ago".format(lastModified)
-        else:
-            lastModified = -1
-            lastModifiedMessage = "Error! Could not find receiver log information!"
+    receiverLogFilePath = os.path.join("receiver", "bin", "EMCReceiver.log")
+    if os.path.exists(receiverLogFilePath):
+        receiverLogLastModified = os.path.getmtime(receiverLogFilePath)
+        lastModified = time.time() - receiverLogLastModified
+        # Display in minutes
+        lastModified = lastModified//60
+        lastModifiedMessage = "{0} minutes ago".format(lastModified)
+    else:
+        lastModified = -1
+        lastModifiedMessage = "Error! Could not find receiver log information!"
+    # Add to status
+    statuses["Last requested data"] = lastModifiedMessage
 
-        # Example implementation
-        # TODO: Make this more flexible and make all requests with it!
+    # Determine server statuses
+    sites = serverParameters.statusRequestSites
+    for site, url in sites.iteritems():
         serverError = {}
         statusResult = ""
-        site = "http://127.0.0.1:8850"
         try:
-            serverRequest = requests.get(site + "/status", timeout = 0.5)
-            if serverRequest.request_code != 200:
-                serverError.setdefault("Request error", []).append("Request to \"{0}\" returned error response {1}!".format(site, serverRequest.request_code))
+            serverRequest = requests.post(url + "/status", timeout = 0.5)
+            if serverRequest.status_code != 200:
+                serverError.setdefault("Request error", []).append("Request to \"{0}\" at \"{1}\" returned error response {2}!".format(site, url, serverRequest.status_code))
             else:
                 statusResult = "Site is up!"
         except requests.exceptions.Timeout as e:
-            serverError.setdefault("Timeout error", []).append("Request to \"{0}\" timed out with error {1}!".format(site, e))
+            serverError.setdefault("Timeout error", []).append("Request to \"{0}\" at \"{1}\" timed out with error {2}!".format(site, url, e))
 
+        # Return error if one occurred
         if serverError != {}:
             statusResult = serverError
 
-        statuses = collections.OrderedDict()
-        statuses["Yale"] = "{0}".format(statusResult)
-        statuses["CERN"] = True
-        statuses["Last requested data"] = lastModifiedMessage
-        statuses["Ongoing run?"] = "{0} - {1}".format(runOngoing, runOngoingNumber)
+        # Add to status
+        statuses[site] = statusResult
 
-        if ajaxRequest == False:
-            return render_template("status.html", statuses = statuses)
-        else:
-            drawerContent = ""
-            mainContent = render_template("statusMainContent.html", statuses = statuses)
+    if ajaxRequest == False:
+        return render_template("status.html", statuses = statuses)
+    else:
+        drawerContent = ""
+        mainContent = render_template("statusMainContent.html", statuses = statuses)
 
-            return jsonify(drawerContent = drawerContent, mainContent = mainContent)
+        return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
 if __name__ == "__main__":
     # Support both the WSGI server mode, as well as standalone
