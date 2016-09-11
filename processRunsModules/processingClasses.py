@@ -25,7 +25,7 @@ class runContainer(persistent.Persistent):
     """ Contains an individual run
 
     """
-    def __init__(self, runDir, fileMode):
+    def __init__(self, runDir, fileMode, hltMode = None):
         self.runDir = runDir
         self.runNumber = int(runDir.replace("Run", ""))
         self.prettyName = "Run {0}".format(self.runNumber)
@@ -33,6 +33,7 @@ class runContainer(persistent.Persistent):
         #self.qaContainer = qa.qaFunctionContainer
         self.mode = fileMode
         self.subsystems = BTrees.OOBTree.BTree()
+        self.hltMode = hltMode
 
     def isRunOngoing(self):
         """ Checks if one of the subsystems has a new file, indicating that the run is ongoing. """

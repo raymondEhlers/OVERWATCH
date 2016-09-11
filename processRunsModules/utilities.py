@@ -245,9 +245,12 @@ def moveFiles(subsystemDict, dirPrefix):
             # Create dict for subsystem if it doesn't exist, and then create a list for the run if it doesn't exist
             # See: https://stackoverflow.com/a/12906014
             runsDict.setdefault(runString, {}).setdefault(key, []).append(newFilename)
+            # Save the HLT mode
+            # Must be the same for each file in the run
+            if "hltMode" not in runsDict[runString]:
+                runsDict[runString]["hltMode"] = hltMode
 
     return runsDict
-
 
 ###################################################
 def moveRootFiles(dirPrefix, subsystemList):

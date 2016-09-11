@@ -1,7 +1,7 @@
 {# Display histograms here #}
 <h1 id="mainContentTitle">{{ run.prettyName }}</h1>
 <p>
-    {{ run.prettyName }} started at {{ subsystem.prettyPrintUnixTime(subsystem.startOfRun) }} (CERN time zone).</br>
+{{ run.prettyName }} started at approximately {{ subsystem.prettyPrintUnixTime(subsystem.startOfRun) }} (CERN time zone){%- if run.hltMode %} and received via HLT Mode {{ run.hltMode }}{%- endif -%}.</br>
    <a target="_blank" href="https://alice-logbook.cern.ch/logbook/date_online.php?p_cont=rund&p_run={{ run.runNumber }}">Logbook entry</a>
 </p>
 {%- if timeSlice != None -%}
