@@ -5,12 +5,11 @@
 # machine: starts the wsgi server.
 # If the script is sourced rather than executed, only the environment is loaded.
 
-set -x
-
 # Script exits if a var is unset
 #set -o nounset
 # Script exists if an statement returns a non-zero value
-set -o errexit
+# This causes problem if the script is sourced, so this should probably not be enabled!
+#set -o errexit
 
 # Determine current location of file
 # From: http://stackoverflow.com/a/246128
