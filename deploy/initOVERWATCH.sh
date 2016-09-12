@@ -5,6 +5,8 @@
 # machine: starts the wsgi server.
 # If the script is sourced rather than executed, only the environment is loaded.
 
+set -x
+
 # Script exits if a var is unset
 #set -o nounset
 # Script exists if an statement returns a non-zero value
@@ -17,16 +19,21 @@ currentLocation="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Move the directory of the script to ensure that the other files can be found
 cd "$currentLocation"
 
+docker=false
+if [[ -n "${1:-}" && ("$1" == "docker" )  ]];
+then
+    docker=true
+fi
+
+# Load shared functions
+source "sharedFunctions.sh"
+
 # Load configuration and shared functions
 if [[ ! -e "configOVERWATCH.sh" ]];
 then
-  echoInfoError "Must create configOVERWATCH.sh!!"
+    echoInfoEscaped "Must create configOVERWATCH.sh!!"
 fi
-  source "configOVERWATCH.sh"
-
-source "sharedFunctions.sh"
-
-echoInfoEscaped "Running `basename "$0"` at $(date) in \"$PWD\""
+source "configOVERWATCH.sh"
 
 # Determine if the script was run or sourced.
 # See: https://stackoverflow.com/a/2684300
@@ -35,7 +42,12 @@ if [[ "${BASH_SOURCE[0]}" != "${0}" ]];
 then
     echoInfoEscaped "Script is being sourced!"
     sourcedScript=true
+    scriptName=$(basename ${BASH_SOURCE[0]})
+else
+    scriptName=$(basename "$0")
 fi
+
+echoInfoEscaped "Running ${scriptName} at $(date) in \"$PWD\""
 
 # Determine if called from systemd
 calledFromSystemd=false
@@ -49,7 +61,10 @@ echoInfoEscaped "Running at $location"
 
 # Source virtualenv
 echoInfoEscaped "Loading virtualenv"
-source "$virtualEnvPath"
+if [[ -n "$virtualEnvPath" ]];
+then
+    source "$virtualEnvPath"
+fi
 
 # Setup ROOT
 echoInfoEscaped "Loading ROOT"
@@ -103,12 +118,18 @@ else
         # Start web server
         #############################
 
-        echoInfoEscaped "Starting uwsgi with config at $projectPath/config/wsgi${location}.ini"
-        if [[ "$calledFromSystemd" == true ]];
+        if [[ "$docker" == true ]];
         then
-            uwsgi "$projectPath/config/wsgi${location}.ini" &> "$projectPath/app.log"
+            echoInfoEscaped "Starting uwsgi with config at $projectPath/deploy/docker/uwsgi.ini"
+            uwsgi "$projectPath/deploy/docker/uwsgi.ini" &> "$projectPath/app.log"
         else
-            nohup uwsgi "$projectPath/config/wsgi${location}.ini" &> "$projectPath/app.log" &
+            echoInfoEscaped "Starting uwsgi with config at $projectPath/deploy/wsgi${location}.ini"
+            if [[ "$calledFromSystemd" == true ]];
+            then
+                uwsgi "$projectPath/deploy/wsgi${location}.ini" &> "$projectPath/app.log"
+            else
+                nohup uwsgi "$projectPath/deploy/wsgi${location}.ini" &> "$projectPath/app.log" &
+            fi
         fi
     elif [[ "$role" == "processing" ]];
     then
