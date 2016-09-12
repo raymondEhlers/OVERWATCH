@@ -29,7 +29,7 @@ virtualEnvPath=""
 location=""
 buildType=""
 # If alibuild is used, must specify name
-alibuildName="latest-aliMaster"
+alibuildName="AliRoot/latest-aliMaster"
 role=""
 
 if [[ "${docker}" == true ]];
@@ -39,6 +39,7 @@ then
     virtualEnvPath=""
     location="docker"
     buildType="aliBuild"
+    alibuildName="ROOT/latest"
     role="server"
 
     # Additional settings

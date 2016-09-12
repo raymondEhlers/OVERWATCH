@@ -89,7 +89,7 @@ then
 
     #if [[ "$sourcedScript" == true ]];
     #then
-        alienv load "AliRoot/$alibuildName"
+        alienv load "$alibuildName"
     #else
     #    eval "$(alienv load AliRoot/latest-aliMaster)"
     #fi
