@@ -30,7 +30,9 @@ source "sharedFunctions.sh"
 # Load configuration and shared functions
 if [[ ! -e "configOVERWATCH.sh" ]];
 then
-    echoInfoEscaped "Must create configOVERWATCH.sh!!"
+    echoErrorEscaped "Must create configOVERWATCH.sh!!"
+    safeExit 1
+    return $?
 fi
 source "configOVERWATCH.sh"
 
@@ -224,7 +226,7 @@ else
             echoPropertiesEscaped "SSH Monitor Port: $monitorPort" >> ${subsystemLog}
             echoPropertiesEscaped "Additional Options: $additionalOptions" >> ${subsystemLog}
 
-            # TO DO: update this to connect to HLT
+            # TODO: update this to connect to HLT
             if [[ "${useSSHTunnel}" == true ]];
             then
               # Find SSH process
