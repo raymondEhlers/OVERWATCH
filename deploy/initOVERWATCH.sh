@@ -18,10 +18,20 @@ currentLocation="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Move the directory of the script to ensure that the other files can be found
 cd "$currentLocation"
 
-docker=false
-if [[ -n "${1:-}" && ("$1" == "docker" )  ]];
+docker=""
+if [[ -n "${1:-}" && ("$1" == *"docker"* )  ]];
 then
-    docker=true
+    #export dockerDeploymentOption="$docker"
+    # Defaults to deployment
+    if [[ -n "$deploymentOption" == *"devel"* ]];
+    then
+        # Matches to the options in the uwsgi config
+        docker="devel"
+    else
+        docker="deploy"
+    fi
+
+    echoInfoEscaped "Running docker with option ${docker}!"
 fi
 
 # Load shared functions
@@ -119,9 +129,9 @@ else
         # Start web server
         #############################
 
-        if [[ "$docker" == true ]];
+        if [[ -n "$docker" ]];
         then
-            echoInfoEscaped "Starting uwsgi with config at $projectPath/deploy/docker/uwsgi.ini"
+            echoInfoEscaped "Starting uwsgi with config at $projectPath/deploy/docker/uwsgi.ini with deployment option $deploymentOption"
             uwsgi "$projectPath/deploy/docker/uwsgi.ini" &> "$projectPath/app.log"
         else
             echoInfoEscaped "Starting uwsgi with config at $projectPath/deploy/wsgi${location}.ini"

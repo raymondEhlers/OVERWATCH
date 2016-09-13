@@ -66,15 +66,22 @@ RUN rm -r /alice/sw/BUILD && rm -r /alice/root6
 
 # TEMP
 # Merge everything except for vim into the above apt-get!
-RUN apt-get update && apt-get install -y vim environment-modules
+RUN apt-get update && apt-get install -y vim environment-modules npm
 
 # Setup OVERWATCH
 # Download OVERWATCH and setup the needed python packages
 RUN git clone https://github.com/raymondEhlers/OVERWATCH.git /overwatch \
-        && cd /overwatch/deploy && cd .. \
+        && cd /overwatch \
         && git checkout -b jsRoot origin/jsRoot \
         && pip install -r /overwatch/requirements.txt
         # TODO: Go back to master once jsRoot is merged!
+
+# Add bower, Polymer, webcomponents, jsRoot for OVERWATCH
+RUN npm install -g bower \
+        && cd /overwatch/static \
+        && bower install \
+        && cd /tmp && git clone https://github.com/linev/jsroot.git \
+        && cd jsroot && cp -r scripts /overwatch/static/. && cp -r style /overwatch/static/.
 
 # Configure nginx
 # Make NGINX run on the foreground and remove default site config
@@ -91,6 +98,7 @@ COPY nginx.conf /etc/nginx/sites-enabled/.
 COPY serverParams.py /overwatch/config/.
 # Ensure that the proper configuration file is setup. The values should already be in the file!
 RUN cp /overwatch/deploy/configOVERWATCH_stub.sh /overwatch/deploy/configOVERWATCH.sh
+# Check for whether we are running with debug!
 
 # Redirect logs!
 

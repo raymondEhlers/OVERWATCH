@@ -491,7 +491,7 @@ def processQA():
 
     """
     print("request: {0}".format(request.args))
-    ajaxRequest = validcation.convertRequestToPythonBool("ajaxRequest", request.args)
+    ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
     runs = db["runs"]
     runList = runs.keys()
