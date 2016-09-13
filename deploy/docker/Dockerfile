@@ -71,9 +71,9 @@ RUN apt-get update && apt-get install -y vim environment-modules
 # Setup OVERWATCH
 # Download OVERWATCH and setup the needed python packages
 RUN git clone https://github.com/raymondEhlers/OVERWATCH.git /overwatch \
-        && pip install -r /overwatch/requirements.txt \
-        && cd /overwatch \
-        && git checkout -b jsRoot origin/jsRoot
+        && cd /overwatch/deploy && cd .. \
+        && git checkout -b jsRoot origin/jsRoot \
+        && pip install -r /overwatch/requirements.txt
         # TODO: Go back to master once jsRoot is merged!
 
 # Configure nginx
