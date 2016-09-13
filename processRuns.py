@@ -248,11 +248,8 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
 
     """
 
-    # Load general configuration options
-    (fileExtension, beVerbose, forceReprocessing, forceNewMerge, sendData, remoteUsername, cumulativeMode, templateDataDirName, dirPrefix, subsystemList, subsystemsWithRootFilesToShow) = processingParameters.defineRunProperties()
-
     # Find all possible runs, and then select the runs between [firstRun, lastRun] (inclusive)
-    runDirs = utilities.findCurrentRunDirs(dirPrefix)
+    runDirs = utilities.findCurrentRunDirs(processingParameters.dirPrefix)
     tempDirs = []
     for runDir in runDirs:
         if int(runDir.replace("Run","")) >= int(firstRun.replace("Run","")) and int(runDir.replace("Run","")) <= int(lastRun.replace("Run","")):
@@ -266,14 +263,14 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
     for subsystem in [subsystemName, "HLT"]:
         subsystemRunDirDict[subsystem] = []
         for runDir in runDirs:
-            if os.path.exists(os.path.join(dirPrefix, runDir, subsystem)):
+            if os.path.exists(os.path.join(processingParameters.dirPrefix, runDir, subsystem)):
                 subsystemRunDirDict[subsystem].append(runDir)
 
     # Create subsystem object
     subsystem = subsystemProperties(subsystem = subsystemName, runDirs = subsystemRunDirDict)
 
     # Create necessary dirs
-    dataDir = os.path.join(dirPrefix, qaFunctionName)
+    dataDir = os.path.join(processingParameters.dirPrefix, qaFunctionName)
     if not os.path.exists(dataDir):
         os.makedirs(dataDir)
 
@@ -291,16 +288,16 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
         qaContainer.filledValueInRun = False
 
         # Get length of run and set the value
-        [mergeDict, runLength] = utilities.createFileDictionary(dirPrefix, runDir, subsystem.fileLocationSubsystem)
+        [mergeDict, runLength] = utilities.createFileDictionary(processingParameters.dirPrefix, runDir, subsystem.fileLocationSubsystem)
         qaContainer.runLength = runLength
         
         # Print current progress
         print("Processing run", qaContainer.currentRun)
 
         # Determine the proper combined file for input
-        combinedFile = next(name for name in os.listdir(os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem)) if "combined" in name)
-        inputFilename = os.path.join(dirPrefix, runDir, subsystem.fileLocationSubsystem, combinedFile)
-        if beVerbose:
+        combinedFile = next(name for name in os.listdir(os.path.join(processingParameters.dirPrefix, runDir, subsystem.fileLocationSubsystem)) if "combined" in name)
+        inputFilename = os.path.join(processingParameters.dirPrefix, runDir, subsystem.fileLocationSubsystem, combinedFile)
+        if processingParameters.beVerbose:
             print(inputFilename)
 
         # Process the file
@@ -308,7 +305,7 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
 
     # Need to remove the dirPrefix to get the proper URL
     # pathToRemove must end with a slash to ensure that the img path set below is valid
-    pathToRemove = dirPrefix
+    pathToRemove = processingParameters.dirPrefix
     if not pathToRemove.endswith("/"):
         pathToRemove = pathToRemove + "/"
 
@@ -330,7 +327,7 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
         # Set img path in the return value
         # Need to remove the pathToRemove defined above to ensure that the url doesn't include the directory
         # (ie. so it is /monitoring/protected, not /monitoring/protected/data)
-        if beVerbose:
+        if processingParameters.beVerbose:
             print(outputFormatting)
             print(pathToRemove)
         returnValues[label] = outputFormatting.replace(pathToRemove, "") % label
@@ -777,8 +774,8 @@ def processAllRuns():
     if processingParameters.sendData == True:
         print("INFO: Preparing to send data")
         utilities.rsyncData(dirPrefix, processingParameters.remoteUsername, processingParameters.remoteSystems, processingParameters.remoteFileLocations)
-        if templateDataDirName != None:
-            utilities.rsyncData(templateDataDirName, processingParameters.remoteUsername, processingParameters.remoteSystems, processingParameters.remoteFileLocations)
+        if processingParameters.templateDataDirName != None:
+            utilities.rsyncData(processingParameters.templateDataDirName, processingParameters.remoteUsername, processingParameters.remoteSystems, processingParameters.remoteFileLocations)
 
     # Update receiver last modified time if the log exists
     receiverLogFileDir = os.path.join("receiver", "bin")
@@ -796,9 +793,59 @@ def processAllRuns():
     # Ensure that any additional changes are committed
     transaction.commit()
     connection.close()
-        
+
 # Allows the function to be invoked automatically when run with python while not invoked when loaded as a module
 if __name__ == "__main__":
+    # Configure logging
+    # Set format, etc
+    rootHandler = logging.getLogger()
+    logFormat = logging.Formatter("%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]")
+    rootHandler.setFormatter(formatter)
+
+    # Check on docker deplyoment variables
+    try:
+        dockerDeploymentOption = os.environ["deploymentOption"]
+    except KeyError as e:
+        # It doesn't exist
+        dockerDeploymentOption = ""
+
+    # For docker, we log to stdout so that supervisor is able to handle the logging
+    if processingParameters.debug == True or dockerDeploymentOption:
+        # Log to stdout
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setLevel(processingParameters.loggingLevel)
+        # Do we need to set it again explictily?
+        #handler.setFormatter(logFormat)
+        rootHandler.addHandler(handler)
+    else:
+        # Log to file
+        handler = logging.FileHandler(os.path.join("deploy", "processRuns.log"))
+        handler.setLevel(processingParameters.loggingLevel)
+        # Do we need to set it again explictily?
+        #handler.setFormatter(logFormat)
+        rootHandler.addHandler(handler)
+
+        # Sent issues through email
+        # See: http://flask.pocoo.org/docs/0.10/errorhandling/
+        notifyAddresses = []
+        handler = logging.handlers.SMTPHandler("smtp.cern.ch",
+                                                "error@aliceoverwatch.cern.ch",
+                                                notifyAddresses, "OVERWATCH Failed")
+        handler.setLevel(processingParameters.loggingLevel)
+        handler.setFormatter(Formatter("""
+        Message type:       %(levelname)s
+        Location:           %(pathname)s:%(lineno)d
+        Module:             %(module)s
+        Function:           %(funcName)s
+        Time:               %(asctime)s
+
+        Message:
+
+        %(message)s
+        """))
+        # TODO: Properly configure so that it can be added as a handler!
+        #rootHandler.addHandler(handler)
+
     # Process all of the run data
     processAllRuns()
     # Function calls that be used for debugging

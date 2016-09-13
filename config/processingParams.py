@@ -5,6 +5,7 @@ from __future__ import print_function
 
 # General
 import os
+import logging
 
 # Config
 from .sharedParams import sharedParameters
@@ -18,11 +19,14 @@ class processingParameters(object):
     #: The file extension to use when printing ROOT files.
     fileExtension = sharedParameters.fileExtension
 
+    #: Enable debugging information.
+    debug = sharedParameters.debug
+
     #: Print additional messages while processing.
     beVerbose = True
 
-    #: Enable debugging information.
-    debug = sharedParameters.debug
+    #: Set the logging level
+    loggingLevel = logging.INFO
 
     #: Force each run to be reprinted and regenerate the pages.
     forceReprocessing = False
@@ -100,30 +104,28 @@ class processingParameters(object):
     if True:
         forceReprocessing = True
         sendData = False
-        
-    ###################################################
-    @classmethod
-    def defineRunProperties(cls):
-        """ Useful function to return all of the parameters in a compact way """
-        return (cls.fileExtension, cls.beVerbose, cls.forceReprocessing, cls.forceNewMerge, cls.sendData, cls.remoteUsername, cls.cumulativeMode, cls.templateDataDirName, cls.dirPrefix, cls.subsystemList, cls.subsystemsWithRootFilesToShow)
+
+    # Lower the min logging level if we want to be verbose
+    if beVerbose:
+        loggingLevel = logging.DEBUG
 
 # Print settings
-print("\nProcessing Parameters:")
-print("fileExtension:", processingParameters.fileExtension)
-print("beVerbose:", processingParameters.beVerbose)
-print("debug:", processingParameters.debug)
-print("forceReprocessing:", processingParameters.forceReprocessing)
-print("forceNewMerge:", processingParameters.forceNewMerge)
-print("sendData:", processingParameters.sendData)
-print("remoteUsername:", processingParameters.remoteUsername)
-print("remoteSystems:", processingParameters.remoteSystems)
-print("remoteFileLocations:", processingParameters.remoteFileLocations)
-print("cumulativeMode:", processingParameters.cumulativeMode)
-print("templateDataDirName:", processingParameters.templateDataDirName)
-print("databaseLocation:", processingParameters.databaseLocation)
-print("dirPrefix:", processingParameters.dirPrefix)
-print("modulesPath:", processingParameters.modulesPath)
-print("detectorsPath:", processingParameters.detectorsPath)
-print("subsystemList:", processingParameters.subsystemList)
-print("subsystemsWithRootFilesToShow:", processingParameters.subsystemsWithRootFilesToShow)
-print("qaFunctionsToAlwaysApply:", processingParameters.qaFunctionsToAlwaysApply)
+logging.info("\nProcessing Parameters:")
+logging.info("fileExtension: {0}".format(processingParameters.fileExtension))
+logging.info("beVerbose: {0}".format(processingParameters.beVerbose))
+logging.info("debug: {0}".format(processingParameters.debug))
+logging.info("forceReprocessing: {0}".format(processingParameters.forceReprocessing))
+logging.info("forceNewMerge: {0}".format(processingParameters.forceNewMerge))
+logging.info("sendData: {0}".format(processingParameters.sendData))
+logging.info("remoteUsername: {0}".format(processingParameters.remoteUsername))
+logging.info("remoteSystems: {0}".format(processingParameters.remoteSystems))
+logging.info("remoteFileLocations: {0}".format(processingParameters.remoteFileLocations))
+logging.info("cumulativeMode: {0}".format(processingParameters.cumulativeMode))
+logging.info("templateDataDirName: {0}".format(processingParameters.templateDataDirName))
+logging.info("databaseLocation: {0}".format(processingParameters.databaseLocation))
+logging.info("dirPrefix: {0}".format(processingParameters.dirPrefix))
+logging.info("modulesPath: {0}".format(processingParameters.modulesPath))
+logging.info("detectorsPath: {0}".format(processingParameters.detectorsPath))
+logging.info("subsystemList: {0}".format(processingParameters.subsystemList))
+logging.info("subsystemsWithRootFilesToShow: {0}".format(processingParameters.subsystemsWithRootFilesToShow))
+logging.info("qaFunctionsToAlwaysApply: {0}".format(processingParameters.qaFunctionsToAlwaysApply))
