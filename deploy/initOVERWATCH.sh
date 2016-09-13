@@ -109,7 +109,11 @@ then
     alienv list
 
     # Setup python in root
-    export PYTHONPATH="$ROOTSYS/lib"
+    # Only set the path if ROOTSYS haven't already been added
+    if [[ ! "$PYTHONPATH" == *"$ROOTSYS"* ]];
+    then
+        export PYTHONPATH="$ROOTSYS/lib:$PYTHONPATH"
+    fi
 elif [[ "$buildType" == "alice-env" ]];
 then
     # Load the alice environment
@@ -123,6 +127,8 @@ fi
 if [[ "$sourcedScript" == true ]];
 then
     echoInfoEscaped "Environment ready for use!"
+    # Return to the project directory to get started
+    cd "$projectPath"
 else
     if [[ "$role" == "server" ]];
     then
