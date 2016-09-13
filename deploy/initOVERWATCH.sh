@@ -18,12 +18,16 @@ currentLocation="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 # Move the directory of the script to ensure that the other files can be found
 cd "$currentLocation"
 
+# Load shared functions
+source "sharedFunctions.sh"
+
+# Determine docker information
 docker=""
 if [[ -n "${1:-}" && ("$1" == *"docker"* )  ]];
 then
     #export dockerDeploymentOption="$docker"
     # Defaults to deployment
-    if [[ -n "$deploymentOption" == *"devel"* ]];
+    if [[ -n "$deploymentOption" && "$deploymentOption" == *"devel"* ]];
     then
         # Matches to the options in the uwsgi config
         docker="devel"
@@ -33,9 +37,6 @@ then
 
     echoInfoEscaped "Running docker with option ${docker}!"
 fi
-
-# Load shared functions
-source "sharedFunctions.sh"
 
 # Load configuration and shared functions
 if [[ ! -e "configOVERWATCH.sh" ]];

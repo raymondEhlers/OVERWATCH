@@ -32,7 +32,7 @@ buildType=""
 alibuildName="AliRoot/latest-aliMaster"
 role=""
 
-if [[ "${docker}" == true ]];
+if [[ -n "${docker}" ]];
 then
     projectPath="/overwatch"
     softwarePath="/alice/sw"

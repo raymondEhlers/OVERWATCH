@@ -77,11 +77,15 @@ RUN git clone https://github.com/raymondEhlers/OVERWATCH.git /overwatch \
         # TODO: Go back to master once jsRoot is merged!
 
 # Add bower, Polymer, webcomponents, jsRoot for OVERWATCH
-RUN npm install -g bower \
+RUN ln -s /usr/bin/nodejs /usr/bin/node \
+        && npm install -g bower \
         && cd /overwatch/static \
-        && bower install \
+        && bower --allow-root install \
         && cd /tmp && git clone https://github.com/linev/jsroot.git \
-        && cd jsroot && cp -r scripts /overwatch/static/. && cp -r style /overwatch/static/.
+        && cd jsroot && git-am /overwatch/deploy/docker/jsRootPainterMoreDrawPaveFix.patch \
+        && cp -r scripts /overwatch/static/. && cp -r style /overwatch/static/. \
+        && rm -r /tmp/jsroot
+        # Need to patch JsRootPainter.more.js
 
 # Configure nginx
 # Make NGINX run on the foreground and remove default site config
