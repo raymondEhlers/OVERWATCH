@@ -6,8 +6,8 @@ For user authentication, https://exploreflask.com/users.html was extensively use
 """
 
 # Flask
-from flask.ext.login import UserMixin
-from flask.ext.bcrypt import check_password_hash
+from flask_login import UserMixin
+from flask_bcrypt import check_password_hash
 
 # Config
 from config.serverParams import serverParameters

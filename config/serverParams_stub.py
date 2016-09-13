@@ -8,7 +8,7 @@ import socket
 import os
 
 # Bcrypt
-from flask.ext.bcrypt import generate_password_hash
+from flask_bcrypt import generate_password_hash
 
 # Config
 from .sharedParams import sharedParameters

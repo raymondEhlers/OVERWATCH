@@ -21,8 +21,9 @@ import requests
 
 # Flask
 from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, Markup, jsonify, session
-from flask.ext.login import LoginManager, login_user, logout_user, login_required, current_user
-from flask.ext.bcrypt import Bcrypt
+from flask_login import LoginManager, login_user, logout_user, login_required, current_user
+from flask_bcrypt import Bcrypt
+# Unfortunately, flask_zodb does not work...
 from flask.ext.zodb import ZODB
 from flup.server.fcgi import WSGIServer
 
