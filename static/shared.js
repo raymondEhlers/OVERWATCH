@@ -553,6 +553,14 @@ function handleQADocStrings(currentTarget) {
 
 // This function is only called when navigating within the site
 function handleChangeInHistory(eventState) {
+    // Check for hashes first to avoid calling a popstate when it is a simple anchor
+    // NOTE: If it is just the hash, with nothing more, then it should continue!
+    var hash = window.location.hash;
+    if (hash.indexOf("#") >= 0 && hash.length > 1) {
+        return;
+    }
+
+    // Otherwise, continue with the pop state
     var state = eventState.state;
     console.log("eventState: " + JSON.stringify(state));
 
