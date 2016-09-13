@@ -71,7 +71,7 @@ RUN apt-get update && apt-get install -y vim environment-modules npm
 # Setup OVERWATCH
 # Download OVERWATCH and setup the needed python packages
 RUN git clone https://github.com/raymondEhlers/OVERWATCH.git /overwatch \
-        && cd /overwatch \
+        && cd /overwatch/deploy && cd .. \
         && git checkout -b jsRoot origin/jsRoot \
         && pip install -r /overwatch/requirements.txt
         # TODO: Go back to master once jsRoot is merged!
@@ -82,7 +82,7 @@ RUN ln -s /usr/bin/nodejs /usr/bin/node \
         && cd /overwatch/static \
         && bower --allow-root install \
         && cd /tmp && git clone https://github.com/linev/jsroot.git \
-        && cd jsroot && git-am /overwatch/deploy/docker/jsRootPainterMoreDrawPaveFix.patch \
+        && cd jsroot && git apply /overwatch/deploy/docker/jsRootPainterMoreDrawPaveFix.patch \
         && cp -r scripts /overwatch/static/. && cp -r style /overwatch/static/. \
         && rm -r /tmp/jsroot
         # Need to patch JsRootPainter.more.js
