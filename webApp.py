@@ -64,7 +64,7 @@ loginManager.init_app(app)
 loginManager.login_view = "login"
 
 # Setup database
-app.config["ZODB_STORAGE"] = "file://" + serverParameters.databaseLocation
+app.config["ZODB_STORAGE"] = serverParameters.databaseLocation
 db = ZODB(app)
 
 ###################################################

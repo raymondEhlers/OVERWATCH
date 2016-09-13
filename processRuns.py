@@ -30,18 +30,18 @@ gROOT.ProcessLine("gErrorIgnoreLevel = kWarning;")
 import os
 import time
 import uuid
+# Python logging system
+# See: https://stackoverflow.com/a/346501
+import logging
+#logging.basicConfig()
 
 # ZODB
 import ZODB, ZODB.FileStorage
 import BTrees.OOBTree
 import persistent
 import transaction
-
-# System logging(?)
-# TODO: Investigate further - this seems useful
-# See: https://stackoverflow.com/a/346501
-#import logging
-#logging.basicConfig()
+# For determining the storage type
+import zodburi
 
 # Config
 from config.processingParams import processingParameters
@@ -156,7 +156,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
     # If it was passed in, it was from time slices
     if processingOptions == None:
         processingOptions = subsystem.processingOptions
-    if processingOptions.beVerbose:
+    if processingParameters.beVerbose:
         print("processingOptions: {0}".format(processingOptions))
 
     # Cannot have same name as other canvases, otherwise the canvas will be replaced, leading to segfaults
@@ -625,10 +625,13 @@ def processAllRuns():
     dirPrefix = processingParameters.dirPrefix
 
     # Get the database
+    # See: http://docs.pylonsproject.org/projects/zodburi/en/latest/
     #storage = ZODB.FileStorage.FileStorage(os.path.join(dirPrefix,"overwatch.fs"))
-    #db = ZODB.DB(storage)
-    #connection = db.open()
-    connection = ZODB.connection(processingParameters.databaseLocation)
+    storage_factory, dbArgs = zodburi.resolve_uri(processingParameters.databaseLocation)
+    storage = storage_factory()
+    db = ZODB.DB(storage, **dbArgs)
+    connection = db.open()
+    #connection = ZODB.connection(processingParameters.databaseLocation)
     dbRoot = connection.root()
 
     # Create runs list
@@ -803,6 +806,10 @@ if __name__ == "__main__":
 
     ## Test processTimeSlices()
     ## TEMP
+    #storage_factory, dbArgs = zodburi.resolve_uri(processingParameters.databaseLocation)
+    #storage = storage_factory()
+    #db = ZODB.DB(storage, **dbArgs)
+    #connection = db.open()
     #connection = ZODB.connection(processingParameters.databaseLocation)
     #dbRoot = connection.root()
     #runs = dbRoot["runs"]

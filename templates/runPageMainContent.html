@@ -56,6 +56,7 @@
                 {%- set histogramContainerClasses = "histogramContainerStyle" -%}
                 {% if histGroup.plotInGrid == True %}
                     {# TODO: Determine how to properly show the grid with iron-flex-layout #}
+                    {# See: The example on this page: https://stackoverflow.com/a/31484427 -- https://codepen.io/StijnDeWitt/pen/EyPyyL #}
                     <p>Grid!</p>
                 {% endif %}
                 <div id="{{ hist.histName }}" class="histogramContainer {% if jsRoot == True %}{{ histogramContainerClasses }}{% endif %}" data-filename="{{ jsonFilenameTemplate.format(hist.histName.replace("/", "_")) }}">

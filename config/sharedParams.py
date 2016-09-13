@@ -55,7 +55,8 @@ class sharedParameters(object):
     templateFolderName = "templates"
 
     #: The path to the database.
-    databaseLocation = os.path.join(dataFolderName, "overwatch.fs")
+    databaseLocation = os.path.join("file://", dataFolderName, "overwatch.fs")
+    #databaseLocation = "zeo://localhost:8090"
 
     #: The file extension to use when printing ROOT files.
     fileExtension = "png"
