@@ -14,6 +14,9 @@ import time
 from calendar import timegm
 from subprocess import call
 import shutil
+import logging
+# Setup logger
+logger = logging.getLogger(__name__)
 
 # This only works for non combined runs, since they contain a range of times
 ###################################################
@@ -132,13 +135,13 @@ def rsyncData(dirPrefix, username, remoteSystems, remoteFileLocations):
         sendDirectory = sendDirectory + "/"
 
     if len(remoteSystems) != len(remoteFileLocations[fileDestinationLabel]):
-        print("Number of remote systems is not equal to number of remote file locations. Skipping rsync operations!")
+        logger.error("Number of remote systems is not equal to number of remote file locations. Skipping rsync operations!")
     else:
         for remoteSystem, remoteFileLocation in zip(remoteSystems, remoteFileLocations[fileDestinationLabel]):
             if not remoteFileLocation.endswith("/"):
                 remoteFileLocation = remoteFileLocation + "/"
 
-            print("Utilizing user %s to send %s files to %s on %s " % (username, fileDestinationLabel, remoteFileLocation, remoteSystem))
+            logger.info("Utilizing user %s to send %s files to %s on %s " % (username, fileDestinationLabel, remoteFileLocation, remoteSystem))
 
             # The chmod argument is explained here: https://unix.stackexchange.com/a/218165
             # The omit-dir-times does not update the timestamps on dirs (but still does on files in those dirs),
@@ -152,7 +155,7 @@ def rsyncData(dirPrefix, username, remoteSystems, remoteFileLocations):
             # each glob are not necessary and do not work correctly. See: https://stackoverflow.com/a/12497246
             #rsync -rvlth --chmod=ugo=rwX --omit-dir-times --exclude="Run*/*/timeSlices" --include="Run*/***" --include="ReplayData/***" --include="runList.html" --exclude="*" --delete data/ rehlers@pdsf.nersc.gov:/project/projectdirs/alice/www/emcalMonitoring/data/2016/
             rsyncCall = ["rsync", "-rvlth", "--chmod=ugo=rwX", "--omit-dir-times", "--exclude=Run*/*/timeSlices", "--include=Run*/***", "--include=ReplayData/***", "--include=runList.html", "--exclude=*", "--delete", sendDirectory, username + "@" + remoteSystem + ":" + remoteFileLocation]
-            print(rsyncCall)
+            logger.info(rsyncCall)
             call(rsyncCall)
 
 ###################################################
@@ -179,7 +182,7 @@ def enumerateFiles(dirPrefix, subsystem):
     for name in os.listdir(currentDir):
         if subsystem in name and ".root" in name:
             filesToMove.append(name)
-            #print("name: %s" % name)
+            #logger.debug("name: %s" % name)
         
     return sorted(filesToMove)
 
@@ -204,17 +207,17 @@ def moveFiles(subsystemDict, dirPrefix):
     for key in subsystemDict.keys():
         filesToMove = subsystemDict[key]
         if len(filesToMove) == 0:
-            print("No files to move in %s" % key)
+            logger.info("No files to move in %s" % key)
         for filename in filesToMove:
             # Extract time stamp and run number
             tempFilename = filename
             splitFilename = tempFilename.replace(".root","").split("_")
-            #print("tempFilename: %s" % tempFilename)
-            #print("splitFilename: ", splitFilename)
+            #logger.debug("tempFilename: %s" % tempFilename)
+            #logger.debug("splitFilename: ", splitFilename)
             if len(splitFilename) < 3:
                 continue
             timeString = "_".join(splitFilename[3:])
-            #print("timeString: ", timeString)
+            #logger.debug("timeString: ", timeString)
 
             # How to parse the timeString if desired
             #timeStamp = time.strptime(timeString, "%Y_%m_%d_%H_%M_%S")
@@ -238,7 +241,7 @@ def moveFiles(subsystemDict, dirPrefix):
 
             oldPath = os.path.join(dirPrefix, tempFilename)
             newPath = os.path.join(dirPrefix, runDirectoryPath, key, newFilename)
-            print("Moving %s to %s" % (oldPath, newPath))
+            logger.info("Moving %s to %s" % (oldPath, newPath))
             # DON"T IMPORT MOVE. BAD CONSEQUENCES!!
             shutil.move(oldPath, newPath)
 

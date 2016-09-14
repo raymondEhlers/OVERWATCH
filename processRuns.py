@@ -30,10 +30,12 @@ gROOT.ProcessLine("gErrorIgnoreLevel = kWarning;")
 import os
 import time
 import uuid
+import sys
 # Python logging system
 # See: https://stackoverflow.com/a/346501
 import logging
-#logging.basicConfig()
+# Setup logger
+logger = logging.getLogger(__name__)
 
 # ZODB
 import ZODB, ZODB.FileStorage
@@ -51,6 +53,7 @@ from processRunsModules import utilities
 from processRunsModules import mergeFiles
 from processRunsModules import qa
 from processRunsModules import processingClasses
+
 
 ###################################################
 def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, processingOptions = None):
@@ -117,8 +120,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
         if not subsystem.histGroups:
             sortingSuccess = qa.createHistGroups(subsystem)
             if sortingSuccess is False:
-                if processingParameters.beVerbose:
-                    print("Subsystem {0} does not have a sorting function. Adding all histograms into one group!".format(subsystem.subsystem))
+                logger.debug("Subsystem {0} does not have a sorting function. Adding all histograms into one group!".format(subsystem.subsystem))
 
                 if subsystem.fileLocationSubsystem != subsystem.subsystem:
                     selection = subsystem.subsystem
@@ -126,7 +128,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
                     # NOTE: In addition to being a normal option, this ensures that the HLT will always catch all extra histograms from HLT files!
                     # However, having this selection for other subsystems is dangerous, because it will include many unrelated hists
                     selection = ""
-                print("selection: {0}".format(selection))
+                logger.info("selection: {0}".format(selection))
                 subsystem.histGroups.append(processingClasses.histogramGroupContainer(subsystem.subsystem + " Histograms", selection))
 
         # Finally classify into the groups and determine which functions to apply
@@ -141,7 +143,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
                     break
 
             # TEMP
-            print("{2} hist: {0} - classified: {1}".format(hist.histName, classifiedHist, subsystem.subsystem))
+            logger.info("{2} hist: {0} - classified: {1}".format(hist.histName, classifiedHist, subsystem.subsystem))
 
             if classifiedHist:
                 # Determine the functions (qa and monitoring) to apply
@@ -149,15 +151,13 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
                 # Add it to the subsystem
                 subsystem.hists[hist.histName] = hist
             else:
-                if processingParameters.beVerbose:
-                    print("Skipping histogram {0} since it is not classifiable for subsystem {1}".format(hist.histName, subsystem.subsystem))
+                logger.debug("Skipping histogram {0} since it is not classifiable for subsystem {1}".format(hist.histName, subsystem.subsystem))
 
     # Set the proper processing options
     # If it was passed in, it was from time slices
     if processingOptions == None:
         processingOptions = subsystem.processingOptions
-    if processingParameters.beVerbose:
-        print("processingOptions: {0}".format(processingOptions))
+    logger.debug("processingOptions: {0}".format(processingOptions))
 
     # Cannot have same name as other canvases, otherwise the canvas will be replaced, leading to segfaults
     # Start of run should unique to each run!
@@ -187,9 +187,9 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
             hist.hist.Draw(hist.drawOptions)
 
             # Call functions for each hist
-            #print("Functions to apply: {0}".format(hist.functionsToApply))
+            #logger.debug("Functions to apply: {0}".format(hist.functionsToApply))
             for func in hist.functionsToApply:
-                #print("Calling func: {0}".format(func))
+                #logger.debug("Calling func: {0}".format(func))
                 func(subsystem, hist, processingOptions)
 
             if qaContainer:
@@ -198,8 +198,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
 
                 # Skips printing out the histogram
                 if skipPrinting == True:
-                    if processingParameters.beVerbose:
-                        print("Skip printing histogram {0}".format(hist.GetName()))
+                    logger.debug("Skip printing histogram {0}".format(hist.GetName()))
                     continue
 
             # Filter here for hists in the subsystem if subsystem != fileLocationSubsystem
@@ -220,7 +219,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
             jsonBufferFile = outputFormatting % (os.path.join(processingParameters.dirPrefix, subsystem.jsonDir),
                                                  outputName,
                                                  "json")
-            #print("jsonBufferFile: {0}".format(jsonBufferFile))
+            #logger.debug("jsonBufferFile: {0}".format(jsonBufferFile))
             # GZip is performed by the web server, not here!
             with open(jsonBufferFile, "wb") as f:
                 f.write(TBufferJSON.ConvertToJSON(canvas).Data())
@@ -292,13 +291,12 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
         qaContainer.runLength = runLength
         
         # Print current progress
-        print("Processing run", qaContainer.currentRun)
+        logger.info("Processing run", qaContainer.currentRun)
 
         # Determine the proper combined file for input
         combinedFile = next(name for name in os.listdir(os.path.join(processingParameters.dirPrefix, runDir, subsystem.fileLocationSubsystem)) if "combined" in name)
         inputFilename = os.path.join(processingParameters.dirPrefix, runDir, subsystem.fileLocationSubsystem, combinedFile)
-        if processingParameters.beVerbose:
-            print(inputFilename)
+        logger.debug(inputFilename)
 
         # Process the file
         outputHistNames = processRootFile(inputFilename, outputFormatting, subsystem = subsystem, qaContainer = qaContainer)
@@ -327,15 +325,14 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
         # Set img path in the return value
         # Need to remove the pathToRemove defined above to ensure that the url doesn't include the directory
         # (ie. so it is /monitoring/protected, not /monitoring/protected/data)
-        if processingParameters.beVerbose:
-            print(outputFormatting)
-            print(pathToRemove)
+        logger.debug(outputFormatting)
+        logger.debug(pathToRemove)
         returnValues[label] = outputFormatting.replace(pathToRemove, "") % label
 
     # Write root file
     fOut.Close()
 
-    print("returnValues:", returnValues)
+    logger.info("returnValues:", returnValues)
 
     return returnValues
 
@@ -365,7 +362,7 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
 
     # If max filter time is greater than max file time, merge up to and including last file
     if maxTimeCutUnix > subsystem.endOfRun:
-        print("ERROR: Input max time exceeds data! It has been reset to the maximum allowed.")
+        logger.warngin("Input max time exceeds data! It has been reset to the maximum allowed.")
         maxTimeMinutes = subsystem.runLength
         maxTimeCutUnix = subsystem.endOfRun
 
@@ -375,19 +372,19 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
         return ("fullProcessing", False, None)
 
     # If input time range out of range, return 0
-    print("Filtering time window! Min:{0}, Max: {1}".format(minTimeMinutes,maxTimeMinutes)) 
+    logger.info("Filtering time window! Min:{0}, Max: {1}".format(minTimeMinutes,maxTimeMinutes)) 
     if minTimeMinutes < 0:
-        print("Minimum input time less than 0!")
+        logger.info("Minimum input time less than 0!")
         return (None, None, {"Request Error": ["Miniumum input time of \"{0}\" is less than 0!".format(minTimeMinutes)]})
     if minTimeCutUnix > maxTimeCutUnix:
-        print("Max time must be greater than Min time!")
+        logger.info("Max time must be greater than Min time!")
         return (None, None, {"Request Error": ["Max time of \"{0}\" must be greater than the min time of {1}!".format(maxTimeMinutes, minTimeMinutes)]})
 
     # Filter files by input time range
     filesToMerge = []
     for fileCont in subsystem.files.values():
-        #print("fileCont.fileTime: {0}, minTimeCutUnix: {1}, maxTimeCutUnix: {2}".format(fileCont.fileTime, minTimeCutUnix, maxTimeCutUnix))
-        print("fileCont.timeIntoRun (minutes): {0}, minTimeMinutes: {1}, maxTimeMinutes: {2}".format(round(fileCont.timeIntoRun/60), minTimeMinutes, maxTimeMinutes))
+        #logger.info("fileCont.fileTime: {0}, minTimeCutUnix: {1}, maxTimeCutUnix: {2}".format(fileCont.fileTime, minTimeCutUnix, maxTimeCutUnix))
+        logger.info("fileCont.timeIntoRun (minutes): {0}, minTimeMinutes: {1}, maxTimeMinutes: {2}".format(round(fileCont.timeIntoRun/60), minTimeMinutes, maxTimeMinutes))
         #if fileCont.fileTime >= minTimeCutUnix and fileCont.fileTime <= maxTimeCutUnix and fileCont.combinedFile == False:
         # It is important to make this check in such a way that we can round to the nearest minute.
         if round(fileCont.timeIntoRun/60) >= minTimeMinutes and round(fileCont.timeIntoRun/60) <= maxTimeMinutes and fileCont.combinedFile == False:
@@ -401,16 +398,16 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
     # Sort files by time
     filesToMerge.sort(key=lambda x: x.fileTime)
     
-    #print("filesToMerge: {0}, times: {1}".format(filesToMerge, [x.fileTime for x in filesToMerge]))
+    #logger.info("filesToMerge: {0}, times: {1}".format(filesToMerge, [x.fileTime for x in filesToMerge]))
 
     # Get min and max time stamp remaining
     minFilteredTimeStamp = filesToMerge[0].fileTime
     maxFilteredTimeStamp = filesToMerge[-1].fileTime
 
     # Check if it already exists and return if that is the case
-    #print("subsystem.timeSlice: {0}".format(subsystem.timeSlices))
+    #logger.info("subsystem.timeSlice: {0}".format(subsystem.timeSlices))
     for key, timeSlice in subsystem.timeSlices.iteritems():
-        #print("minFilteredTimeStamp: {0}, maxFilteredTimeStamp: {1}, timeSlice.minTime: {2}, timeSlice.maxTime: {3}".format(minFilteredTimeStamp, maxFilteredTimeStamp, timeSlice.minTime, timeSlice.maxTime))
+        #logger.info("minFilteredTimeStamp: {0}, maxFilteredTimeStamp: {1}, timeSlice.minTime: {2}, timeSlice.maxTime: {3}".format(minFilteredTimeStamp, maxFilteredTimeStamp, timeSlice.minTime, timeSlice.maxTime))
         processingOptionsAreTheSame = compareProcessingOptionsDicts(inputProcessingOptions, timeSlice.processingOptions)
         if timeSlice.minUnixTimeAvailable == minFilteredTimeStamp and timeSlice.maxUnixTimeAvailable == maxFilteredTimeStamp and processingOptionsAreTheSame:
             # Already exists - we don't need to remerge or reprocess
@@ -451,7 +448,7 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
     # Setup start runDir string of the form "Run#"
     #runDir = "Run" + str(timeSliceRunNumber)
     runDir = timeSliceRunNumber
-    print("Processing %s" % runDir)
+    logger.info("Processing %s" % runDir)
 
     # Load run information
     if runDir in runs:
@@ -461,7 +458,7 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
 
     # Get subsystem
     subsystem = run.subsystems[subsystemName]
-    print("subsystem.baseDir: {0}".format(subsystem.baseDir))
+    logger.info("subsystem.baseDir: {0}".format(subsystem.baseDir))
 
     # Setup dirPrefix
     dirPrefix = processingParameters.dirPrefix
@@ -474,7 +471,7 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
     # Little should happen here since few, if any files, should be moved
     processMovedFilesIntoRuns(runs, runDict)
 
-    print("runLength: {0}".format(subsystem.runLength))
+    logger.info("runLength: {0}".format(subsystem.runLength))
 
     # Validate and create time slice
     (timeSliceKey, newlyCreated, errors) = validateAndCreateNewTimeSlice(run, subsystem, minTimeRequested, maxTimeRequested, inputProcessingOptions)
@@ -496,18 +493,16 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
         return errors
 
     # Print variables for log
-    if processingParameters.beVerbose:
-        print("minTimeRequested: {0}, maxTimeRequested: {1}".format(minTimeRequested, maxTimeRequested))
-        print("subsystem.subsystem: {0}, subsystem.fileLocationSubsystem: {1}".format(subsystem.subsystem, subsystem.fileLocationSubsystem))
+    logger.debug("minTimeRequested: {0}, maxTimeRequested: {1}".format(minTimeRequested, maxTimeRequested))
+    logger.debug("subsystem.subsystem: {0}, subsystem.fileLocationSubsystem: {1}".format(subsystem.subsystem, subsystem.fileLocationSubsystem))
 
     # Generate the histograms
     outputFormattingSave = os.path.join("%s", "{0}.%s.%s".format(timeSlice.filenamePrefix))
-    if processingParameters.beVerbose:
-        print("outputFormattingSave: {0}".format(outputFormattingSave))
-        print("path: {0}".format(os.path.join(processingParameters.dirPrefix,
-                                                   subsystem.baseDir,
-                                                   timeSlice.filename.filename) ))
-        print("timeSlice.processingOptions: {0}".format(timeSlice.processingOptions))
+    logger.debug("outputFormattingSave: {0}".format(outputFormattingSave))
+    logger.debug("path: {0}".format(os.path.join(processingParameters.dirPrefix,
+                                               subsystem.baseDir,
+                                               timeSlice.filename.filename) ))
+    logger.debug("timeSlice.processingOptions: {0}".format(timeSlice.processingOptions))
     outputHistNames = processRootFile(os.path.join(processingParameters.dirPrefix,
                                                    subsystem.baseDir,
                                                    timeSlice.filename.filename),
@@ -515,7 +510,7 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
                                       qaContainer = None,
                                       processingOptions = timeSlice.processingOptions)
 
-    print("Finished processing {0}!".format(run.prettyName))
+    logger.info("Finished processing {0}!".format(run.prettyName))
 
     # No errors, so return the key
     return timeSliceKey
@@ -535,7 +530,7 @@ def createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir):
     filenames = sorted(runDict[runDir].subsystems[fileLocationSubsystem])
     startOfRun = utilities.extractTimeStampFromFilename(filenames[0])
     endOfRun = utilities.extractTimeStampFromFilename(filenames[-1])
-    print("runLength filename: {0}".format(filename[-1]))
+    logger.info("runLength filename: {0}".format(filename[-1]))
 
     # Create the subsystem
     showRootFiles = False
@@ -575,7 +570,7 @@ def processMovedFilesIntoRuns(runs, runDict):
                     fileKeys = subsystem.files.keys()
                     # This should rarely change, but in principle we could get a new file that we missed.
                     subsystem.startOfRun = fileKeys[0]
-                    print("INFO: Previous EOR: {0}\tNew: {1}".format(subsystem.endOfRun, fileKeys[-1]))
+                    logger.info("Previous EOR: {0}\tNew: {1}".format(subsystem.endOfRun, fileKeys[-1]))
                     subsystem.endOfRun = fileKeys[-1]
                 else:
                     # Create a new subsystem
@@ -634,7 +629,7 @@ def processAllRuns():
     # Create runs list
     if dbRoot.has_key("runs"):
         # The objects exist, so just use the stored copy and update it.
-        print("Utilizing existing database!")
+        logger.info("Utilizing existing database!")
         runs = dbRoot["runs"]
 
         # Files which were new are marked as such from the previous run,
@@ -670,20 +665,20 @@ def processAllRuns():
                     else:
                         # Cannot create subsystem, since the HLT doesn't exist as a fall back
                         if subsystem == "HLT":
-                            print("WARNING: Could not create subsystem {0} in {1} due to lacking HLT files.".format(subsystem, runDir))
+                            logger.warning("Could not create subsystem {0} in {1} due to lacking HLT files.".format(subsystem, runDir))
                         else:
-                            print("WARNING: Could not create subsystem {0} in {1} due to lacking {0} and HLT files.".format(subsystem, runDir))
+                            logger.warning("Could not create subsystem {0} in {1} due to lacking {0} and HLT files.".format(subsystem, runDir))
                         continue
 
-                print("Creating subsystem {0} in {1}".format(subsystem, runDir))
+                logger.info("Creating subsystem {0} in {1}".format(subsystem, runDir))
                 # Retrieve the files for a given directory
                 [filenamesDict, runLength] = utilities.createFileDictionary(dirPrefix, runDir, fileLocationSubsystem)
-                #print("runLength: {0}, filenamesDict: {1}".format(runLength, filenamesDict))
+                #logger.info("runLength: {0}, filenamesDict: {1}".format(runLength, filenamesDict))
                 sortedKeys = sorted(filenamesDict.keys())
                 startOfRun = utilities.extractTimeStampFromFilename(filenamesDict[sortedKeys[0]])
                 endOfRun = utilities.extractTimeStampFromFilename(filenamesDict[sortedKeys[-1]])
-                #print("filenamesDict.values(): {0}".format(filenamesDict.values()))
-                print("startOfRun: {0}, endOfRun: {1}, runLength: {2}".format(startOfRun, endOfRun, (endOfRun - startOfRun)/60))
+                #logger.info("filenamesDict.values(): {0}".format(filenamesDict.values()))
+                logger.info("startOfRun: {0}, endOfRun: {1}, runLength: {2}".format(startOfRun, endOfRun, (endOfRun - startOfRun)/60))
 
                 # Now create the subsystem
                 showRootFiles = False
@@ -702,7 +697,7 @@ def processAllRuns():
                 for key in filenamesDict:
                     subsystemFiles[key] = processingClasses.fileContainer(filenamesDict[key], startOfRun)
 
-                print("DEBUG: files length: {0}".format(len(subsystemFiles)))
+                logger.debug("Files length: {0}".format(len(subsystemFiles)))
 
                 # And add the files to the subsystem
                 # Since a run was just appended, accessing the last element should always be fine
@@ -711,33 +706,32 @@ def processAllRuns():
                 # Add combined
                 combinedFilename = [filename for filename in os.listdir(subsystemPath) if "combined" in filename and ".root" in filename]
                 if len(combinedFilename) > 1:
-                    print("ERROR: Number of combined files in {0} is {1}, but should be 1! Exiting!".format(runDir, len(combinedFilename)))
+                    logger.critical("Number of combined files in {0} is {1}, but should be 1! Exiting!".format(runDir, len(combinedFilename)))
                     exit(0)
                 if len(combinedFilename) == 1:
                     run.subsystems[subsystem].combinedFile = processingClasses.fileContainer(os.path.join(runDir, fileLocationSubsystem, combinedFilename[0]), startOfRun)
                 else:
-                    print("INFO: No combined file in {0}".format(runDir))
+                    logger.info("No combined file in {0}".format(runDir))
 
         # Commit any changes made to the database
         transaction.commit()
 
-    print("runs: {0}".format(list(runs.keys())))
+    logger.info("runs: {0}".format(list(runs.keys())))
 
     # Start of processing data
     # Takes histos from dirPrefix and moves them into Run dir structure, with a subdir for each subsystem
     runDict = utilities.moveRootFiles(dirPrefix, processingParameters.subsystemList)
 
-    print("INFO: Files moved: {0}".format(runDict))
+    logger.info("Files moved: {0}".format(runDict))
 
     # Now process the results from moving the files and add them into the runs list
     processMovedFilesIntoRuns(runs, runDict)
 
     # DEBUG
-    print("DEBUG:")
-    if processingParameters.beVerbose:
-        for runDir in runs.keys():
-            for subsystem in runs[runDir].subsystems.keys():
-                print("{0}, {1} has nFiles: {2}".format(runDir, subsystem, len(runs[runDir].subsystems[subsystem].files)))
+    logger.debug("DEBUG:")
+    for runDir in runs.keys():
+        for subsystem in runs[runDir].subsystems.keys():
+            logger.debug("{0}, {1} has nFiles: {2}".format(runDir, subsystem, len(runs[runDir].subsystems[subsystem].files)))
 
     # Merge histograms over all runs, all subsystems if needed. Results in one combined file per subdir.
     mergedRuns = mergeFiles.mergeRootFiles(runs, dirPrefix,
@@ -751,15 +745,14 @@ def processAllRuns():
             # Process if there is a new file or if forceReprocessing
             if subsystem.newFile == True or processingParameters.forceReprocessing == True:
                 # Process combined root file: plot histos and save in imgDir
-                print("INFO: About to process {0}, {1}".format(run.prettyName, subsystem.subsystem))
+                logger.info("About to process {0}, {1}".format(run.prettyName, subsystem.subsystem))
                 outputFormattingSave = os.path.join("%s", "%s.%s") 
                 processRootFile(os.path.join(processingParameters.dirPrefix, subsystem.combinedFile.filename),
                                 outputFormattingSave,
                                 subsystem)
             else:
                 # We often want to skip this point since most runs will not need to be processed most times
-                if processingParameters.beVerbose:
-                    print("INFO: Don't need to process {0}. It has already been processed".format(run.prettyName))
+                logger.debug("Don't need to process {0}. It has already been processed".format(run.prettyName))
 
         # Commit after we have successfully processed a run
         transaction.commit()
@@ -768,11 +761,11 @@ def processAllRuns():
     #pickle.dump(runs, open(os.path.join(processingParameters.dirPrefix, "runs.p"), "wb"))
     #pickle.dump(runs["Run123456"], open(os.path.join(processingParameters.dirPrefix, "runs.p"), "wb"))
     
-    print("INFO: Finished processing!")
+    logger.info("Finished processing!")
 
     # Send data to pdsf via rsync
     if processingParameters.sendData == True:
-        print("INFO: Preparing to send data")
+        logger.info("Preparing to send data")
         utilities.rsyncData(dirPrefix, processingParameters.remoteUsername, processingParameters.remoteSystems, processingParameters.remoteFileLocations)
         if processingParameters.templateDataDirName != None:
             utilities.rsyncData(processingParameters.templateDataDirName, processingParameters.remoteUsername, processingParameters.remoteSystems, processingParameters.remoteFileLocations)
@@ -781,12 +774,10 @@ def processAllRuns():
     receiverLogFileDir = os.path.join("receiver", "bin")
     receiverLogFilePath = os.path.join(receiverLogFileDir,
                                        next(( name for name in os.listdir(receiverLogFileDir) if "Receiver.log" in name), None))
-    if processingParameters.beVerbose:
-        print("INFO: receiverLogFilePath: {0}".format(receiverLogFilePath))
+    logger.debug("receiverLogFilePath: {0}".format(receiverLogFilePath))
 
     if receiverLogFilePath and os.path.exists(receiverLogFilePath):
-        if processingParameters.beVerbose:
-            print("INFO: Updating receiver log last modified time!")
+        logger.debug("Updating receiver log last modified time!")
         receiverLogLastModified = os.path.getmtime(receiverLogFilePath)
         dbRoot["receiverLogLastModified"] = receiverLogLastModified
 
@@ -794,14 +785,7 @@ def processAllRuns():
     transaction.commit()
     connection.close()
 
-# Allows the function to be invoked automatically when run with python while not invoked when loaded as a module
-if __name__ == "__main__":
-    # Configure logging
-    # Set format, etc
-    rootHandler = logging.getLogger()
-    logFormat = logging.Formatter("%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]")
-    rootHandler.setFormatter(formatter)
-
+def setupLogging():
     # Check on docker deplyoment variables
     try:
         dockerDeploymentOption = os.environ["deploymentOption"]
@@ -809,21 +793,30 @@ if __name__ == "__main__":
         # It doesn't exist
         dockerDeploymentOption = ""
 
+    # Configure logger
+    # Logging level for root logger
+    logger.setLevel(processingParameters.loggingLevel)
+    # Format
+    logFormatStr = "%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"
+    logFormat = logging.Formatter(logFormatStr)
+
     # For docker, we log to stdout so that supervisor is able to handle the logging
     if processingParameters.debug == True or dockerDeploymentOption:
         # Log to stdout
         handler = logging.StreamHandler(sys.stdout)
         handler.setLevel(processingParameters.loggingLevel)
-        # Do we need to set it again explictily?
-        #handler.setFormatter(logFormat)
-        rootHandler.addHandler(handler)
+        handler.setFormatter(logFormat)
+        logger.addHandler(handler)
+        logger.debug("Added streaming handler to logging!")
     else:
         # Log to file
-        handler = logging.FileHandler(os.path.join("deploy", "processRuns.log"))
+        handler = logging.handlers.RotatingFileHandler(os.path.join("deploy", "processRuns.log"),
+                                                       maxBytes = 5000000,
+                                                       backupCount = 10)
         handler.setLevel(processingParameters.loggingLevel)
-        # Do we need to set it again explictily?
-        #handler.setFormatter(logFormat)
-        rootHandler.addHandler(handler)
+        handler.setFormatter(logFormat)
+        logger.addHandler(handler)
+        logger.debug("Added file handler to logging!")
 
         # Sent issues through email
         # See: http://flask.pocoo.org/docs/0.10/errorhandling/
@@ -831,7 +824,7 @@ if __name__ == "__main__":
         handler = logging.handlers.SMTPHandler("smtp.cern.ch",
                                                 "error@aliceoverwatch.cern.ch",
                                                 notifyAddresses, "OVERWATCH Failed")
-        handler.setLevel(processingParameters.loggingLevel)
+        handler.setLevel(processingParameters.WARNING)
         handler.setFormatter(Formatter("""
         Message type:       %(levelname)s
         Location:           %(pathname)s:%(lineno)d
@@ -844,7 +837,13 @@ if __name__ == "__main__":
         %(message)s
         """))
         # TODO: Properly configure so that it can be added as a handler!
-        #rootHandler.addHandler(handler)
+        #logger.addHandler(handler)
+        logger.debug("Added mailer handler to logging!")
+
+
+# Allows the function to be invoked automatically when run with python while not invoked when loaded as a module
+if __name__ == "__main__":
+    setupLogging()
 
     # Process all of the run data
     processAllRuns()
@@ -862,22 +861,22 @@ if __name__ == "__main__":
     #runs = dbRoot["runs"]
     ## ENDTEMP
 
-    #print("\n\t\t0-4:")
+    #logging.info("\n\t\t0-4:")
     #returnValue = processTimeSlices(runs, "Run300005", 0, 4, "EMC")
-    #print("0-4 UUID: {0}".format(returnValue))
+    #logging.info("0-4 UUID: {0}".format(returnValue))
 
-    #print("\n\t\t0-3:")
+    #logging.info("\n\t\t0-3:")
     #returnValue = processTimeSlices(runs, "Run300005", 0, 3, "EMC")
-    #print("0-3 UUID: {0}".format(returnValue))
+    #logging.info("0-3 UUID: {0}".format(returnValue))
 
-    #print("\n\t\t0-3 repeat:")
+    #logging.info("\n\t\t0-3 repeat:")
     #returnValue = processTimeSlices(runs, "Run300005", 0, 3, "EMC")
-    #print("0-3 repeat UUID: {0}".format(returnValue))
+    #logging.info("0-3 repeat UUID: {0}".format(returnValue))
 
-    #print("\n\t\t1-4:")
+    #logging.info("\n\t\t1-4:")
     #returnValue = processTimeSlices(runs, "Run300005", 1, 4, "EMC")
-    #print("1-4 UUID: {0}".format(returnValue))
+    #logging.info("1-4 UUID: {0}".format(returnValue))
 
-    #print("\n\t\t1-3:")
+    #logging.info("\n\t\t1-3:")
     #returnValue = processTimeSlices(runs, "Run300005", 1, 3, "EMC")
-    #print("1-3 UUID: {0}".format(returnValue))
+    #logging.info("1-3 UUID: {0}".format(returnValue))

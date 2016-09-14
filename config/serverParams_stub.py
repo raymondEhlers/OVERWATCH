@@ -7,6 +7,8 @@ from __future__ import print_function
 import socket
 import os
 import logging
+# Setup logger
+logger = logging.getLogger(__name__)
 
 # Bcrypt
 from flask_bcrypt import generate_password_hash
@@ -124,21 +126,21 @@ class serverParameters(object):
     #: Subsystems which have templates available (determined on startup)
     availableRunPageTemplates = [name for name in os.listdir(templateFolder) if "runPage.html" in name]
 
-logging.info("\nServer Parameters:")
-logging.info("ipAddress: {0}".format(serverParameters.ipAddress))
-logging.info("port: {0}".format(serverParameters.port))
-logging.info("bcryptLogRounds: {0}".format(serverParameters.bcryptLogRounds))
-logging.info("defaultUsername: {0}".format(serverParameters.defaultUsername))
-logging.info("basePath: {0}".format(serverParameters.basePath))
-logging.info("staticFolder: {0}".format(serverParameters.staticFolder))
-logging.info("staticURLPath: {0}".format(serverParameters.staticURLPath))
-logging.info("protectedFolder: {0}".format(serverParameters.protectedFolder))
-logging.info("templateFolder: {0}".format(serverParameters.templateFolder))
-logging.info("databaseLocation: {0}".format(serverParameters.databaseLocation))
-logging.info("fileExtension: {0}".format(serverParameters.fileExtension))
-logging.info("docsFolder: {0}".format(serverParameters.docsFolder))
-logging.info("docsBuildFolder: {0}".format(serverParameters.docsBuildFolder))
-logging.info("debug: {0}".format(serverParameters.debug))
-logging.info("subsystemList: {0}".format(serverParameters.subsystemList))
-logging.info("qaFunctionsList: {0}".format(serverParameters.qaFunctionsList))
-logging.info("availableRunPageTemplates: {0}".format(serverParameters.availableRunPageTemplates))
+logger.info("\nServer Parameters:")
+logger.info("ipAddress: {0}".format(serverParameters.ipAddress))
+logger.info("port: {0}".format(serverParameters.port))
+logger.info("bcryptLogRounds: {0}".format(serverParameters.bcryptLogRounds))
+logger.info("defaultUsername: {0}".format(serverParameters.defaultUsername))
+logger.info("basePath: {0}".format(serverParameters.basePath))
+logger.info("staticFolder: {0}".format(serverParameters.staticFolder))
+logger.info("staticURLPath: {0}".format(serverParameters.staticURLPath))
+logger.info("protectedFolder: {0}".format(serverParameters.protectedFolder))
+logger.info("templateFolder: {0}".format(serverParameters.templateFolder))
+logger.info("databaseLocation: {0}".format(serverParameters.databaseLocation))
+logger.info("fileExtension: {0}".format(serverParameters.fileExtension))
+logger.info("docsFolder: {0}".format(serverParameters.docsFolder))
+logger.info("docsBuildFolder: {0}".format(serverParameters.docsBuildFolder))
+logger.info("debug: {0}".format(serverParameters.debug))
+logger.info("subsystemList: {0}".format(serverParameters.subsystemList))
+logger.info("qaFunctionsList: {0}".format(serverParameters.qaFunctionsList))
+logger.info("availableRunPageTemplates: {0}".format(serverParameters.availableRunPageTemplates))

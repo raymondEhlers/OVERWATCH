@@ -6,6 +6,8 @@ from __future__ import print_function
 # General
 import os
 import logging
+# Setup logger
+logger = logging.getLogger(__name__)
 
 # Config
 from .sharedParams import sharedParameters
@@ -110,22 +112,23 @@ class processingParameters(object):
         loggingLevel = logging.DEBUG
 
 # Print settings
-logging.info("\nProcessing Parameters:")
-logging.info("fileExtension: {0}".format(processingParameters.fileExtension))
-logging.info("beVerbose: {0}".format(processingParameters.beVerbose))
-logging.info("debug: {0}".format(processingParameters.debug))
-logging.info("forceReprocessing: {0}".format(processingParameters.forceReprocessing))
-logging.info("forceNewMerge: {0}".format(processingParameters.forceNewMerge))
-logging.info("sendData: {0}".format(processingParameters.sendData))
-logging.info("remoteUsername: {0}".format(processingParameters.remoteUsername))
-logging.info("remoteSystems: {0}".format(processingParameters.remoteSystems))
-logging.info("remoteFileLocations: {0}".format(processingParameters.remoteFileLocations))
-logging.info("cumulativeMode: {0}".format(processingParameters.cumulativeMode))
-logging.info("templateDataDirName: {0}".format(processingParameters.templateDataDirName))
-logging.info("databaseLocation: {0}".format(processingParameters.databaseLocation))
-logging.info("dirPrefix: {0}".format(processingParameters.dirPrefix))
-logging.info("modulesPath: {0}".format(processingParameters.modulesPath))
-logging.info("detectorsPath: {0}".format(processingParameters.detectorsPath))
-logging.info("subsystemList: {0}".format(processingParameters.subsystemList))
-logging.info("subsystemsWithRootFilesToShow: {0}".format(processingParameters.subsystemsWithRootFilesToShow))
-logging.info("qaFunctionsToAlwaysApply: {0}".format(processingParameters.qaFunctionsToAlwaysApply))
+logger.info("\nProcessing Parameters:")
+logger.info("fileExtension: {0}".format(processingParameters.fileExtension))
+logger.info("beVerbose: {0}".format(processingParameters.beVerbose))
+logger.info("loggingLevel: {0}".format(processingParameters.loggingLevel))
+logger.info("debug: {0}".format(processingParameters.debug))
+logger.info("forceReprocessing: {0}".format(processingParameters.forceReprocessing))
+logger.info("forceNewMerge: {0}".format(processingParameters.forceNewMerge))
+logger.info("sendData: {0}".format(processingParameters.sendData))
+logger.info("remoteUsername: {0}".format(processingParameters.remoteUsername))
+logger.info("remoteSystems: {0}".format(processingParameters.remoteSystems))
+logger.info("remoteFileLocations: {0}".format(processingParameters.remoteFileLocations))
+logger.info("cumulativeMode: {0}".format(processingParameters.cumulativeMode))
+logger.info("templateDataDirName: {0}".format(processingParameters.templateDataDirName))
+logger.info("databaseLocation: {0}".format(processingParameters.databaseLocation))
+logger.info("dirPrefix: {0}".format(processingParameters.dirPrefix))
+logger.info("modulesPath: {0}".format(processingParameters.modulesPath))
+logger.info("detectorsPath: {0}".format(processingParameters.detectorsPath))
+logger.info("subsystemList: {0}".format(processingParameters.subsystemList))
+logger.info("subsystemsWithRootFilesToShow: {0}".format(processingParameters.subsystemsWithRootFilesToShow))
+logger.info("qaFunctionsToAlwaysApply: {0}".format(processingParameters.qaFunctionsToAlwaysApply))

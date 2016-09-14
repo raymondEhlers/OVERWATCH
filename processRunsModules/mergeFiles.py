@@ -16,6 +16,9 @@ from ROOT import gROOT, TH1, TFile, TFileMerger
 # General
 import os
 import shutil
+import logging
+# Setup logger
+logger = logging.getLogger(__name__)
 
 from . import processingClasses
 from . import utilities
@@ -76,7 +79,7 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlice = None):
         subtractFiles(os.path.join(currentDir, earliestFile),
                       os.path.join(currentDir, latestFile),
                       timeSlicesFilename)
-        print("Completed time slicing via subtraction with result stored in {0}!\nMerging complete!".format(timeSlicesFilename))
+        logger.info("Completed time slicing via subtraction with result stored in {0}!\nMerging complete!".format(timeSlicesFilename))
         return None
 
     if cumulativeMode:
@@ -89,12 +92,12 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlice = None):
     else:
         # If more than one file (almost assuredly reset mode), merge everything
         for fileCont in filesToMerge:
-            print("Added file %s to merger" % fileCont.filename)
+            logger.info("Added file {0} to merger".format(fileCont.filename))
             merger.AddFile(fileCont.filename)
 
         numberOfFiles = merger.GetMergeList().GetEntries()
         if numberOfFiles != len(filesToMerge):
-            print("ERROR: Problems encountered when adding files to merger!")
+            logger.error("Problems encountered when adding files to merger!")
             return {"Merge Error": ["Problems encountered when adding files to merger! Number of input files ({0}) do not match number in merger ({1})!".format(len(filesToMerge), numberOfFiles)]}
 
     if timeSlice:
@@ -104,8 +107,8 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlice = None):
         maxFilteredTimeStamp = filesToMerge[-1].fileTime
         filePath = os.path.join(subsystem.baseDir, "hists.combined.%i.%i.root" % (numberOfFiles, maxFilteredTimeStamp))
     outFile = os.path.join(currentDir, filePath)
-    print("Number of files to be merged: {0}".format(numberOfFiles))
-    print("Output file: {0}".format(outFile))
+    logger.info("Number of files to be merged: {0}".format(numberOfFiles))
+    logger.info("Output file: {0}".format(outFile))
 
     # Set the output and perform the actual merge
     if numberOfFiles == 1:
@@ -115,7 +118,7 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlice = None):
     else:
         merger.OutputFile(outFile)
         merger.Merge()
-    print("Merging complete!")
+    logger.info("Merging complete!")
 
     # Add combined file to the subsystem
     if not timeSlice:
@@ -213,9 +216,9 @@ def mergeRootFiles(runs, dirPrefix, forceNewMerge = False, cumulativeMode = True
                 #   In SUB mode, compare combined file timestamp with latest timestamp of uncombined file
                 #   In REQ mode, compare combined file merge count with number of uncombined files
 
-                print("Need to merge {0}, {1} again".format(runDir, subsystem))
+                logger.info("Need to merge {0}, {1} again".format(runDir, subsystem))
                 if combinedFile:
-                    print("Removing previous merged file %s" % combinedFile.filename)
+                    logger.info("Removing previous merged file %s" % combinedFile.filename)
                     os.remove(os.path.join(currentDir, combinedFile.filename))
                     # Remove from the file list
                     run.subsystems[subsystem].combinedFile = None

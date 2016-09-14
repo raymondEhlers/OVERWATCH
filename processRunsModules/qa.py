@@ -9,6 +9,9 @@ from __future__ import print_function
 # General includes
 import os
 import sys
+import logging
+# Setup logger
+logger = logging.getLogger(__name__)
 
 # Used to load functions from other modules
 import importlib
@@ -34,7 +37,7 @@ def createHistGroups(subsystem):
         return True
 
     # If it doens't work for any reason, return false so that we can create a default
-    print("Could not find histogram group creation function for subsystem {0}".format(subsystem.subsystem))
+    logger.info("Could not find histogram group creation function for subsystem {0}".format(subsystem.subsystem))
     return False
 
 ###################################################
@@ -47,7 +50,7 @@ def createHistogramStacks(subsystem):
     if histogramStackFunction is not None:
         histogramStackFunction(subsystem)
     else:
-        print("Could not find histogram stack function for subsystem {0}.".format(subsystem.subsystem))
+        logger.info("Could not find histogram stack function for subsystem {0}.".format(subsystem.subsystem))
         # Ensure that the histograms propagate to the next dict if there is not stack function!
         subsystem.histsAvailable = subsystem.histsInFile
 
@@ -61,7 +64,7 @@ def setHistogramOptions(subsystem):
     if histogramStackFunction is not None:
         histogramStackFunction(subsystem)
     else:
-        print("Could not find histogram options function for subsystem {0}.".format(subsystem.subsystem))
+        logger.info("Could not find histogram options function for subsystem {0}.".format(subsystem.subsystem))
         # Ensure that the histograms propagate to the next dict if there is not stack function!
         subsystem.histsAvailable = subsystem.histsInFile
 
@@ -75,8 +78,7 @@ def findFunctionsForHist(subsystem, hist):
     if findFunction is not None:
         findFunction(subsystem, hist)
     else:
-        if processingParameters.beVerbose:
-            print("Could not find histogram function sorting function for subsystem {0}".format(subsystem.subsystem))
+        logger.info("Could not find histogram function sorting function for subsystem {0}".format(subsystem.subsystem))
 
 ###################################################
 def checkHist(hist, qaContainer):
@@ -110,7 +112,7 @@ def checkHist(hist, qaContainer):
 # For more details on how this is possible, see: https://stackoverflow.com/a/3664396
 detectorsPath = processingParameters.detectorsPath
 modulesPath = processingParameters.modulesPath
-print("\nLoading modules for detectors:")
+logger.info("\nLoading modules for detectors:")
 
 # For saving and show the docstrings on the QA page.
 qaFunctionDocstrings = {}
@@ -128,14 +130,14 @@ subsystems = list(set(subsystems))
 
 # Load functions
 for subsystem in subsystems:
-    print("Subsystem", subsystem, "Functions loaded:", end=' ') 
+    logger.info("Subsystem {0} Functions loaded:".format(subsystem), end=' ') 
 
     # Ensure that the module exists before trying to load it
     if os.path.exists(os.path.join(modulesPath, detectorsPath, "%s.py" % subsystem)):
         #print "file exists"
         # Import module dynamically
         subsystemModule = importlib.import_module("%s.%s.%s" % (modulesPath, detectorsPath, subsystem))
-        #print(dir(subsystemModule))
+        #logger.info(dir(subsystemModule))
 
         # Loop over all functions from the dynamically loaded module
         # See: https://stackoverflow.com/a/4040709
@@ -167,8 +169,8 @@ for subsystem in subsystems:
 
         # Print out the function names that have been loaded
         if functionNames != []:
-            print(", ".join(functionNames))
+            logger.info("\t{0}".format(", ".join(functionNames)))
         else:
-            print("")
+            logger.info("")
     else:
-        print("")
+        logger.info("")

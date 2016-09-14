@@ -16,6 +16,9 @@ import persistent
 
 import os
 import time
+import logging
+# Setup logger
+logger = logging.getLogger(__name__)
 
 from processRunsModules import utilities
 from config.processingParams import processingParameters
@@ -107,7 +110,7 @@ class subsystemContainer(persistent.Persistent):
             self.fileLocationSubsystem = fileLocationSubsystem
 
         if self.showRootFiles == True and self.subsystem != self.fileLocationSubsystem:
-            print("\tWARNING! It is requested to show ROOT files for subsystem %s, but the subsystem does not have specific data files. Using HLT data files!" % subsystem)
+            logger.warning("\tIt is requested to show ROOT files for subsystem %s, but the subsystem does not have specific data files. Using HLT data files!" % subsystem)
 
         # Files
         # Be certain to set these after the subsystem has been created!
@@ -121,7 +124,7 @@ class subsystemContainer(persistent.Persistent):
         # Depends on whether the subsystem actually contains the files!
         self.baseDir = os.path.join(runDir, self.fileLocationSubsystem)
         self.imgDir = os.path.join(self.baseDir, "img")
-        print("imgDir: {0}".format(self.imgDir))
+        logger.info("imgDir: {0}".format(self.imgDir))
         self.jsonDir = os.path.join(self.baseDir, "json")
         # Ensure that they exist
         if not os.path.exists(os.path.join(processingParameters.dirPrefix, self.imgDir)):
@@ -200,7 +203,7 @@ class timeSliceContainer(persistent.Persistent):
         self.processingOptions = persistent.mapping.PersistentMapping()
 
     def timeInMinutes(self, inputTime):
-        #print("inputTime: {0}, startOfRun: {1}".format(inputTime, self.startOfRun))
+        #logger.debug("inputTime: {0}, startOfRun: {1}".format(inputTime, self.startOfRun))
         return (inputTime - self.startOfRun)//60
 
     def timeInMinutesRounded(self, inputTime):
@@ -301,12 +304,12 @@ class histogramContainer(persistent.Persistent):
         if self.histList is not None:
             self.hist = THStack(self.histName, self.histName)
             for name in self.histList:
-                print("HistName in list: {0}".format(name))
+                logger.debug("HistName in list: {0}".format(name))
                 self.hist.Add(fIn.GetKey(name).ReadObj())
             self.drawOptions += "nostack"
             # TODO: Allow for further configuration of THStack, like TLegend and such
         else:
-            print("HistName: {0}".format(self.histName))
+            logger.debug("HistName: {0}".format(self.histName))
             self.hist = fIn.GetKey(self.histName).ReadObj()
 
 ###################################################
@@ -367,7 +370,7 @@ class qaFunctionContainer(persistent.Persistent):
         # Ensures that the created histogram does not get destroyed after going out of scope.
         hist.SetDirectory(0)
         if label in self.hists:
-            Print("WARNING: Replacing histogram %s in QA Container!" % label)
+            logger.warning("Replacing histogram {0} in QA Container!".format(label))
         self.hists[label] = hist
 
     def addHists(self, hists):
@@ -442,6 +445,6 @@ class qaFunctionContainer(persistent.Persistent):
         if histName in self.hists:
             del self.hists[histName]
         else:
-            print("WARNING: histName {0} not in qa container, so it could not be removed!".format(histName))
+            logger.warning("histName {0} not in qa container, so it could not be removed!".format(histName))
 
 

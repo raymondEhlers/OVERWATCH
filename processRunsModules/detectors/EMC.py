@@ -20,6 +20,11 @@ import numpy
 # Used to enumerate possible names in a list
 import itertools
 
+# General includes
+import logging
+# Setup logger
+logger = logging.getLogger(__name__)
+
 # Basic processing classes
 from processRunsModules import processingClasses
 
@@ -62,7 +67,7 @@ def sortSMsInPhysicalOrder(histList):
     """
 
     tempList = []
-    print(len(histList))
+    logger.info(len(histList))
     for i in range(0, len(histList), 2):
         # Protect against overflowing the list
         if i != (len(histList)-1):
@@ -391,7 +396,7 @@ def hasSignalOutlier(hist):
             amp = signal[(binX-1) + (binY-1)*xbins]
             if(amp > threshUp or amp < threshDown):
                 if not ignoreEmptyBins or amp > 0: 
-                    print("bin (" + repr(binX) + "," + repr(binY) + ") has amplitude " + repr(amp) + "! This is outside of threshold, [" + '%.2f'%threshDown + "," + '%.2f'%threshUp + "]")
+                    logger.info("bin (" + repr(binX) + "," + repr(binY) + ") has amplitude " + repr(amp) + "! This is outside of threshold, [" + '%.2f'%threshDown + "," + '%.2f'%threshUp + "]")
                     outlierList.append((binX-1) + (binY-1)*xbins)
     
     # Exclude outliers and recalculate
@@ -431,15 +436,15 @@ def determineMedianSlope(hist, qaContainer):
         #print hist.GetName()
         medianHistName = "medianSlope"
         if hist.GetName() == "EMCTRQA_histEMCalMedianVsDCalMedianRecalc":
-            print("qaContainer.currentRun:", qaContainer.currentRun)
+            logger.info("qaContainer.currentRun: {0}".format(qaContainer.currentRun))
             # Create histogram if it is the first run
             #if qaContainer.currentRun == qaContainer.firstRun:
             # Can check for the first run as in the commented line above, but this will not work if the first run does not contain
             # the deisred histogram. This could also be achieved by creating the necessary histogram before checking the passed
             # hists name and then setting a flag (could also override the filledValueInRun flag) to note that it is created.
-            print("getHist:", qaContainer.getHist(medianHistName))
+            logger.info("getHist: {0}".format(qaContainer.getHist(medianHistName)))
             if qaContainer.getHist(medianHistName) is None:
-                print("Creating hist", medianHistName)
+                logger.info("Creating hist", medianHistName)
                 medianHist = TH1F(medianHistName, "Median vs Median Slope", len(qaContainer.runDirs), 0, len(qaContainer.runDirs))
                 # Save the histogram to the qaContainer.
                 qaContainer.addHist(medianHist, medianHist.GetName())
@@ -455,8 +460,8 @@ def determineMedianSlope(hist, qaContainer):
             linearFit.SetParameter(1, float(0))
             prof.Fit(linearFit)
 
-            print("qaContainer.hists:", qaContainer.getHists())
-            print("Entries:", qaContainer.getHist(medianHistName).GetEntries())
+            logger.info("qaContainer.hists: {0}".format(qaContainer.getHists()))
+            logger.info("Entries: {0}".format(qaContainer.getHist(medianHistName).GetEntries()))
             #medianHist.SetBinContent(qaContainer.runDirs.index(qaContainer.currentRun) + 1, linearFit.GetParameter("0"))
             # Extract the slope and fill it into the histogram
             qaContainer.getHist(medianHistName).SetBinContent(qaContainer.runDirs.index(qaContainer.currentRun) + 1, linearFit.GetParameter(0))
@@ -468,7 +473,7 @@ def determineMedianSlope(hist, qaContainer):
         # Always want to skip printing the normal histograms when processing.
         return True
     else:
-        print("qaContainer must exist to determine the median slope.")
+        logger.error("qaContainer must exist to determine the median slope.")
 
 ###################################################
 # Plot Patch Spectra with logy and grad 
@@ -557,7 +562,7 @@ def addTRUGrid(subsystem, hist):
 
     """
     # TEMP
-    print("TRU Grid histName: {0}".format(hist.histName))
+    logger.debug("TRU Grid histName: {0}".format(hist.histName))
 
     # Draw grid for TRUs in full EMCal SMs
     for x in range(8, 48, 8):
@@ -756,7 +761,7 @@ def findFunctionsForEMCHistogram(subsystem, hist):
     fastORLevels = ["EMCTRQA_histFastORL0", "EMCTRQA_histFastORL1"]
     fastORTypes = ["", "Amp", "LargeAmp"]
     possibleFastORNames = [a + b for a,b in list(itertools.product(fastORLevels, fastORTypes))]
-    #print(possibleFastORNames)
+    #logger.debug(possibleFastORNames)
     #if "FastORL" in hist.GetName() and "SM" not in hist.GetName(): 
     if any(substring == hist.histName for substring in possibleFastORNames):
         hist.functionsToApply.append(fastOROptions)
