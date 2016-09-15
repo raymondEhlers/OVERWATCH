@@ -31,9 +31,9 @@ from flup.server.fcgi import WSGIServer
 from config.serverParams import serverParameters
 
 # WebApp Module includes
-from webAppModules import routing
-from webAppModules import auth
-from webAppModules import validation
+from webApp import routing
+from webApp import auth
+from webApp import validation
 
 # Main processing file
 import processRuns
@@ -149,7 +149,7 @@ def logout():
     """ Logout function.
 
     NOTE:
-        Careful in changing the routing, as this is hard coded in :func:`~webAppModules.routing.redirectBack()`!
+        Careful in changing the routing, as this is hard coded in :func:`~webApp.routing.redirectBack()`!
 
     Redirects back to :func:`.login`, which willl redirect back to index if the user is logged in.
     """
@@ -555,7 +555,7 @@ def testingDataArchive():
     It will return at most the 5 most recent runs. The archive contains the combined file for all subsystems.
 
     NOTE:
-        Careful in changing the routing, as this is hard coded in :func:`~webAppModules.routing.redirectBack()`!
+        Careful in changing the routing, as this is hard coded in :func:`~webApp.routing.redirectBack()`!
 
     Args:
         None

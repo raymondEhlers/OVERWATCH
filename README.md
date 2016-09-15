@@ -116,7 +116,7 @@ There are specific directories for data, docs, config, templates, modules, and a
 
  - static/ - Contains the shared `css`, `javascript`, and background texture. 
 
- - webAppModules/ - Contains helper functions for the _Web App_. See the documentation for more information.
+ - webApp/ - Contains helper functions for the _Web App_. See the documentation for more information.
 
 For reference, an example file structure is shown below.
 
@@ -182,7 +182,7 @@ For reference, an example file structure is shown below.
 │       ├── processRunsModules.detectors.rst
 │       ├── processRunsModules.rst
 │       ├── webApp.rst
-│       └── webAppModules.rst
+│       └── webApp.rst
 ├── processRunsModules
 │   ├── __init__.py
 │   ├── detectors
@@ -223,7 +223,7 @@ For reference, an example file structure is shown below.
 |   ├── login.html
 |   ├── qa.html
 |   └── qaResult.html
-└── webAppModules
+└── webApp
     ├── __init__.py
     ├── auth.py
     ├── routing.py

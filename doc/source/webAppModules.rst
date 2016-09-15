@@ -1,7 +1,7 @@
 Modules for use with the Web App
 ================================
 
-.. automodule:: webAppModules
+.. automodule:: webApp
     :members:
     :undoc-members:
     :show-inheritance:
@@ -11,7 +11,7 @@ Modules for use with the Web App
 Auth module
 -------------------------
 
-.. automodule:: webAppModules.auth
+.. automodule:: webApp.auth
     :members:
     :undoc-members:
     :show-inheritance:
@@ -21,7 +21,7 @@ Auth module
 Routing module
 ----------------------------
 
-.. automodule:: webAppModules.routing
+.. automodule:: webApp.routing
     :members:
     :undoc-members:
     :show-inheritance:
@@ -31,7 +31,7 @@ Routing module
 Validation module
 -------------------------------
 
-.. automodule:: webAppModules.validation
+.. automodule:: webApp.validation
     :members:
     :undoc-members:
     :show-inheritance:

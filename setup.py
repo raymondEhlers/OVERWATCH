@@ -48,7 +48,7 @@ setup(
 
     packages=[
         processRuns,
-        webAppModules
+        webApp
     ],
 
     install_requires=[

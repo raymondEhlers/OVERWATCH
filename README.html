@@ -115,7 +115,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li><p>processRunsModules/ - Contains most of the functionality of <em>Process Runs</em>, as well as some generally useful utilities. See the documentation for more information.</p></li>
 <li><p>templates/ - Contains all of the jinja2 templates needed to render the website. The main templates are stored in the root of the folder, while templates related to the data are stored in a “data” directory that mirrors the structure of the main “data” directory.</p></li>
 <li><p>static/ - Contains the shared <code>css</code>, <code>javascript</code>, and background texture.</p></li>
-<li><p>webAppModules/ - Contains helper functions for the <em>Web App</em>. See the documentation for more information.</p></li>
+<li><p>webApp/ - Contains helper functions for the <em>Web App</em>. See the documentation for more information.</p></li>
 </ul>
 <p>For reference, an example file structure is shown below.</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">.</span>
@@ -179,7 +179,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 │       ├── <span class="kw">processRunsModules.detectors.rst</span>
 │       ├── <span class="kw">processRunsModules.rst</span>
 │       ├── <span class="kw">webApp.rst</span>
-│       └── <span class="kw">webAppModules.rst</span>
+│       └── <span class="kw">webApp.rst</span>
 ├── <span class="kw">processRunsModules</span>
 │   ├── <span class="kw">__init__.py</span>
 │   ├── <span class="kw">detectors</span>
@@ -220,7 +220,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <span class="kw">|</span>   ├── <span class="kw">login.html</span>
 <span class="kw">|</span>   ├── <span class="kw">qa.html</span>
 <span class="kw">|</span>   └── <span class="kw">qaResult.html</span>
-└── <span class="kw">webAppModules</span>
+└── <span class="kw">webApp</span>
     ├── <span class="kw">__init__.py</span>
     ├── <span class="kw">auth.py</span>
     ├── <span class="kw">routing.py</span>

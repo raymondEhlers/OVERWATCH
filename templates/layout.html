@@ -201,7 +201,7 @@
             <paper-slider id="timeSlicesFormMinTime" name="minTime" value="0" max="1" editable pin></paper-slider>
             <p>Max:</p>
             <paper-slider id="timeSlicesFormMaxTime" name="maxTime" value="0" max="1" editable pin></paper-slider>
-            {# NOTE: Scaling hists defaults to true and hot channel threshold defaults to 0! If these are changed, be sure to change them in the webAppModules validation function validateTimeSlicePostRequest() #}
+            {# NOTE: Scaling hists defaults to true and hot channel threshold defaults to 0! If these are changed, be sure to change them in the webApp validation function validateTimeSlicePostRequest() #}
             <paper-toggle-button id="scaleHistsToggle"name="scaleHists" checked >Scale by nEvents</paper-toggle-button>
             <p>Hot channel threshold (x1000)</p>
             <paper-slider id="timeSlicesFormHotChannelThreshold" name="hotChannelThreshold" value="0" max="1000" editable pin></paper-slider>
