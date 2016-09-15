@@ -45,13 +45,6 @@ class processingParameters(object):
     #: to do a partial merge we take the last run file and subtract it from the first. 
     cumulativeMode = True
 
-    #: The name of the template folder.
-    templateFolderName = sharedParameters.templateFolderName
-
-    #: The name of the folder inside the template folder that contains the run dir structure to hold templates.
-    #: To turn off templates, set it to None.
-    templateDataDirName = os.path.join(sharedParameters.templateFolderName, sharedParameters.dataFolderName)
-
     #: The path to the database.
     databaseLocation = sharedParameters.databaseLocation
 

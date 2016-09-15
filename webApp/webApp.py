@@ -23,9 +23,10 @@ import logging
 # Setup logger
 if __name__ == "__main__":
     # By not setting a name, we get everything!
-    logger = logging.getLogger("")
+    #logger = logging.getLogger("")
     # Alternatively, we could set "webApp" to get everything derived from that
     #logger = logging.getLogger("webApp")
+    pass
 else:
     # When imported, we just want it to take on it normal name
     logger = logging.getLogger(__name__)
@@ -44,12 +45,12 @@ from flup.server.fcgi import WSGIServer
 from config.serverParams import serverParameters
 
 # WebApp Module includes
-from webApp import routing
-from webApp import auth
-from webApp import validation
+from . import routing
+from . import auth
+from . import validation
 
 # Main processing file
-import processRuns
+from processRuns import processRuns
 
 # Processing module includes
 from processRuns import utilities
@@ -79,9 +80,6 @@ loginManager.login_view = "login"
 # Setup database
 app.config["ZODB_STORAGE"] = serverParameters.databaseLocation
 db = ZODB(app)
-
-# Setup logger
-processRuns.utilities.setupLogging(logger, serverParameters.loggingLevel, serverParameters.debug)
 
 ###################################################
 @loginManager.user_loader
@@ -377,8 +375,8 @@ def protected(filename):
         being served.
 
     """
-    logger.debug("filename", filename)
-    logger.debug("request.args: ", request.args)
+    logger.debug("filename: {0}".format(filename))
+    logger.debug("request.args: {0}".format(request.args))
     # Ignore the time GET parameter that is sometimes passed- just to avoid the cache when required
     #if request.args.get("time"):
     #    print "timeParameter:", request.args.get("time")
@@ -680,14 +678,4 @@ def status():
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
 if __name__ == "__main__":
-    # Support both the WSGI server mode, as well as standalone
-    #app.run(host="0.0.0.0")
-    if "pdsf" in socket.gethostname():
-        logger.info("Starting flup WSGI app")
-        WSGIServer(app, bindAddress=("127.0.0.1",8851)).run()
-    elif "sgn" in socket.gethostname():
-        logger.info("Starting flup WSGI app on sciece gateway")
-        WSGIServer(app, bindAddress=("127.0.0.1",8851)).run()
-    else:
-        logger.info("Starting flask app")
-        app.run(host=serverParameters.ipAddress, port=serverParameters.port)
+    pass

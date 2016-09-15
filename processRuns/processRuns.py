@@ -37,9 +37,10 @@ import logging
 # Setup logger
 if __name__ == "__main__":
     # By not setting a name, we get everything!
-    logger = logging.getLogger("")
+    #logger = logging.getLogger("")
     # Alternatively, we could set processRuns to get everything derived from that
     #logger = logging.getLogger("processRuns")
+    pass
 else:
     # When imported, we just want it to take on it normal name
     logger = logging.getLogger(__name__)
@@ -57,10 +58,13 @@ import zodburi
 from config.processingParams import processingParameters
 
 # Module includes
-from processRuns import utilities
-from processRuns import mergeFiles
-from processRuns import qa
-from processRuns import processingClasses
+from . import utilities
+from . import mergeFiles
+from . import qa
+from . import processingClasses
+
+# TEMP
+print("__name__ in processRuns: {0}".format(__name__))
 
 ###################################################
 def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, processingOptions = None):
@@ -794,43 +798,4 @@ def processAllRuns():
 
 # Allows the function to be invoked automatically when run with python while not invoked when loaded as a module
 if __name__ == "__main__":
-    # Setup logging
-    utilities.setupLogging(logger, processingParameters.loggingLevel, processingParameters.debug)
-    # Log settings
-    logger.info(processingParameters.printSettings())
-
-    # Process all of the run data
-    processAllRuns()
-    # Function calls that be used for debugging
-    #processQA("Run246272", "Run246980", "EMC", "determineMedianSlope")
-
-    ## Test processTimeSlices()
-    ## TEMP
-    #storage_factory, dbArgs = zodburi.resolve_uri(processingParameters.databaseLocation)
-    #storage = storage_factory()
-    #db = ZODB.DB(storage, **dbArgs)
-    #connection = db.open()
-    #connection = ZODB.connection(processingParameters.databaseLocation)
-    #dbRoot = connection.root()
-    #runs = dbRoot["runs"]
-    ## ENDTEMP
-
-    #logging.info("\n\t\t0-4:")
-    #returnValue = processTimeSlices(runs, "Run300005", 0, 4, "EMC")
-    #logging.info("0-4 UUID: {0}".format(returnValue))
-
-    #logging.info("\n\t\t0-3:")
-    #returnValue = processTimeSlices(runs, "Run300005", 0, 3, "EMC")
-    #logging.info("0-3 UUID: {0}".format(returnValue))
-
-    #logging.info("\n\t\t0-3 repeat:")
-    #returnValue = processTimeSlices(runs, "Run300005", 0, 3, "EMC")
-    #logging.info("0-3 repeat UUID: {0}".format(returnValue))
-
-    #logging.info("\n\t\t1-4:")
-    #returnValue = processTimeSlices(runs, "Run300005", 1, 4, "EMC")
-    #logging.info("1-4 UUID: {0}".format(returnValue))
-
-    #logging.info("\n\t\t1-3:")
-    #returnValue = processTimeSlices(runs, "Run300005", 1, 3, "EMC")
-    #logging.info("1-3 UUID: {0}".format(returnValue))
+    pass

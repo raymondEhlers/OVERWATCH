@@ -130,7 +130,7 @@ subsystems = list(set(subsystems))
 
 # Load functions
 for subsystem in subsystems:
-    logger.info("Subsystem {0} Functions loaded:".format(subsystem), end=' ') 
+    logger.info("Subsystem {0} Functions loaded:".format(subsystem))
 
     # Ensure that the module exists before trying to load it
     if os.path.exists(os.path.join(modulesPath, detectorsPath, "%s.py" % subsystem)):
