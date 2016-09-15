@@ -112,38 +112,24 @@ class processingParameters(object):
         loggingLevel = logging.DEBUG
 
     # Print methods
-    def __repr__(self):
-        return self.__str__()
+    @classmethod
+    def __repr__(cls):
+        return cls.__str__()
+
+    @classmethod
+    def printSettings(cls):
+        return cls.__str__()
 
     @classmethod
     def __str__(cls):
         returnValue = "Processing Parameters configuration:\n"
         members = [var for var in vars(cls)]
         for member in members:
-            if "_" not in member:
+            # Filter out elements with "_" in name and the printSettings function
+            if "_" not in member and "printSettings" not in member:
                 returnValue += "{0}: {1}\n".format(member, getattr(cls, member))
-                #returnValue += "%s: %s %s\n" % (member, getattr(self, member), type(getattr(self, member)))
 
         return returnValue
 
-# Print settings
-#logger.info("\nProcessing Parameters:")
-#logger.info("fileExtension: {0}".format(processingParameters.fileExtension))
-#logger.info("beVerbose: {0}".format(processingParameters.beVerbose))
-#logger.info("loggingLevel: {0}".format(processingParameters.loggingLevel))
-#logger.info("debug: {0}".format(processingParameters.debug))
-#logger.info("forceReprocessing: {0}".format(processingParameters.forceReprocessing))
-#logger.info("forceNewMerge: {0}".format(processingParameters.forceNewMerge))
-#logger.info("sendData: {0}".format(processingParameters.sendData))
-#logger.info("remoteUsername: {0}".format(processingParameters.remoteUsername))
-#logger.info("remoteSystems: {0}".format(processingParameters.remoteSystems))
-#logger.info("remoteFileLocations: {0}".format(processingParameters.remoteFileLocations))
-#logger.info("cumulativeMode: {0}".format(processingParameters.cumulativeMode))
-#logger.info("templateDataDirName: {0}".format(processingParameters.templateDataDirName))
-#logger.info("databaseLocation: {0}".format(processingParameters.databaseLocation))
-#logger.info("dirPrefix: {0}".format(processingParameters.dirPrefix))
-#logger.info("modulesPath: {0}".format(processingParameters.modulesPath))
-#logger.info("detectorsPath: {0}".format(processingParameters.detectorsPath))
-#logger.info("subsystemList: {0}".format(processingParameters.subsystemList))
-#logger.info("subsystemsWithRootFilesToShow: {0}".format(processingParameters.subsystemsWithRootFilesToShow))
-#logger.info("qaFunctionsToAlwaysApply: {0}".format(processingParameters.qaFunctionsToAlwaysApply))
+
+

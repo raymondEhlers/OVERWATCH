@@ -10,6 +10,7 @@ from __future__ import print_function
 
 # General
 import os
+import sys
 import time
 from calendar import timegm
 from subprocess import call
@@ -157,6 +158,68 @@ def rsyncData(dirPrefix, username, remoteSystems, remoteFileLocations):
             rsyncCall = ["rsync", "-rvlth", "--chmod=ugo=rwX", "--omit-dir-times", "--exclude=Run*/*/timeSlices", "--include=Run*/***", "--include=ReplayData/***", "--include=runList.html", "--exclude=*", "--delete", sendDirectory, username + "@" + remoteSystem + ":" + remoteFileLocation]
             logger.info(rsyncCall)
             call(rsyncCall)
+
+###################################################
+def setupLogging(logger, logLevel, debug):
+    # Check on docker deplyoment variables
+    try:
+        dockerDeploymentOption = os.environ["deploymentOption"]
+    except KeyError as e:
+        # It doesn't exist
+        dockerDeploymentOption = ""
+
+    # Configure logger
+    # Logging level for root logger
+    logger.setLevel(logLevel)
+    # Format
+    #logFormatStr = "%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"
+    logFormatStr = "%(asctime)s %(levelname)s: %(message)s [in %(module)s:%(lineno)d]"
+    logFormat = logging.Formatter(logFormatStr)
+
+    # For docker, we log to stdout so that supervisor is able to handle the logging
+    if debug == True or dockerDeploymentOption:
+        # Log to stdout
+        handler = logging.StreamHandler(sys.stdout)
+        handler.setLevel(logLevel)
+        handler.setFormatter(logFormat)
+        logger.addHandler(handler)
+        logger.debug("Added streaming handler to logging!")
+    else:
+        # Log to file
+        handler = logging.handlers.RotatingFileHandler(os.path.join("deploy", "processRuns.log"),
+                                                       maxBytes = 5000000,
+                                                       backupCount = 10)
+        handler.setLevel(logLevel)
+        handler.setFormatter(logFormat)
+        logger.addHandler(handler)
+        logger.debug("Added file handler to logging!")
+
+        # Sent issues through email
+        # See: http://flask.pocoo.org/docs/0.10/errorhandling/
+        notifyAddresses = []
+        handler = logging.handlers.SMTPHandler("smtp.cern.ch",
+                                                "error@aliceoverwatch.cern.ch",
+                                                notifyAddresses, "OVERWATCH Failed")
+        handler.setLevel(processingParameters.WARNING)
+        handler.setFormatter(Formatter("""
+        Message type:       %(levelname)s
+        Location:           %(pathname)s:%(lineno)d
+        Module:             %(module)s
+        Function:           %(funcName)s
+        Time:               %(asctime)s
+
+        Message:
+
+        %(message)s
+        """))
+        # TODO: Properly configure so that it can be added as a handler!
+        #logger.addHandler(handler)
+        logger.debug("Added mailer handler to logging!")
+
+    # Be sure to propagate messages from modules
+    #processRunsModules = logging.getLogger("processRunsModules")
+    #processRunsModules.setLevel(logLevel)
+    #processRunsModules.propagate = True
 
 ###################################################
 # File moving utilities

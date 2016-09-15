@@ -126,21 +126,23 @@ class serverParameters(object):
     #: Subsystems which have templates available (determined on startup)
     availableRunPageTemplates = [name for name in os.listdir(templateFolder) if "runPage.html" in name]
 
-logger.info("\nServer Parameters:")
-logger.info("ipAddress: {0}".format(serverParameters.ipAddress))
-logger.info("port: {0}".format(serverParameters.port))
-logger.info("bcryptLogRounds: {0}".format(serverParameters.bcryptLogRounds))
-logger.info("defaultUsername: {0}".format(serverParameters.defaultUsername))
-logger.info("basePath: {0}".format(serverParameters.basePath))
-logger.info("staticFolder: {0}".format(serverParameters.staticFolder))
-logger.info("staticURLPath: {0}".format(serverParameters.staticURLPath))
-logger.info("protectedFolder: {0}".format(serverParameters.protectedFolder))
-logger.info("templateFolder: {0}".format(serverParameters.templateFolder))
-logger.info("databaseLocation: {0}".format(serverParameters.databaseLocation))
-logger.info("fileExtension: {0}".format(serverParameters.fileExtension))
-logger.info("docsFolder: {0}".format(serverParameters.docsFolder))
-logger.info("docsBuildFolder: {0}".format(serverParameters.docsBuildFolder))
-logger.info("debug: {0}".format(serverParameters.debug))
-logger.info("subsystemList: {0}".format(serverParameters.subsystemList))
-logger.info("qaFunctionsList: {0}".format(serverParameters.qaFunctionsList))
-logger.info("availableRunPageTemplates: {0}".format(serverParameters.availableRunPageTemplates))
+    # Print methods
+    @classmethod
+    def __repr__(cls):
+        return cls.__str__()
+
+    @classmethod
+    def printSettings(cls):
+        return cls.__str__()
+
+    @classmethod
+    def __str__(cls):
+        returnValue = "Server Parameters configuration:\n"
+        members = [var for var in vars(cls)]
+        for member in members:
+            # Filter out elements with "_" in name and the printSettings function
+            if "_" not in member and "printSettings" not in member:
+                returnValue += "{0}: {1}\n".format(member, getattr(cls, member))
+
+        return returnValue
+
