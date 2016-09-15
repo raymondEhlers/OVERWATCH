@@ -21,8 +21,8 @@ options:
 Getting Started
 ---------------
 
-1.  Create a new file in the :mod:`processRunsModules.detectors` package. This should be the
-    "processRunsModules/detectors" folder. The file should be named by the three letter detector
+1.  Create a new file in the :mod:`processRuns.detectors` package. This should be the
+    "processRuns/detectors" folder. The file should be named by the three letter detector
     name, in all caps (ex: "EMC.py"). If it has already been created, then simply edit the
     existing file.
 
@@ -44,7 +44,7 @@ Create a Detector Page
 
     >>> sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem = "EMC")
 
-    See :func:`~processRunsModules.detectors.EMC.sortAndGenerateHtmlForEMCHists()` for full argument
+    See :func:`~processRuns.detectors.EMC.sortAndGenerateHtmlForEMCHists()` for full argument
     documentation, but in short,
     ``outputHistNames`` is the names of all of the histograms,
     ``outputFormatting`` is the generic (ie contains a %s, which should be filled with the histogram name)
@@ -52,7 +52,7 @@ Create a Detector Page
     ``subsystem`` is the three letter detector name.
 
     ..  seealso::
-        For an example function, see: :func:`~processRunsModules.detectors.EMC.sortAndGenerateHtmlForEMCHists()`
+        For an example function, see: :func:`~processRuns.detectors.EMC.sortAndGenerateHtmlForEMCHists()`
 
 3.  Add the three letter detector name to 
     :attr:`config.sharedParams.sharedParameters.subsystemList` in the config file "config/sharedParams.py".
@@ -76,7 +76,7 @@ Create a QA function
     >>> functionName(hist, qaContainer)
 
     where ``hist`` is a TH1 that contains the histogram to be processed and ``qaContainer`` is a 
-    :class:`~processRunsModules.qa.qaFunctionContainer` which contains information
+    :class:`~processRuns.qa.qaFunctionContainer` which contains information
     about the QA function and stored histograms, as well as the run being processed.
 
     This function can be anything the user desires, and histograms to show derived quantities can be stored in the
@@ -91,16 +91,16 @@ Create a QA function
 
     ..  seealso::
         For an example of a QA function that should be run on request from the web app, see,
-        see :func:`~processRunsModules.detectors.EMC.determineMedianSlope()`.
+        see :func:`~processRuns.detectors.EMC.determineMedianSlope()`.
         
         For an example of an automated QA function that runs for every single histogram,
-        see :func:`~processRunsModules.detectors.EMC.checkForOutliers()`.
+        see :func:`~processRuns.detectors.EMC.checkForOutliers()`.
 
     Note:
         The functions will be listed by subsystem. They will only work on the defined subsystem.
         If it is desired to use the same function on two subsystems, it is possible, but the function must
-        be imported into each module. See the :mod:`~processRunsModules.generateWebPages` and
-        :mod:`~processRunsModules.qa` modules for examples on how to import the function. It would then
+        be imported into each module. See the :mod:`~processRuns.generateWebPages` and
+        :mod:`~processRuns.qa` modules for examples on how to import the function. It would then
         need to be added according to step 3.
 
 3.  If it is a QA function that should be run on request, add the three letter detector name and the name
@@ -153,7 +153,7 @@ files by hand!).
 Addding the Code
 ----------------
 
-Once the code has been tested, please create a pull request for the project on github at `raymondEhlers/OVERWATCH`_ . Note that the code will only be accepted if it is properly documented! For it to show up when the documentation is rebuilt, the entry must be added in ``doc/source/processRunsModules.detectors.rst``.
+Once the code has been tested, please create a pull request for the project on github at `raymondEhlers/OVERWATCH`_ . Note that the code will only be accepted if it is properly documented! For it to show up when the documentation is rebuilt, the entry must be added in ``doc/source/processRuns.detectors.rst``.
 
 .. _raymondEhlers/OVERWATCH: https://github.com/raymondEhlers/OVERWATCH
 

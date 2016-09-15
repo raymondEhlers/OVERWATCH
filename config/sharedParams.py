@@ -26,9 +26,8 @@ class sharedParameters(object):
     
     The functions should be sorted by subsystem. They will only work on the defined subsystem.
     If it is desired to use the same function on two subsystems, it is possible, but the function must
-    be imported into each module. See the :mod:`~processRunsModules.generateWebPages` and
-    :mod:`~processRunsModules.qa` modules for examples on how to import the function. It would then
-    need to be added to the dict for each subsystem.
+    be imported into each module. See :mod:`~processRuns.qa` modules for examples on how to import the
+    function. It would then need to be added to the dict for each subsystem.
     
     The dictionary should be formatted as
 

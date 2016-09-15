@@ -96,7 +96,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 </ol>
 <p>The documentation will be created and available in the <code>doc/build/html/</code>. It is recommended to start with the <code>index.html</code> page.</p>
 <h2 id="adding-a-detector">Adding a Detector</h2>
-<p>Adding a new detector to the project is well documented in the <code>processRunsModules.detectors</code> package. Please look at it in the documentation (or look at it via python or the source file, <code>processRunsModules/detectors/__init__.py</code>). After following this guide, create a pull request for this repository at <a href="https://github.com/raymondEhlers/OVERWATCH">raymondEhlers/OVERWATCH</a>.</p>
+<p>Adding a new detector to the project is well documented in the <code>processRuns.detectors</code> package. Please look at it in the documentation (or look at it via python or the source file, <code>processRuns/detectors/__init__.py</code>). After following this guide, create a pull request for this repository at <a href="https://github.com/raymondEhlers/OVERWATCH">raymondEhlers/OVERWATCH</a>.</p>
 <h2 id="file-structure">File Structure</h2>
 <h3 id="files">Files</h3>
 <ul>
@@ -112,7 +112,7 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <li><p>data/ - Contains all of the histogram data. Also contains static HTML pages that are an alternative to the dynamic templates normally used to render the site.</p></li>
 <li><p>doc/ - Contains the files to build the documentation for the project. See <a href="#documentation">here</a>.</p></li>
 <li><p>config/ - Contains all of the configuration files for <em>Process Runs</em>, the <em>Web App</em>, and running the <em>Web App</em> as a WSGI server. See the documentation or the source files for more information about the individual options.</p></li>
-<li><p>processRunsModules/ - Contains most of the functionality of <em>Process Runs</em>, as well as some generally useful utilities. See the documentation for more information.</p></li>
+<li><p>processRuns/ - Contains most of the functionality of <em>Process Runs</em>, as well as some generally useful utilities. See the documentation for more information.</p></li>
 <li><p>templates/ - Contains all of the jinja2 templates needed to render the website. The main templates are stored in the root of the folder, while templates related to the data are stored in a “data” directory that mirrors the structure of the main “data” directory.</p></li>
 <li><p>static/ - Contains the shared <code>css</code>, <code>javascript</code>, and background texture.</p></li>
 <li><p>webApp/ - Contains helper functions for the <em>Web App</em>. See the documentation for more information.</p></li>
@@ -179,8 +179,8 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 │       ├── <span class="kw">processRunsModules.detectors.rst</span>
 │       ├── <span class="kw">processRunsModules.rst</span>
 │       ├── <span class="kw">webApp.rst</span>
-│       └── <span class="kw">webApp.rst</span>
-├── <span class="kw">processRunsModules</span>
+│       └── <span class="kw">webAppModules.rst</span>
+├── <span class="kw">processRuns</span>
 │   ├── <span class="kw">__init__.py</span>
 │   ├── <span class="kw">detectors</span>
 │   │   ├── <span class="kw">EMC.py</span>

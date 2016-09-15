@@ -86,7 +86,7 @@ def checkHist(hist, qaContainer):
 
     Args:
         hist (TH1): The histogram to be processed.
-        qaContainer (:class:`~processRunsModules.processingClasses.qaFunctionContainer`): Contains information about the qa
+        qaContainer (:class:`~processRuns.processingClasses.qaFunctionContainer`): Contains information about the qa
             function and histograms, as well as the run being processed.
 
     Returns:

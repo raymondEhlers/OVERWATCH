@@ -37,13 +37,14 @@ import logging
 # Setup logger
 if __name__ == "__main__":
     # By not setting a name, we get everything!
-    # Alternatively, we could set processRunsModules to get everything derived from that
     logger = logging.getLogger("")
-    #logger = logging.getLogger("processRunsModules")
+    # Alternatively, we could set processRuns to get everything derived from that
+    #logger = logging.getLogger("processRuns")
 else:
     # When imported, we just want it to take on it normal name
     logger = logging.getLogger(__name__)
-    #logger = logging.getLogger("processRunsModules")
+    # Alternatively, we could set processRuns to get everything derived from that
+    #logger = logging.getLogger("processRuns")
 
 # ZODB
 import ZODB, ZODB.FileStorage
@@ -56,17 +57,17 @@ import zodburi
 from config.processingParams import processingParameters
 
 # Module includes
-from processRunsModules import utilities
-from processRunsModules import mergeFiles
-from processRunsModules import qa
-from processRunsModules import processingClasses
+from processRuns import utilities
+from processRuns import mergeFiles
+from processRuns import qa
+from processRuns import processingClasses
 
 ###################################################
 def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, processingOptions = None):
     """ Process a given root file, printing out all histograms.
 
     The function also applies QA as appropriate (either always applied or from a particular QA request) via
-    :func:`~processRunsModules.qa.checkHist()`. It is expected that the qaContainer is only passed when
+    :func:`~processRuns.qa.checkHist()`. It is expected that the qaContainer is only passed when
     processing a particular QA request (ie. it should *not* be passed when called by, for example,
     :func:`processAllRuns()`).
 
@@ -76,7 +77,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
             The string contains "%s" to print the filename contained in listOfHists. It also includes the file
             extension. Ex: "img/%s.png".
         subsystem (:class:`~subsystemProperties`): Contains information about the current subsystem.
-        qaContainer (Optional[:class:`~processRunsModules.processingClasses.qaFunctionContainer`]): Contains information
+        qaContainer (Optional[:class:`~processRuns.processingClasses.qaFunctionContainer`]): Contains information
             about the QA function and histograms, as well as the run being processed.
 
     Returns:

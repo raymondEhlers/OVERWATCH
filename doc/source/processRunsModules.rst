@@ -1,37 +1,27 @@
 Modules for use with Process Runs
 =================================
 
-.. automodule:: processRunsModules
+.. automodule:: processRuns
     :members:
     :undoc-members:
     :show-inheritance:
 
 --------------------------------------
 
-Generate HTML module
---------------------------------------
+Processing Classes module
+------------------------------------
 
-.. automodule:: processRunsModules.generateHtml
+.. automodule:: processRuns.processingClasses
     :members:
     :undoc-members:
     :show-inheritance:
 
---------------------------------------
-
-Generate Web Pages module
-------------------------------------------
-
-.. automodule:: processRunsModules.generateWebPages
-    :members:
-    :undoc-members:
-    :show-inheritance:
-
---------------------------------------
+------------------------------------
 
 Merge Files module
 ------------------------------------
 
-.. automodule:: processRunsModules.mergeFiles
+.. automodule:: processRuns.mergeFiles
     :members:
     :undoc-members:
     :show-inheritance:
@@ -41,7 +31,7 @@ Merge Files module
 QA module
 ---------
 
-.. automodule:: processRunsModules.qa
+.. automodule:: processRuns.qa
     :members:
     :undoc-members:
     :show-inheritance:
@@ -51,7 +41,7 @@ QA module
 Utilities module
 ----------------
 
-.. automodule:: processRunsModules.utilities
+.. automodule:: processRuns.utilities
     :members:
     :undoc-members:
     :show-inheritance:

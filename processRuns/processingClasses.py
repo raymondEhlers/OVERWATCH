@@ -20,7 +20,7 @@ import logging
 # Setup logger
 logger = logging.getLogger(__name__)
 
-from processRunsModules import utilities
+from processRuns import utilities
 from config.processingParams import processingParameters
 
 ###################################################

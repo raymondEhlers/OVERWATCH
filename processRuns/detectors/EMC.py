@@ -26,7 +26,7 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Basic processing classes
-from processRunsModules import processingClasses
+from processRuns import processingClasses
 
 # For retrieving debug configuration
 from config.processingParams import processingParameters
@@ -188,8 +188,8 @@ def generalEMCOptions(subsystem, hist, processingOptions):
 #def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem = "EMC"):
 #    """ Sorts and displays EMC histograms.
 #
-#    Heavily relies on :func:`~processRunsModules.generateHtml.generateHtmlForHistLinkOnRunPage`
-#    and :func:`~processRunsModules.generateHtml.generateHtmlForHistOnRunPage`.
+#    Heavily relies on :func:`~processRuns.generateHtml.generateHtmlForHistLinkOnRunPage`
+#    and :func:`~processRuns.generateHtml.generateHtmlForHistOnRunPage`.
 #    Check out code for specifics on how the images are sorted and the pages are formatted.
 #
 #    Args:
@@ -311,7 +311,7 @@ def checkForOutliers(hist, qaContainer):
 
     Args:
         hist (TH1): The histogram to be processed.
-        qaContainer (:class:`~processRunsModules.qa.qaFunctionContainer`): Contains information
+        qaContainer (:class:`~processRuns.qa.qaFunctionContainer`): Contains information
             about the QA function and histograms, as well as the run being processed.
 
     Returns:
@@ -424,7 +424,7 @@ def determineMedianSlope(hist, qaContainer):
 
     Args:
         hist (TH1): The histogram to be processed.
-        qaContainer (:class:`~processRunsModules.qa.qaFunctionContainer`): Contains information
+        qaContainer (:class:`~processRuns.qa.qaFunctionContainer`): Contains information
             about the QA function and histograms, as well as the run being processed.
 
     Returns:

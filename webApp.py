@@ -39,8 +39,8 @@ from webApp import validation
 import processRuns
 
 # Processing module includes
-from processRunsModules import utilities
-from processRunsModules import qa
+from processRuns import utilities
+from processRuns import qa
 
 # Flask setup
 app = Flask(__name__, static_url_path=serverParameters.staticURLPath, static_folder=serverParameters.staticFolder, template_folder=serverParameters.templateFolder)

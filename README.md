@@ -84,7 +84,7 @@ The documentation will be created and available in the `doc/build/html/`. It is 
 
 ## Adding a Detector
 
-Adding a new detector to the project is well documented in the `processRunsModules.detectors` package. Please look at it in the documentation (or look at it via python or the source file, `processRunsModules/detectors/__init__.py`). After following this guide, create a pull request for this repository at [raymondEhlers/OVERWATCH](https://github.com/raymondEhlers/OVERWATCH).
+Adding a new detector to the project is well documented in the `processRuns.detectors` package. Please look at it in the documentation (or look at it via python or the source file, `processRuns/detectors/__init__.py`). After following this guide, create a pull request for this repository at [raymondEhlers/OVERWATCH](https://github.com/raymondEhlers/OVERWATCH).
 
 ## File Structure
 
@@ -110,7 +110,7 @@ There are specific directories for data, docs, config, templates, modules, and a
 
  - config/ - Contains all of the configuration files for _Process Runs_, the _Web App_, and running the _Web App_ as a WSGI server. See the documentation or the source files for more information about the individual options.
 
- - processRunsModules/ - Contains most of the functionality of _Process Runs_, as well as some generally useful utilities. See the documentation for more information.
+ - processRuns/ - Contains most of the functionality of _Process Runs_, as well as some generally useful utilities. See the documentation for more information.
 
  - templates/ - Contains all of the jinja2 templates needed to render the website. The main templates are stored in the root of the folder, while templates related to the data are stored in a "data" directory that mirrors the structure of the main "data" directory.
 
@@ -182,8 +182,8 @@ For reference, an example file structure is shown below.
 │       ├── processRunsModules.detectors.rst
 │       ├── processRunsModules.rst
 │       ├── webApp.rst
-│       └── webApp.rst
-├── processRunsModules
+│       └── webAppModules.rst
+├── processRuns
 │   ├── __init__.py
 │   ├── detectors
 │   │   ├── EMC.py

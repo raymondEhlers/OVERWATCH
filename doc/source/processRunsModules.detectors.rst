@@ -1,7 +1,7 @@
 Detector modules for Process Runs
 ==================================
 
-.. automodule:: processRunsModules.detectors
+.. automodule:: processRuns.detectors
     :members:
     :undoc-members:
     :show-inheritance:
@@ -11,7 +11,7 @@ Detector modules for Process Runs
 EMC module
 ---------------------------------------
 
-.. automodule:: processRunsModules.detectors.EMC
+.. automodule:: processRuns.detectors.EMC
     :members:
     :undoc-members:
     :show-inheritance:
@@ -21,7 +21,17 @@ EMC module
 HLT module
 ---------------------------------------
 
-.. automodule:: processRunsModules.detectors.HLT
+.. automodule:: processRuns.detectors.HLT
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+---------------------------------------
+
+TPC module
+---------------------------------------
+
+.. automodule:: processRuns.detectors.TPC
     :members:
     :undoc-members:
     :show-inheritance:

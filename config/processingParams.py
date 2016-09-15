@@ -61,7 +61,7 @@ class processingParameters(object):
     dirPrefix = sharedParameters.dataFolderName
 
     #: The name of the folder containing the modules for processRuns.
-    modulesPath  = "processRunsModules"
+    modulesPath  = "processRuns"
 
     #: The name of the folder inside the modules folder containing the detector files.
     detectorsPath = "detectors"
