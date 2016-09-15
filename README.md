@@ -66,6 +66,12 @@ bower install
 vulcanize --inline-scripts -p . static/polymerComponents.html > static/polymerComponents.vulcanized.html
 ```
 
+## Full deployment
+
+TODO: Expand on this section!
+
+Roughly, use initOVERWATCH.sh and ``logrotate.conf`` to keep the receiver log size under control. Edit the paths in ``logrotate.conf`` and then install to ``/etc/logrotate.conf``. Ideally, use the docker image if possible, as the logs are taken care of automatically!
+
 ## Documentation
 
 Based on `sphinx-autodoc` generation, the documentation is generated from the docstrings in the code. While they can be viewed in the source files or via python, sphinx compiles them into HTML, facilitating a cleaner view of the information. To build the documentation,
