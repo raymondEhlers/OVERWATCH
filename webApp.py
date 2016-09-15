@@ -18,6 +18,19 @@ import json
 import collections 
 # For server status
 import requests
+# Python logging system
+import logging
+# Setup logger
+if __name__ == "__main__":
+    # By not setting a name, we get everything!
+    logger = logging.getLogger("")
+    # Alternatively, we could set "webApp" to get everything derived from that
+    #logger = logging.getLogger("webApp")
+else:
+    # When imported, we just want it to take on it normal name
+    logger = logging.getLogger(__name__)
+    # Alternatively, we could set "webApp" to get everything derived from that
+    #logger = logging.getLogger("webApp")
 
 # Flask
 from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, Markup, jsonify, session
@@ -67,6 +80,9 @@ loginManager.login_view = "login"
 app.config["ZODB_STORAGE"] = serverParameters.databaseLocation
 db = ZODB(app)
 
+# Setup logger
+processRuns.utilities.setupLogging(logger, serverParameters.loggingLevel, serverParameters.debug)
+
 ###################################################
 @loginManager.user_loader
 def load_user(user):
@@ -84,8 +100,8 @@ def login():
     Unauthenticated users are also redirected here if they try to access something restricted.
     After logging in, it should then forward them to resource they requested.
     """
-    print("request.args: {0}".format(request.args))
-    print("request.form: {0}".format(request.form))
+    logger.debug("request.args: {0}".format(request.args))
+    logger.debug("request.form: {0}".format(request.form))
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
     previousUsername = validation.extractValueFromNextOrRequest("previousUsername")
 
@@ -108,15 +124,15 @@ def login():
                 login_user(validUser, remember=True)
 
                 flash("Login Success for {0}.".format(validUser.id))
-                print("Login Success for {0}.".format(validUser.id))
+                logger.info("Login Success for {0}.".format(validUser.id))
 
                 return routing.redirectBack("index")
             else:
                 errorValue = "Login failed with invalid credentials"
 
     if previousUsername == serverParameters.defaultUsername:
-        print("Equal!")
-    print("serverParameters.defaultUsername: {0}".format(serverParameters.defaultUsername))
+        logger.debug("Equal!")
+    logger.debug("serverParameters.defaultUsername: {0}".format(serverParameters.defaultUsername))
     # If we are not authenticated and we have a default username set and the previous username is 
     if not current_user.is_authenticated and serverParameters.defaultUsername and previousUsername != serverParameters.defaultUsername:
         # Clear previous flashes which will be confusing to the user
@@ -127,12 +143,12 @@ def login():
         # Login the user into flask
         login_user(defaultUser, remember=True)
         # Note for the user
-        print("Logged into user \"{0}\" automatically!".format(current_user.id))
+        logger.info("Logged into user \"{0}\" automatically!".format(current_user.id))
         flash("Logged into user \"{0}\" automatically!".format(current_user.id))
 
     # If we visit the login page, but we are already authenticated, then send to the index page.
     if current_user.is_authenticated:
-        print("Redirecting logged in user \"{0}\" to index...".format(current_user.id))
+        logger.info("Redirecting logged in user \"{0}\" to index...".format(current_user.id))
         return redirect(url_for("index", ajaxRequest = json.dumps(ajaxRequest)))
 
     if ajaxRequest == False:
@@ -200,7 +216,7 @@ def index():
     """ This is the main page for logged in users. It always redirects to the run list.
     
     """
-    print("request.args: {0}".format(request.args))
+    logger.debug("request.args: {0}".format(request.args))
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
     runs = db["runs"]
@@ -263,17 +279,17 @@ def runPage(runNumber, subsystemName, requestedFileType):
         imgFilenameTemplate = os.path.join(subsystem.imgDir, "{0}." + serverParameters.fileExtension)
 
         # Print request status
-        print("request: {0}".format(request.args))
-        print("runDir: {0}, subsytsem: {1}, requestedFileType: {2}, "
+        logger.debug("request: {0}".format(request.args))
+        logger.debug("runDir: {0}, subsytsem: {1}, requestedFileType: {2}, "
               "ajaxRequest: {3}, jsRoot: {4}, requestedHistGroup: {5}, requestedHist: {6}, "
               "timeSliceKey: {7}, timeSlice: {8}".format(runDir, subsystemName, requestedFileType,
                ajaxRequest, jsRoot, requestedHistGroup, requestedHist, timeSliceKey, timeSlice))
 
         # TEMP
-        print("subsystem.timeSlices: {0}".format(subsystem.timeSlices))
+        logger.debug("subsystem.timeSlices: {0}".format(subsystem.timeSlices))
         # END TEMP
     else:
-        print("Error: {0}".format(error))
+        logger.warning("Error: {0}".format(error))
 
     if ajaxRequest != True:
         if error == {}:
@@ -298,8 +314,8 @@ def runPage(runNumber, subsystemName, requestedFileType):
                 # Redundant, but good to be careful
                 error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
 
-        print("error: {0}".format(error))
         if error != {}:
+            logger.warning("error: {0}".format(error))
             returnValue = render_template("error.html", errors = error)
 
         return returnValue
@@ -336,6 +352,7 @@ def runPage(runNumber, subsystemName, requestedFileType):
                 error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
 
         if error != {}:
+            logger.warning("error: {0}".format(error))
             drawerContent = ""
             mainContent =  render_template("errorMainContent.html", errors = error)
 
@@ -360,8 +377,8 @@ def protected(filename):
         being served.
 
     """
-    print("filename", filename)
-    print("request.args: ", request.args)
+    logger.debug("filename", filename)
+    logger.debug("request.args: ", request.args)
     # Ignore the time GET parameter that is sometimes passed- just to avoid the cache when required
     #if request.args.get("time"):
     #    print "timeParameter:", request.args.get("time")
@@ -421,8 +438,8 @@ def timeSlice():
     rendering the result template and returning the user to the same spot as in the previous page.
 
     """
-    #print("request.args: {0}".format(request.args))
-    print("request.form: {0}".format(request.form))
+    #logger.debug("request.args: {0}".format(request.args))
+    logger.debug("request.form: {0}".format(request.form))
     # We don't get ajaxRequest because this request should always be made via ajax
     jsRoot = validation.convertRequestToPythonBool("jsRoot", request.form)
 
@@ -435,18 +452,18 @@ def timeSlice():
 
         if error == {}:
             # Print input values
-            print("minTime: {0}".format(minTime))
-            print("maxTime: {0}".format(maxTime))
-            print("runDir: {0}".format(runDir))
-            print("subsystem: {0}".format(subsystem))
-            print("histGroup: {0}".format(histGroup))
-            print("histName: {0}".format(histName))
+            logger.debug("minTime: {0}".format(minTime))
+            logger.debug("maxTime: {0}".format(maxTime))
+            logger.debug("runDir: {0}".format(runDir))
+            logger.debug("subsystem: {0}".format(subsystem))
+            logger.debug("histGroup: {0}".format(histGroup))
+            logger.debug("histName: {0}".format(histName))
 
             # Process the time slice
             returnValue = processRuns.processTimeSlices(runs, runDir, minTime, maxTime, subsystem, inputProcessingOptions)
 
-            print("returnValue: {0}".format(returnValue))
-            print("runs[runDir].subsystems[subsystem].timeSlices: {0}".format(runs[runDir].subsystems[subsystem].timeSlices))
+            logger.info("returnValue: {0}".format(returnValue))
+            logger.debug("runs[runDir].subsystems[subsystem].timeSlices: {0}".format(runs[runDir].subsystems[subsystem].timeSlices))
 
             if not isinstance(returnValue, collections.Mapping):
                 timeSliceKey = returnValue
@@ -466,7 +483,7 @@ def timeSlice():
                 # Fall through to return an error
                 error = returnValue
 
-        print("Time slices error:", error)
+        logger.info("Time slices error:", error)
         drawerContent = ""
         mainContent = render_template("errorMainContent.html", errors=error)
 
@@ -490,12 +507,12 @@ def processQA():
     be ignored without any other intervention.
 
     """
-    print("request: {0}".format(request.args))
+    logger.debug("request: {0}".format(request.args))
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
     runs = db["runs"]
     runList = runs.keys()
-    print("runList: {0}".format(list(runList)))
+    logger.debug("runList: {0}".format(list(runList)))
 
     if request.method == "POST":
         # Validate post request
@@ -504,10 +521,10 @@ def processQA():
         # Process
         if error == {}:
             # Print input values
-            print("firstRun:", firstRun)
-            print("lastRun:", lastRun)
-            print("subsystem:", subsystem)
-            print("qaFunction:", qaFunction)
+            logger.debug("firstRun:", firstRun)
+            logger.debug("lastRun:", lastRun)
+            logger.debug("subsystem:", subsystem)
+            logger.debug("qaFunction:", qaFunction)
 
             # Process the QA
             returnValues = processRuns.processQA(firstRun, lastRun, subsystem, qaFunction)
@@ -517,7 +534,7 @@ def processQA():
             for name, histPath in returnValues.items():
                 # Can add an argument with "&arg=value" if desired
                 histPaths[name] = histPath + "?time=" + str(time.time())
-                print("histPaths[", name, "]: ", histPaths[name])
+                logger.debug("histPaths[{0}]: {1}".format(name, histPaths[name]))
 
             # Ensures that the root file is not cached by adding a meaningless but unique argument.
             rootFilePath = os.path.join(qaFunction, qaFunction + ".root")
@@ -576,7 +593,7 @@ def testingDataArchive():
     # Create zip file. It is stored in the root of the data directory
     zipFilename = "testingDataArchive.zip"
     zipFile = zipfile.ZipFile(os.path.join(serverParameters.protectedFolder, zipFilename), "w")
-    print("Creating zipFile at %s" % os.path.join(serverParameters.protectedFolder, zipFilename))
+    logger.info("Creating zipFile at %s" % os.path.join(serverParameters.protectedFolder, zipFilename))
 
     # Add files to the zip file
     runKeys = runs.keys()
@@ -666,11 +683,11 @@ if __name__ == "__main__":
     # Support both the WSGI server mode, as well as standalone
     #app.run(host="0.0.0.0")
     if "pdsf" in socket.gethostname():
-        print("Starting flup WSGI app")
+        logger.info("Starting flup WSGI app")
         WSGIServer(app, bindAddress=("127.0.0.1",8851)).run()
     elif "sgn" in socket.gethostname():
-        print("Starting flup WSGI app on sciece gateway")
+        logger.info("Starting flup WSGI app on sciece gateway")
         WSGIServer(app, bindAddress=("127.0.0.1",8851)).run()
     else:
-        print("Starting flask app")
+        logger.info("Starting flask app")
         app.run(host=serverParameters.ipAddress, port=serverParameters.port)

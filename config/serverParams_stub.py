@@ -109,6 +109,9 @@ class serverParameters(object):
     #: Enable debugging information.
     debug = sharedParameters.debug
 
+    #: Set the logging level
+    loggingLevel = logging.INFO
+
     #: List of subsystems.
     #: Each subsystem listed here will have an individual page for their respective histograms.
     subsystemList = sharedParameters.subsystemList
@@ -125,6 +128,13 @@ class serverParameters(object):
 
     #: Subsystems which have templates available (determined on startup)
     availableRunPageTemplates = [name for name in os.listdir(templateFolder) if "runPage.html" in name]
+
+    #: Sites to check during the status request
+    statusRequestSites = {"CERN": "http://127.0.0.1:8850", "Yale": "https://aliceoverwatch.physics.yale.edu"}
+
+    # Lower the min logging level if we are debugging
+    if debug:
+        loggingLevel = logging.DEBUG
 
     # Print methods
     @classmethod
