@@ -35,12 +35,19 @@ import sys
 # See: https://stackoverflow.com/a/346501
 import logging
 # Setup logger
-logger = logging.getLogger(__name__)
+if __name__ == "__main__":
+    # By not setting a name, we get everything!
+    # Alternatively, we could set processRunsModules to get everything derived from that
+    logger = logging.getLogger("")
+    #logger = logging.getLogger("processRunsModules")
+else:
+    # When imported, we just want it to take on it normal name
+    logger = logging.getLogger(__name__)
+    #logger = logging.getLogger("processRunsModules")
 
 # ZODB
 import ZODB, ZODB.FileStorage
 import BTrees.OOBTree
-import persistent
 import transaction
 # For determining the storage type
 import zodburi
@@ -53,7 +60,6 @@ from processRunsModules import utilities
 from processRunsModules import mergeFiles
 from processRunsModules import qa
 from processRunsModules import processingClasses
-
 
 ###################################################
 def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, processingOptions = None):
@@ -785,7 +791,8 @@ def processAllRuns():
     transaction.commit()
     connection.close()
 
-def setupLogging():
+###################################################
+def setupLogging(logger):
     # Check on docker deplyoment variables
     try:
         dockerDeploymentOption = os.environ["deploymentOption"]
@@ -797,7 +804,8 @@ def setupLogging():
     # Logging level for root logger
     logger.setLevel(processingParameters.loggingLevel)
     # Format
-    logFormatStr = "%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"
+    #logFormatStr = "%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"
+    logFormatStr = "%(asctime)s %(levelname)s: %(message)s [in %(module)s:%(lineno)d]"
     logFormat = logging.Formatter(logFormatStr)
 
     # For docker, we log to stdout so that supervisor is able to handle the logging
@@ -840,10 +848,17 @@ def setupLogging():
         #logger.addHandler(handler)
         logger.debug("Added mailer handler to logging!")
 
+    # Be sure to propagate messages from modules
+    #processRunsModules = logging.getLogger("processRunsModules")
+    #processRunsModules.setLevel(processingParameters.loggingLevel)
+    #processRunsModules.propagate = True
 
 # Allows the function to be invoked automatically when run with python while not invoked when loaded as a module
 if __name__ == "__main__":
-    setupLogging()
+    setupLogging(logger)
+
+    # Log settings
+    logger.info(processingParameters.__str__())
 
     # Process all of the run data
     processAllRuns()
