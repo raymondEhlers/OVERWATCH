@@ -12,7 +12,7 @@ logger = logging.getLogger("")
 #logger = logging.getLogger("processRuns")
 
 # Setup logging
-utilities.setupLogging(logger, processingParameters.loggingLevel, processingParameters.debug)
+utilities.setupLogging(logger, processingParameters.loggingLevel, processingParameters.debug, "processRuns")
 # Log settings
 logger.info(processingParameters.printSettings())
 

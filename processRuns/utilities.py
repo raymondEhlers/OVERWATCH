@@ -158,7 +158,7 @@ def rsyncData(dirPrefix, username, remoteSystems, remoteFileLocations):
             call(rsyncCall)
 
 ###################################################
-def setupLogging(logger, logLevel, debug):
+def setupLogging(logger, logLevel, debug, runType):
     # Check on docker deplyoment variables
     try:
         dockerDeploymentOption = os.environ["deploymentOption"]
@@ -184,7 +184,7 @@ def setupLogging(logger, logLevel, debug):
         logger.debug("Added streaming handler to logging!")
     else:
         # Log to file
-        handler = logging.handlers.RotatingFileHandler(os.path.join("deploy", "processRuns.log"),
+        handler = logging.handlers.RotatingFileHandler(os.path.join("deploy", "{0}.log".format(runType)),
                                                        maxBytes = 5000000,
                                                        backupCount = 10)
         handler.setLevel(logLevel)

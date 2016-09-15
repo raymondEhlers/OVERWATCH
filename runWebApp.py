@@ -21,7 +21,7 @@ logger = logging.getLogger("")
 #logger = logging.getLogger("webApp")
 
 # Setup logger
-utilities.setupLogging(logger, serverParameters.loggingLevel, serverParameters.debug)
+utilities.setupLogging(logger, serverParameters.loggingLevel, serverParameters.debug, "webApp")
 # Log server settings
 logger.info(serverParameters.printSettings())
 

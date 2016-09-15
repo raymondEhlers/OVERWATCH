@@ -139,14 +139,15 @@ else
         if [[ -n "$docker" ]];
         then
             echoInfoEscaped "Starting uwsgi with config at $projectPath/deploy/docker/uwsgi.ini with deployment option $deploymentOption"
-            uwsgi "$projectPath/deploy/docker/uwsgi.ini" &> "$projectPath/app.log"
+            # Supervisord will take care of the log location
+            uwsgi "$projectPath/deploy/docker/uwsgi.ini" #&> "$projectPath/app.log"
         else
             echoInfoEscaped "Starting uwsgi with config at $projectPath/deploy/wsgi${location}.ini"
             if [[ "$calledFromSystemd" == true ]];
             then
-                uwsgi "$projectPath/deploy/wsgi${location}.ini" &> "$projectPath/app.log"
+                uwsgi "$projectPath/deploy/wsgi${location}.ini" &> "$projectPath/deploy/wsgi.log"
             else
-                nohup uwsgi "$projectPath/deploy/wsgi${location}.ini" &> "$projectPath/app.log" &
+                nohup uwsgi "$projectPath/deploy/wsgi${location}.ini" &> "$projectPath/deploy/wsgi.log" &
             fi
         fi
     elif [[ "$role" == "processing" ]];
@@ -315,7 +316,7 @@ else
         cd "$projectPath"
         # -b for batch mode (ie no graphics)
         echoInfoEscaped "Starting processing"
-        python processRuns.py -b
+        python runProcessRuns.py -b
     else
         echoErrorEscaped "Role $role not recognized. Exiting"
         safeExit 1
