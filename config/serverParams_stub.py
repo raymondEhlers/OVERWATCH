@@ -41,7 +41,7 @@ class serverParameters(object):
     #: Setup Bcrypt.
     bcryptLogRounds = 12
 
-    #: Default user name
+    #: Default user name. An empty string will disable it. Should only be used when behind CERN SSO!
     defaultUsername = ""
 
     _users = {"username": generate_password_hash("password", bcryptLogRounds)}
@@ -76,7 +76,7 @@ class serverParameters(object):
     #: https://stackoverflow.com/questions/16595691/static-files-with-flask-in-production
     #:
     #: (ie. add + "CHANGE" to the staticFolder location specified here).
-    staticFolder = os.path.join(basePath, sharedParameters.staticFolderName) 
+    staticFolder = os.path.join(sharedParameters.staticFolderName) 
 
     #: staticURLPath is the URL of the static folder.
     #: If you want to access "foo", it would be at $BASE_URL/staticURLPath/foo. "" is just the root.
@@ -85,10 +85,10 @@ class serverParameters(object):
 
     #: protectedFolder is the disk location of the protected folder.
     #: This folder holds the experimental data.
-    protectedFolder = os.path.join(basePath, sharedParameters.dataFolderName)
+    protectedFolder = os.path.join(sharedParameters.dataFolderName)
 
     #: templateFolder is the disk location of the template folder.
-    templateFolder = os.path.join(basePath, sharedParameters.templateFolderName)
+    templateFolder = os.path.join(sharedParameters.templateFolderName)
 
     #: The path to the database.
     databaseLocation = sharedParameters.databaseLocation
@@ -109,14 +109,14 @@ class serverParameters(object):
     #: Enable debugging information.
     debug = sharedParameters.debug
 
-    #: Set the logging level
+    #: Set the logging level.
     loggingLevel = logging.INFO
 
     #: List of subsystems.
     #: Each subsystem listed here will have an individual page for their respective histograms.
     subsystemList = sharedParameters.subsystemList
 
-    #: Subsystems with ROOT files to show
+    #: Subsystems with ROOT files to show.
     subsystemsWithRootFilesToShow = sharedParameters.subsystemsWithRootFilesToShow
 
     qaFunctionsList = sharedParameters.qaFunctionsList
@@ -126,13 +126,14 @@ class serverParameters(object):
         :attr:`config.sharedParams.sharedParameters.qaFunctionsList`
     """
 
-    #: Subsystems which have templates available (determined on startup)
-    availableRunPageTemplates = [name for name in os.listdir(templateFolder) if "runPage.html" in name]
+    #: Subsystems which have templates available (determined on startup).
+    #: Since this is run from the root directory, we need to go into the "webApp" directory to find the templates!
+    availableRunPageTemplates = [name for name in os.listdir(os.path.join("webApp", templateFolder)) if "runPage" in name]
 
-    #: Sites to check during the status request
+    #: Sites to check during the status request.
     statusRequestSites = {"CERN": "http://127.0.0.1:8850", "Yale": "https://aliceoverwatch.physics.yale.edu"}
 
-    # Lower the min logging level if we are debugging
+    # Lower the min logging level if we are debugging.
     if debug:
         loggingLevel = logging.DEBUG
 

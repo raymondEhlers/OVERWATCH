@@ -127,8 +127,6 @@ def rsyncData(dirPrefix, username, remoteSystems, remoteFileLocations):
 
     # Determine which type of file we are transfering
     fileDestinationLabel = "data"
-    if "templates" in dirPrefix:
-        fileDestinationLabel = "templates"
 
     # An ending slash is needed so that rsync transfers the proper files (and not just the directory)
     sendDirectory = dirPrefix
