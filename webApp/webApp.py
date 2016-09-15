@@ -13,6 +13,7 @@ import socket
 import time
 import zipfile
 import subprocess
+import signal
 import jinja2
 import json
 import collections 
@@ -676,6 +677,54 @@ def status():
         mainContent = render_template("statusMainContent.html", statuses = statuses)
 
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
+
+###################################################
+@app.route("/upgradeDocker")
+@login_required
+def upgradeDocker():
+    """ Kill supervisord in the docker image (so that it will be upgrade with the new version by offline). """
+    # Display the status page from the other sites
+    ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
+
+    error = {}
+    if current_user.id != "emcalAdmin":
+        error.setdefault("User error", []).append("You are not authorized to view this page!")
+
+    try:
+        if os.environ["deploymentOption"]:
+            logger.info("Running docker in deployment mode {0}".format(os.environ["deploymentOption"]))
+    except KeyError:
+        error.setdefault("User error", []).append("Must be in a docker container to run this!")
+
+    if error == {}:
+        # Attempt to kill supervisord
+        # Following: https://stackoverflow.com/a/2940878
+        p = subprocess.Popen(['ps', '-A'], stdout=subprocess.PIPE)
+        out, err = p.communicate()
+
+        # Kill the process
+        for line in out.splitlines():
+            if "supervisord" in line:
+                pid = int(line.split(None, 1)[0])
+                # Send TERM
+                os.kill(pid, signal.SIGTERM)
+                # NOTE: If this succeeds, then nothing will be sent because the process will be dead...
+                error.setdefault("Signal Sent", []).append("Sent TERM signal to line with \"{0}\"".format(line))
+
+        # Give a note if nothing happened....
+        if error == {}:
+            error.setdefault("No response", []).append("Should have some response by now, but there is none. It seems that the supervisord process cannot be found!")
+
+    # Co-opt error output here since it is probably not worth a new page yet...
+    if ajaxRequest == True:
+        logger.warning("error: {0}".format(error))
+        drawerContent = ""
+        mainContent =  render_template("errorMainContent.html", errors = error)
+
+        # We always want to use ajax here
+        return jsonify(mainContent = mainContent, drawerContent = "")
+    else:
+        return render_template("error.html", errors = error)
 
 if __name__ == "__main__":
     pass

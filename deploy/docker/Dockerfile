@@ -63,7 +63,7 @@ RUN pip install aliBuild==1.4.0.rc1 \
 # Setup OVERWATCH
 # Download OVERWATCH and setup the needed python packages
 RUN git clone https://github.com/raymondEhlers/OVERWATCH.git /overwatch \
-        && cd /overwatch/deploy && cd .. \
+        && cd /overwatch \
         && git checkout -b jsRoot origin/jsRoot \
         && pip install -r /overwatch/requirements.txt
         # TODO: Go back to master once jsRoot is merged!
@@ -71,11 +71,11 @@ RUN git clone https://github.com/raymondEhlers/OVERWATCH.git /overwatch \
 # Add bower, Polymer, webcomponents, jsRoot for OVERWATCH
 RUN ln -s /usr/bin/nodejs /usr/bin/node \
         && npm install -g bower \
-        && cd /overwatch/static \
+        && cd /overwatch/webApp/static \
         && bower --allow-root install \
         && cd /tmp && git clone https://github.com/linev/jsroot.git \
         && cd jsroot && git apply /overwatch/deploy/docker/jsRootPainterMoreDrawPaveFix.patch \
-        && cp -r scripts /overwatch/static/. && cp -r style /overwatch/static/. \
+        && cp -r scripts /overwatch/webApp/static/. && cp -r style /overwatch/webApp/static/. \
         && rm -r /tmp/jsroot
         # Need to patch JsRootPainter.more.js
 
@@ -87,16 +87,13 @@ RUN echo "daemon off;" >> /etc/nginx/nginx.conf && rm /etc/nginx/sites-enabled/d
 COPY nginxConf/*.conf /etc/nginx/conf.d/
 COPY nginx.conf /etc/nginx/sites-enabled/.
 
-# Redirect logs to mounted volume!
-
 # Configure OVERWATCH
 # TODO: Improve how this is configured!
 COPY serverParams.py /overwatch/config/.
 # Ensure that the proper configuration file is setup. The values should already be in the file!
 RUN cp /overwatch/deploy/configOVERWATCH_stub.sh /overwatch/deploy/configOVERWATCH.sh
 # Check for whether we are running with debug!
-
-# Redirect logs!
+# TODO: Compile overwatch docs so that they are accessible for a docker hosted site!
 
 # Configure supervisord
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf

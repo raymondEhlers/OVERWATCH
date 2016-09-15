@@ -9,6 +9,7 @@
 {% if current_user.id == "emcalAdmin" %}
     <p>Rebuild the docs <a href={{ url_for("rebuildDocs") }}>here</a></p>
     <p>View the <a href={{ url_for("status") }}>OVERWATCH Status</a></p>
+    <p>Upgrade the <a href={{ url_for("upgradeDocker") }}>Docker Image</a></p>
 {% endif %}
 <p>QA and Website created by:</p>
 <table>
