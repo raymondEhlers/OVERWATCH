@@ -35,38 +35,30 @@ run apt-get update && apt-get install -y \
         libfreetype6-dev \
         libxft-dev \
         libxpm-dev \
+        environment-modules \
+        npm \
     && rm -rf /var/lib/apt/lists/*
         # Can't use gsl because the version is incompatible
         # We delete the intermediate apt-get files once we are done
+        # npm is for bower - see below
 
 # Setup ROOT via aliBuild
+# WARNING: This is a slow step - it has to clone and build root and all of it's dependencies!
+# Remove the ROOT source and build files to save space!
 RUN pip install aliBuild==1.4.0.rc1 \
         && mkdir /alice \
         && cd /alice \
         && aliBuild analytics off \
         && aliBuild -z root6 --defaults root6 init ROOT \
-        && cd root6
-        #&& aliBuild -z root6 --defaults root6 init
-
-# Run on it's own since it's very slow
-RUN cd /alice/root6 && aliBuild -z -w ../sw --defaults root6 build ROOT
-
-# Remove the ROOT source and build files to save space!
-RUN rm -r /alice/sw/BUILD && rm -r /alice/root6
-
-# Add the patch to properly set the python path with root
-#copy rootPythonPath.patch /alice/root6/.
-#
-## Apply the patch and build root
-#run cd /alice/root6/alidist \
-#        && git config --global user.name "Raymond Ehlers" && git config --global user.email "raymond.ehlers@cern.ch" \
-#        && git am ../rootPythonPath.patch \
-#        && cd /alice/root6 
-#        && aliBuild -z -w ../sw --defaults root6 build ROOT
-
-# TEMP
-# Merge everything except for vim into the above apt-get!
-RUN apt-get update && apt-get install -y vim environment-modules npm
+        && cd /alice/root6 && aliBuild -z -w ../sw --defaults root6 -d build ROOT \
+        && cd /alice \
+        && rm -r /alice/sw/BUILD \
+        && rm -r /alice/sw/INSTALLROOT \
+        && rm -r /alice/sw/MIRROR \
+        && rm -r /alice/sw/SOURCES \
+        && rm -r /alice/sw/SPECS \
+        && rm -r /alice/sw/TARS \
+        && rm -r /alice/root6
 
 # Setup OVERWATCH
 # Download OVERWATCH and setup the needed python packages
@@ -109,5 +101,9 @@ RUN cp /overwatch/deploy/configOVERWATCH_stub.sh /overwatch/deploy/configOVERWAT
 # Configure supervisord
 COPY supervisord.conf /etc/supervisor/conf.d/supervisord.conf
 
-EXPOSE 80
+# TEMP
+# vim can always be installed later...
+
+# Expose the ports for nginx and ZODB
+EXPOSE 80 8090
 CMD ["/usr/bin/supervisord"]
