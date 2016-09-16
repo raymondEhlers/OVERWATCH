@@ -48,9 +48,10 @@ else:
     #logger = logging.getLogger("processRuns")
 
 # ZODB
-import ZODB, ZODB.FileStorage
+import ZODB
 import BTrees.OOBTree
 import transaction
+import persistent
 # For determining the storage type
 import zodburi
 
@@ -727,6 +728,10 @@ def processAllRuns():
         # Commit any changes made to the database
         transaction.commit()
 
+    # Create configuration list
+    if not dbRoot.has_key("config"):
+        dbRoot["config"] = persistent.mapping.PersistentMapping()
+
     logger.info("runs: {0}".format(list(runs.keys())))
 
     # Start of processing data
@@ -778,19 +783,17 @@ def processAllRuns():
     if processingParameters.sendData == True:
         logger.info("Preparing to send data")
         utilities.rsyncData(dirPrefix, processingParameters.remoteUsername, processingParameters.remoteSystems, processingParameters.remoteFileLocations)
-        if processingParameters.templateDataDirName != None:
-            utilities.rsyncData(processingParameters.templateDataDirName, processingParameters.remoteUsername, processingParameters.remoteSystems, processingParameters.remoteFileLocations)
 
     # Update receiver last modified time if the log exists
-    receiverLogFileDir = os.path.join("receiver", "bin")
+    receiverLogFileDir = os.path.join("deploy")
     receiverLogFilePath = os.path.join(receiverLogFileDir,
-                                       next(( name for name in os.listdir(receiverLogFileDir) if "Receiver.log" in name), None))
+                                       next(( name for name in os.listdir(receiverLogFileDir) if "Receiver.log" in name), ""))
     logger.debug("receiverLogFilePath: {0}".format(receiverLogFilePath))
 
     if receiverLogFilePath and os.path.exists(receiverLogFilePath):
         logger.debug("Updating receiver log last modified time!")
         receiverLogLastModified = os.path.getmtime(receiverLogFilePath)
-        dbRoot["receiverLogLastModified"] = receiverLogLastModified
+        dbRoot["config"]["receiverLogLastModified"] = receiverLogLastModified
 
     # Ensure that any additional changes are committed
     transaction.commit()

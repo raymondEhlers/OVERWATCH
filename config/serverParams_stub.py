@@ -57,13 +57,16 @@ class serverParameters(object):
     >>> _users = {"username": generate_password_hash("password", bcryptLogRounds)}
     """
 
-    _secretKey = ''
+    _secretKey = str(os.urandom(50))
     """ Secret key for signing cookies
 
     Defined with an underscore since it is a private value.
     
     Generated using urandom(50), as suggested by the flask developers.
     """
+
+    #: Determines whether to append settings from the database onto this server configuration
+    appendSettings = False
 
     #: basePath is just a useful value.
     #: It defines a base directory to reference if the static, template, etc folders are

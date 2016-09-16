@@ -60,10 +60,11 @@ class User(UserMixin):
 
     # Static objects and methods
     #: List of valid users, loaded from an external file.
-    users = serverParameters._users
+    #users = serverParameters._users
+    #users = db["config"]["users"]
 
-    @classmethod
-    def getUser(cls, username):
+    @staticmethod
+    def getUser(username, db):
         """ Retrieve the username and password of a user.
 
         Used by ``load_user()`` to maintain a logged in user session.
@@ -75,7 +76,10 @@ class User(UserMixin):
             :class:`.User`: Returns an instance of the :class:`.User` class if the user exists. Otherwise, it
             returns None.
         """
-        userPasswordHash = cls.users.get(username)
+        try:
+            userPasswordHash = db.get("config").get("users").get(username)
+        except:
+            userPasswordHash = None
         # If we can retrieve the hash, then it means that we have a valid user
         if userPasswordHash:
             return User(username, userPasswordHash)
@@ -83,7 +87,7 @@ class User(UserMixin):
             return None
 
 ###################################################
-def authenticateUser(username, password):
+def authenticateUser(username, password, db):
     """ Checks whether the user credentials are correct.
 
     Args:
@@ -95,7 +99,7 @@ def authenticateUser(username, password):
             Otherwise, it returns None.
 
     """
-    attemptedUser = User.getUser(username)
+    attemptedUser = User.getUser(username, db)
     if attemptedUser:
         # If the password is valid, then return the user so that it can be logged in.
         if attemptedUser.checkPassword(password):

@@ -60,6 +60,20 @@ from processRuns import qa
 # Flask setup
 app = Flask(__name__, static_url_path=serverParameters.staticURLPath, static_folder=serverParameters.staticFolder, template_folder=serverParameters.templateFolder)
 
+# Setup database
+app.config["ZODB_STORAGE"] = serverParameters.databaseLocation
+db = ZODB(app)
+
+# Set serverParameters secret key and add user from database if they exist
+if serverParameters.appendSettings and db.has_key("config"):
+    #if db["config"].has_key("users"):
+    #    for user, pw in db["config"]["users"]:
+    #        # Add each user, overriding an existing settings
+    #        serverParameters._users[user] = pw
+    if db["config"].has_key("secretKey"):
+        # Set the secret key to be the same as where the db is hosted
+        serverParameters._secretKey = db["config"]["secretKey"]
+
 # Set secret key for flask
 app.secret_key = serverParameters._secretKey
 
@@ -78,15 +92,11 @@ loginManager.init_app(app)
 # Tells the manager where to redirect when login is required.
 loginManager.login_view = "login"
 
-# Setup database
-app.config["ZODB_STORAGE"] = serverParameters.databaseLocation
-db = ZODB(app)
-
 ###################################################
 @loginManager.user_loader
 def load_user(user):
     """ Used to remember the user so that they don't need to login again each time they visit the site. """
-    return auth.User.getUser(user)
+    return auth.User.getUser(user, db)
 
 ######################################################################################################
 # Unauthenticated Routes
@@ -115,7 +125,7 @@ def login():
         # If there is an error, just drop through to return an error on the login page
         if errorValue == None:
             # Validate user
-            validUser = auth.authenticateUser(username, password)
+            validUser = auth.authenticateUser(username, password, db)
 
             # Return user if successful
             if validUser is not None:
@@ -138,7 +148,7 @@ def login():
         # See: https://stackoverflow.com/a/19525521
         session.pop('_flashes', None)
         # Get the default user
-        defaultUser = auth.User.getUser(serverParameters.defaultUsername)
+        defaultUser = auth.User.getUser(serverParameters.defaultUsername, db)
         # Login the user into flask
         login_user(defaultUser, remember=True)
         # Note for the user
@@ -637,7 +647,7 @@ def status():
     # Add to status
     statuses["Ongoing run?"] = "{0} {1}".format(runOngoing, runOngoingNumber)
 
-    if db.has_key("receiverLogLastModified"):
+    if db.has_key("config") and db["config"].has_key("receiverLogLastModified"):
         receiverLogLastModified = db["receiverLogLastModified"]
         lastModified = time.time() - receiverLogLastModified
         # Display in minutes
