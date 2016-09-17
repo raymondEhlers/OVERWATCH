@@ -10,6 +10,7 @@ from builtins import range
 # General includes
 import os
 import socket
+import math
 import time
 import zipfile
 import subprocess
@@ -241,9 +242,9 @@ def index():
 
     # Number of runs
     numberOfRuns = len(runs.keys())
-    # We want 15 anchors
+    # We want approximately 15 anchors
     # NOTE: We need to round it to an int to ensure that mod works.
-    anchorFrequency = int(round(numberOfRuns/15.0))
+    anchorFrequency = int(math.ceil(numberOfRuns/15.0))
 
     if ajaxRequest != True:
         return render_template("runList.html", drawerRuns = reversed(runs.values()),
@@ -660,6 +661,7 @@ def status():
     statuses["Last requested data"] = lastModifiedMessage
 
     # Determine server statuses
+    # TODO: Consider reducing the max number of retries
     sites = serverParameters.statusRequestSites
     for site, url in sites.iteritems():
         serverError = {}
@@ -672,6 +674,10 @@ def status():
                 statusResult = "Site is up!"
         except requests.exceptions.Timeout as e:
             serverError.setdefault("Timeout error", []).append("Request to \"{0}\" at \"{1}\" timed out with error {2}!".format(site, url, e))
+        except requests.exceptions.ConnectionError as e:
+            serverError.setdefault("Connection error", []).append("Request to \"{0}\" at \"{1}\" had a connection error with message {2}!".format(site, url, e))
+        except requests.exceptions.RequestException as e:
+            serverError.setdefault("General Requests error", []).append("Request to \"{0}\" at \"{1}\" had a general requests error with message {2}!".format(site, url, e))
 
         # Return error if one occurred
         if serverError != {}:

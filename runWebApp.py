@@ -43,4 +43,6 @@ if __name__ == "__main__":
         WSGIServer(app, bindAddress=("127.0.0.1",8851)).run()
     else:
         logger.info("Starting flask app")
-        app.run(host=serverParameters.ipAddress, port=serverParameters.port)
+        # Careful with threaded, but it can be useful to test the status page, since the post request succeeds!
+        app.run(host=serverParameters.ipAddress,
+                port=serverParameters.port)#, threaded=True)
