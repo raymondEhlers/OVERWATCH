@@ -130,6 +130,15 @@ then
     # Return to the project directory to get started
     cd "$projectPath"
 else
+    #############################
+    # Start zodb server
+    #############################
+    # This can be true for either role
+    if [[ "$zodbServer" == true ]];
+    then
+        zdaemon -C zdaemon.conf start
+    fi
+
     if [[ "$role" == "server" ]];
     then
         #############################
@@ -164,122 +173,115 @@ else
         arr=($(ps aux | awk '/[z]mqReceive/ {printf "%s %s %s %s\n", $11, $NF, $12, $2}'))
 
         if [[ ${forceRestart} == true ]]; then
-          echoInfoEscaped "Force restart requested -- all previous receivers will be killed, and a new receiver will be started for each subsystem."
+            echoInfoEscaped "Force restart requested -- all previous receivers will be killed, and a new receiver will be started for each subsystem."
         fi
 
         if [[ $((${#arr[@]}/4)) -gt "${#subsystems[@]}" ]]; then
-          echoWarnEscaped "There are more zmqReceivers running than there are subsystems! Forcing a re-start of all receivers at relevant ports..."
-          forceRestart=true
+            echoWarnEscaped "There are more zmqReceivers running than there are subsystems! Forcing a re-start of all receivers at relevant ports..."
+            forceRestart=true
         fi
         echo #EMPTY
 
         # Loop through subsystems, and re-start each receiver if appropriate
         for (( n=0; n<"${#subsystems[@]}"; n++ ))
         do
-          subsystemLog="${currentLocation}/${subsystems[n]}Receiver.log"
-          echoInfoEscaped "See ${currentLocation}/${subsystems[n]}Receiver.log for details."
-          echoInfoEscaped "Checking for ${subsystems[n]} receiver..." > ${subsystemLog}
+            subsystemLog="${currentLocation}/${subsystems[n]}Receiver.log"
+            echoInfoEscaped "See ${currentLocation}/${subsystems[n]}Receiver.log for details."
+            echoInfoEscaped "Checking for ${subsystems[n]} receiver..." > ${subsystemLog}
 
-          foundReceiver=false
-          startReceiver=true
+            foundReceiver=false
+            startReceiver=true
 
-          # loop through running processes (each process stores the 4 entries above)
-          for (( i=0; i<${#arr[@]}; i=i+4 ))
-          do
-            processName_i=${arr[i]}
-            subsystem_i=${arr[i+1]}
-            port_i=${arr[i+2]}
-            pid_i=${arr[i+3]}
+            # loop through running processes (each process stores the 4 entries above)
+            for (( i=0; i<${#arr[@]}; i=i+4 ))
+            do
+                processName_i=${arr[i]}
+                subsystem_i=${arr[i+1]}
+                port_i=${arr[i+2]}
+                pid_i=${arr[i+3]}
 
-            # check if subsystem and port and name match the process
-            if [[ $(echo $subsystem_i | grep "${subsystems[n]}") ]]; then
-              if [[ $(echo $port_i | grep "${internalReceiverPorts[n]}") ]]; then
-                if [[ $(echo ${processName_i} | grep "zmqReceive") ]]; then
-                  # We found a match
-                  echoInfoEscaped "Found ${subsystems[n]} receiver!" >> ${subsystemLog}
-                  foundReceiver=true
-                  startReceiver=false
+                # check if subsystem and port and name match the process
+                if [[ $(echo $subsystem_i | grep "${subsystems[n]}") ]]; then
+                    if [[ $(echo $port_i | grep "${internalReceiverPorts[n]}") ]]; then
+                        if [[ $(echo ${processName_i} | grep "zmqReceive") ]]; then
+                            # We found a match
+                            echoInfoEscaped "Found ${subsystems[n]} receiver!" >> ${subsystemLog}
+                            foundReceiver=true
+                            startReceiver=false
 
-                  # If forceRestart is enabled, kill the receiver
-                  if [[ ${forceRestart} == true ]]; then
-                    kill ${pid_i}
-                    echoInfoEscaped "Force restart is requested -- killed receiver ${subsystems[n]}" >> ${subsystemLog}
-                    startReceiver=true
-                  fi
+                            # If forceRestart is enabled, kill the receiver
+                            if [[ ${forceRestart} == true ]]; then
+                                kill ${pid_i}
+                                echoInfoEscaped "Force restart is requested -- killed receiver ${subsystems[n]}" >> ${subsystemLog}
+                                startReceiver=true
+                            fi
 
+                        fi
+                    fi
                 fi
-              fi
+
+            done
+
+            if [[ ${foundReceiver} == false ]]; then
+                echoInfoEscaped "No ${subsystems[n]} receiver found!" >> ${subsystemLog}
             fi
 
-          done
+            # If we don't find a match, or if the receiver has been killed, we must start a receiver for this subsystem
+            if [[ ${startReceiver} == true ]]; then
 
-          if [[ ${foundReceiver} == false ]]; then
-            echoInfoEscaped "No ${subsystems[n]} receiver found!" >> ${subsystemLog}
-          fi
+                echoInfoEscaped "Starting receiver for ${subsystems[n]}..." >> ${subsystemLog}
 
-          # If we don't find a match, or if the receiver has been killed, we must start a receiver for this subsystem
-          if [[ ${startReceiver} == true ]]; then
+                # Move to data directory
+                dataLocation="${projectPath}/data"
+                echoInfoEscaped "Moving to data directory: \"${dataLocation}\"" >> ${subsystemLog}
+                cd "${dataLocation}"
 
-            echoInfoEscaped "Starting receiver for ${subsystems[n]}..." >> ${subsystemLog}
+                additionalOptions=""
 
-            # Move to data directory
-            dataLocation="${projectPath}/data"
-            echoInfoEscaped "Moving to data directory: \"${dataLocation}\"" >> ${subsystemLog}
-            cd "${dataLocation}"
+                echoInfoEscaped "Receiver Settings:" >> ${subsystemLog}
+                echoPropertiesEscaped "Subsystem: ${subsystems[n]}" >> ${subsystemLog}
+                echoPropertiesEscaped "Receiver (interal) Port: ${internalReceiverPorts[n]}" >> ${subsystemLog}
+                echoPropertiesEscaped "Use SSH tunnel: $useSSHTunnel" >> ${subsystemLog}
+                echoPropertiesEscaped "Tunnel (external) Port: ${externalReceiverPorts[n]}" >> ${subsystemLog}
+                echoPropertiesEscaped "SSH Monitor Port: ${monitorPorts[n]}" >> ${subsystemLog}
+                echoPropertiesEscaped "Additional Options: $additionalOptions" >> ${subsystemLog}
 
-            if [[ "${subsystems[n]}" == "HLT" ]];
-            then
-              monitorPort=25006
+                # TODO: update this to connect to HLT
+                if [[ "${useSSHTunnel}" == true ]];
+                then
+                    # Find SSH process
+                    sshProcesses=$(pgrep -f "autossh -M ${monitorPorts[n]}")
+                    echoInfoEscaped "autossh PID: $sshProcesses"
+
+                    # Determine if ssh tunnel is needed.
+                    # autossh should ensure that the connection never dies.
+                    if [[ -z "$sshProcesses" ]];
+                    then
+                        echoInfoEscaped "Did not find necessary ${subsystems[n]} autossh tunnel. Starting a new one!"
+                        autossh -M ${monitorPorts[n]} -f -N -L ${internalReceiverPorts[n]}:localhost:${externalReceiverPorts[n]} emcalguest@lbnl5core.cern.ch
+                    else
+                        echoInfoEscaped "${subsystems[n]} autossh tunnel already found with PID $sshProcesses. Not starting another one."
+                    fi
+                else
+                    echoInfoEscaped "Not using a SSH tunnel!" >> ${subsystemLog}
+                fi
+
+                # select="" ensures that we get all histograms(?)
+                receiverPath="${projectPath}/receiver/bin"
+                nohup "${receiverPath}/zmqReceive" --in="REQ>tcp://localhost:${internalReceiverPorts[n]}" --verbose=1 --sleep=60 --timeout=100 --select="" --subsystem="${subsystems[n]}" ${additionalOptions} >> ${subsystemLog} 2>&1 &
+
+                # Ensure that the output is still readable and that the receiver is able to start.
+                sleep 1
+
+                # Moving back to initOVERWATCH directory
+                echoInfoEscaped "Moving back to deploy directory: \"$currentLocation\"" >> ${subsystemLog}
+                cd "$currentLocation"
+
+                echoInfoEscaped "Finished starting ${subsystems[n]} receiver!" >> ${subsystemLog}
+
             else
-              monitorPort=25005
+                echoInfoEscaped "No need to start new ${subsystems[n]} receiver." >> ${subsystemLog}
             fi
-
-            additionalOptions=""
-
-            echoInfoEscaped "Receiver Settings:" >> ${subsystemLog}
-            echoPropertiesEscaped "Subsystem: ${subsystems[n]}" >> ${subsystemLog}
-            echoPropertiesEscaped "Receiver (interal) Port: ${internalReceiverPorts[n]}" >> ${subsystemLog}
-            echoPropertiesEscaped "Use SSH tunnel: $useSSHTunnel" >> ${subsystemLog}
-            echoPropertiesEscaped "Tunnel (external) Port: ${externalReceiverPorts[n]}" >> ${subsystemLog}
-            echoPropertiesEscaped "SSH Monitor Port: $monitorPort" >> ${subsystemLog}
-            echoPropertiesEscaped "Additional Options: $additionalOptions" >> ${subsystemLog}
-
-            # TODO: update this to connect to HLT
-            if [[ "${useSSHTunnel}" == true ]];
-            then
-              # Find SSH process
-              sshProcesses=$(pgrep -f "autossh -M $monitorPort")
-              echoInfoEscaped "autossh PID: $sshProcesses"
-
-              # Determine if ssh tunnel is needed.
-              # autossh should ensure that the connection never dies.
-              if [[ -z "$sshProcesses" ]];
-              then
-                echoInfoEscaped "Did not find necessary ${subsystems[n]} autossh tunnel. Starting a new one!"
-                autossh -M $monitorPort -f -N -L ${internalReceiverPorts[n]}:localhost:${externalReceiverPorts[n]} emcalguest@lbnl5core.cern.ch
-              else
-                echoInfoEscaped "${subsystems[n]} autossh tunnel already found with PID $sshProcesses. Not starting another one."
-              fi
-            else
-              echoInfoEscaped "Not using a SSH tunnel!" >> ${subsystemLog}
-            fi
-
-            # select="" ensures that we get all histograms(?)
-            receiverPath="${projectPath}/receiver/bin"
-            nohup "${receiverPath}/zmqReceive" --in="REQ>tcp://localhost:${internalReceiverPorts[n]}" --verbose=1 --sleep=60 --timeout=100 --select="" --subsystem="${subsystems[n]}" ${additionalOptions} >> ${subsystemLog} 2>&1 &
-
-            # Ensure that the output is still readable and that the receiver is able to start.
-            sleep 1
-
-            # Moving back to initOVERWATCH directory
-            echoInfoEscaped "Moving back to deploy directory: \"$currentLocation\"" >> ${subsystemLog}
-            cd "$currentLocation"
-
-            echoInfoEscaped "Finished starting ${subsystems[n]} receiver!" >> ${subsystemLog}
-
-          else
-            echoInfoEscaped "No need to start new ${subsystems[n]} receiver." >> ${subsystemLog}
-          fi
 
         done
 
@@ -293,16 +295,12 @@ else
 
         if [[ "$calledFromSystemd" == true ]];
         then
-          echoErrorEscaped "Processing should not be started from $1! Exiting"
-          safeExit 1
-          return $?
+            echoErrorEscaped "Processing should not be started from $1! Exiting"
+            safeExit 1
+            return $?
         fi
 
         # Check for lockout file
-        # Determine current location of file
-        # From: http://stackoverflow.com/a/246128
-        currentLocation="$(cd -P "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-
         # Only process if we are not locked out.
         # Locking out allows changes to processing (for example, reprocessing) without having to disable the crontab
         echoInfoEscaped "Checking for lockOut file."
