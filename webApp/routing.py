@@ -17,6 +17,11 @@ try:
 except ImportError:
     from urlparse import urlparse, urljoin
 
+# Logging
+import logging
+# Setup logger
+logger = logging.getLogger(__name__)
+
 ###################################################
 def isSafeUrl(target):
     """ Checks URL for safety to ensure that it does not redirect unexpectedly.
@@ -73,7 +78,7 @@ def redirectBack(endpoint, **values):
     # This logout and test data specific change is the only one made in these functions
     if not target or not isSafeUrl(target) or "logout" in target or "testingDataArchive" in target:
         target = url_for(endpoint, **values)
-    #print("target for redirectBack: {0}".format(target))
+    #logger.debug("target for redirectBack: {0}".format(target))
     return redirect(target)
 
 

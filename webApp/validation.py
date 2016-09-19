@@ -18,6 +18,11 @@ except ImportError:
 # Config
 from config.serverParams import serverParameters
 
+# Logging
+import logging
+# Setup logger
+logger = logging.getLogger(__name__)
+
 ###################################################
 def validateLoginPostRequest(request):
     """ Validates the login POST request.
@@ -260,10 +265,10 @@ def convertRequestToPythonBool(paramName, source):
     This function is fairly similar to `convertRequestToStringWhichMayBeEmpty`.
     """
     paramValue = source.get(paramName, False, type=str)
-    #print("{0}: {1}".format(paramName, paramValue))
+    #logger.info("{0}: {1}".format(paramName, paramValue))
     if paramValue != False:
         paramValue = json.loads(paramValue)
-    print("{0}: {1}".format(paramName, paramValue))
+    logger.info("{0}: {1}".format(paramName, paramValue))
 
     return paramValue
 
@@ -282,7 +287,7 @@ def convertRequestToStringWhichMayBeEmpty(paramName, source):
     This function is fairly similar to `convertRequestToPythonBool`.
     """
     paramValue = source.get(paramName, None, type=str)
-    #print("{0}: {1}".format(paramName, paramValue))
+    #logger.info("{0}: {1}".format(paramName, paramValue))
     #if paramValue == "" or paramValue == "None" or paramValue == None:
     # If we see "None", then we want to be certain that it is None!
     # Otherwise, we will interpret an empty string as a None value!
@@ -294,7 +299,7 @@ def convertRequestToStringWhichMayBeEmpty(paramName, source):
     # but that is not equal to no hist being selected in a request.
     if paramValue == "nonSubsystemEmptyString":
         paramValue = ""
-    print("{0}: {1}".format(paramName, paramValue))
+    logger.info("{0}: {1}".format(paramName, paramValue))
 
     return paramValue
 
@@ -311,11 +316,11 @@ def validateHistGroupAndHistName(histGroup, histName, subsystem, error):
         It could be valid for both to be None!
     """
     if histGroup:
-        #print("histGroup: {0}".format(histGroup))
+        #logger.info("histGroup: {0}".format(histGroup))
         #if histGroup in [group.selectionPattern for group in subsystem.histGroups]:
         foundHistGroup = False
         for i, group in enumerate(subsystem.histGroups):
-            #print("group.selectionPattern: {0}".format(group.selectionPattern))
+            #logger.debug("group.selectionPattern: {0}".format(group.selectionPattern))
             if histGroup == group.selectionPattern:
                 foundHistGroup = True
                 if histName and histName not in subsystem.histGroups[i].histList:
@@ -336,7 +341,7 @@ def retrieveAndValidateTimeSlice(subsystem, error):
     
     """
     timeSliceKey = request.args.get("timeSliceKey", "", type=str)
-    print("timeSliceKey: {0}".format(timeSliceKey))
+    logger.info("timeSliceKey: {0}".format(timeSliceKey))
     if timeSliceKey == "" or timeSliceKey == "None":
         timeSlice = None
         timeSliceKey = None
@@ -345,7 +350,7 @@ def retrieveAndValidateTimeSlice(subsystem, error):
 
     # Select the time slice if the key is valid
     if timeSliceKey:
-        #print("timeSlices: {0}, timeSliceKey: {1}".format(subsystem.timeSlices, timeSliceKey))
+        #logger.debug("timeSlices: {0}, timeSliceKey: {1}".format(subsystem.timeSlices, timeSliceKey))
         # Filter out "fullProcessing"
         if timeSliceKey == "fullProcessing":
             timeSlice = None
@@ -370,24 +375,24 @@ def extractValueFromNextOrRequest(paramName):
     if "next" in request.args:
         # Check the next paramter
         nextParam = request.args.get("next", "", type=str)
-        #print("nextParam: {0}".format(nextParam))
+        #logger.debug("nextParam: {0}".format(nextParam))
         if nextParam != "":
             nextParam = urlparse.urlparse(nextParam)
-            #print("nextParam: {0}".format(nextParam))
+            #logger.debug("nextParam: {0}".format(nextParam))
             # Get the actual parameters
 
             params = urlparse.parse_qs(nextParam.query)
-            #print("params: {0}".format(params))
+            #logger.debug("params: {0}".format(params))
             try:
                 # Has a one entry list
                 paramValue = params.get(paramName, "")[0]
             except (KeyError, IndexError) as e:
-                print("Error in getting {0}: {1}".format(paramName, e.args[0]))
+                logger.warn("Error in getting {0}: {1}".format(paramName, e.args[0]))
                 paramValue = ""
 
     # Just try to extract directly if it isn't in the next parameter
     if paramValue == "":
         paramValue = request.args.get(paramName, "", type=str)
-    print("{0}: {1}".format(paramName, paramValue))
+    logger.info("{0}: {1}".format(paramName, paramValue))
 
     return paramValue

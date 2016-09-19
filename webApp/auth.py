@@ -12,6 +12,11 @@ from flask_bcrypt import check_password_hash
 # Config
 from config.serverParams import serverParameters
 
+# Logging
+import logging
+# Setup logger
+logger = logging.getLogger(__name__)
+
 ###################################################
 class User(UserMixin):
     """ A basic user class to manage authentication.
