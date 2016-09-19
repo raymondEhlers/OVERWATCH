@@ -89,11 +89,11 @@ class processingParameters(object):
 
     #: Remote system hostnames.
     #: The number of entries in remoteSystems must match remoteFileLocations!
-    remoteSystems = ["aliceoverwatch.physics.yale.edu", "pdsf.nersc.gov"]
+    remoteSystems = ["aliceoverwatch.physics.yale.edu"]
 
     #: Remote locations where to store the data files.
     #: The number of entries in each dict label must match remoteSystems!
-    remoteFileLocations = {"data" : ["/opt/www/aliceoverwatch/data/", "/project/projectdirs/alice/www/emcalMonitoring/data/2015/"]}
+    remoteFileLocations = {"data" : ["/opt/www/aliceoverwatch/data/"]}
 
     # Set variables for testing
     if True:
