@@ -258,7 +258,7 @@ else
                     if [[ -z "$sshProcesses" ]];
                     then
                         echoInfoEscaped "Did not find necessary ${subsystems[n]} autossh tunnel. Starting a new one!"
-                        autossh -M ${monitorPorts[n]} -f -N -L ${internalReceiverPorts[n]}:localhost:${externalReceiverPorts[n]} emcalguest@lbnl5core.cern.ch
+                        autossh -M ${monitorPorts[n]} -o ServerAliveInterval 30 -o ServerAliveCountMax 3 -p ${sshPorts[n]} -f -N -l zmq-tunnel  -L ${internalReceiverPorts[n]}:localhost:${externalReceiverPorts[n]} ${sshServerAddress}
                     else
                         echoInfoEscaped "${subsystems[n]} autossh tunnel already found with PID $sshProcesses. Not starting another one."
                     fi

@@ -9,9 +9,15 @@ useSSHTunnel=false
 # Values are paired together
 subsystems=( "EMC" "TPC" "HLT" )
 # These are the port values that we pass to the receiver
-internalReceiverPorts=( 11 12 13)
+internalReceiverPorts=( 11 12 13 )
 # These are the port values at the other host
-externalReceiverPorts=( 21 22 23)
+externalReceiverPorts=( 21 22 23 )
+# These are the ports used to monitor the ssh tunnel created via autossh
+monitorPorts=( 31 32 33 )
+# These are the ssh ports which are actually used to make the connection
+sshPorts=( 22 22 22 )
+# The server address
+sshServerAddress=""
 
 # Ensure the sizes of the variables above are the same!
 # Otherwise, throw error and exti!
@@ -31,6 +37,7 @@ buildType=""
 # If alibuild is used, must specify name
 alibuildName="AliRoot/latest-aliMaster"
 role=""
+zodbServer="false"
 
 if [[ -n "${docker}" ]];
 then
