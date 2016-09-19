@@ -84,18 +84,6 @@ Provides convenient configuration for both Process Runs and the Web App.
 
    config
 
-Testing Tools
-=============
-
-These tools allow convenient testing of the various components of this project, including providing
-a full server stack to test the WSGI capabilities of the Web App. More tools will be added as they
-are developed.
-
-.. toctree::
-   :maxdepth: 2
-
-   fullStackServer
-
 Back to the Web App
 ===================
 

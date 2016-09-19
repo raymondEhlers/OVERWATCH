@@ -100,9 +100,7 @@ Adding a new detector to the project is well documented in the `processRuns.dete
 
  - `webApp.py` - A Flask application which handles serving either dynamic (template) or static (simple html pages) run pages to display the QA data. It handles authentication, as well as allowing dynamic features, such as viewing time slices of the data within and between runs.
 
- - `fullStackServer.py` - A higher performance front-end server for use with `webApp.py`. Not necessary at PDSF, but useful for testing, and it allows for deployment at other places without additional infrastructure setup. It requires the python modules `cherrypy` and `paste`.
-
-Inside of the data folder, there are a few main HTML files. `(subsystem)output.html` displays images from the run. `(subsystem)ROOTFiles.html` links to the raw ROOT files that are saved out for each write of histograms from the HLT. In both cases, `(subsystem)` is the three letter name of a detector in all caps.
+ Inside of the data folder, there are a few main HTML files. `(subsystem)output.html` displays images from the run. `(subsystem)ROOTFiles.html` links to the raw ROOT files that are saved out for each write of histograms from the HLT. In both cases, `(subsystem)` is the three letter name of a detector in all caps.
 
 ### Directory Structure
 
@@ -128,7 +126,6 @@ For reference, an example file structure is shown below.
 
 ```bash
 .
-├── fullStackServer.py
 ├── processRuns.py
 ├── README.html
 ├── README.md
@@ -182,7 +179,6 @@ For reference, an example file structure is shown below.
 │       ├── _templates
 │       ├── conf.py
 │       ├── config.rst
-│       ├── fullStackServer.rst
 │       ├── index.rst
 │       ├── processRuns.rst
 │       ├── processRunsModules.detectors.rst

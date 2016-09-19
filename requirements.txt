@@ -32,7 +32,3 @@ numpy
 sphinx
 sphinxcontrib-napoleon
 recommonmark
-
-# For full stack server
-cherrypy
-paste

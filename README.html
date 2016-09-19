@@ -105,7 +105,6 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 <ul>
 <li><p><code>processRuns.py</code> - Moves, classifies, and processes files from the HLT. It will drive functions to produce html and images to display the data for arbitrary times and runs. This file and the associated modules contains functions that provide a large majority of the overall functionality.</p></li>
 <li><p><code>webApp.py</code> - A Flask application which handles serving either dynamic (template) or static (simple html pages) run pages to display the QA data. It handles authentication, as well as allowing dynamic features, such as viewing time slices of the data within and between runs.</p></li>
-<li><p><code>fullStackServer.py</code> - A higher performance front-end server for use with <code>webApp.py</code>. Not necessary at PDSF, but useful for testing, and it allows for deployment at other places without additional infrastructure setup. It requires the python modules <code>cherrypy</code> and <code>paste</code>.</p></li>
 </ul>
 <p>Inside of the data folder, there are a few main HTML files. <code>(subsystem)output.html</code> displays images from the run. <code>(subsystem)ROOTFiles.html</code> links to the raw ROOT files that are saved out for each write of histograms from the HLT. In both cases, <code>(subsystem)</code> is the three letter name of a detector in all caps.</p>
 <h3 id="directory-structure">Directory Structure</h3>
@@ -122,7 +121,6 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 </ul>
 <p>For reference, an example file structure is shown below.</p>
 <div class="sourceCode"><pre class="sourceCode bash"><code class="sourceCode bash"><span class="kw">.</span>
-├── <span class="kw">fullStackServer.py</span>
 ├── <span class="kw">processRuns.py</span>
 ├── <span class="kw">README.html</span>
 ├── <span class="kw">README.md</span>
@@ -176,7 +174,6 @@ code > span.in { color: #60a0b0; font-weight: bold; font-style: italic; } /* Inf
 │       ├── <span class="kw">_templates</span>
 │       ├── <span class="kw">conf.py</span>
 │       ├── <span class="kw">config.rst</span>
-│       ├── <span class="kw">fullStackServer.rst</span>
 │       ├── <span class="kw">index.rst</span>
 │       ├── <span class="kw">processRuns.rst</span>
 │       ├── <span class="kw">processRunsModules.detectors.rst</span>
