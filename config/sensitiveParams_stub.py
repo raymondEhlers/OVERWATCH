@@ -1,3 +1,7 @@
+#!/usr/bin/env python
+
+# For unrandom
+import os
 # Bcrypt
 from flask_bcrypt import generate_password_hash
 # Config

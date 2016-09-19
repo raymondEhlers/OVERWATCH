@@ -25,7 +25,6 @@ source "sharedFunctions.sh"
 docker=""
 if [[ -n "${1:-}" && ("$1" == *"docker"* )  ]];
 then
-    #export dockerDeploymentOption="$docker"
     # Defaults to deployment
     if [[ -n "$deploymentOption" && "$deploymentOption" == *"devel"* ]];
     then
@@ -34,6 +33,8 @@ then
     else
         docker="deploy"
     fi
+    # Export the value so that it is available to others!
+    export deploymentOption="$docker"
 
     echoInfoEscaped "Running docker with option ${docker}!"
 fi
@@ -136,6 +137,7 @@ else
     # This can be true for either role
     if [[ "$zodbServer" == true ]];
     then
+        echoInfoEscaped "Starting ZEO daemon to serve ZODB!"
         zdaemon -C zdaemon.conf start
     fi
 
@@ -246,7 +248,7 @@ else
                 echoPropertiesEscaped "SSH Monitor Port: ${monitorPorts[n]}" >> ${subsystemLog}
                 echoPropertiesEscaped "Additional Options: $additionalOptions" >> ${subsystemLog}
 
-                # TODO: update this to connect to HLT
+                # Can be used to connect to the HLT
                 if [[ "${useSSHTunnel}" == true ]];
                 then
                     # Find SSH process
