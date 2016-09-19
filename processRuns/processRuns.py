@@ -634,14 +634,7 @@ def processAllRuns():
     dirPrefix = processingParameters.dirPrefix
 
     # Get the database
-    # See: http://docs.pylonsproject.org/projects/zodburi/en/latest/
-    #storage = ZODB.FileStorage.FileStorage(os.path.join(dirPrefix,"overwatch.fs"))
-    storage_factory, dbArgs = zodburi.resolve_uri(processingParameters.databaseLocation)
-    storage = storage_factory()
-    db = ZODB.DB(storage, **dbArgs)
-    connection = db.open()
-    #connection = ZODB.connection(processingParameters.databaseLocation)
-    dbRoot = connection.root()
+    (dbRoot, connection) = utilities.getDB(processingParameters.databaseLocation)
 
     # Create runs list
     if dbRoot.has_key("runs"):
@@ -795,10 +788,16 @@ def processAllRuns():
                                        next(( name for name in os.listdir(receiverLogFileDir) if "Receiver.log" in name), ""))
     logger.debug("receiverLogFilePath: {0}".format(receiverLogFilePath))
 
+    # Add the receiver last modified time
     if receiverLogFilePath and os.path.exists(receiverLogFilePath):
         logger.debug("Updating receiver log last modified time!")
         receiverLogLastModified = os.path.getmtime(receiverLogFilePath)
         dbRoot["config"]["receiverLogLastModified"] = receiverLogLastModified
+
+    # Add users and secret key if debugging
+    # This needs to be done manually if deploying, since this requires some care to ensure that everything is configured properly
+    if processingParameters.debug:
+        utilities.updateDBSensitiveParameters(dbRoot, debug=processingParameters.debug)
 
     # Ensure that any additional changes are committed
     transaction.commit()

@@ -43,30 +43,7 @@ class serverParameters(object):
 
     #: Default user name. An empty string will disable it. Should only be used when behind CERN SSO!
     defaultUsername = ""
-
-    _users = {"username": generate_password_hash("password", bcryptLogRounds)}
-    """ Contains the users for authenticating on the server
-    This could be more complex, but there isn't any point for such a simple project
-    For more security in this file, one could also generate the hash and then just
-    copy that here so that the password is not visible in plain text in this file.
-
-    Defined with an underscore since it is a private value.
-    
-    Other usernames can be added here if desired. Users are defined as:
-    
-    >>> _users = {"username": generate_password_hash("password", bcryptLogRounds)}
-    """
-
-    _secretKey = str(os.urandom(50))
-    """ Secret key for signing cookies
-
-    Defined with an underscore since it is a private value.
-    
-    Generated using urandom(50), as suggested by the flask developers.
-    """
-
-    #: Determines whether to append settings from the database onto this server configuration
-    appendSettings = False
+    #defaultUsername = "user"
 
     #: basePath is just a useful value.
     #: It defines a base directory to reference if the static, template, etc folders are

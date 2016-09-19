@@ -15,6 +15,15 @@ import time
 from calendar import timegm
 from subprocess import call
 import shutil
+
+# ZODB
+import ZODB
+import transaction
+import persistent
+# For determining the storage type
+import zodburi
+
+# Logging
 import logging
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -337,3 +346,58 @@ def moveRootFiles(dirPrefix, subsystemList):
     
     return moveFiles(subsystemDict, dirPrefix)
 
+
+###################################################
+# Handle database operations
+###################################################
+def getDB(databaseLocation):
+    # Get the database
+    # See: http://docs.pylonsproject.org/projects/zodburi/en/latest/
+    #storage = ZODB.FileStorage.FileStorage(os.path.join(dirPrefix,"overwatch.fs"))
+    storage_factory, dbArgs = zodburi.resolve_uri(databaseLocation)
+    storage = storage_factory()
+    db = ZODB.DB(storage, **dbArgs)
+    connection = db.open()
+    dbRoot = connection.root()
+
+    return (dbRoot, connection)
+
+###################################################
+def updateDBSensitiveParameters(db, overwriteSecretKey = True, debug = False):
+    try:
+        from config import sensitiveParams
+    except ImportError:
+        # Only take the default user if we are in debug mode!
+        # Otherwise, this is quite unsafe!
+        if debug:
+            logger.warning("Falling back to users in stub file! You should be certain that this is not going into production!")
+            from config import sensitiveParams_stub as sensitiveParams
+        else:
+            logger.fatal("No users in the database and not suitable parameters to fill them in!")
+            exit(1)
+
+    # Ensure that the config exists
+    if not db.has_key("config"):
+        db["config"] = persistent.mapping.PersistentMapping()
+        logger.warning("Needed to create the config!")
+
+    # Users
+    # Create mapping if not already there
+    if not db['config'].has_key("users"):
+        db["config"]["users"] = persistent.mapping.PersistentMapping()
+        logger.info("Created the users dict!")
+
+    # Add each user, overriding an existing settings
+    users = db["config"]["users"]
+    for user, pw in sensitiveParams._users.iteritems():
+        users[user] = pw
+        logger.info("Adding user {0}".format(user))
+
+    # Secret key
+    # Set the secret key to that set in the server parameters
+    if overwriteSecretKey or not db["config"].has_key("secretKey"):
+        db["config"]["secretKey"] = sensitiveParams._secretKey
+        logger.info("Adding secret key to db!")
+
+    # Ensure that any additional changes are committed
+    transaction.commit()

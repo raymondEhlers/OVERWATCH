@@ -65,18 +65,35 @@ app = Flask(__name__, static_url_path=serverParameters.staticURLPath, static_fol
 app.config["ZODB_STORAGE"] = serverParameters.databaseLocation
 db = ZODB(app)
 
-# Set serverParameters secret key and add user from database if they exist
-if serverParameters.appendSettings and db.has_key("config"):
-    #if db["config"].has_key("users"):
-    #    for user, pw in db["config"]["users"]:
-    #        # Add each user, overriding an existing settings
-    #        serverParameters._users[user] = pw
-    if db["config"].has_key("secretKey"):
-        # Set the secret key to be the same as where the db is hosted
-        serverParameters._secretKey = db["config"]["secretKey"]
-
 # Set secret key for flask
-app.secret_key = serverParameters._secretKey
+if serverParameters.debug:
+    # Cannot use the db value here since the reloader will cause it to fail...
+    try:
+        from config import sensitiveParams
+    except ImportError:
+        # Only take the default user if we are in debug mode!
+        # Otherwise, this is quite unsafe!
+        if serverParameters.debug:
+            logger.warning("Falling back to users in stub file! You should be certain that this is not going into production!")
+            from config import sensitiveParams_stub as sensitiveParams
+        else:
+            logger.fatal("No users in the database and not suitable parameters to fill them in!")
+            exit(1)
+    logger.info("Setting secret key from sensitiveParams config file!")
+    app.secret_key = sensitiveParams._secretKey
+else:
+    # Connect to database ourselves and grab the secret key
+    (db, connection) = utilities.getDB(serverParameters.databaseLocation)
+    if db["config"].has_key("secretKey") and db["config"]["secretKey"]:
+        logger.info("Setting secret key from database!")
+        app.secret_key = db["config"]["secretKey"]
+    else:
+        # Set secret_key based on sensitive param value
+        logger.error("Could not retrieve secret_key in db! Instead setting to random value!")
+        app.secret_key = str(os.urandom(50))
+
+    # Close db connection
+    connection.close()
 
 # Enable debugging if set in configuration
 if serverParameters.debug == True:
@@ -117,6 +134,15 @@ def login():
 
     errorValue = None
     nextValue = routing.getRedirectTarget()
+
+    # Check for users and notify if there are none!
+    if not db["config"].has_key("users") or not db["config"]["users"]:
+        logger.fatal("No users found in database!")
+        if serverParameters.debug:
+            # It should be extremely unlikely for this condition to be met!
+            logger.warning("Since we are debugging, adding users to the database automatically!")
+            # Transactions saved in the function
+            utilities.updateDBSensitiveParameters(dbRoot, debug = serverParameters.debug)
 
     # A post request Attempt to login the user in
     if request.method == "POST":
@@ -649,7 +675,7 @@ def status():
     statuses["Ongoing run?"] = "{0} {1}".format(runOngoing, runOngoingNumber)
 
     if db.has_key("config") and db["config"].has_key("receiverLogLastModified"):
-        receiverLogLastModified = db["receiverLogLastModified"]
+        receiverLogLastModified = db["config"]["receiverLogLastModified"]
         lastModified = time.time() - receiverLogLastModified
         # Display in minutes
         lastModified = int(lastModified//60)

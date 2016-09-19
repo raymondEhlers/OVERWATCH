@@ -10,7 +10,11 @@ class sharedParameters(object):
     """
 
     #: Enable debugging information.
-    debug = True
+    if "deploymentOption" in os.environ and os.environ["deploymentOption"] == "deploy":
+        debug = False
+        print("Deployment option: {0}".format(os.environ["deploymentOption"]))
+    else:
+        debug = True
 
     #: List of subsystems.
     #: Each subsystem listed here will have an individual page for their respective histograms.
@@ -54,8 +58,12 @@ class sharedParameters(object):
     templateFolderName = "templates"
 
     #: The path to the database.
-    databaseLocation = os.path.join("file://", dataFolderName, "overwatch.fs")
-    #databaseLocation = "zeo://localhost:8090"
+    if debug:
+        # Use a local file
+        databaseLocation = os.path.join("file://", dataFolderName, "overwatch.fs")
+    else:
+        # Use the network
+        databaseLocation = "zeo://127.0.0.1:8090"
 
     #: The file extension to use when printing ROOT files.
     fileExtension = "png"

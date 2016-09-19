@@ -27,10 +27,6 @@ logger.info(serverParameters.printSettings())
 
 # Imports are below here so that they can be logged
 from webApp.webApp import app
-#from webApp import webApp
-#import webApp
-#print(webApp)
-#app = webApp.app
 
 # Support both the WSGI server mode, as well as standalone
 #app.run(host="0.0.0.0")

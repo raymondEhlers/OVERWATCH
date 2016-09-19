@@ -1,5 +1,5 @@
 # Sensitive files to ignore
-serverParams.py
+sensitiveParams.py
 
 # Directories to ignore
 build/
