@@ -29,6 +29,7 @@ gROOT.ProcessLine("gErrorIgnoreLevel = kWarning;")
 # General includes
 import os
 import time
+import hashlib
 import uuid
 import sys
 # Python logging system
@@ -425,13 +426,17 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
             # Already exists - we don't need to remerge or reprocess
             return (key, False, None)
 
+    # Hash processing options so that we can compare
+    # The hash is needed to ensure that different options with the same times don't overwrite each other!
+    optionsHash = hashlib.sha1(str(inputProcessingOptions)).hexdigest()
     # Determine index by UUID to ensure that there is no clash
     timeSliceCont = processingClasses.timeSliceContainer(minUnixTimeRequested = minTimeCutUnix,
                                                           maxUnixTimeRequested = maxTimeCutUnix,
                                                           minUnixTimeAvailable = minFilteredTimeStamp,
                                                           maxUnixTimeAvailable = maxFilteredTimeStamp,
                                                           startOfRun = subsystem.startOfRun,
-                                                          filesToMerge = filesToMerge)
+                                                          filesToMerge = filesToMerge,
+                                                          optionsHash = optionsHash)
     # Set the processing options in the time slice container
     for key, val in inputProcessingOptions.iteritems():
         timeSliceCont.processingOptions[key] = val

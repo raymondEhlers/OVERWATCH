@@ -177,7 +177,7 @@ class timeSliceContainer(persistent.Persistent):
     """ Time slice information container
 
     """
-    def __init__(self, minUnixTimeRequested, maxUnixTimeRequested, minUnixTimeAvailable, maxUnixTimeAvailable, startOfRun, filesToMerge):
+    def __init__(self, minUnixTimeRequested, maxUnixTimeRequested, minUnixTimeAvailable, maxUnixTimeAvailable, startOfRun, filesToMerge, optionsHash):
         # Requested times
         self.minUnixTimeRequested = minUnixTimeRequested
         self.maxUnixTimeRequested = maxUnixTimeRequested
@@ -186,12 +186,13 @@ class timeSliceContainer(persistent.Persistent):
         self.maxUnixTimeAvailable = maxUnixTimeAvailable
         # Start of run is also in unix time
         self.startOfRun = startOfRun
+        self.optionsHash = optionsHash
 
         # File containers of the files to merge
         self.filesToMerge = filesToMerge
 
         # Filename prefix for saving out files
-        self.filenamePrefix = "timeSlice.{0}.{1}".format(self.minUnixTimeAvailable, self.maxUnixTimeAvailable)
+        self.filenamePrefix = "timeSlice.{0}.{1}.{2}".format(self.minUnixTimeAvailable, self.maxUnixTimeAvailable, self.optionsHash)
 
         # Create filename
         self.filename = fileContainer(self.filenamePrefix + ".root")
