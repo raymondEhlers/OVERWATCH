@@ -82,18 +82,8 @@ if serverParameters.debug:
     logger.info("Setting secret key from sensitiveParams config file!")
     app.secret_key = sensitiveParams._secretKey
 else:
-    # Connect to database ourselves and grab the secret key
-    (db, connection) = utilities.getDB(serverParameters.databaseLocation)
-    if db["config"].has_key("secretKey") and db["config"]["secretKey"]:
-        logger.info("Setting secret key from database!")
-        app.secret_key = db["config"]["secretKey"]
-    else:
-        # Set secret_key based on sensitive param value
-        logger.error("Could not retrieve secret_key in db! Instead setting to random value!")
-        app.secret_key = str(os.urandom(50))
-
-    # Close db connection
-    connection.close()
+    # Set a temporary secret key. It can be set from the database later
+    app.secret_key = str(os.urandom(50))
 
 # Enable debugging if set in configuration
 if serverParameters.debug == True:
