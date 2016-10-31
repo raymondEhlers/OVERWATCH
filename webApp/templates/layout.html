@@ -13,7 +13,7 @@
         <!-- 2. Use an HTML Import to bring in some elements. -->
         {# Import a file of vulcanized polymer components #}
         {# Can't do it directly because vulcanized doesn't integrate well with jinja templates #}
-        <link rel="import" href="/static/polymerComponents.vulcanized.html">
+        <link rel="import" href="/static/polymerComponents.html">
 
         <script type=text/javascript>
             $SCRIPT_ROOT = {{ request.script_root|tojson|safe  }};
