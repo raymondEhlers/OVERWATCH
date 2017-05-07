@@ -47,16 +47,21 @@ setup(
     keywords='HEP ALICE',
 
     packages=[
-        processRuns,
-        webApp
+        "processRuns",
+        "webApp"
     ],
 
     install_requires=[
-        flask,
-        Flask-Login,
-        Flask-ZODB,
-        Flask-Bcrypt
+        "flask",
+        "Flask-Login",
+        "Flask-ZODB",
+        "Flask-Bcrypt"
     ],
+
+    # Install a recent version of flask-zodb
+    dependency_links=[
+        "git+ssh://git@github.com/mwilliamson/mayo.git@0.2.1#egg=mayo-0.2.1"
+    ]
 
     # Include additional files
     include_package_data=True

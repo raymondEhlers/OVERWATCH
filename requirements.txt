@@ -10,7 +10,9 @@ Flask-Login
 
 # Database
 ZODB
-Flask-ZODB
+#Flask-ZODB
+# Install from git repo to support the newer hook
+git+https://github.com/dag/flask-zodb.git
 
 # Login
 bcrypt

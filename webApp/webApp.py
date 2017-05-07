@@ -39,9 +39,7 @@ else:
 from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, Markup, jsonify, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
-# Unfortunately, flask_zodb does not work...
-from flask.ext.zodb import ZODB
-from flup.server.fcgi import WSGIServer
+from flask_zodb import ZODB
 
 # Server configuration
 from config.serverParams import serverParameters
