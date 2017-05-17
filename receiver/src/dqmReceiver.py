@@ -26,6 +26,9 @@ from werkzeug.utils import secure_filename
 
 import os
 import ROOT
+# Fix Flask debug mode with ROOT 5 issue.
+# See: https://root-forum.cern.ch/t/pyroot-and-spyder-re-running-error/20926/5
+ROOT.std.__file__ = "ROOT.std.py"
 #import rootpy.io
 #import rootpy.ROOT as ROOT
 
