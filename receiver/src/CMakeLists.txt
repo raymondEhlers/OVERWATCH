@@ -3,7 +3,8 @@ cmake_minimum_required(VERSION 2.8.11)
 set(MODULE ZMQ_TEST)
 
 include_directories(
-  ${ROOT_INCLUDE_DIR}
+  # Variable should be plural to support both ROOT build methods...
+  ${ROOT_INCLUDE_DIRS}
   ${ZEROMQ_INCLUDE_DIR}
   )
 
