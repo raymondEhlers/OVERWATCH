@@ -11,7 +11,7 @@ from __future__ import print_function
 from __future__ import absolute_import
 
 # ROOT
-from ROOT import gROOT, TH1, TFile, TFileMerger
+import ROOT
 
 # General
 import os
@@ -52,7 +52,7 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlice = None):
 
     """
     # Merging using root
-    merger = TFileMerger()
+    merger = ROOT.TFileMerger()
 
     # Determines which files are needed to merge
     if timeSlice:
@@ -141,9 +141,9 @@ def subtractFiles(minFile, maxFile, outfile):
 
     """
 
-    fMin = TFile(minFile, "READ")
-    fMax = TFile(maxFile, "READ")
-    fOut = TFile(outfile, "RECREATE")
+    fMin = ROOT.TFile(minFile, "READ")
+    fMax = ROOT.TFile(maxFile, "READ")
+    fOut = ROOT.TFile(outfile, "RECREATE")
 
     # Read in available keys in the file
     keysMinFile = fMin.GetListOfKeys();
@@ -152,16 +152,16 @@ def subtractFiles(minFile, maxFile, outfile):
     # Loop through both files, and subtract matching pairs of histos
     for keyMin in keysMinFile:
         # Ensure that we only take histograms (we would expect such, but better to check for safety)
-        classOfObject = gROOT.GetClass(keyMin.GetClassName())
-        if not classOfObject.InheritsFrom("TH1"):
+        classOfObject = ROOT.gROOT.GetClass(keyMin.GetClassName())
+        if not classOfObject.InheritsFrom(ROOT.TH1.Class()):
             continue
 
         minHistName = keyMin.GetName()
 
         for keyMax in keysMaxFile:
             # Ensure that we only take histograms
-            classOfObject = gROOT.GetClass(keyMin.GetClassName())
-            if not classOfObject.InheritsFrom("TH1"):
+            classOfObject = ROOT.gROOT.GetClass(keyMin.GetClassName())
+            if not classOfObject.InheritsFrom(ROOT.TH1.Class()):
                 continue
 
             maxHistName = keyMax.GetName()

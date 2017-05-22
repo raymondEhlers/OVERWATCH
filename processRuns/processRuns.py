@@ -10,21 +10,22 @@ then writes out histograms to webpage.
 """
 from __future__ import print_function
 
-# ROOT includes
-from ROOT import gROOT, TFile, TCanvas, TClass, TH1, TLegend, SetOwnership, TFileMerger, TList, gPad, TGaxis, gStyle, TProfile, TF1, TH1F, TBufferJSON
+# ROOT
+import ROOT
 
-# Allow ROOT to be compatiable with Flask reloading in debug mode
+# Allow ROOT to be compatiable with Flask reloading in debug mode.
+# This onlly applies to Flask debug mode with ROOT 5.
+# See: https://root-forum.cern.ch/t/pyroot-and-spyder-re-running-error/20926/5
 # See: https://root.cern.ch/phpBB3/viewtopic.php?t=19594#p83968
-from ROOT import std as stdROOT
-stdROOT.__file__ = "dummyValueToAllowFlaskReloading"
+ROOT.std.__file__ = "ROOT.std.py"
 
 # For batch mode when loading as a module
 # https://root.cern.ch/phpBB3/viewtopic.php?t=3198
 # Set batch mode
-gROOT.SetBatch(True)
+ROOT.gROOT.SetBatch(True)
 
 # Suppress print messages
-gROOT.ProcessLine("gErrorIgnoreLevel = kWarning;")
+ROOT.gROOT.ProcessLine("gErrorIgnoreLevel = kWarning;")
 
 # General includes
 import os
@@ -91,7 +92,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
 
     """
     # The file with the new histograms
-    fIn = TFile(filename, "READ")
+    fIn = ROOT.TFile(filename, "READ")
 
     # Read in available keys in the file
     keysInFile = fIn.GetListOfKeys()
@@ -103,19 +104,19 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
     # Only need to do this the first time for each run
     if not subsystem.hists:
         for key in keysInFile:
-            classOfObject = gROOT.GetClass(key.GetClassName())
+            classOfObject = ROOT.gROOT.GetClass(key.GetClassName())
             #if classOfObject.InheritsFrom("TH1"):
-            if classOfObject.InheritsFrom(TH1.Class()):
+            if classOfObject.InheritsFrom(ROOT.TH1.Class()):
                 # Create histogram object
                 hist = processingClasses.histogramContainer(key.GetName())
                 hist.hist = None
                 hist.canvas = None
                 hist.histType = classOfObject
                 #hist.hist = key.ReadObj()
-                #hist.canvas = TCanvas("{0}Canvas{1}{2}".format(hist.histName, subsystem.subsystem, subsystem.startOfRun),
-                #                      "{0}Canvas{1}{2}".format(hist.histName, subsystem.subsystem, subsystem.startOfRun))
+                #hist.canvas = ROOT.TCanvas("{0}Canvas{1}{2}".format(hist.histName, subsystem.subsystem, subsystem.startOfRun),
+                #                           "{0}Canvas{1}{2}".format(hist.histName, subsystem.subsystem, subsystem.startOfRun))
                 # Shouldn't be needed, because I keep a reference to it
-                #SetOwnership(hist.canvas, False)
+                #ROOT.SetOwnership(hist.canvas, False)
                 subsystem.histsInFile[hist.histName] = hist
 
                 # Set nEvents
@@ -174,8 +175,8 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
 
     # Cannot have same name as other canvases, otherwise the canvas will be replaced, leading to segfaults
     # Start of run should unique to each run!
-    canvas = TCanvas("{0}Canvas{1}{2}".format("processRuns", subsystem.subsystem, subsystem.startOfRun),
-                     "{0}Canvas{1}{2}".format("processRuns", subsystem.subsystem, subsystem.startOfRun))
+    canvas = ROOT.TCanvas("{0}Canvas{1}{2}".format("processRuns", subsystem.subsystem, subsystem.startOfRun),
+                          "{0}Canvas{1}{2}".format("processRuns", subsystem.subsystem, subsystem.startOfRun))
     # Loop over histograms and draw
     for histGroup in subsystem.histGroups:
         for histName in histGroup.histList:
@@ -196,7 +197,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
 
             # Setup and draw histogram
             # Turn off title, but store the value
-            gStyle.SetOptTitle(0)
+            ROOT.gStyle.SetOptTitle(0)
             hist.hist.Draw(hist.drawOptions)
 
             # Call functions for each hist
@@ -235,7 +236,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
             #logger.debug("jsonBufferFile: {0}".format(jsonBufferFile))
             # GZip is performed by the web server, not here!
             with open(jsonBufferFile, "wb") as f:
-                f.write(TBufferJSON.ConvertToJSON(canvas).Data())
+                f.write(ROOT.TBufferJSON.ConvertToJSON(canvas).Data())
 
             # Clear hist and canvas so that we can successfully save
             hist.hist = None
@@ -322,10 +323,10 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
 
     # Print histograms from QA and setup the return value
     returnValues = {}
-    canvas = TCanvas("canvas", "canvas")
+    canvas = ROOT.TCanvas("canvas", "canvas")
 
     # Create root file to save out
-    fOut = TFile(os.path.join(dataDir, qaContainer.qaFunctionName + ".root"), "RECREATE")
+    fOut = ROOT.TFile(os.path.join(dataDir, qaContainer.qaFunctionName + ".root"), "RECREATE")
 
     for label, hist in qaContainer.getHistsDict().items():
         # Print the histogram
