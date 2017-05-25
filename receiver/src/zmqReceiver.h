@@ -12,6 +12,8 @@
  * @date May 25, 2017
  */
 
+#include <signal.h>
+
 #include <zmq.h>
 
 #include <TString.h>
@@ -39,6 +41,8 @@ class zmqReceiver
   int ProcessOption(TString option, TString value);
   // Status
   std::string PrintConfiguration();
+  // Signal handler
+  static void caughtSignal(int i);
   // Data management
   void ReceiveData();
   void ClearData();
@@ -63,6 +67,9 @@ class zmqReceiver
 
   // Received data
   std::vector <TObject *> fData; //!<! Contains received objects
+
+  // Signal status
+  static volatile sig_atomic_t fgSignalCaught; //!<! Status of whether a INT signal has been caught
 
   // ZMQ context and socket
   void* fZMQcontext;    //!<! The ZMQ context

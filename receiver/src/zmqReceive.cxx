@@ -52,7 +52,9 @@ int main(int argc, char** argv)
   // Run zmq receiver
   receiver.Run();
 
-  // destroy ZMQ sockets
+  // If we get to here, execution somehow ended or ctrl-c has been caught,
+  // so we should cleanup ZMQ and exit.
+  // Destroy ZMQ sockets
   receiver.Cleanup();
 
   return 0;

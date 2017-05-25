@@ -25,6 +25,19 @@
 
 using namespace AliZMQhelpers;
 
+volatile sig_atomic_t zmqReceiver::fgSignalCaught = 0;
+
+/**
+ * Handle caught SIGINT signal.
+ */
+void zmqReceiver::caughtSignal(int i)
+{
+  if (i == SIGINT) {
+    printf("Caught SIGINT. Terminating!\n");
+  }
+  fgSignalCaught = i;
+}
+
 /**
  * Default constructor.
  */
@@ -53,11 +66,19 @@ zmqReceiver::zmqReceiver():
  */
 int zmqReceiver::Run()
 {
-  int rc = 0;
-
+  // Show the current configuration
   std::cout << PrintConfiguration() << std::endl;
 
-  //main loop
+  // Register signal hanlder
+  // See: https://stackoverflow.com/a/1641223
+  //      http://zguide.zeromq.org/cpp:interrupt
+  struct sigaction sigIntHandler;
+  sigIntHandler.sa_handler = this->caughtSignal;
+  sigemptyset(&sigIntHandler.sa_mask);
+  sigIntHandler.sa_flags = 0;
+  sigaction(SIGINT, &sigIntHandler, NULL);
+
+  // Main loop
   while(1)
   {
     errno = 0;
@@ -73,13 +94,20 @@ int zmqReceiver::Run()
     // Wait for the data by polling sockets
     // The second argument denotes the number of sockets that are being polled
     // The third argument is the timeout
-    rc = zmq_poll(sockets, 1, -1); 
+    int rc = zmq_poll(sockets, 1, -1);
     if (rc==-1 && errno == ETERM)
     {
       // This can only happen it the context was terminated, one of the sockets are
       // not valid, or operation was interrupted
       Printf("ZMQ context was terminated! Bailing out! rc = %i, %s", rc, zmq_strerror(errno));
       return -1;
+    }
+
+    // If we caught ctrl-c, then break so we can close the sockets
+    // NOTE: This must be done before handling if the server is dead because otherwise it will
+    //       attempt to re-init the socket and continue instead of terminating!
+    if (fgSignalCaught) {
+      break;
     }
 
     // Handle if server died
@@ -106,7 +134,6 @@ int zmqReceiver::Run()
 
     // Sleep so that we are not constantly requesting data
     std::this_thread::sleep_for(std::chrono::milliseconds(fPollInterval));
-
   }
 
   return 0;
