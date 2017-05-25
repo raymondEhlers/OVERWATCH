@@ -46,6 +46,8 @@ class zmqReceiver
   int fRunNumber; // Contains the run number
   bool fResetMerger; // Request the merger to reset the data
   std::string fSubsystem; // Contains the subsystem that this receiver should be interested in
+  bool fFirstRequest; // True when we are making the first request
+  bool fRequestStreamers; // True if the ROOT streamers schema should be requested from the merger
   std::string fHLTMode; // Contains the HLT mode
   std::string fSelection; // Selection option that should be requested to the merger
   // ZMQ

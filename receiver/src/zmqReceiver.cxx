@@ -32,6 +32,8 @@ zmqReceiver::zmqReceiver():
   fSubsystem("EMC"),
   fHLTMode("B"),
   fSelection(""),
+  fFirstRequest(true),
+  fRequestStreamers(true),
   fPollInterval(60000),
   fPollTimeout(10000),
   fZMQconfigIn("SUB>tcp://localhost:60201"),
@@ -122,7 +124,7 @@ void zmqReceiver::ReceiveData()
   for (aliZMQmsg::iterator i=message.begin(); i!=message.end(); ++i)
   {
     // Check for information about the data
-    if (alizmq_msg_iter_check_id(i, "INFO")==0)
+    if (alizmq_msg_iter_check_id(i, kDataTypeInfo)==0)
     {
       // Retrieve info about the data
       std::string info;
@@ -140,6 +142,12 @@ void zmqReceiver::ReceiveData()
 
       // Now move onto processing the actual data
       continue;
+    }
+
+    // Check for and retrieve streamer information and make it available to ROOT
+    if (alizmq_msg_iter_check_id(i, kDataTypeStreamerInfos) == 0)
+    {
+      alizmq_msg_iter_init_streamer_infos(i);
     }
 
     // Store the data to be written out
@@ -195,14 +203,16 @@ void zmqReceiver::WriteToFile()
 void zmqReceiver::SendRequest()
 {
   std::string request = "";
-  if (fSelection != "")
-  {
-    request += " select=";
+  if (fSelection != "") {
+    request += " -select=";
     request += fSelection.c_str();
   }
-  if (fResetMerger == true)
-  {
-    request += " ResetOnRequest";
+  if (fResetMerger == true) {
+    request += " -ResetOnRequest";
+  }
+  if (fFirstRequest == true && fRequestStreamers == true) {
+    fFirstRequest = false;
+    request += " -SchemaOnRequest";
   }
   alizmq_msg_send("CONFIG", request, fZMQin, ZMQ_SNDMORE);
   //alizmq_msg_send("CONFIG", "select=EMC*", fZMQin, ZMQ_SNDMORE);
@@ -244,13 +254,15 @@ void zmqReceiver::Cleanup()
 std::string zmqReceiver::PrintConfiguration()
 {
   std::stringstream status;
-  status << "Running receiver with configuration:" << std::endl;
-  status << "\tVerbosity: " << fVerbose << std::endl;
-  status << "\tSelection: \"" << fSelection << "\"" << std::endl;
-  status << "\tResetMerger: " << fResetMerger << std::endl;
-  status << "\tSleep time between requests: " << fPollInterval/1e3 << " s" << std::endl;
-  status << "\tRequest timeout: " << fPollTimeout/1e3 << " s" << std::endl;
-  status << "\tZMQ In Configuration: " << fZMQconfigIn << std::endl;
+  status << std::boolalpha;
+  status << "Running receiver with configuration:\n";
+  status << "\tVerbosity: " << fVerbose << "\n";
+  status << "\tSelection: \"" << fSelection << "\"\n";
+  status << "\tRequest ROOT streamers: " << fRequestStreamers << "\n";
+  status << "\tResetMerger: " << fResetMerger << "\n";
+  status << "\tSleep time between requests: " << fPollInterval/1e3 << " s\n";
+  status << "\tRequest timeout: " << fPollTimeout/1e3 << " s\n";
+  status << "\tZMQ In Configuration: " << fZMQconfigIn << "\n";
 
   return status.str();
 }
@@ -276,6 +288,10 @@ int zmqReceiver::ProcessOption(TString option, TString value)
   else if (option.EqualTo("select"))
   {
     fSelection = value;
+  }
+  else if (option.EqualTo("requestStreamers"))
+  {
+    fRequestStreamers = true;
   }
   else if (option.EqualTo("resetMerger"))
   {
