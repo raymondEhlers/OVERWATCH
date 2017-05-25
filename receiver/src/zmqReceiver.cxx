@@ -231,9 +231,10 @@ void zmqReceiver::SendRequest()
     fFirstRequest = false;
     request += " -SchemaOnRequest";
   }
+
+  if (fVerbose) Printf("\nsending request CONFIG with request \"%s\"", request.c_str());
   alizmq_msg_send("CONFIG", request, fZMQin, ZMQ_SNDMORE);
   //alizmq_msg_send("CONFIG", "select=EMC*", fZMQin, ZMQ_SNDMORE);
-  if (fVerbose) Printf("\nsending request CONFIG with request \"%s\"", request.c_str());
   alizmq_msg_send("", "", fZMQin, 0);
 }
 
@@ -350,7 +351,7 @@ int zmqReceiver::ProcessOption(TString option, TString value)
 /**
  * Convenience function to process options directly from the terminal.
  */
-int zmqReceiver::ProcessOptions(int argc, const char * argv[])
+int zmqReceiver::ProcessOptions(int argc, char * argv[])
 {
   // Process args using the HLT infrastructure for simplicity
   return ProcessOptionString(AliOptionParser::GetFullArgString(argc,argv));

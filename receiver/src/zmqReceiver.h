@@ -31,6 +31,7 @@ class zmqReceiver
   /* @} */
 
   // Helper functions
+  int ProcessOptions(int argc, char * argv[]);
   int ProcessOptionString(TString arguments);
 
  protected:
