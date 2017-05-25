@@ -7,6 +7,7 @@
 #include <string>
 
 #include <AliZMQhelpers.h>
+#include <AliOptionParser.h>
 
 //#include <TString.h>
 
