@@ -132,7 +132,7 @@ void zmqReceiver::ReceiveData()
   for (aliZMQmsg::iterator i=message.begin(); i!=message.end(); ++i)
   {
     // Check for information about the data
-    if (alizmq_msg_iter_check_id(i, kDataTypeInfo)==0)
+    if (alizmq_msg_iter_check_id(i, AliZMQhelpers::kDataTypeInfo)==0)
     {
       // Retrieve info about the data
       std::string info;
@@ -153,7 +153,7 @@ void zmqReceiver::ReceiveData()
     }
 
     // Check for and retrieve streamer information and make it available to ROOT
-    if (alizmq_msg_iter_check_id(i, kDataTypeStreamerInfos) == 0)
+    if (alizmq_msg_iter_check_id(i, AliZMQhelpers::kDataTypeStreamerInfos) == 0)
     {
       alizmq_msg_iter_init_streamer_infos(i);
     }
