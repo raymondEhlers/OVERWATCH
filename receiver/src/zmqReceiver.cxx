@@ -348,6 +348,15 @@ int zmqReceiver::ProcessOption(TString option, TString value)
 }
 
 /**
+ * Convenience function to process options directly from the terminal.
+ */
+int zmqReceiver::ProcessOptions(int argc, const char * argv[])
+{
+  // Process args using the HLT infrastructure for simplicity
+  return ProcessOptionString(AliOptionParser::GetFullArgString(argc,argv));
+}
+
+/**
  * Handle the processing of command line options.
  */
 int zmqReceiver::ProcessOptionString(TString arguments)

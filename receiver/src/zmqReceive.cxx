@@ -14,7 +14,6 @@
 #include <string>
 
 #include <AliZMQhelpers.h>
-#include <AliOptionParser.h>
 
 int main(int argc, char** argv)
 {
@@ -36,8 +35,8 @@ int main(int argc, char** argv)
   // Create receiver
   zmqReceiver receiver;
 
-  // Process args using the HLT infrastructure for simplicity
-  int nOptions = receiver.ProcessOptionString(AliOptionParser::GetFullArgString(argc,argv));
+  // Process options from the terminal
+  int nOptions = receiver.ProcessOptions(argc, argv);
   if (nOptions <= 0) 
   {
     Printf("%s", fUsage.c_str());
@@ -51,7 +50,6 @@ int main(int argc, char** argv)
   }
 
   // Run zmq receiver
-  // TODO: Catch ctrl-c!
   receiver.Run();
 
   // destroy ZMQ sockets
