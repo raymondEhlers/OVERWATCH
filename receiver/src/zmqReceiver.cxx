@@ -25,9 +25,12 @@
 
 using namespace AliZMQhelpers;
 
+/**
+ * Default constructor.
+ */
 zmqReceiver::zmqReceiver():
   fVerbose(0),
-  fRunNumber(kUnknownRunNumber),
+  fRunNumber(123456789),
   fResetMerger(false),
   fSubsystem("EMC"),
   fHLTMode("B"),
@@ -48,7 +51,9 @@ zmqReceiver::zmqReceiver():
   fZMQcontext = alizmq_context();
 }
 
-//_______________________________________________________________________________________
+/**
+ * Main function. It will loop indefinitely making requests to the merger.
+ */
 int zmqReceiver::Run()
 {
   int rc = 0;
@@ -110,7 +115,10 @@ int zmqReceiver::Run()
   return 0;
 }
 
-//______________________________________________________________________________
+/**
+ * Handles receiving the data from the merger. The message will be packed into 
+ * an aliZMQmsg.
+ */
 void zmqReceiver::ReceiveData()
 {
   // Clear previous data
@@ -171,7 +179,14 @@ void zmqReceiver::ReceiveData()
   }
 }
 
-//______________________________________________________________________________
+/**
+ * Write the received data to a file. The filename includes the subsystem, HLT mode, run number, and timestamp.
+ * The time stamp is of the format year_month_day_hour_minute_second . 
+ *
+ * The particular filename format is:
+ * SUBSYSTEMhistos_runNumber_hltMode_time.root
+ * For example, EMChistos_123456_B_2015_3_14_2_3_5.root
+ */
 void zmqReceiver::WriteToFile()
 {
   // Get current time
@@ -199,7 +214,9 @@ void zmqReceiver::WriteToFile()
   delete fOut;
 }
 
-//______________________________________________________________________________
+/**
+ * Send a request to the merger with specified options. The options should be specified on the commend line
+ */
 void zmqReceiver::SendRequest()
 {
   std::string request = "";
@@ -220,7 +237,9 @@ void zmqReceiver::SendRequest()
   alizmq_msg_send("", "", fZMQin, 0);
 }
 
-//_______________________________________________________________________________________
+/**
+ * Clear the data stored from the previous message.
+ */
 void zmqReceiver::ClearData()
 {
   for (std::vector<TObject *>::iterator it = fData.begin(); it != fData.end(); ++it)
@@ -230,7 +249,9 @@ void zmqReceiver::ClearData()
   fData.clear();
 }
 
-//_______________________________________________________________________________________
+/**
+ * Initialize ZMQ socket(s)
+ */
 int zmqReceiver::InitZMQ()
 {
   // Init or reinit ZMQ socket
@@ -240,7 +261,9 @@ int zmqReceiver::InitZMQ()
   return rc;
 }
 
-//______________________________________________________________________________
+/**
+ * Close all sockets and destroy the ZMQ content to cleanup on close.
+ */
 void zmqReceiver::Cleanup()
 {
   // Destory zmq sockets
@@ -250,7 +273,9 @@ void zmqReceiver::Cleanup()
   zmq_ctx_term(fZMQcontext);
 }
 
-//______________________________________________________________________________
+/**
+ * Print the configuration of the task.
+ */
 std::string zmqReceiver::PrintConfiguration()
 {
   std::stringstream status;
@@ -271,7 +296,12 @@ std::string zmqReceiver::PrintConfiguration()
 // Handle command line options
 ////////////////////////////////////////////////////////////////////////////////
 
-//______________________________________________________________________________
+/**
+ * Convert options from the terminal to settings in the task.
+ *
+ * @param[in] option String containing the option name.
+ * @param[in] value String containing value corresponding to that option.
+ */
 int zmqReceiver::ProcessOption(TString option, TString value)
 {
   //process option
@@ -317,7 +347,9 @@ int zmqReceiver::ProcessOption(TString option, TString value)
   return 1; 
 }
 
-//______________________________________________________________________________
+/**
+ * Handle the processing of command line options.
+ */
 int zmqReceiver::ProcessOptionString(TString arguments)
 {
   // Process passed options

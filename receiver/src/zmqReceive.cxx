@@ -1,6 +1,13 @@
-// Driver for zmqReceiver
-//
-// Author: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
+/**
+ * @file zmqReceive.cxx
+ * @brief Driver for zmqReceiver
+ *
+ * Main driver function for the zmqReceiver class, which requests and receives
+ * data from the HLT mergers via ZMQ.
+ *
+ * @author: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
+ * @date May 25, 2017
+ */
 
 #include "zmqReceiver.h"
 
@@ -9,13 +16,8 @@
 #include <AliZMQhelpers.h>
 #include <AliOptionParser.h>
 
-//#include <TString.h>
-
-//_______________________________________________________________________________________
 int main(int argc, char** argv)
 {
-  int mainReturnCode = 0;
-
   std::string fUsage =
   "zmqReceive\n"
   "    Receive ROOT objects from the HLT via ZMQ.\n\n"
@@ -23,6 +25,8 @@ int main(int argc, char** argv)
   "    --in <address>: address for incoming ZMQ data. Format should be \"MODE>tcp://address:port\".\n"
   "              For example: \"REQ>tcp://localhost:1234\"\n"
   "    --verbose <level>: Control verbosity level. Disable with 0. Default: 1.\n"
+  "    --resetMerger: Reset the merger after each request. Use with care! Default: false\n"
+  "    --requestStreamers: Request ROOT streamers from the mergers. Default: true\n"
   "    --select <string>: Selection string to request data from the merger.\n"
   "              Defaults to \"\" (ie No special selection).\n"
   "    --sleep <seconds>: Time to sleep between each request in seconds. Default: 60.\n"
@@ -53,6 +57,6 @@ int main(int argc, char** argv)
   // destroy ZMQ sockets
   receiver.Cleanup();
 
-  return mainReturnCode;
+  return 0;
 }
 
