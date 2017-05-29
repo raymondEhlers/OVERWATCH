@@ -168,8 +168,13 @@ def dqm():
         response["message"] = "No file uploaded and the payload was empty"
         response["received"] = None
 
-    print("Response: {0}".format(response))
-    return jsonify(response)
+    # Properly set the status code
+    resp = jsonify(response)
+    resp.status_code = response["status"]
+
+    # Print and return
+    print("Response: {0}".format(resp))
+    return resp
 
 def receivedObjectInfo(outputPath):
     """ Print the objects in the received file """
