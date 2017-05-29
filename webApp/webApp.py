@@ -228,6 +228,18 @@ def statusQuery():
     # Responds to requests from other OVERWATCH servers to display the status of the site
     return "Alive"
 
+###################################################
+@app.route("/health")
+def health():
+    """ Respond to health request to note that the web app is still alive. """
+    # TODO: Increase sophistication of checks here!
+    returnCode = 500
+    # Check that DB is alive
+    if db:
+        returnCode = 200
+
+    return "", returnCode
+
 ######################################################################################################
 # Authenticated Routes
 ######################################################################################################
