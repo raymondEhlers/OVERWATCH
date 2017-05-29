@@ -25,6 +25,7 @@ from flask import Flask, url_for, request, render_template, redirect, flash, sen
 from werkzeug.utils import secure_filename
 
 import os
+import functools
 import ROOT
 # Fix Flask debug mode with ROOT 5 issue.
 # See: https://root-forum.cern.ch/t/pyroot-and-spyder-re-running-error/20926/5
@@ -66,8 +67,9 @@ def handle_invalid_usage(error):
     return response
 
 def checkForToken(func):
-    # TODO: Add @wraps when we are a bit less constrained by dependencies
-    # @functools.wraps(func)
+    # wraps is necessary to ensure that function names don't collide.
+    # See: https://stackoverflow.com/a/42254713 and the comments
+    @functools.wraps(func)
     def decoratedCheckToken(*args, **kwargs):
         """ Continue with the request if it's a valid token """
         if "token" not in request.headers:
@@ -83,17 +85,24 @@ def checkForToken(func):
     return decoratedCheckToken
 
 @app.route("/", methods=["GET", "POST"])
+@checkForToken
 def index():
     """ Redirect everything else. """
     raise InvalidUsage("Not implemented")
 
-@app.route("/dqm", methods=["POST"])
+@app.route("/rest/api/files", methods=["GET", "POST"])
 @checkForToken
 def dqm():
     """ Handle DQM data """
-    # Print received header information
     response = dict()
+    if request.method == "GET":
+        availableFiles = [f for f in os.listdir(outputDir) if os.path.isfile(os.path.join(outputDir, f))]
+        response["files"] = availableFiles
+        resp = jsonify(response)
+        resp.status_code = 200
+        return resp
 
+    # Print received header information
     print("Headers:")
     requestHeaders = dict()
     for header, val in request.headers.iteritems():
@@ -216,7 +225,8 @@ def receivedObjectInfo(outputPath):
 
     return (success, receivedObjects)
 
-@app.route("/dqmFiles/<string:filename>")
+@app.route("/rest/api/files/<string:filename>", methods=["GET"])
+@checkForToken
 def returnFile(filename):
     """ Return the ROOT file. """
     filename = secure_filename(filename)
