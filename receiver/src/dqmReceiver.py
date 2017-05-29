@@ -35,9 +35,13 @@ ROOT.std.__file__ = "ROOT.std.py"
 #app = Flask(__name__, static_url_path=serverParameters.staticURLPath, static_folder=serverParameters.staticFolder, template_folder=serverParameters.templateFolder)
 app = Flask(__name__)
 
+# Configuration
 outputDir = "rootFiles"
 if not os.path.exists(outputDir):
     os.makedirs(outputDir)
+
+# Token
+app.config["token"] = "abcdef"
 
 # From: http://flask.pocoo.org/docs/0.12/patterns/apierrors/
 class InvalidUsage(Exception):
@@ -61,12 +65,30 @@ def handle_invalid_usage(error):
     response.status_code = error.status_code
     return response
 
+def checkForToken(func):
+    # TODO: Add @wraps when we are a bit less constrained by dependencies
+    # @functools.wraps(func)
+    def decoratedCheckToken(*args, **kwargs):
+        """ Continue with the request if it's a valid token """
+        if "token" not in request.headers:
+            raise InvalidUsage("Must pass a token!")
+
+        # Execute if the token matches
+        #print("Token: {0}".format(request.headers["token"]))
+        if request.headers["token"] == app.config["token"]:
+            return func(*args, **kwargs)
+
+        # Note that it is invalid otherwise
+        raise InvalidUsage("Invalid token!")
+    return decoratedCheckToken
+
 @app.route("/", methods=["GET", "POST"])
 def index():
     """ Redirect everything else. """
     raise InvalidUsage("Not implemented")
 
 @app.route("/dqm", methods=["POST"])
+@checkForToken
 def dqm():
     """ Handle DQM data """
     # Print received header information
@@ -173,7 +195,7 @@ def dqm():
     resp.status_code = response["status"]
 
     # Print and return
-    print("Response: {0}".format(resp))
+    print("Response: {0}, resp: {1}".format(resp, response))
     return resp
 
 def receivedObjectInfo(outputPath):
