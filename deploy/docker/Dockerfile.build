@@ -4,7 +4,7 @@ MAINTAINER raymond.ehlers@cern.ch
 
 # Installed neede packages
 # ROOT dependencies start from libncurses
-run apt-get update && apt-get install -y \
+RUN apt-get update && apt-get install -y \
         build-essential \
         git \
         python-dev \
@@ -37,29 +37,33 @@ run apt-get update && apt-get install -y \
         libxpm-dev \
         environment-modules \
         npm \
-    && rm -rf /var/lib/apt/lists/*
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /opt/scratch
         # Can't use gsl because the version is incompatible
         # We delete the intermediate apt-get files once we are done
         # npm is for bower - see below
 
 # TODO: Set c, cxx flags, and CMAKE_BUILD_TYPE
 # TODO: Copy build scripts
+COPY buildScripts /opt/scratch/buildScripts
 
 # Install XRootD
-RUN mkdir -p /opt/scratch && cd /opt/scratch \
+RUN cd /opt/scratch \
         && git clone https://github.com/xrootd/xrootd.git \
         && mkdir -p xrootd/build && cd xrootd/build \
-        && ./buildXRootD.sh ../ /opt/xrootd \
+        && chmod +x /opt/scratch/buildScripts/buildXRootD.sh \
+        && /opt/scratch/buildScripts/buildXRootD.sh ../ /opt/xrootd \
         && make -j2 install \
         && rm -r /opt/scratch/xrootd
 # Remove src and build files
 
 # Install ROOT
-RUN mkdir -p /opt/scratch/root && cd /opt/sratch/root \
+RUN mkdir -p /opt/scratch/root && cd /opt/scratch/root \
         && git clone https://github.com/root-project/root.git src \
         && mkdir build && cd build \
-        && ./buildRoot.sh ../src /opt/root \
-        && make -j2 install
+        && chmod +x /opt/scratch/buildScripts/buildRoot.sh \
+        && /opt/scratch/buildScripts/buildRoot.sh ../src /opt/root \
+        && make -j2 install \
         && rm -r /opt/scratch/root
 # Remove src and build files
 
