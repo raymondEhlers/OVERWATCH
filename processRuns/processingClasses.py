@@ -9,6 +9,7 @@ or read from file.
 """
 
 from __future__ import print_function
+from __future__ import absolute_import
 
 # Database
 import BTrees.OOBTree
@@ -20,7 +21,7 @@ import logging
 # Setup logger
 logger = logging.getLogger(__name__)
 
-from processRuns import utilities
+from . import utilities
 from config.processingParams import processingParameters
 
 ###################################################
@@ -447,5 +448,3 @@ class qaFunctionContainer(persistent.Persistent):
             del self.hists[histName]
         else:
             logger.warning("histName {0} not in qa container, so it could not be removed!".format(histName))
-
-
