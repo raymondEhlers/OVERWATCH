@@ -44,9 +44,6 @@ zmqReceiver::zmqReceiver():
   fZMQcontext(NULL),
   fZMQin(NULL)
 {
-  // Globally enable schema evolution for serializing ROOT objects
-  TMessage::EnableSchemaEvolutionForAll(kTRUE);
-
   // Create the ZMQ context
   fZMQcontext = alizmq_context();
 }
