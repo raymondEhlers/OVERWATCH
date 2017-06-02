@@ -1,6 +1,37 @@
 cmake_minimum_required(VERSION 2.8.11)
 project(zmqReceiver)
-set (CMAKE_MODULE_PATH "${zmqReceiver_SOURCE_DIR}/cmake")
+set(CMAKE_MODULE_PATH "${zmqReceiver_SOURCE_DIR}/cmake")
+
+# Set policies
+# CMP0042 - MACOSX_RPATH is enabled by default (v3.0)
+if(POLICY CMP0042)
+  cmake_policy(SET CMP0042 NEW)
+endif()
+
+# RPATH settings
+# Enable MACOS_RPATH
+set(CMAKE_MACOSX_RPATH TRUE)
+
+# Additional settings from: https://cmake.org/Wiki/CMake_RPATH_handling#Always_full_RPATH
+# use, i.e. don't skip the full RPATH for the build tree
+set(CMAKE_SKIP_BUILD_RPATH  FALSE)
+
+# when building, don't use the install RPATH already
+# (but later on when installing)
+set(CMAKE_BUILD_WITH_INSTALL_RPATH FALSE)
+
+# Set install RPATH
+set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+
+# add the automatically determined parts of the RPATH
+# which point to directories outside the build tree to the install RPATH
+set(CMAKE_INSTALL_RPATH_USE_LINK_PATH TRUE)
+
+# the RPATH to be used when installing, but only if it's not a system directory
+list(FIND CMAKE_PLATFORM_IMPLICIT_LINK_DIRECTORIES "${CMAKE_INSTALL_PREFIX}/lib" isSystemDir)
+if("${isSystemDir}" STREQUAL "-1")
+    set(CMAKE_INSTALL_RPATH "${CMAKE_INSTALL_PREFIX}/lib")
+endif("${isSystemDir}" STREQUAL "-1")
      
 # Old style root build process
 execute_process ( COMMAND root-config --etcdir WORKING_DIRECTORY /tmp OUTPUT_VARIABLE ROOT_ETCDIR OUTPUT_STRIP_TRAILING_WHITESPACE )
@@ -45,6 +76,6 @@ if (ROOT-NOTFOUND)
 endif(ROOT-NOTFOUND)
 
 find_package(ZeroMQ REQUIRED)
-find_package(AliRoot REQUIRED)
+#find_package(AliRoot REQUIRED)
 
 add_subdirectory(src)
