@@ -76,6 +76,12 @@ if (ROOT-NOTFOUND)
 endif(ROOT-NOTFOUND)
 
 find_package(ZeroMQ REQUIRED)
-#find_package(AliRoot REQUIRED)
+# If ALIROOT is passed, then use it.
+# Otherwise, it will automatically download the requisite files.
+if(ALIROOT)
+    find_package(AliRoot REQUIRED)
+else()
+    message(STATUS "AliRoot was not passed, so the necessary AliZMQ files will be downloaded automatically!")
+endif()
 
 add_subdirectory(src)
