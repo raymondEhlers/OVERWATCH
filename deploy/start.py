@@ -39,6 +39,11 @@ def checkForProcessPID(processIdentifier):
     return pids
     # sshProcesses=$(pgrep -f "autossh -L ${internalReceiverPorts[n]}")
 
+def killExistingProcess(pidList):
+    """ Kill processes by PID. """
+    for pid in pidList:
+        os.killpg(pid)
+
 def tunnel(config):
     """ Start tunnel """
     processExists = checkForProcessPID("autossh -L {0}".format(config["localPort"]))
@@ -57,6 +62,7 @@ def receiver(config):
         # Ensure that the detector name is upper case
         receiver = receiver.upper()
 
+        # TODO: Add zmqReceive path to PATH!
         processExists = checkForProcessPID("/Users/re239/code/alice/overwatch/receiver/bin/zmqReceive --subsystem={0}".format(receiver))
         logger.debug("processExists: {0}".format(processExists))
 
@@ -88,6 +94,41 @@ def receiver(config):
                 # --> Don't need to escape most quotes!
         else:
             logger.info("Skipping receiver \"{0}\" since it already exists!".format(receiver))
+
+def database(config):
+    """ Start the database on it's own. """
+    zeoConfigFile = """
+<zeo>
+    address {ipAddress}:{port}
+</zeo>
+
+<filestorage>
+    path {databasePath}
+</filestorage>
+
+<eventlog>
+    <logfile>
+        path {logFile}
+        format {logFormat}
+    </logfile>
+</eventlog>
+    """.format(ipAddress = config["ipAddress"],
+               port = config["port"],
+               databasePath = config["databasePath"],
+               logFile = config["logFile"]
+               logFormat = config.get("logFormat", "%(asctime)s %(message)s")
+               )
+
+    # Write config
+    with open("zeoGenerated.conf", "wb") as f:
+        f.write(zeoConfigFile)
+
+    # Start zeo with the config file
+    processPID = checkForProcessPID("runzeo -C zeoGenerated.conf".format(receiver))
+    logger.debug("processPID: {0}".format(processPID))
+
+    if processPID is None:
+        # Start database
 
 def processing(config):
     """ Start processing. """
