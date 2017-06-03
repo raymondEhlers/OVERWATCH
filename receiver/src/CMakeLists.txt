@@ -47,4 +47,4 @@ endif()
 add_executable(${MODULE} ${SRCS})
 target_link_libraries(${MODULE} ${ROOT_LIBRARIES} ${ZEROMQ_LIBRARIES} ${ALICE_LIBRARIES})
 
-install(TARGETS ${MODULE}  DESTINATION bin)
+install(TARGETS ${MODULE} DESTINATION bin)

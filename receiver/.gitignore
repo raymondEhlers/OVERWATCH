@@ -1,0 +1,6 @@
+# Ignore install folders
+bin/
+lib/
+
+# Ignore build folders
+build*/
