@@ -3,10 +3,11 @@ cmake_minimum_required(VERSION 2.8.11)
 set(MODULE zmqReceive)
 
 if(NOT AliRoot_FOUND)
-  # Use local copy
-  # Must be enabled to properly format the buffer for HLT messages.
-  # For historical reasons, HLT and ROOT buffers are formatted differently.
-  add_definitions(-DAliZMQhelpers_AliHLTMessageFormat)
+  # Download and use local copy
+  # NOTE: We don't need to use the MessageFormat switch!
+  #       It is only needed when sending with the new library and receiving with the old. Which we don't do,
+  #       so we don't need to worry about it!
+
   # Add ZMQ Helpers extracted from AliRoot
   add_subdirectory(AliZMQhelpers)
 endif()
