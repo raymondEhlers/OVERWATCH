@@ -18,7 +18,6 @@
 #include <AliOptionParser.h>
 
 #include <TObject.h>
-#include <TMessage.h>
 #include <TFile.h>
 // If desired for more complicated selections
 //#include <TPRegexp.h>
