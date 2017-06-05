@@ -57,13 +57,12 @@ COPY buildScripts/buildRoot.sh /opt/scratch/buildScripts/buildRoot.sh
 RUN mkdir -p /opt/scratch/root && cd /opt/scratch/root \
         && chmod +x /opt/scratch/buildScripts/buildRoot.sh \
         && git clone https://github.com/root-project/root.git src \
+        && git checkout tags/v6-08-06 \
         && mkdir build && cd build \
         && /opt/scratch/buildScripts/buildRoot.sh ../src /opt/root \
         && make -j2 install \
         && rm -r /opt/scratch/root
 # Remove src and build files
-
-# TODO: Eventually add ZMQ helpers
 
 # Nothing further is configured here since this is just a base image!
 CMD ["/bin/bash"]
