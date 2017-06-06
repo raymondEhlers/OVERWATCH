@@ -8,6 +8,7 @@ import logging
 import argparse
 import subprocess
 import sys
+import time
 import yaml
 
 logger = logging.getLogger("")
@@ -69,13 +70,33 @@ def killExistingProcess(pidList, processType, processIdentifier, sig = signal.SI
 
     return pidList
 
-def tunnel(config):
+def tunnel(config, receiverConfig):
     """ Start tunnel """
-    processExists = checkForProcessPID("autossh -L {0}".format(config["localPort"]))
+    processExists = checkForProcessPID("autossh -L {0}".format(receiverConfig["localPort"]))
+
+    if config["forceRestart"] or receiverConfig["forceRestartTunnel"]:
+        processPIDs = killExistingProcess(processPIDs,
+                                          processType = "{0} Receiver".format(receiver),
+                                          processIdentifier = "autossh -L {0}".format(receiverConfig["localPort"]))
+        # processPIDs will be None if the processes were killed successfully
 
     if processExists is None:
         # Create ssh tunnel
-        pass
+        # TODO: Check order of args on VM
+        args = [
+                "autossh",
+                "-L ${localPort}:localhost:${hltPort}".format(localPort = receiverConfig["localPort"],
+                                                              hltPort = receiverConfig["hltPort"]),
+                "-o ServerAliveInterval 30", # Built-in ssh monitoring option
+                "-o ServerAliveCountMax 3",  # Built in ssh monitoring
+                "-p {0}".format(config["port"]),
+                "-l {0}".format(config["username"]),
+                "{0}".format(config["address"]),
+                "-M 0",                      # Disable autossh built-in monitoring
+                "-f",
+                "-N"
+                ]
+        # Official: autossh -M ${monitorPorts[n]} -o ServerAliveInterval 30 -o ServerAliveCountMax 3 -p ${sshPorts[n]} -f -N -l zmq-tunnel  -L ${internalReceiverPorts[n]}:localhost:${externalReceiverPorts[n]} ${sshServerAddress}
 
 def receiver(config):
     """ Start receivers """
@@ -83,27 +104,32 @@ def receiver(config):
     receiverPath = config["receiver"].get("receiverPath", "/opt/receiver")
     receiverPath = os.path.expandvars(receiverPath)
     logger.debug("Adding receiver path \"{0}\" to PATH".format(receiverPath))
-
     os.environ["PATH"] += os.pathsep + receiverPath
-    pprint.pprint(os.environ["PATH"])
 
     for receiver, receiverConfig in config["receiver"].items():
-        logger.debug("receiver name: {0}, config: {1}".format(receiver, receiverConfig))
         if len(receiver) != 3:
-            logger.debug("Skipping entry \"{0}\" in the receiver config, as it it doesn't correspond to a detector".format(receiver))
+            #logger.debug("Skipping entry \"{0}\" in the receiver config, as it it doesn't correspond to a detector".format(receiver))
             continue
+
+        logger.debug("receiver name: {0}, config: {1}".format(receiver, receiverConfig))
 
         # Ensure that the detector name is upper case
         receiver = receiver.upper()
+        processIdentifier = "zmqReceive --subsystem={0}".format(receiver)
 
-        processPIDs = checkForProcessPID("zmqReceive --subsystem={0}".format(receiver))
+        # Start tunnel if requested
+        if receiverConfig["tunnel"]:
+            tunnel(config = config["tunnel"], receiverConfig = receiverConfig)
+
+        processPIDs = checkForProcessPID(processIdentifier)
         logger.debug("Found processPIDs: {0}".format(processPIDs))
 
         # Check whether we should kill the receivers
-        if not processPIDs is None and config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None):
+        if not processPIDs is None and (config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None)):
+            logger.debug("Found processPIDs: {0}".format(processPIDs))
             processPIDs = killExistingProcess(processPIDs,
                                               processType = "{0} Receiver".format(receiver),
-                                              processIdentifier = "zmqReceive --subsystem={0}".format(receiver))
+                                              processIdentifier = processIdentifier)
             # processPIDs will be None if the processes were killed successfully
 
         if processPIDs is None:
@@ -117,8 +143,8 @@ def receiver(config):
                     "--timeout=100",
                     "--select={0}".format(receiverConfig.get("select",""))
                     ]
-            if "additionalOptions" in config:
-                args = args + config["additionalOptions"]
+            if "additionalOptions" in receiverConfig:
+                args.append(receiverConfig["additionalOptions"])
             with open("{0}Receiver.log".format(receiver), "wb") as logFile:
                 logger.info("Starting receiver with args: {0}".format(args))
                 process = subprocess.Popen(args, stdout=logFile, stderr=subprocess.STDOUT)
@@ -130,6 +156,17 @@ def receiver(config):
                 # zmqReceive --subsystem=EMC --in=REQ>tcp://localhost:60321 --verbose=1 --sleep=60 --timeout=100 --select=
                 #
                 # --> Don't need to escape most quotes!
+
+            # Check for receiver to ensure that it didn't just die immediately due to bad arguments, etc.
+
+            logger.info("Check that the process launched successfully...")
+            time.sleep(1.5)
+            processPIDs = checkForProcessPID(processIdentifier)
+            if processPIDs is None:
+                logger.critical("No process found corresponding to the just launched receiver! Check the log files!")
+                sys.exit(2)
+            else:
+                logger.info("Success!")
         else:
             logger.info("Skipping receiver \"{0}\" since it already exists!".format(receiver))
 
