@@ -2,6 +2,8 @@
 
 from __future__ import print_function
 
+import os
+import signal
 import logging
 import argparse
 import subprocess
@@ -19,13 +21,13 @@ def checkForProcessPID(processIdentifier):
     Args:
         processIdentifier(str): String passed to pgrep to identify the process.
     Returns:
-        int: PID from pgrep
+        list: PID(s) from pgrep
         """
     try:
         res = subprocess.check_output(["pgrep", "-f", "{0}".format(processIdentifier)])
     except subprocess.CalledProcessError as e:
         if e.returncode == 1:
-            logger.info("Process identifier \"{0}\" not found! It will be created.".format(processIdentifier))
+            logger.info("Process identifier \"{0}\" not found".format(processIdentifier))
             return None
         else:
             logger.critical("Unknown return code of \"{0}\" for command \"{1}\", with output \"{2}".format(e.returncode, e.cmd, e.output))
@@ -39,10 +41,33 @@ def checkForProcessPID(processIdentifier):
     return pids
     # sshProcesses=$(pgrep -f "autossh -L ${internalReceiverPorts[n]}")
 
-def killExistingProcess(pidList):
-    """ Kill processes by PID. """
+def killExistingProcess(pidList, processType, processIdentifier, sig = signal.SIGINT):
+    """ Kill processes by PID. The kill signal will be sent to the entire process group.
+
+    Args:
+        pidList (list): List of PIDs to be killed.
+        processType (str): Name of the processes being killed.
+        processIdentifier (str): String used to identify the processes that are being killed.
+        sig (int): Signal to be sent to the processes. Default: signal.SIGINT
+    Returns:
+        list: PID(s) left after killing the processes. Note that any list which is not None will throw a fatal error
+    """
+    logger.debug("Killing existing {0} processes with PID(s) {1}".format(processType, pidList))
     for pid in pidList:
-        os.killpg(pid)
+        # TODO: Check if -1 is needed (I think killpg handles sending the signal to the entire process group)
+        logger.debug("Killing process {0}".format(pid))
+        # TODO: killpg doesn't work. It claims that the process doesn't exist. Investigate this further...
+        os.kill(pid, sig)
+
+    # Check that killing the process was successful
+    # If not, throw an error
+    pidList = checkForProcessPID(processIdentifier)
+    logger.debug("PIDs left after killing processes: {0}".format(pidList))
+    if not pidList is None:
+        logger.critical("Requested to kill existing \"{0}\" processes, but found PIDs {0} after killing the processes. Please investigate!", processType, pidList)
+        sys.exit(2)
+
+    return pidList
 
 def tunnel(config):
     """ Start tunnel """
@@ -54,24 +79,37 @@ def tunnel(config):
 
 def receiver(config):
     """ Start receivers """
+    # Add receiver to path
+    receiverPath = config["receiver"].get("receiverPath", "/opt/receiver")
+    receiverPath = os.path.expandvars(receiverPath)
+    logger.debug("Adding receiver path \"{0}\" to PATH".format(receiverPath))
+
+    os.environ["PATH"] += os.pathsep + receiverPath
+    pprint.pprint(os.environ["PATH"])
+
     for receiver, receiverConfig in config["receiver"].items():
         logger.debug("receiver name: {0}, config: {1}".format(receiver, receiverConfig))
         if len(receiver) != 3:
             logger.debug("Skipping entry \"{0}\" in the receiver config, as it it doesn't correspond to a detector".format(receiver))
             continue
+
         # Ensure that the detector name is upper case
         receiver = receiver.upper()
 
-        # TODO: Add zmqReceive path to PATH!
-        processExists = checkForProcessPID("/Users/re239/code/alice/overwatch/receiver/bin/zmqReceive --subsystem={0}".format(receiver))
-        logger.debug("processExists: {0}".format(processExists))
+        processPIDs = checkForProcessPID("zmqReceive --subsystem={0}".format(receiver))
+        logger.debug("Found processPIDs: {0}".format(processPIDs))
 
         # Check whether we should kill the receivers
+        if not processPIDs is None and config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None):
+            processPIDs = killExistingProcess(processPIDs,
+                                              processType = "{0} Receiver".format(receiver),
+                                              processIdentifier = "zmqReceive --subsystem={0}".format(receiver))
+            # processPIDs will be None if the processes were killed successfully
 
-        if processExists is None:
-            # Start reciever
+        if processPIDs is None:
+            # Start receiver
             args = [
-                    "/Users/re239/code/alice/overwatch/receiver/bin/zmqReceive",
+                    "zmqReceive",
                     "--subsystem={0}".format(receiver),
                     "--in=REQ>tcp://localhost:{0}".format(receiverConfig["localPort"]),
                     "--verbose=1",
@@ -115,7 +153,7 @@ def database(config):
     """.format(ipAddress = config["ipAddress"],
                port = config["port"],
                databasePath = config["databasePath"],
-               logFile = config["logFile"]
+               logFile = config["logFile"],
                logFormat = config.get("logFormat", "%(asctime)s %(message)s")
                )
 
@@ -124,18 +162,23 @@ def database(config):
         f.write(zeoConfigFile)
 
     # Start zeo with the config file
-    processPID = checkForProcessPID("runzeo -C zeoGenerated.conf".format(receiver))
-    logger.debug("processPID: {0}".format(processPID))
+    processPIDs = checkForProcessPID("runzeo -C zeoGenerated.conf".format(receiver))
+    logger.debug("processPIDs: {0}".format(processPIDs))
 
-    if processPID is None:
+    if processPIDs is None:
         # Start database
+        pass
 
 def processing(config):
     """ Start processing. """
+    # Write out config options as necessary
+
+    # Start the processing
     pass
 
 def webApp(config):
     """ Start web app. """
+    # Handle both renning locally for development, as well as starting uwsgi when required
     pass
 
 def webAppSetup(config):
