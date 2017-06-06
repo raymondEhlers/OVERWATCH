@@ -70,6 +70,13 @@ def killExistingProcess(pidList, processType, processIdentifier, sig = signal.SI
 
     return pidList
 
+def startProcessWithLog(args, name, logFilename):
+    with open(logFilename, "wb") as logFile:
+        logger.debug("Starting \"{0}\" with args: {1}".format(name, args))
+        process = subprocess.Popen(args, stdout=logFile, stderr=subprocess.STDOUT)
+
+    return process
+
 def tunnel(config, receiverConfig):
     """ Start tunnel """
     processExists = checkForProcessPID("autossh -L {0}".format(receiverConfig["localPort"]))
@@ -145,17 +152,15 @@ def receiver(config):
                     ]
             if "additionalOptions" in receiverConfig:
                 args.append(receiverConfig["additionalOptions"])
-            with open("{0}Receiver.log".format(receiver), "wb") as logFile:
-                logger.info("Starting receiver with args: {0}".format(args))
-                process = subprocess.Popen(args, stdout=logFile, stderr=subprocess.STDOUT)
-                #--verbose=1 --sleep=60 --timeout=100 --select="" --subsystem="${subsystems[n]}" ${additionalOptions}
+            process = startProcessWithLog(args = args, name = "Receiver", logFilename = "{0}Receiver.log")
+            #--verbose=1 --sleep=60 --timeout=100 --select="" --subsystem="${subsystems[n]}" ${additionalOptions}
 
-                # From official script:
-                # zmqReceive --in=REQ>tcp://localhost:60323 --verbose=1 --sleep=60 --timeout=100 --select= --subsystem=TPC
-                # From this script:
-                # zmqReceive --subsystem=EMC --in=REQ>tcp://localhost:60321 --verbose=1 --sleep=60 --timeout=100 --select=
-                #
-                # --> Don't need to escape most quotes!
+            # From official script:
+            # zmqReceive --in=REQ>tcp://localhost:60323 --verbose=1 --sleep=60 --timeout=100 --select= --subsystem=TPC
+            # From this script:
+            # zmqReceive --subsystem=EMC --in=REQ>tcp://localhost:60321 --verbose=1 --sleep=60 --timeout=100 --select=
+            #
+            # --> Don't need to escape most quotes!
 
             # Check for receiver to ensure that it didn't just die immediately due to bad arguments, etc.
 
@@ -209,9 +214,16 @@ def database(config):
 def processing(config):
     """ Start processing. """
     # Write out config options as necessary
+    # TODO: Transition configuration files!
 
     # Start the processing
-    pass
+    args = [
+            "python",
+            "../runProcessRuns.py",
+            "-b",   # Run in batch processing mode to suppress ROOT graphics
+            ]
+
+    process = startProcessWithLog(args = args, name = "Process Runs", logFilename = "processRuns.log")
 
 def webApp(config):
     """ Start web app. """
