@@ -1,6 +1,6 @@
 # Docker file for the OVERWATCH web app
 FROM ubuntu:latest
-MAINTAINER Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
+LABEL maintainer "Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University"
 
 # Installed neede packages
 # ROOT dependencies from https://root.cern.ch/build-prerequisites
@@ -11,7 +11,7 @@ MAINTAINER Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 #   - python-pip is required for overwatch
 #   - supervisor is required for running multiple programs in docker
 #   - nginx is required to serve the webapp
-#   - TODO: Is ufw (ubuntu firewall) needed??
+#   - zmq is required for the overwatch HLT receiver
 RUN apt-get update && apt-get install -y \
         git \
         dpkg-dev \
@@ -32,11 +32,10 @@ RUN apt-get update && apt-get install -y \
         python-pip \
         supervisor \
         nginx \
+        libzmq-dev \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /opt/scratch
         # We delete the intermediate apt-get files once we are done
-
-# TODO: Set c, cxx flags, and CMAKE_BUILD_TYPE
 
 # Install XRootD
 COPY buildScripts/buildXRootD.sh /opt/scratch/buildScripts/buildXRootD.sh
@@ -51,13 +50,18 @@ RUN mkdir -p /opt/scratch/xrootd && cd /opt/scratch/xrootd \
         && rm -r /opt/scratch/xrootd
 # Remove src and build files
 
+# Setup environment variables for the build type.
+# For development, it would probably be best to be "RelWithDebInfo"
+ARG ROOT_CMAKE_BUILD_TYPE
+ENV CMAKE_BUILD_TYPE ${ROOT_CMAKE_BUILD_TYPE:-"MINSIZEREL"}
+
 # Install ROOT
 COPY buildScripts/buildRoot.sh /opt/scratch/buildScripts/buildRoot.sh
 
 RUN mkdir -p /opt/scratch/root && cd /opt/scratch/root \
         && chmod +x /opt/scratch/buildScripts/buildRoot.sh \
         && git clone https://github.com/root-project/root.git src \
-        && git checkout tags/v6-08-06 \
+        && cd src && git checkout tags/v6-08-06 && cd .. \
         && mkdir build && cd build \
         && /opt/scratch/buildScripts/buildRoot.sh ../src /opt/root \
         && make -j2 install \

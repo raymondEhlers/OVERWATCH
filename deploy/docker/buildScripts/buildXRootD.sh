@@ -4,5 +4,5 @@
 SRC=$1
 INST=$2
 
-cmake "$SRC" \
-    -DCMAKE_INSTALL_PREFIX="$INST"
+cmake "${SRC}" \
+    -DCMAKE_INSTALL_PREFIX="${INST}"
