@@ -171,7 +171,7 @@ def setupLogging(logger, logLevel, debug, runType):
     # Check on docker deplyoment variables
     try:
         dockerDeploymentOption = os.environ["deploymentOption"]
-    except KeyError as e:
+    except KeyError:
         # It doesn't exist
         dockerDeploymentOption = ""
 
@@ -207,8 +207,8 @@ def setupLogging(logger, logLevel, debug, runType):
         handler = logging.handlers.SMTPHandler("smtp.cern.ch",
                                                 "error@aliceoverwatch.cern.ch",
                                                 notifyAddresses, "OVERWATCH Failed")
-        handler.setLevel(processingParameters.WARNING)
-        handler.setFormatter(Formatter("""
+        handler.setLevel(logging.WARNING)
+        logFormatStr = """
         Message type:       %(levelname)s
         Location:           %(pathname)s:%(lineno)d
         Module:             %(module)s
@@ -218,7 +218,9 @@ def setupLogging(logger, logLevel, debug, runType):
         Message:
 
         %(message)s
-        """))
+        """
+        logFormat = logging.Formatter(logFormatStr)
+        handler.setFormatter(logFormat)
         # TODO: Properly configure so that it can be added as a handler!
         #logger.addHandler(handler)
         logger.debug("Added mailer handler to logging!")

@@ -21,7 +21,6 @@ import logging
 logger = logging.getLogger(__name__)
 
 from . import processingClasses
-from . import utilities
 
 ###################################################
 def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlice = None):

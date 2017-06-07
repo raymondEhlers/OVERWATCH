@@ -9,7 +9,6 @@ from builtins import range
 
 # General includes
 import os
-import socket
 import math
 import time
 import zipfile
@@ -36,7 +35,7 @@ else:
     #logger = logging.getLogger("webApp")
 
 # Flask
-from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, Markup, jsonify, session
+from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, jsonify, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
 from flask_zodb import ZODB
@@ -130,7 +129,7 @@ def login():
             # It should be extremely unlikely for this condition to be met!
             logger.warning("Since we are debugging, adding users to the database automatically!")
             # Transactions saved in the function
-            utilities.updateDBSensitiveParameters(dbRoot, debug = serverParameters.debug)
+            utilities.updateDBSensitiveParameters(db, debug = serverParameters.debug)
 
     # A post request Attempt to login the user in
     if request.method == "POST":

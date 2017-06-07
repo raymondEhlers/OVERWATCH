@@ -121,7 +121,7 @@ def validateTimeSlicePostRequest(request, runs):
 
         # Validate histGroup and histName
         # It could be valid for both to be None!
-        validateHistGroupAndHistName(histGroup, histName, subsystem, error)
+        validateHistGroupAndHistName(histGroup, histName, subsystem, run, error)
 
         # Processing options
         inputProcessingOptions = {}
@@ -304,7 +304,7 @@ def convertRequestToStringWhichMayBeEmpty(paramName, source):
     return paramValue
 
 ###################################################
-def validateHistGroupAndHistName(histGroup, histName, subsystem, error):
+def validateHistGroupAndHistName(histGroup, histName, subsystem, run, error):
     """ Validates hist group and hist name.
 
     NOTE:

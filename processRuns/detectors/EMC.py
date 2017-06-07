@@ -12,7 +12,7 @@ from __future__ import print_function
 from builtins import range
 
 # Used for QA functions
-from ROOT import ROOT, gStyle, TH1, TH2, TH1F, THStack, TF1, gPad, TAxis, TGaxis, SetOwnership, TPaveText, TLegend, TLine, kRed, kBlue, kOpenCircle, kFullCircle
+from ROOT import gStyle, TH1F, TH2, THStack, TF1, TGaxis, SetOwnership, TLegend, TLine, kRed, kBlue, kOpenCircle, kFullCircle
 
 # Used for the outlier detection function
 import numpy
@@ -707,6 +707,7 @@ def patchAmpOptions(subsystem, hist, processingOptions):
         detectors = ["EMCal", "DCal"]
         colors = [kRed+1, kBlue+1]
         markers = [kFullCircle, kOpenCircle]
+        options = ["", ""]
 
         # Plot elements
         for tempHist, detector, color, marker, option in zip(hist.hist.GetHists(), detectors, colors, markers, options):

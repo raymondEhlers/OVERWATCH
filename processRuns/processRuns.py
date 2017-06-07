@@ -29,10 +29,8 @@ ROOT.gROOT.ProcessLine("gErrorIgnoreLevel = kWarning;")
 
 # General includes
 import os
-import time
 import hashlib
 import uuid
-import sys
 # Python logging system
 # See: https://stackoverflow.com/a/346501
 import logging
@@ -50,12 +48,9 @@ else:
     #logger = logging.getLogger("processRuns")
 
 # ZODB
-import ZODB
 import BTrees.OOBTree
 import transaction
 import persistent
-# For determining the storage type
-import zodburi
 
 # Config
 from config.processingParams import processingParameters
@@ -182,7 +177,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
         for histName in histGroup.histList:
             # Retrieve histogram and canvas
             hist = subsystem.hists[histName]
-            hist.retrieveHistogram(fIn)
+            hist.retrieveHistogram(fIn, ROOT = ROOT)
             if hist.canvas is None:
                 # Reset canvas and make it accessible through the hist object
                 hist.canvas = canvas
@@ -261,6 +256,8 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
 
     """
 
+    logger.critical("Not yet updated!")
+    return None
     # Find all possible runs, and then select the runs between [firstRun, lastRun] (inclusive)
     runDirs = utilities.findCurrentRunDirs(processingParameters.dirPrefix)
     tempDirs = []
@@ -361,7 +358,7 @@ def compareProcessingOptionsDicts(inputProcessingOptions, processingOptions):
     processingOptionsAreTheSame = True
     for key,val in inputProcessingOptions.iteritems():
         if key not in processingOptions:
-            return (None, None, {"Processing option error": ["Key \"{0}\" in inputProcessingOptions ({1}) is not in subsystem processingOptions {2}!".format(key, inputProcessingOptions, subsystem.processingOptions)]})
+            return (None, None, {"Processing option error": ["Key \"{0}\" in inputProcessingOptions ({1}) is not in subsystem processingOptions {2}!".format(key, inputProcessingOptions, processingOptions)]})
         if val != processingOptions[key]:
             processingOptionsAreTheSame = False
             break
@@ -548,7 +545,7 @@ def createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir):
     filenames = sorted(runDict[runDir].subsystems[fileLocationSubsystem])
     startOfRun = utilities.extractTimeStampFromFilename(filenames[0])
     endOfRun = utilities.extractTimeStampFromFilename(filenames[-1])
-    logger.info("runLength filename: {0}".format(filename[-1]))
+    logger.info("runLength filename: {0}".format(filenames[-1]))
 
     # Create the subsystem
     showRootFiles = False
@@ -564,7 +561,7 @@ def createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir):
     # Handle files
     subsystemFiles = runs[runDir].subsystems[subsystem].files
     for filename in filenames:
-        subsystemFiles[utilities.extractTimeStampFromFilename(filenmae)] = processingClasses.fileContainer(filename, startOfRun)
+        subsystemFiles[utilities.extractTimeStampFromFilename(filename)] = processingClasses.fileContainer(filename, startOfRun)
     #runs[runDir].subsystems[subsystem].files = files
 
     # Flag that there are new files
@@ -597,7 +594,7 @@ def processMovedFilesIntoRuns(runs, runDict):
         else:
             runs[runDir] = processingClasses.runContainer(runDir = runDir,
                                                           fileMode = processingParameters.cumulativeMode,
-                                                          hltMode = runs[runDir][hltMode])
+                                                          hltMode = runs[runDir]["hltMode"])
             # Add files and subsystems.
             # We are creating runs here, so we already have all the information that we need from moving the files
             for subsystem in processingParameters.subsystemList:

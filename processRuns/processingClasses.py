@@ -46,7 +46,7 @@ class runContainer(persistent.Persistent):
             # We just take the last subsystem in a given run. Any will do
             lastSubsystem = self.subsystems[self.subsystems.keys()[-1]]
             returnValue = lastSubsystem.newFile
-        except KeyError as e:
+        except KeyError:
             returnValue = False
 
         return returnValue
@@ -58,7 +58,7 @@ class runContainer(persistent.Persistent):
             # We just take the last subsystem in a given run. Any will do
             lastSubsystem = self.subsystems[self.subsystems.keys()[-1]]
             returnValue = lastSubsystem.prettyPrintUnixTime(lastSubsystem.startOfRun)
-        except KeyError as e:
+        except KeyError:
             returnValue = False
 
         return returnValue
@@ -302,9 +302,9 @@ class histogramContainer(persistent.Persistent):
         self.canvas = None
         self.functionsToApply = persistent.list.PersistentList()
 
-    def retrieveHistogram(self, fIn):
+    def retrieveHistogram(self, fIn, ROOT):
         if self.histList is not None:
-            self.hist = THStack(self.histName, self.histName)
+            self.hist = ROOT.THStack(self.histName, self.histName)
             for name in self.histList:
                 logger.debug("HistName in list: {0}".format(name))
                 self.hist.Add(fIn.GetKey(name).ReadObj())
@@ -385,7 +385,7 @@ class qaFunctionContainer(persistent.Persistent):
             None
         """
 
-        for hist, label in zip(hists, labels):
+        for hist, label in hists:
             self.addHist(hist, label)
 
     def getHist(self, histName):
