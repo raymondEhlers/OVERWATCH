@@ -12,6 +12,9 @@ if(NOT AliRoot_FOUND)
   add_subdirectory(AliZMQhelpers)
 endif()
 
+# Add wanning options (not included for AliZMQhelpers since that code isn't under our control)
+SET(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -Wall -Werror")
+
 include_directories(
   # Variable should be plural to support both ROOT build methods...
   ${ROOT_INCLUDE_DIRS}
