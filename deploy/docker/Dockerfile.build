@@ -11,7 +11,8 @@ LABEL maintainer "Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University"
 #   - python-pip is required for overwatch
 #   - supervisor is required for running multiple programs in docker
 #   - nginx is required to serve the webapp
-#   - zmq is required for the overwatch HLT receiver
+#   - zmq is required for the overwatch HLT receiver.
+#         NOTE: libzmqq3-dev is actually version 4 (ie up to date)...
 RUN apt-get update && apt-get install -y \
         git \
         dpkg-dev \
@@ -32,7 +33,7 @@ RUN apt-get update && apt-get install -y \
         python-pip \
         supervisor \
         nginx \
-        libzmq-dev \
+        libzmq3-dev \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /opt/scratch
         # We delete the intermediate apt-get files once we are done
