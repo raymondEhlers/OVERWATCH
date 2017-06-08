@@ -41,12 +41,12 @@ zodbServer="false"
 
 if [[ -n "${docker}" ]];
 then
-    projectPath="/overwatch"
-    softwarePath="/alice/sw"
+    projectPath="/opt/overwatch"
+    softwarePath="/opt/root"
     virtualEnvPath=""
     location="docker"
-    buildType="aliBuild"
-    alibuildName="ROOT/latest"
+    buildType="root"
+    alibuildName=""
     role="server"
 
     # Additional settings
