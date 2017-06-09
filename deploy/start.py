@@ -228,7 +228,78 @@ def processing(config):
 def webApp(config):
     """ Start web app. """
     # Handle both renning locally for development, as well as starting uwsgi when required
-    pass
+    webAppConfig = config["webApp"]
+    useWsgi = webAppConfig.get("wsgi", False)
+    if useWsgi:
+        args = [
+                "uwsgi",
+                "{0}".format(webAppConfig["wsgiConfigFilename"])
+                ]
+        if not config["avoidNohup"]:
+            # Only append "nohup" if it is _NOT_ called from systemd
+            args = ["nohup"] + args
+    else:
+        # Use flask development server instead
+        # Do not use in production!!
+        args = [
+                "python"
+                "../runWebApp.py"
+                ]
+
+def uwsgiConfig(config):
+    """ Write out uwsgi configuration file. """
+    dockerConfig = """# Socket setup
+socket = /tmp/uwsgi.sock
+# Previously nginx:nginx , but in ubuntu nginx -> www-data
+chown-socket = www-data:www-data
+chmod-socket = 664
+# Remove socket when done
+vacuum = true
+    """
+    yaleConfig = """# This uses the default protocol (which seems to be uwsgi):
+socket = 127.0.0.1:8851
+    """
+
+    uwsgiConfiguration = """
+{socketSetup}
+# Setup
+chdir = {baseDir}
+
+# App
+wsgi-file = runWebApp.py
+callable = app
+
+# Instances
+processes = 4
+threads = 2
+
+# Setup stats
+stats = 127.0.0.1:9191
+
+# Configure master
+master = true
+master-fifo = {fifoLocation}
+
+# Load code into each worker instead of the master to help with ZODB locks
+# See: https://uwsgi-docs.readthedocs.io/en/latest/ThingsToKnow.html
+#  and https://stackoverflow.com/questions/14499594/zeo-deadlocks-on-uwsgi-in-master-mode
+lazy-apps = true
+
+{processOptions}
+{additionalOptions}
+    """.format(baseDir = config.get("baseDir", "/opt/overwatch"),
+              fifoLocation = config.get("fifoLocation", "/opt/overwatch/deploy/wsgiMasterFifo"))
+
+    if config["site"] == "yale":
+        uwsgiConfiguration.format(socketSetup = yaleSocket,
+                                  processOptions = yaleProcessOptions
+                                  additionalOptions = "")
+    elif config["site"] == "docker":
+        uwsgiConfiguration.format(socketSetup = yaleSocket,
+                                  processOptions = yaleProcessOptions
+                                  additionalOptions = "")
+    else:
+        logger.critical("Site {0} not recognized!".format(config["site"]))
 
 def webAppSetup(config):
     """ Setup web app, such as installing bower components, polymerizer, minify, etc.
@@ -236,29 +307,26 @@ def webAppSetup(config):
     Maybe this can all be handled by WebAssets?? """
     pass
 
-def startOverwatch(filename):
+def startOverwatch(configFilename, avoidNohup = False):
     """ Start the various parts of Overwatch.
     
     Components are only started if they are included in the configuration. """
     # Define config
-    with open(filename, "rb") as f:
+    with open(configFilename, "rb") as f:
         config = yaml.load(f)
 
+    config["avoidNohup"] = avoidNohup
     logger.info("Config:")
     pprint.pprint(config)
 
     if "receiver" in config and config["receiver"]["enabled"]:
-        # Start the tunnel(s) if necessary
-        #if "tunnel" in config:
-        #    tunnel(config["reciever"])
-
         # Start the receiver(s)
         receiver(config)
 
     if "processing" in config and config["processing"]["enabled"]:
         processing(config)
 
-    if "webApp" in config and config["processing"]["enabled"]:
+    if "webApp" in config and config["webApp"]["enabled"]:
         if "setup" in config["webApp"]:
             webAppSetup(config)
         webApp(config)
@@ -272,6 +340,9 @@ if __name__ == "__main__":
     parser.add_argument("-l", "--logLevel", metavar="level",
                         type=str, default="DEBUG",
                         help="Set the log leve.")
+    parser.add_argument("-a", "--avoidNohup",
+                        action="store_true",
+                        help="Pass this option to indicdate if nohup should be avoided (say, if systemd is calling the script)")
 
     # Parse arguments
     args = parser.parse_args()
@@ -286,4 +357,4 @@ if __name__ == "__main__":
     level = args.logLevel.upper()
     logger.setLevel(level)
 
-    startOverwatch(args.config)
+    startOverwatch(configFilename = args.config, avoidNohup = args.avoidNohup)
