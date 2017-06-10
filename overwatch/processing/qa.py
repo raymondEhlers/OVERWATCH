@@ -18,7 +18,9 @@ import importlib
 import inspect
 
 # Configuration
-from config.processingParams import processingParameters
+#from config.processingParams import processingParameters
+from ..base import config
+(processingParameters, filesRead) = config.readConfig(config.configurationType.processing)
 
 # Get the current module
 # Used to load functions from other moudles and then look them up.
@@ -110,8 +112,8 @@ def checkHist(hist, qaContainer):
 ###################################################
 #print dir(currentModule)
 # For more details on how this is possible, see: https://stackoverflow.com/a/3664396
-detectorsPath = processingParameters.detectorsPath
-modulesPath = processingParameters.modulesPath
+detectorsPath = processingParameters["detectorsPath"]
+modulesPath = processingParameters["modulesPath"]
 logger.info("\nLoading modules for detectors:")
 
 # For saving and show the docstrings on the QA page.
@@ -121,8 +123,8 @@ qaFunctionDocstrings = {}
 # but now to split out the hists on the web page.
 # Need to call list so that subsystemList is not modified.
 # See: https://stackoverflow.com/a/2612815
-subsystems = list(processingParameters.subsystemList)
-for subsystem in processingParameters.qaFunctionsList:
+subsystems = list(processingParameters["subsystemList"])
+for subsystem in processingParameters["qaFunctionsList"]:
     subsystems.append(subsystem)
 
 # Make sure that we have a unique list of subsystems.
@@ -155,8 +157,8 @@ for subsystem in subsystems:
             functionNames.append(funcName)
             
             # Save the function name so it can be shown on the QA page
-            if subsystem in processingParameters.qaFunctionsList:
-                if funcName in processingParameters.qaFunctionsList[subsystem]:
+            if subsystem in processingParameters["qaFunctionsList"]:
+                if funcName in processingParameters["qaFunctionsList"][subsystem]:
                     # Retreive the docstring
                     functionDocstring = inspect.getdoc(func)
 

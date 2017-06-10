@@ -53,7 +53,10 @@ import transaction
 import persistent
 
 # Config
-from config.processingParams import processingParameters
+from ..base import config
+#from config.processingParams import processingParameters
+(processingParameters, filesRead) = config.readConfig(config.configurationType.processing)
+print("processing: {0}, filesRead: {1}".format(processingParameters, filesRead))
 
 # Module includes
 from . import utilities
@@ -219,13 +222,13 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
             outputName = hist.histName
             # Replace any slashes with underscores to ensure that it can be used safely as a filename
             outputName = outputName.replace("/", "_")
-            outputFilename = outputFormatting % (os.path.join(processingParameters.dirPrefix, subsystem.imgDir),
+            outputFilename = outputFormatting % (os.path.join(processingParameters["dirPrefix"], subsystem.imgDir),
                                                  outputName,
-                                                 processingParameters.fileExtension)
+                                                 processingParameters["fileExtension"])
             hist.canvas.SaveAs(outputFilename)
 
             # Write BufferJSON
-            jsonBufferFile = outputFormatting % (os.path.join(processingParameters.dirPrefix, subsystem.jsonDir),
+            jsonBufferFile = outputFormatting % (os.path.join(processingParameters["dirPrefix"], subsystem.jsonDir),
                                                  outputName,
                                                  "json")
             #logger.debug("jsonBufferFile: {0}".format(jsonBufferFile))
@@ -259,7 +262,7 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
     logger.critical("Not yet updated!")
     return None
     # Find all possible runs, and then select the runs between [firstRun, lastRun] (inclusive)
-    runDirs = utilities.findCurrentRunDirs(processingParameters.dirPrefix)
+    runDirs = utilities.findCurrentRunDirs(processingParameters["dirPrefix"])
     tempDirs = []
     for runDir in runDirs:
         if int(runDir.replace("Run","")) >= int(firstRun.replace("Run","")) and int(runDir.replace("Run","")) <= int(lastRun.replace("Run","")):
@@ -273,14 +276,14 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
     for subsystem in [subsystemName, "HLT"]:
         subsystemRunDirDict[subsystem] = []
         for runDir in runDirs:
-            if os.path.exists(os.path.join(processingParameters.dirPrefix, runDir, subsystem)):
+            if os.path.exists(os.path.join(processingParameters["dirPrefix"], runDir, subsystem)):
                 subsystemRunDirDict[subsystem].append(runDir)
 
     # Create subsystem object
     subsystem = subsystemProperties(subsystem = subsystemName, runDirs = subsystemRunDirDict)
 
     # Create necessary dirs
-    dataDir = os.path.join(processingParameters.dirPrefix, qaFunctionName)
+    dataDir = os.path.join(processingParameters["dirPrefix"], qaFunctionName)
     if not os.path.exists(dataDir):
         os.makedirs(dataDir)
 
@@ -298,15 +301,15 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
         qaContainer.filledValueInRun = False
 
         # Get length of run and set the value
-        [mergeDict, runLength] = utilities.createFileDictionary(processingParameters.dirPrefix, runDir, subsystem.fileLocationSubsystem)
+        [mergeDict, runLength] = utilities.createFileDictionary(processingParameters["dirPrefix"], runDir, subsystem.fileLocationSubsystem)
         qaContainer.runLength = runLength
         
         # Print current progress
         logger.info("Processing run", qaContainer.currentRun)
 
         # Determine the proper combined file for input
-        combinedFile = next(name for name in os.listdir(os.path.join(processingParameters.dirPrefix, runDir, subsystem.fileLocationSubsystem)) if "combined" in name)
-        inputFilename = os.path.join(processingParameters.dirPrefix, runDir, subsystem.fileLocationSubsystem, combinedFile)
+        combinedFile = next(name for name in os.listdir(os.path.join(processingParameters["dirPrefix"], runDir, subsystem.fileLocationSubsystem)) if "combined" in name)
+        inputFilename = os.path.join(processingParameters["dirPrefix"], runDir, subsystem.fileLocationSubsystem, combinedFile)
         logger.debug(inputFilename)
 
         # Process the file
@@ -314,7 +317,7 @@ def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
 
     # Need to remove the dirPrefix to get the proper URL
     # pathToRemove must end with a slash to ensure that the img path set below is valid
-    pathToRemove = processingParameters.dirPrefix
+    pathToRemove = processingParameters["dirPrefix"]
     if not pathToRemove.endswith("/"):
         pathToRemove = pathToRemove + "/"
 
@@ -476,12 +479,12 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
     logger.info("subsystem.baseDir: {0}".format(subsystem.baseDir))
 
     # Setup dirPrefix
-    dirPrefix = processingParameters.dirPrefix
+    dirPrefix = processingParameters["dirPrefix"]
 
     # Takes histos from dirPrefix and moves them into Run dir structure, with a subdir for each subsystem
     # While this function should be fast, we want this to run to ensure that time slices use the most recent data
     # available in performed on a run this is ongoing
-    runDict = utilities.moveRootFiles(dirPrefix, processingParameters.subsystemList)
+    runDict = utilities.moveRootFiles(dirPrefix, processingParameters["subsystemList"])
 
     # Little should happen here since few, if any files, should be moved
     processMovedFilesIntoRuns(runs, runDict)
@@ -502,7 +505,7 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
     # Merge only the partial run.
     # Return if there were errors in merging
     errors = mergeFiles.merge(dirPrefix, run, subsystem,
-                              cumulativeMode = processingParameters.cumulativeMode,
+                              cumulativeMode = processingParameters["cumulativeMode"],
                               timeSlice = timeSlice)
     if errors:
         return errors
@@ -514,11 +517,11 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
     # Generate the histograms
     outputFormattingSave = os.path.join("%s", "{0}.%s.%s".format(timeSlice.filenamePrefix))
     logger.debug("outputFormattingSave: {0}".format(outputFormattingSave))
-    logger.debug("path: {0}".format(os.path.join(processingParameters.dirPrefix,
+    logger.debug("path: {0}".format(os.path.join(processingParameters["dirPrefix"],
                                                subsystem.baseDir,
                                                timeSlice.filename.filename) ))
     logger.debug("timeSlice.processingOptions: {0}".format(timeSlice.processingOptions))
-    outputHistNames = processRootFile(os.path.join(processingParameters.dirPrefix,
+    outputHistNames = processRootFile(os.path.join(processingParameters["dirPrefix"],
                                                    subsystem.baseDir,
                                                    timeSlice.filename.filename),
                                       outputFormattingSave, subsystem,
@@ -549,7 +552,7 @@ def createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir):
 
     # Create the subsystem
     showRootFiles = False
-    if subsystem in processingParameters.subsystemsWithRootFilesToShow:
+    if subsystem in processingParameters["subsystemsWithRootFilesToShow"]:
         showRootFiles = True
     runs[runDir].subsystems[subsystem] = processingClasses.subsystemContainer(subsystem = subsystem,
                                                                               runDir = runDir,
@@ -573,7 +576,7 @@ def processMovedFilesIntoRuns(runs, runDict):
         if runDir in runs:
             run = runs[runDir]
             # Update each subsystem and note that it needs to be reprocessed
-            for subsystemName in processingParameters.subsystemList:
+            for subsystemName in processingParameters["subsystemList"]:
                 if subsystemName in runs.subsystems:
                     # Update the existing subsystem
                     subsystem = run.subsystems[subsystemName]
@@ -593,11 +596,11 @@ def processMovedFilesIntoRuns(runs, runDict):
 
         else:
             runs[runDir] = processingClasses.runContainer(runDir = runDir,
-                                                          fileMode = processingParameters.cumulativeMode,
+                                                          fileMode = processingParameters["cumulativeMode"],
                                                           hltMode = runs[runDir]["hltMode"])
             # Add files and subsystems.
             # We are creating runs here, so we already have all the information that we need from moving the files
-            for subsystem in processingParameters.subsystemList:
+            for subsystem in processingParameters["subsystemList"]:
                 createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir)
 
 ###################################################
@@ -629,10 +632,10 @@ def processAllRuns():
         None
 
     """
-    dirPrefix = processingParameters.dirPrefix
+    dirPrefix = processingParameters["dirPrefix"]
 
     # Get the database
-    (dbRoot, connection) = utilities.getDB(processingParameters.databaseLocation)
+    (dbRoot, connection) = utilities.getDB(processingParameters["databaseLocation"])
 
     # Create runs list
     if dbRoot.has_key("runs"):
@@ -642,7 +645,7 @@ def processAllRuns():
 
         # Files which were new are marked as such from the previous run,
         # They are not anymore, so we mark them as processed
-        for runDir, run in runs.items():
+        for runDir,run in runs.items():
             for subsystemName, subsystem in run.subsystems.items():
                 if subsystem.newFile == True:
                     subsystem.newFile = False
@@ -656,11 +659,11 @@ def processAllRuns():
         for runDir in utilities.findCurrentRunDirs(dirPrefix):
             # Create run object
             runs[runDir] = processingClasses.runContainer( runDir = runDir, 
-                                                           fileMode = processingParameters.cumulativeMode)
+                                                           fileMode = processingParameters["cumulativeMode"])
 
         # Find files and create subsystems
         for runDir, run in runs.items():
-            for subsystem in processingParameters.subsystemList:
+            for subsystem in processingParameters["subsystemList"]:
                 # If subsystem exists, then create file containers 
                 subsystemPath = os.path.join(dirPrefix, runDir, subsystem)
                 if os.path.exists(subsystemPath):
@@ -690,7 +693,7 @@ def processAllRuns():
 
                 # Now create the subsystem
                 showRootFiles = False
-                if subsystem in processingParameters.subsystemsWithRootFilesToShow:
+                if subsystem in processingParameters["subsystemsWithRootFilesToShow"]:
                     showRootFiles = True
                 run.subsystems[subsystem] = processingClasses.subsystemContainer(subsystem = subsystem,
                                                                                  runDir = run.runDir,
@@ -732,7 +735,7 @@ def processAllRuns():
 
     # Start of processing data
     # Takes histos from dirPrefix and moves them into Run dir structure, with a subdir for each subsystem
-    runDict = utilities.moveRootFiles(dirPrefix, processingParameters.subsystemList)
+    runDict = utilities.moveRootFiles(dirPrefix, processingParameters["subsystemList"])
 
     logger.info("Files moved: {0}".format(runDict))
 
@@ -747,19 +750,19 @@ def processAllRuns():
 
     # Merge histograms over all runs, all subsystems if needed. Results in one combined file per subdir.
     mergedRuns = mergeFiles.mergeRootFiles(runs, dirPrefix,
-                                           processingParameters.forceNewMerge,
-                                           processingParameters.cumulativeMode)
+                                           processingParameters["forceNewMerge"],
+                                           processingParameters["cumulativeMode"])
 
     # Determine which runs to process
     for runDir, run in runs.items():
         #for subsystem in subsystems:
         for subsystem in run.subsystems.values():
             # Process if there is a new file or if forceReprocessing
-            if subsystem.newFile == True or processingParameters.forceReprocessing == True:
+            if subsystem.newFile == True or processingParameters["forceReprocessing"] == True:
                 # Process combined root file: plot histos and save in imgDir
                 logger.info("About to process {0}, {1}".format(run.prettyName, subsystem.subsystem))
                 outputFormattingSave = os.path.join("%s", "%s.%s") 
-                processRootFile(os.path.join(processingParameters.dirPrefix, subsystem.combinedFile.filename),
+                processRootFile(os.path.join(processingParameters["dirPrefix"], subsystem.combinedFile.filename),
                                 outputFormattingSave,
                                 subsystem)
             else:
@@ -770,15 +773,15 @@ def processAllRuns():
         transaction.commit()
 
     # Save the dict out
-    #pickle.dump(runs, open(os.path.join(processingParameters.dirPrefix, "runs.p"), "wb"))
-    #pickle.dump(runs["Run123456"], open(os.path.join(processingParameters.dirPrefix, "runs.p"), "wb"))
+    #pickle.dump(runs, open(os.path.join(processingParameters["dirPrefix"], "runs.p"), "wb"))
+    #pickle.dump(runs["Run123456"], open(os.path.join(processingParameters["dirPrefix"], "runs.p"), "wb"))
     
     logger.info("Finished processing!")
 
     # Send data to pdsf via rsync
-    if processingParameters.sendData == True:
+    if processingParameters["sendData"] == True:
         logger.info("Preparing to send data")
-        utilities.rsyncData(dirPrefix, processingParameters.remoteUsername, processingParameters.remoteSystems, processingParameters.remoteFileLocations)
+        utilities.rsyncData(dirPrefix, processingParameters["remoteUsername"], processingParameters["remoteSystems"], processingParameters["remoteFileLocations"])
 
     # Update receiver last modified time if the log exists
     receiverLogFileDir = os.path.join("deploy")
@@ -794,8 +797,8 @@ def processAllRuns():
 
     # Add users and secret key if debugging
     # This needs to be done manually if deploying, since this requires some care to ensure that everything is configured properly
-    if processingParameters.debug:
-        utilities.updateDBSensitiveParameters(dbRoot, debug=processingParameters.debug)
+    if processingParameters["debug"]:
+        utilities.updateDBSensitiveParameters(dbRoot, debug=processingParameters["debug"])
 
     # Ensure that any additional changes are committed
     transaction.commit()

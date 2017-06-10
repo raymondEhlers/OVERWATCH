@@ -3,8 +3,12 @@
 import logging
 
 # Config
-from config.processingParams import processingParameters
-from processRuns import utilities
+#from config.processingParams import processingParameters
+from overwatch.base import config
+from overwatch.processing import utilities
+(processingParameters, filesRead) = config.readConfig(config.configurationType.processing)
+print("filesRead: {0}".format(filesRead))
+print("processingParameters: {0}".format(processingParameters))
 
 # By not setting a name, we get everything!
 logger = logging.getLogger("")
@@ -12,12 +16,12 @@ logger = logging.getLogger("")
 #logger = logging.getLogger("processRuns")
 
 # Setup logging
-utilities.setupLogging(logger, processingParameters.loggingLevel, processingParameters.debug, "processRuns")
+utilities.setupLogging(logger, processingParameters["loggingLevel"], processingParameters["debug"], "processRuns")
 # Log settings
-logger.info(processingParameters.printSettings())
+logger.info(processingParameters)
 
 # Imports are below here so that they can be logged
-from processRuns import processRuns
+from overwatch.processing import processRuns
 
 if __name__ == "__main__":
     # Process all of the run data
@@ -27,7 +31,7 @@ if __name__ == "__main__":
 
     ## Test processTimeSlices()
     ## TEMP
-    #(dbRoot, connection) = utilities.getDB(processingParameters.databaseLocation)
+    #(dbRoot, connection) = utilities.getDB(processingParameters["databaseLocation"])
     #runs = dbRoot["runs"]
     ## ENDTEMP
 

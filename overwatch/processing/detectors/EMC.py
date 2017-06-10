@@ -169,7 +169,7 @@ def setEMCHistogramOptions(subsystem):
 ###################################################
 def generalEMCOptions(subsystem, hist, processingOptions):
     # Set options for when not debugging
-    if processingParameters.debug == False:
+    if processingParameters["debug"] == False:
         # Disable hist stats
         hist.hist.SetStats(False)
 

@@ -36,7 +36,7 @@ def determineRunPageTemplates(loader, node):
     seq = loader.construct_sequence(node)
     path = os.path.join(os.path.dirname(os.path.realpath(__file__)), *seq)
     retVal = [name for name in os.listdir(path) if "runPage" in name]
-    print("retVal: {0}".format(retVal))
+    #print("retVal: {0}".format(retVal))
     return retVal
 # Register the function
 yaml.SafeLoader.add_constructor('!findRunPageTemplates', determineRunPageTemplates)
@@ -76,9 +76,11 @@ def readConfig(configType):
     #            "a.yaml"
     #            ]
     fileList = [
-                "../../config/processingParams.yaml",
-                "../../config/serverParams.yaml",
-                "../config/shared.yaml"
+                # Takes the config file in the local directory where it is run
+                "config.yaml",
+                os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../config/processingParams.yaml"),
+                os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../config/serverParams.yaml"),
+                os.path.join(os.path.dirname(os.path.realpath(__file__)), "../config/shared.yaml")
                ]
     # ENDTEMP
 

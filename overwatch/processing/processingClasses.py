@@ -22,7 +22,9 @@ import logging
 logger = logging.getLogger(__name__)
 
 from . import utilities
-from config.processingParams import processingParameters
+from ..base import config
+#from config.processingParams import processingParameters
+(processingParameters, filesRead) = config.readConfig(config.configurationType.processing)
 
 ###################################################
 class runContainer(persistent.Persistent):
@@ -103,7 +105,7 @@ class subsystemContainer(persistent.Persistent):
         if fileLocationSubsystem is None:
             # Use the subsystem directory as proxy for whether it exists
             # TODO: Improve this detection. It should work, but may not be so flexible
-            if os.path.exists(os.path.join(processingParameters.dirPrefix, runDir, subsystem)):
+            if os.path.exists(os.path.join(processingParameters["dirPrefix"], runDir, subsystem)):
                 self.fileLocationSubsystem = self.subsystem
             else:
                 self.fileLocationSubsystem = "HLT"
@@ -128,10 +130,10 @@ class subsystemContainer(persistent.Persistent):
         logger.info("imgDir: {0}".format(self.imgDir))
         self.jsonDir = os.path.join(self.baseDir, "json")
         # Ensure that they exist
-        if not os.path.exists(os.path.join(processingParameters.dirPrefix, self.imgDir)):
-            os.makedirs(os.path.join(processingParameters.dirPrefix, self.imgDir))
-        if not os.path.exists(os.path.join(processingParameters.dirPrefix, self.jsonDir)):
-            os.makedirs(os.path.join(processingParameters.dirPrefix, self.jsonDir))
+        if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.imgDir)):
+            os.makedirs(os.path.join(processingParameters["dirPrefix"], self.imgDir))
+        if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.jsonDir)):
+            os.makedirs(os.path.join(processingParameters["dirPrefix"], self.jsonDir))
 
         # Times
         self.startOfRun = startOfRun

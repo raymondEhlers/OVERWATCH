@@ -25,6 +25,7 @@ import zodburi
 
 # Logging
 import logging
+import logging.handlers
 # Setup logger
 logger = logging.getLogger(__name__)
 
