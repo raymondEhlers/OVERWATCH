@@ -135,10 +135,11 @@ for subsystem in subsystems:
     logger.info("Subsystem {0} Functions loaded:".format(subsystem))
 
     # Ensure that the module exists before trying to load it
-    if os.path.exists(os.path.join(modulesPath, detectorsPath, "%s.py" % subsystem)):
-        #print "file exists"
+    logger.info("Looking for module in overwatch/{0}/{1}/{2}".format(modulesPath, detectorsPath, "%s.py" % subsystem))
+    if os.path.exists(os.path.join("overwatch", modulesPath, detectorsPath, "%s.py" % subsystem)):
+        print("file exists, qa __name__: {0}".format(__name__))
         # Import module dynamically
-        subsystemModule = importlib.import_module("%s.%s.%s" % (modulesPath, detectorsPath, subsystem))
+        subsystemModule = importlib.import_module("%s.%s.%s.%s" % ("overwatch", modulesPath, detectorsPath, subsystem))
         #logger.info(dir(subsystemModule))
 
         # Loop over all functions from the dynamically loaded module

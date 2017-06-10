@@ -26,10 +26,12 @@ import logging
 logger = logging.getLogger(__name__)
 
 # Basic processing classes
-from processRuns import processingClasses
+from .. import processingClasses
 
 # For retrieving debug configuration
-from config.processingParams import processingParameters
+print("EMC name: {0}".format(__name__))
+from ...base import config
+(processingParameters, filesRead) = config.readConfig(config.configurationType.processing)
 
 ######################################################################################################
 ######################################################################################################

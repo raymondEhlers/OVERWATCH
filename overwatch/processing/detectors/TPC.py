@@ -10,7 +10,7 @@ This currently serves as a catch all for unsorted histograms. No additional QA f
 import ROOT
 
 # Used for sorting and generating html
-from processRuns import processingClasses
+from .. import processingClasses
 
 ######################################################################################################
 ######################################################################################################
