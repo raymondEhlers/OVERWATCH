@@ -25,13 +25,6 @@ cumulativeMode: True
 #: risk in changing it).
 dirPrefix: *dataFolder
 
-## TODO: OBSOLETE THESE VALUES!
-#: The name of the folder containing the modules for processRuns.
-modulesPath: "processing"
-
-#: The name of the folder inside the modules folder containing the detector files.
-detectorsPath: "detectors"
-
 #### Below are not needed, since we are importing the shared paramters anyway...
 
 #: Enable debugging information.

@@ -112,8 +112,6 @@ def checkHist(hist, qaContainer):
 ###################################################
 #print dir(currentModule)
 # For more details on how this is possible, see: https://stackoverflow.com/a/3664396
-detectorsPath = processingParameters["detectorsPath"]
-modulesPath = processingParameters["modulesPath"]
 logger.info("\nLoading modules for detectors:")
 
 # For saving and show the docstrings on the QA page.
@@ -135,11 +133,13 @@ for subsystem in subsystems:
     logger.info("Subsystem {0} Functions loaded:".format(subsystem))
 
     # Ensure that the module exists before trying to load it
-    logger.info("Looking for module in overwatch/{0}/{1}/{2}".format(modulesPath, detectorsPath, "%s.py" % subsystem))
-    if os.path.exists(os.path.join("overwatch", modulesPath, detectorsPath, "%s.py" % subsystem)):
-        print("file exists, qa __name__: {0}".format(__name__))
+    if os.path.exists(os.path.join(os.path.dirname(__file__), "detectors", "%s.py".format(subsystem))):
+        #print("file exists, qa __name__: {0}".format(__name__))
         # Import module dynamically
-        subsystemModule = importlib.import_module("%s.%s.%s.%s" % ("overwatch", modulesPath, detectorsPath, subsystem))
+        # Using absolute import
+        #subsystemModule = importlib.import_module("%s.%s.%s.%s" % ("overwatch", "processing", "detectors", subsystem))
+        # Using relative import
+        subsystemModule = importlib.import_module(".detectors.{0}".format(subsystem), package = "overwatch.processing")
         #logger.info(dir(subsystemModule))
 
         # Loop over all functions from the dynamically loaded module
@@ -171,6 +171,7 @@ for subsystem in subsystems:
                     qaFunctionDocstrings[subsystem + funcName] = [subsystem, functionDocstring]
 
         # Print out the function names that have been loaded
+        #print(functionNames)
         if functionNames != []:
             logger.info("\t{0}".format(", ".join(functionNames)))
         else:

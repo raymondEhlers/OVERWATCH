@@ -47,8 +47,7 @@ setup(
     keywords='HEP ALICE',
 
     packages=[
-        "processRuns",
-        "webApp"
+        "overwatch"
     ],
 
     install_requires=[
