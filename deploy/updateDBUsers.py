@@ -26,13 +26,13 @@ logger = logging.getLogger("")
 #logger = logging.getLogger("processRuns")
 
 # Setup logging
-utilities.setupLogging(logger, processingParameters.loggingLevel, processingParameters.debug, "processRuns")
+utilities.setupLogging(logger, processingParameters["loggingLevel"], processingParameters["debug"], "processRuns")
 # Log settings
-logger.info(processingParameters.printSettings())
+logger.info(processingParameters)
 
 if __name__ == "__main__":
-    (db, connection) = utilities.getDB(processingParameters.databaseLocation)
-    utilities.updateDBSensitiveParameters(db = db, debug = processingParameters.debug)
+    (db, connection) = utilities.getDB(processingParameters["databaseLocation"])
+    utilities.updateDBSensitiveParameters(db = db, debug = processingParameters["debug"])
 
     # Close the database connection
     connection.close()

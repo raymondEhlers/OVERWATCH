@@ -11,9 +11,13 @@ import socket
 # END TEMP
 
 # Config
-from config.serverParams import serverParameters
+#from config.serverParams import serverParameters
+from overwatch.base import config
 # For configuring logger
-from processRuns import utilities
+from overwatch.processing import utilities
+(serverParameters, filesRead) = config.readConfig(config.configurationType.webApp)
+print("filesRead: {0}".format(filesRead))
+print("serverParameters: {0}".format(serverParameters))
 
 # By not setting a name, we get everything!
 logger = logging.getLogger("")
@@ -21,17 +25,17 @@ logger = logging.getLogger("")
 #logger = logging.getLogger("webApp")
 
 # Setup logger
-utilities.setupLogging(logger, serverParameters.loggingLevel, serverParameters.debug, "webApp")
+utilities.setupLogging(logger, serverParameters["loggingLevel"], serverParameters["debug"], "webApp")
 # Log server settings
-logger.info(serverParameters.printSettings())
+logger.info(serverParameters)
 
 # Imports are below here so that they can be logged
-from webApp.webApp import app
+from overwatch.webApp.webApp import app
 
 # Set the secret key here
-if not serverParameters.debug:
+if not serverParameters["debug"]:
     # Connect to database ourselves and grab the secret key
-    (dbRoot, connection) = utilities.getDB(serverParameters.databaseLocation)
+    (dbRoot, connection) = utilities.getDB(serverParameters["databaseLocation"])
     if dbRoot["config"].has_key("secretKey") and dbRoot["config"]["secretKey"]:
         logger.info("Setting secret key from database!")
         secretKey = dbRoot["config"]["secretKey"]
@@ -64,5 +68,5 @@ if __name__ == "__main__":
     else:
         logger.info("Starting flask app")
         # Careful with threaded, but it can be useful to test the status page, since the post request succeeds!
-        app.run(host=serverParameters.ipAddress,
-                port=serverParameters.port)#, threaded=True)
+        app.run(host=serverParameters["ipAddress"],
+                port=serverParameters["port"])#, threaded=True)

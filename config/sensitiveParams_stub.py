@@ -5,11 +5,12 @@ import os
 # Bcrypt
 from flask_bcrypt import generate_password_hash
 # Config
-from config.serverParams import serverParameters
+from overwatch.base import config
+(serverParameters, filesRead) = config.readConfig(config.configurationType.webApp)
 
 # Define additional needed variables
-defaultUsername = serverParameters.defaultUsername
-bcryptLogRounds = serverParameters.bcryptLogRounds
+defaultUsername = serverParameters["defaultUsername"]
+bcryptLogRounds = serverParameters["bcryptLogRounds"]
 
 # Contains sensitive parameters
 # Defined here since it is fewer values to maintain

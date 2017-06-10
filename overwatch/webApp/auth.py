@@ -10,7 +10,8 @@ from flask_login import UserMixin
 from flask_bcrypt import check_password_hash
 
 # Config
-from config.serverParams import serverParameters
+from ..base import config
+#(serverParameters, filesRead) = config.readConfig(config.configurationType.webApp)
 
 # Logging
 import logging

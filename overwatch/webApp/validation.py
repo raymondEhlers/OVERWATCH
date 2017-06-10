@@ -16,7 +16,9 @@ except ImportError:
     import urlparse
 
 # Config
-from config.serverParams import serverParameters
+#from config.serverParams import serverParameters
+from ..base import config
+(serverParameters, filesRead) = config.readConfig(config.configurationType.webApp)
 
 # Logging
 import logging
@@ -234,14 +236,14 @@ def validateQAPostRequest(request, runList):
             error.setdefault("lastRun", []).append(lastRun + " not in run list!")
         if int(firstRun.replace("Run","")) > int(lastRun.replace("Run", "")):
             error.setdefault("runNumberOrder", []).append(firstRun + " is greater than " + lastRun)
-        #if subsystem not in serverParameters.subsystemList:
+        #if subsystem not in serverParameters["subsystemList"]:
         #    error.setdefault("subsystem", []).append("subsystem " + subsystem + " is not valid")
-        #if any(qaFunction not in funcNames for funcNames in serverParameters.qaFunctionsList.values()):
+        #if any(qaFunction not in funcNames for funcNames in serverParameters["qaFunctionsList"].values()):
         #    error.setdefault("qaFunction:", []).append(qaFunction + " is not a QA function defined for subsystem %s!" % subsystem)
-        if subsystem not in serverParameters.qaFunctionsList:
+        if subsystem not in serverParameters["qaFunctionsList"]:
             error.setdefault("qaFunction:", []).append("Subsystem " + subsystem + " not available in the QA function list!")
         else:
-            if qaFunction not in serverParameters.qaFunctionsList[subsystem]:
+            if qaFunction not in serverParameters["qaFunctionsList"][subsystem]:
                 error.setdefault("qaFunction:", []).append(qaFunction + " not usable with subsystem " + subsystem)
     # Handle an unexpected exception
     except Exception as e:

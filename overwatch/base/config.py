@@ -78,7 +78,7 @@ def readConfig(configType):
     fileList = [
                 # Takes the config file in the local directory where it is run
                 "config.yaml",
-                os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../config/processingParams.yaml"),
+                os.path.join(os.path.dirname(os.path.realpath(__file__)), "../processing/processingParams.yaml"),
                 os.path.join(os.path.dirname(os.path.realpath(__file__)), "../../config/serverParams.yaml"),
                 os.path.join(os.path.dirname(os.path.realpath(__file__)), "../config/shared.yaml")
                ]

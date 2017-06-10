@@ -41,7 +41,8 @@ from flask_bcrypt import Bcrypt
 from flask_zodb import ZODB
 
 # Server configuration
-from config.serverParams import serverParameters
+from ..base import config
+(serverParameters, filesRead) = config.readConfig(config.configurationType.webApp)
 
 # WebApp Module includes
 from . import routing
@@ -49,28 +50,28 @@ from . import auth
 from . import validation
 
 # Main processing file
-from processRuns import processRuns
+from ..processing import processRuns
 
 # Processing module includes
-from processRuns import utilities
-from processRuns import qa
+from ..processing import utilities
+from ..processing import qa
 
 # Flask setup
-app = Flask(__name__, static_url_path=serverParameters.staticURLPath, static_folder=serverParameters.staticFolder, template_folder=serverParameters.templateFolder)
+app = Flask(__name__, static_url_path=serverParameters["staticURLPath"], static_folder=serverParameters["staticFolder"], template_folder=serverParameters["templateFolder"])
 
 # Setup database
-app.config["ZODB_STORAGE"] = serverParameters.databaseLocation
+app.config["ZODB_STORAGE"] = serverParameters["databaseLocation"]
 db = ZODB(app)
 
 # Set secret key for flask
-if serverParameters.debug:
+if serverParameters["debug"]:
     # Cannot use the db value here since the reloader will cause it to fail...
     try:
         from config import sensitiveParams
     except ImportError:
         # Only take the default user if we are in debug mode!
         # Otherwise, this is quite unsafe!
-        if serverParameters.debug:
+        if serverParameters["debug"]:
             logger.warning("Falling back to users in stub file! You should be certain that this is not going into production!")
             from config import sensitiveParams_stub as sensitiveParams
         else:
@@ -83,11 +84,11 @@ else:
     app.secret_key = str(os.urandom(50))
 
 # Enable debugging if set in configuration
-if serverParameters.debug == True:
+if serverParameters["debug"] == True:
     app.debug = True
 
 # Setup Bcrypt
-app.config["BCRYPT_LOG_ROUNDS"] = serverParameters.bcryptLogRounds
+app.config["BCRYPT_LOG_ROUNDS"] = serverParameters["bcryptLogRounds"]
 bcrypt = Bcrypt(app)
 
 # Setup login manager
@@ -125,11 +126,11 @@ def login():
     # Check for users and notify if there are none!
     if not db["config"].has_key("users") or not db["config"]["users"]:
         logger.fatal("No users found in database!")
-        if serverParameters.debug:
+        if serverParameters["debug"]:
             # It should be extremely unlikely for this condition to be met!
             logger.warning("Since we are debugging, adding users to the database automatically!")
             # Transactions saved in the function
-            utilities.updateDBSensitiveParameters(db, debug = serverParameters.debug)
+            utilities.updateDBSensitiveParameters(db, debug = serverParameters["debug"])
 
     # A post request Attempt to login the user in
     if request.method == "POST":
@@ -153,16 +154,16 @@ def login():
             else:
                 errorValue = "Login failed with invalid credentials"
 
-    if previousUsername == serverParameters.defaultUsername:
+    if previousUsername == serverParameters["defaultUsername"]:
         logger.debug("Equal!")
-    logger.debug("serverParameters.defaultUsername: {0}".format(serverParameters.defaultUsername))
+    logger.debug("serverParameters[defaultUsername]: {0}".format(serverParameters["defaultUsername"]))
     # If we are not authenticated and we have a default username set and the previous username is 
-    if not current_user.is_authenticated and serverParameters.defaultUsername and previousUsername != serverParameters.defaultUsername:
+    if not current_user.is_authenticated and serverParameters["defaultUsername"] and previousUsername != serverParameters["defaultUsername"]:
         # Clear previous flashes which will be confusing to the user
         # See: https://stackoverflow.com/a/19525521
         session.pop('_flashes', None)
         # Get the default user
-        defaultUser = auth.User.getUser(serverParameters.defaultUsername, db)
+        defaultUser = auth.User.getUser(serverParameters["defaultUsername"], db)
         # Login the user into flask
         login_user(defaultUser, remember=True)
         # Note for the user
@@ -276,14 +277,14 @@ def index():
                                 mainContentRuns = reversed(runs.values()),
                                 runOngoing = runOngoing,
                                 runOngoingNumber = runOngoingNumber,
-                                subsystemsWithRootFilesToShow = serverParameters.subsystemsWithRootFilesToShow,
+                                subsystemsWithRootFilesToShow = serverParameters["subsystemsWithRootFilesToShow"],
                                 anchorFrequency = anchorFrequency)
     else:
         drawerContent = render_template("runListDrawer.html", runs = reversed(runs.values()), runOngoing = runOngoing,
                                          runOngoingNumber = runOngoingNumber, anchorFrequency = anchorFrequency)
         mainContent = render_template("runListMainContent.html", runs = reversed(runs.values()), runOngoing = runOngoing,
                                        runOngoingNumber = runOngoingNumber,
-                                       subsystemsWithRootFilesToShow = serverParameters.subsystemsWithRootFilesToShow,
+                                       subsystemsWithRootFilesToShow = serverParameters["subsystemsWithRootFilesToShow"],
                                        anchorFrequency = anchorFrequency)
 
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
@@ -311,7 +312,7 @@ def runPage(runNumber, subsystemName, requestedFileType):
         jsonFilenameTemplate = os.path.join(subsystem.jsonDir, "{0}.json")
         if timeSlice:
             jsonFilenameTemplate = jsonFilenameTemplate.format(timeSlice.filenamePrefix + ".{0}")
-        imgFilenameTemplate = os.path.join(subsystem.imgDir, "{0}." + serverParameters.fileExtension)
+        imgFilenameTemplate = os.path.join(subsystem.imgDir, "{0}." + serverParameters["fileExtension"])
 
         # Print request status
         logger.debug("request: {0}".format(request.args))
@@ -331,7 +332,7 @@ def runPage(runNumber, subsystemName, requestedFileType):
             if requestedFileType == "runPage":
                 # Attempt to use a subsystem specific run page if available
                 runPageName = subsystemName + "runPage.html"
-                if runPageName not in serverParameters.availableRunPageTemplates:
+                if runPageName not in serverParameters["availableRunPageTemplates"]:
                     runPageName = runPageName.replace(subsystemName, "")
 
                 try:
@@ -359,11 +360,11 @@ def runPage(runNumber, subsystemName, requestedFileType):
             if requestedFileType == "runPage":
                # Drawer
                 runPageDrawerName = subsystemName + "runPageDrawer.html"
-                if runPageDrawerName not in serverParameters.availableRunPageTemplates:
+                if runPageDrawerName not in serverParameters["availableRunPageTemplates"]:
                     runPageDrawerName = runPageDrawerName.replace(subsystemName, "")
                 # Main content
                 runPageMainContentName = subsystemName + "runPageMainContent.html"
-                if runPageMainContentName not in serverParameters.availableRunPageTemplates:
+                if runPageMainContentName not in serverParameters["availableRunPageTemplates"]:
                     runPageMainContentName = runPageMainContentName.replace(subsystemName, "")
 
                 try:
@@ -417,7 +418,7 @@ def protected(filename):
     # Ignore the time GET parameter that is sometimes passed- just to avoid the cache when required
     #if request.args.get("time"):
     #    print "timeParameter:", request.args.get("time")
-    return send_from_directory(os.path.realpath(serverParameters.protectedFolder), filename)
+    return send_from_directory(os.path.realpath(serverParameters["protectedFolder"]), filename)
 
 ###################################################
 @app.route("/docs/<path:filename>")
@@ -426,9 +427,9 @@ def docs(filename):
     """ Serve the documentation.
 
     """
-    if os.path.isfile(os.path.join(serverParameters.docsBuildFolder, filename)):
+    if os.path.isfile(os.path.join(serverParameters["docsBuildFolder"], filename)):
         # Serve the docs
-        return send_from_directory(os.path.realpath(serverParameters.docsBuildFolder), filename)
+        return send_from_directory(os.path.realpath(serverParameters["docsBuildFolder"]), filename)
     else:
         # If it isn't built for some reason, tell the user what happened
         flash(filename + " not available! Docs are probably not built. Contact the admins!")
@@ -445,12 +446,12 @@ def rebuildDocs():
     if current_user.id == "emcalAdmin":
         # Cannot get the actual output, as it seems to often crash the process
         # I think this is related to the auto-reload in debug mode
-        #buildResult = subprocess.check_output(["make", "-C", serverParameters.docsFolder, "html"])
+        #buildResult = subprocess.check_output(["make", "-C", serverParameters["docsFolder"], "html"])
         #print buildResult
         #flash("Doc build output: " + buildResult)
 
         # Run the build command 
-        subprocess.call(["make", "-C", serverParameters.docsFolder, "html"])
+        subprocess.call(["make", "-C", serverParameters["docsFolder"], "html"])
 
         # Flash the result
         flash("Docs rebuilt")
@@ -584,18 +585,18 @@ def processQA():
         # but now to split out the hists on the web page.
         # Need to call list so that subsystemList is not modified.
         # See: https://stackoverflow.com/a/2612815
-        subsystems = list(serverParameters.subsystemList)
-        for subsystem in serverParameters.qaFunctionsList:
+        subsystems = list(serverParameters["subsystemList"])
+        for subsystem in serverParameters["qaFunctionsList"]:
             subsystems.append(subsystem)
 
         # Make sure that we have a unique list of subsystems.
         subsystems = sorted(set(subsystems))
 
         if ajaxRequest == False:
-            return render_template("qa.html", runList=runList, qaFunctionsList=serverParameters.qaFunctionsList, subsystemList=subsystems, docStrings=qa.qaFunctionDocstrings)
+            return render_template("qa.html", runList=runList, qaFunctionsList=serverParameters["qaFunctionsList"], subsystemList=subsystems, docStrings=qa.qaFunctionDocstrings)
         else:
-            drawerContent = render_template("qaDrawer.html", subsystemList=subsystems, qaFunctionsList=serverParameters.qaFunctionsList)
-            mainContent = render_template("qaMainContent.html", runList=runList, qaFunctionsList=serverParameters.qaFunctionsList, subsystemList=subsystems, docStrings=qa.qaFunctionDocstrings)
+            drawerContent = render_template("qaDrawer.html", subsystemList=subsystems, qaFunctionsList=serverParameters["qaFunctionsList"])
+            mainContent = render_template("qaMainContent.html", runList=runList, qaFunctionsList=serverParameters["qaFunctionsList"], subsystemList=subsystems, docStrings=qa.qaFunctionDocstrings)
             return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
 ###################################################
@@ -627,8 +628,8 @@ def testingDataArchive():
 
     # Create zip file. It is stored in the root of the data directory
     zipFilename = "testingDataArchive.zip"
-    zipFile = zipfile.ZipFile(os.path.join(serverParameters.protectedFolder, zipFilename), "w")
-    logger.info("Creating zipFile at %s" % os.path.join(serverParameters.protectedFolder, zipFilename))
+    zipFile = zipfile.ZipFile(os.path.join(serverParameters["protectedFolder"], zipFilename), "w")
+    logger.info("Creating zipFile at %s" % os.path.join(serverParameters["protectedFolder"], zipFilename))
 
     # Add files to the zip file
     runKeys = runs.keys()
@@ -637,9 +638,9 @@ def testingDataArchive():
         for subsystem in run.subsystems.values():
             # Write files to the zip file
             # Combined file
-            zipFile.write(os.path.join(serverParameters.protectedFolder, subsystem.combinedFile.filename))
+            zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.combinedFile.filename))
             # Uncombined file
-            zipFile.write(os.path.join(serverParameters.protectedFolder, subsystem.files[subsystem.files.keys()[-1]].filename))
+            zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.files[subsystem.files.keys()[-1]].filename))
 
     # Finish with the zip file
     zipFile.close()
@@ -687,7 +688,7 @@ def status():
 
     # Determine server statuses
     # TODO: Consider reducing the max number of retries
-    sites = serverParameters.statusRequestSites
+    sites = serverParameters["statusRequestSites"]
     for site, url in sites.iteritems():
         serverError = {}
         statusResult = ""
