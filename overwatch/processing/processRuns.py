@@ -59,7 +59,7 @@ from ..base import config
 print("processing: {0}, filesRead: {1}".format(processingParameters, filesRead))
 
 # Module includes
-from . import utilities
+from ..base import utilities
 from . import mergeFiles
 from . import qa
 from . import processingClasses

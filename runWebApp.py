@@ -2,6 +2,7 @@
 
 import logging
 import socket
+import pprint
 
 # TEMP
 #import sys
@@ -14,10 +15,10 @@ import socket
 #from config.serverParams import serverParameters
 from overwatch.base import config
 # For configuring logger
-from overwatch.processing import utilities
+from overwatch.base import utilities
 (serverParameters, filesRead) = config.readConfig(config.configurationType.webApp)
-print("filesRead: {0}".format(filesRead))
-print("serverParameters: {0}".format(serverParameters))
+print("Configuration files read: {0}".format(filesRead))
+print("serverParameters: {0}".format(pprint.pformat(serverParameters)))
 
 # By not setting a name, we get everything!
 logger = logging.getLogger("")

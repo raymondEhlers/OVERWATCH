@@ -34,6 +34,7 @@ numpy
 sphinx
 sphinxcontrib-napoleon
 recommonmark
+pprint
 
 # Configuration
 ruamel.yaml<=0.15

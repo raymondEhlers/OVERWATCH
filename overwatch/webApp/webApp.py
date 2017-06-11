@@ -53,7 +53,7 @@ from . import validation
 from ..processing import processRuns
 
 # Processing module includes
-from ..processing import utilities
+from ..base import utilities
 from ..processing import qa
 
 # Flask setup

@@ -21,7 +21,7 @@ import logging
 # Setup logger
 logger = logging.getLogger(__name__)
 
-from . import utilities
+from ..base import utilities
 from ..base import config
 #from config.processingParams import processingParameters
 (processingParameters, filesRead) = config.readConfig(config.configurationType.processing)
