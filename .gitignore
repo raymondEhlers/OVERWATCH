@@ -5,6 +5,7 @@ sensitiveParams.py
 build/
 bak/
 test/
+notes/
 # Virtualenv
 .env/
 .env3/
