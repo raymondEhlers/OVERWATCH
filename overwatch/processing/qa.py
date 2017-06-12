@@ -133,7 +133,7 @@ for subsystem in subsystems:
     logger.info("Subsystem {0} Functions loaded:".format(subsystem))
 
     # Ensure that the module exists before trying to load it
-    if os.path.exists(os.path.join(os.path.dirname(__file__), "detectors", "%s.py".format(subsystem))):
+    if os.path.exists(os.path.join(os.path.dirname(__file__), "detectors", "{0}.py".format(subsystem))):
         #print("file exists, qa __name__: {0}".format(__name__))
         # Import module dynamically
         # Using absolute import
