@@ -1,4 +1,6 @@
-## Containers parameters shared between processingParameters and serverParameters
+## Containers parameters shared between processing and webApp
+##
+## Author: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 
 # Set debug
 debug: false

@@ -29,3 +29,6 @@ notes.md
 *.DS_Store
 *.swp
 *.log
+
+# Ignore config file often used when running overwatch
+*.yaml
