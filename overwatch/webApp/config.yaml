@@ -28,7 +28,7 @@ ipAddress: "127.0.0.1"
 port: 8850
 
 #: Setup Bcrypt.
-bcryptLogRounds: 12
+bcryptLogRounds: &bcryptLogRounds 12
 
 #: Default user name. An empty string will disable it. Should only be used when behind CERN SSO!
 defaultUsername: ""
@@ -115,6 +115,11 @@ availableRunPageTemplates: !findRunPageTemplates
 statusRequestSites:
     CERN: "http://127.0.0.1:8850"
     Yale: "https://aliceoverwatch.physics.yale.edu"
+
+_users:
+    null: null
+
+_secretKey: !secretKey false
 
 # Lower the min logging level if we are debugging.
 #if debug:

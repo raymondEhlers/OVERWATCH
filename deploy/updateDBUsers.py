@@ -13,11 +13,11 @@ sys.path.insert(0, parentFolder)
 os.chdir(parentFolder)
 
 # Server configuration
-from config.processingParams import processingParameters
-from config import sensitiveParams
+from overwatch.base import config
+(serverParameters, filesRead) = config.readConfig(config.configurationType.processing)
 
 # Get the most useful fucntions
-from processRuns import utilities
+from overwatch.base import utilities
 
 import logging
 # By not setting a name, we get everything!
@@ -26,13 +26,13 @@ logger = logging.getLogger("")
 #logger = logging.getLogger("processRuns")
 
 # Setup logging
-utilities.setupLogging(logger, processingParameters["loggingLevel"], processingParameters["debug"], "processRuns")
+utilities.setupLogging(logger, serverParameters["loggingLevel"], serverParameters["debug"], "updateDBUsers")
 # Log settings
-logger.info(processingParameters)
+logger.info("Settings: {0}"pprint.pformat(serverParameters))
 
 if __name__ == "__main__":
-    (db, connection) = utilities.getDB(processingParameters["databaseLocation"])
-    utilities.updateDBSensitiveParameters(db = db, debug = processingParameters["debug"])
+    (db, connection) = utilities.getDB(serverParameters["databaseLocation"])
+    utilities.updateDBSensitiveParameters(db = db, debug = serverParameters["debug"])
 
     # Close the database connection
     connection.close()

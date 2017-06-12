@@ -6,6 +6,7 @@ import logging
 import ruamel.yaml as yaml
 import sys
 import os
+from flask_bcrypt import generate_password_hash
 
 import warnings
 
@@ -40,6 +41,32 @@ def determineRunPageTemplates(loader, node):
     return retVal
 # Register the function
 yaml.SafeLoader.add_constructor('!findRunPageTemplates', determineRunPageTemplates)
+
+#: Handle bcrypt
+def bcrypt(loader, node):
+    n = loader.construct_mapping(node)
+    # Get number of rounds!
+    bcryptLogRounds = n.pop("bcryptLogRounds")
+    returnDict = dict()
+    for k, v in n.items():
+        returnDict[k] = generate_password_hash(v)
+    return returnDict
+# Register the function
+yaml.SafeLoader.add_constructor('!bcrypt', bcrypt)
+
+#: Generate secret key if necessary
+def secretKey(loader, node):
+    val = loader.construct_scalar(node)
+    if val:
+        return str(val)
+
+    """ Secret key for signing cookies. Regenerated if a value is not passed.
+
+    Generated using urandom(50), as suggested by the flask developers.
+    """
+    return str(os.urandom(50))
+# Register the function
+yaml.SafeLoader.add_constructor('!secretKey', secretKey)
 
 def readConfigFiles(fileList):
     configs = []

@@ -366,18 +366,8 @@ def getDB(databaseLocation):
     return (dbRoot, connection)
 
 ###################################################
-def updateDBSensitiveParameters(db, overwriteSecretKey = True, debug = False):
-    try:
-        from config import sensitiveParams
-    except ImportError:
-        # Only take the default user if we are in debug mode!
-        # Otherwise, this is quite unsafe!
-        if debug:
-            logger.warning("Falling back to users in stub file! You should be certain that this is not going into production!")
-            from config import sensitiveParams_stub as sensitiveParams
-        else:
-            logger.fatal("No users in the database and not suitable parameters to fill them in!")
-            exit(1)
+def updateDBSensitiveParameters(db, overwriteSecretKey = True):
+    (sensitiveParameters, filesRead) = config.readConfig(config.configurationType.webApp)
 
     # Ensure that the config exists
     if not db.has_key("config"):
@@ -392,14 +382,14 @@ def updateDBSensitiveParameters(db, overwriteSecretKey = True, debug = False):
 
     # Add each user, overriding an existing settings
     users = db["config"]["users"]
-    for user, pw in sensitiveParams._users.iteritems():
+    for user, pw in sensitiveParameters["_users"].iteritems():
         users[user] = pw
         logger.info("Adding user {0}".format(user))
 
     # Secret key
     # Set the secret key to that set in the server parameters
     if overwriteSecretKey or not db["config"].has_key("secretKey"):
-        db["config"]["secretKey"] = sensitiveParams._secretKey
+        db["config"]["secretKey"] = sensitiveParameters["_secretKey"]
         logger.info("Adding secret key to db!")
 
     # Ensure that any additional changes are committed
