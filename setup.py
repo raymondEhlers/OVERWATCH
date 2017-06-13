@@ -46,21 +46,24 @@ setup(
     # What does your project relate to?
     keywords='HEP ALICE',
 
-    packages=[
-        "overwatch"
-    ],
+    packages=find_packages(exclude=("deploy", ".git")),
 
+    scripts=[
+             "bin/overwatchProcessing",
+             "bin/overwatchWebApp"
+             ],
+
+    # This is usually the minimal set of the required packages.
+    # Packages should be installed via pip -r requirements.txt !
     install_requires=[
+        "future",
         "flask",
         "Flask-Login",
         "Flask-ZODB",
-        "Flask-Bcrypt"
+        "Flask-Bcrypt",
+        "uwsgi",
+        "ruamel.yaml"
     ],
-
-    # Install a recent version of flask-zodb
-    dependency_links=[
-        "git+ssh://git@github.com/mwilliamson/mayo.git@0.2.1#egg=mayo-0.2.1"
-    ]
 
     # Include additional files
     include_package_data=True

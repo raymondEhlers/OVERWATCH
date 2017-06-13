@@ -61,9 +61,11 @@ if not serverParameters["debug"]:
 #app.run(host="0.0.0.0")
 if __name__ == "__main__":
     if "pdsf" in socket.gethostname():
+        from flup.server.fcgi import WSGIServer
         logger.info("Starting flup WSGI app")
         WSGIServer(app, bindAddress=("127.0.0.1",8851)).run()
     elif "sgn" in socket.gethostname():
+        from flup.server.fcgi import WSGIServer
         logger.info("Starting flup WSGI app on sciece gateway")
         WSGIServer(app, bindAddress=("127.0.0.1",8851)).run()
     else:

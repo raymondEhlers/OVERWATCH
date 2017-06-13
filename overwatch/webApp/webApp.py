@@ -66,19 +66,7 @@ db = ZODB(app)
 # Set secret key for flask
 if serverParameters["debug"]:
     # Cannot use the db value here since the reloader will cause it to fail...
-    try:
-        from config import sensitiveParams
-    except ImportError:
-        # Only take the default user if we are in debug mode!
-        # Otherwise, this is quite unsafe!
-        if serverParameters["debug"]:
-            logger.warning("Falling back to users in stub file! You should be certain that this is not going into production!")
-            from config import sensitiveParams_stub as sensitiveParams
-        else:
-            logger.fatal("No users in the database and not suitable parameters to fill them in!")
-            exit(1)
-    logger.info("Setting secret key from sensitiveParams config file!")
-    app.secret_key = sensitiveParams._secretKey
+    app.secret_key = serverParameters["_secretKey"]
 else:
     # Set a temporary secret key. It can be set from the database later
     app.secret_key = str(os.urandom(50))

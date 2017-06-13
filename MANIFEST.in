@@ -1,0 +1,9 @@
+recursive-include overwatch config.yaml
+include overwatch/webApp/static/*
+recursive-include overwatch/webApp/static/icons *
+recursive-include overwatch/webApp/static/scripts *
+recursive-include overwatch/webApp/static/style *
+include overwatch/webApp/templates/*
+
+recursive-exclude overwatch .DS_Store
+recursive-exclude overwatch .gitignore

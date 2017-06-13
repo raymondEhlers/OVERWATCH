@@ -1,6 +1,3 @@
-# Sensitive files to ignore
-sensitiveParams.py
-
 # Directories to ignore
 build/
 bak/
@@ -32,3 +29,6 @@ notes.md
 
 # Ignore config file often used when running overwatch
 *.yaml
+
+# Python package generation
+alice_overwatch.egg-info/
