@@ -59,9 +59,9 @@ setup(
         "future",
         "flask",
         "Flask-Login",
-        "Flask-ZODB",
+        "Flask-Assets",
+        "ZODB",
         "Flask-Bcrypt",
-        "uwsgi",
         "ruamel.yaml"
     ],
 

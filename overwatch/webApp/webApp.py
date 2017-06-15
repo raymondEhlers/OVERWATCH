@@ -39,21 +39,22 @@ from flask import Flask, url_for, request, render_template, redirect, flash, sen
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
 from flask_zodb import ZODB
+from flask_assets import Environment
 
 # Server configuration
 from ..base import config
 (serverParameters, filesRead) = config.readConfig(config.configurationType.webApp)
+# Utilities
+from ..base import utilities as baseUtilities
 
-# WebApp Module includes
+# WebApp module includes
 from . import routing
 from . import auth
 from . import validation
-
-# Main processing file
-from ..processing import processRuns
+from . import utilities
 
 # Processing module includes
-from ..base import utilities
+from ..processing import processRuns
 from ..processing import qa
 
 # Flask setup
@@ -78,6 +79,29 @@ if serverParameters["debug"] == True:
 # Setup Bcrypt
 app.config["BCRYPT_LOG_ROUNDS"] = serverParameters["bcryptLogRounds"]
 bcrypt = Bcrypt(app)
+
+# Setup flask assets
+assets = Environment(app)
+"""
+Some notes on webassets:
+ - Most filters, including this one, won't build in debug mode!
+ - Disable caching with the below lines. It is useful for debugging: 
+
+>>> assets.cache = False
+>>> assets.manifest = False
+
+ - To debug, you still need to delete and touch the relevant files in between each change. Usually, that means:
+   - Deleting the file in the gen/ folder
+   - Removing the static/.webassets folder if it exists
+   - Update or otherwise touch the file of interest
+ - Each Asset won't be built until first access of the particular file. Access the associated urls of the
+   asset to force it to built immediately (will still only be built if needed or forced by following the 
+   debug procedure above).
+
+>>> print(assets["polymerBundle"].urls())
+"""
+# Load bunldes from configuration file
+assets.from_yaml(os.path.join(os.path.dirname(__file__), "flaskAssets.yaml"))
 
 # Setup login manager
 loginManager = LoginManager()
@@ -118,7 +142,7 @@ def login():
             # It should be extremely unlikely for this condition to be met!
             logger.warning("Since we are debugging, adding users to the database automatically!")
             # Transactions saved in the function
-            utilities.updateDBSensitiveParameters(db, debug = serverParameters["debug"])
+            baseUtilities.updateDBSensitiveParameters(db, debug = serverParameters["debug"])
 
     # A post request Attempt to login the user in
     if request.method == "POST":

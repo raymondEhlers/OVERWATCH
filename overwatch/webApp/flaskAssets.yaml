@@ -1,0 +1,12 @@
+# Bundle polymer components together
+polymerBundle:
+    filters: "PolymerBundler"
+    output: "gen/polymerBundle.html"
+    contents:
+        - "polymerComponents.html"
+# Minify JS
+minJS:
+    filters: "rjsmin"
+    output: "gen/shared.min.js"
+    contents:
+        - "shared.js"

@@ -3,7 +3,6 @@ include overwatch/webApp/static/*
 recursive-include overwatch/webApp/static/icons *
 recursive-include overwatch/webApp/static/scripts *
 recursive-include overwatch/webApp/static/style *
-# TODO: Remove once flask-assets is setup
 recursive-include overwatch/webApp/static/bower_components *
 include overwatch/webApp/templates/*
 

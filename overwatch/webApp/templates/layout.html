@@ -5,31 +5,35 @@
 
         <!-- 1. Load webcomponents-lite.min.js for polyfill support. -->
         <!-- Cannot put in the polymer components because they are needed to use the import instruction! -->
-        {# If cannot load locally, load from CDN. From: https://github.com/download/polymer-cdn and https://stackoverflow.com/a/31484427 #}
-        {# Test for if it is loaded derived from: https://github.com/webcomponents/webcomponentsjs/issues/26 #}
+        {#- If cannot load locally, load from CDN. From: https://github.com/download/polymer-cdn and https://stackoverflow.com/a/31484427 -#}
+        {#- Test for if it is loaded derived from: https://github.com/webcomponents/webcomponentsjs/issues/26 #}
         <script src="{{url_for("static", filename="bower_components/webcomponentsjs/webcomponents-lite.min.js") }}"></script>
         <script> if(typeof HTMLImports === "undefined") { document.write('<script src="//cdn.rawgit.com/download/polymer-cdn/1.5.0/lib/webcomponentsjs/webcomponents-lite.min.js">\x3C/script>'); /*window.alert("Using CDN for webcomponents!");*/ }</script>
 
         <!-- 2. Use an HTML Import to bring in some elements. -->
-        {# Import a file of vulcanized polymer components #}
-        {# Can't do it directly because vulcanized doesn't integrate well with jinja templates #}
-        <link rel="import" href="/static/polymerComponents.html">
+        {#- Import a file of vulcanized polymer components -#}
+        {#- Can't do it directly because vulcanized doesn't integrate well with jinja templates #}
+        {% assets "polymerBundle" -%}
+        <link rel="import" href="{{ ASSET_URL }}">
+        {%- endassets %}
 
         <script type=text/javascript>
             $SCRIPT_ROOT = {{ request.script_root|tojson|safe  }};
         </script>
 
-        {# See: http://flask.pocoo.org/docs/0.11/patterns/jquery/ #}
-        {# Loads jQuery from google if available, or locaclly is not #}
+        {# See: http://flask.pocoo.org/docs/0.11/patterns/jquery/ -#}
+        {#- Loads jQuery from google if available, or locaclly is not -#}
         <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
         <script>window.jQuery || document.write('<script src="{{ url_for('static', filename='scripts/jquery.min.js') }}">\x3C/script>')</script>
 
         <!-- Ensure that we can use jQuery here! -->
-        <script async src="{{ url_for("static", filename="shared.js") }}" type="text/javascript"></script>
+        {% assets "minJS" -%}
+            <script async src="{{ ASSET_URL }}" type="text/javascript"></script>
+        {%- endassets %}
 
         <!-- jsroot with support for 2d hists -->
-        {# Loads jsRoot from locally if available, or CDN if not #}
-        {# jsRoot 4.6 does not work correctly, so loading from the CDN isn't ideal... #}
+        {#- Loads jsRoot from locally if available, or CDN if not -#}
+        {#- jsRoot 4.6 does not work correctly, so loading from the CDN isn't ideal... #}
         <script src="{{ url_for("static", filename="scripts/JSRootCore.js?2d") | replace("%3F", "?") }}" type="text/javascript"></script>
         <script>
         if (typeof JSROOT === "undefined") {
@@ -59,11 +63,11 @@
 
         <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="style.css") }}">
 
-        {# Mobile support #}
+        {# Mobile support -#}
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        {# Disable favicon request. See: https://stackoverflow.com/a/13416784 #}
-        {# <!--<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">--> #}
-        {# Favicon support from: realfavicongenerator.net #}
+        {#- Disable favicon request. See: https://stackoverflow.com/a/13416784 -#}
+        {#- <!--<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">--> -#}
+        {#- Favicon support from: realfavicongenerator.net #}
         <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png?v=2">
         <link rel="icon" type="image/png" href="/static/icons/favicon-32x32.png?v=2" sizes="32x32">
         <link rel="icon" type="image/png" href="/static/icons/favicon-16x16.png?v=2" sizes="16x16">
@@ -72,10 +76,10 @@
         <link rel="shortcut icon" href="/static/icons/favicon.ico?v=2">
         <meta name="msapplication-config" content="/static/icons/browserconfig.xml?v=2">
         <meta name="theme-color" content="#003e72">
-        {# Set color of nav bar #}
-        {# See: https://stackoverflow.com/a/33193739 #}
+        {#- Set color of nav bar -#}
+        {#- See: https://stackoverflow.com/a/33193739 #}
         <!-- Blink, webkit -->
-        {# <!--<meta name="theme-color" content="#C6E2FF">--> #}
+        {#- <!--<meta name="theme-color" content="#C6E2FF">--> #}
         <!-- Windows phone -->
         <meta name="msapplication-navbutton-color" content="#003e72">
         <!-- iOS (?) -->
