@@ -34,7 +34,7 @@
         <!-- jsroot with support for 2d hists -->
         {#- Loads jsRoot from locally if available, or CDN if not -#}
         {#- jsRoot 4.6 does not work correctly, so loading from the CDN isn't ideal... #}
-        <script src="{{ url_for("static", filename="scripts/JSRootCore.js?2d") | replace("%3F", "?") }}" type="text/javascript"></script>
+        <script src="{{ url_for("static", filename="jsRoot/scripts/JSRootCore.js?2d") | replace("%3F", "?") }}" type="text/javascript"></script>
         <script>
         if (typeof JSROOT === "undefined") {
             // Remove the previous script tag, because it will mess up jsRoot from finding the proper src directory
@@ -44,7 +44,7 @@
                 var src = scripts[n].src;
                 if ( (src === undefined) || (typeof src !== 'string')) continue;
 
-                var pos = src.indexOf("scripts/JSRootCore.");
+                var pos = src.indexOf("jsRoot/scripts/JSRootCore.");
                 if (pos<0) continue;
 
                 // Remove the actual element
@@ -59,7 +59,7 @@
         }
         </script>
         <!--<script src="//root.cern.ch/js/latest/scripts/JSRootCore.js?2d" type="text/javascript"></script>
-        <script>JSROOT || document.write('<script src="{{ url_for('static', filename='scripts/JSRootCore.js?2d') | replace('%3F', '?')}}">\x3C/script>')</script>-->
+        <script>JSROOT || document.write('<script src="{{ url_for('static', filename='jsRoot/scripts/JSRootCore.js?2d') | replace('%3F', '?')}}">\x3C/script>')</script>-->
 
         <link rel="stylesheet" type="text/css" href="{{ url_for("static", filename="style.css") }}">
 
