@@ -152,7 +152,7 @@ def receiver(config):
                     ]
             if "additionalOptions" in receiverConfig:
                 args.append(receiverConfig["additionalOptions"])
-            process = startProcessWithLog(args = args, name = "Receiver", logFilename = "{0}Receiver.log")
+            process = startProcessWithLog(args = args, name = "Receiver", logFilename = "{0}Receiver.log".format(receiver))
             #--verbose=1 --sleep=60 --timeout=100 --select="" --subsystem="${subsystems[n]}" ${additionalOptions}
 
             # From official script:
