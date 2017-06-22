@@ -51,7 +51,7 @@ def bcrypt(loader, node):
     for k, v in n.items():
         # Check if the key and value exists since they could be None
         if k and v:
-            returnDict[k] = generate_password_hash(v)
+            returnDict[k] = generate_password_hash(v, rounds = bcryptLogRounds)
     return returnDict
 # Register the function
 yaml.SafeLoader.add_constructor('!bcrypt', bcrypt)

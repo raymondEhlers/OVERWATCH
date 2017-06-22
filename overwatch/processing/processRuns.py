@@ -597,7 +597,7 @@ def processMovedFilesIntoRuns(runs, runDict):
         else:
             runs[runDir] = processingClasses.runContainer(runDir = runDir,
                                                           fileMode = processingParameters["cumulativeMode"],
-                                                          hltMode = runs[runDir]["hltMode"])
+                                                          hltMode = runDict[runDir]["hltMode"])
             # Add files and subsystems.
             # We are creating runs here, so we already have all the information that we need from moving the files
             for subsystem in processingParameters["subsystemList"]:

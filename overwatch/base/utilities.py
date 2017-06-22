@@ -29,6 +29,9 @@ import logging.handlers
 # Setup logger
 logger = logging.getLogger(__name__)
 
+# Configuration
+from . import config
+
 # This only works for non combined runs, since they contain a range of times
 ###################################################
 def extractTimeStampFromFilename(filename):
