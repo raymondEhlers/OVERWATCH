@@ -25,6 +25,7 @@ from flask import Flask, url_for, request, render_template, redirect, flash, sen
 from werkzeug.utils import secure_filename
 
 import os
+import time
 import functools
 import ROOT
 # Fix Flask debug mode with ROOT 5 issue.
@@ -120,13 +121,18 @@ def dqm():
     # Default to "DQM" if the agent cannot be found
     agent = request.headers.get("amoreAgent", "DQM")
 
+    # Convert timestamp to desired format
+    unixTime = float(timestamp)
+    timeTuple = time.gmtime(unixTime)
     # Format is SUBSYSTEMhistos_runNumber_hltMode_time.root
     # For example, EMChistos_123456_B_2015_3_14_2_3_5.root
     # TString filename = TString::Format("%shistos_%d_%s_%d_%d_%d_%d_%d_%d.root", fSubsystem.c_str(), fRunNumber, fHLTMode.c_str(), timestamp->tm_year+1900, timestamp->tm_mon+1, timestamp->tm_mday, timestamp->tm_hour, timestamp->tm_min, timestamp->tm_sec);
-    # TODO: Implement this properly depending on the format of the passed timestamp
-    #       Or should we just timestamp it ourselves?
+    # NOTE: these values are zero padded! However, this should be fine.
+    timeStr = time.strftime("%Y_%m_%d_%H_%M_%S", timeTuple)
+    print("timeStr: {0}".format(timeStr))
+
     # If the mode needs to be one letter, perhaps make it "Z" to make it obvious or "D" for DQM?
-    filename = "{amoreAgent}histos_{runNumber}_{mode}.root".format(amoreAgent = agent, runNumber = runNumber, mode = "DQM")
+    filename = "{amoreAgent}histos_{runNumber}_{mode}_{timestamp}.root".format(amoreAgent = agent, runNumber = runNumber, mode = "DQM", timestamp = timeStr)
     # Just to be safe!
     filename = secure_filename(filename)
     # True file path
