@@ -477,3 +477,48 @@ class qaFunctionContainer(persistent.Persistent):
             del self.hists[histName]
         else:
             logger.warning("histName {0} not in qa container, so it could not be removed!".format(histName))
+
+###################################################
+class TrendingObject(object):
+    """ Base trending object """
+    def __init__(self, trendingName, trendingHist, histNames = None):
+        self.name = trendingName
+        self.trendingHist = trendingHist
+        self.trendingFunction = None
+
+        # Set histograms to be included
+        # TODO: Should these be hist containers??
+        if not histNames:
+            histNames = []
+        # Ensure that a copy is name by wrapping in list
+        self.histNames = list(histNames)
+
+        # Where the next entry should go
+        self.nextEntry = 1
+
+    def Fill1D(self, value, error):
+        # TODO: Determine best way to get the previous histogram!
+        if self.nextEntry > self.nEntries:
+            # Get the array and convert to np array so it can be fed back to the hist
+            valArray = utilities.convertToNPArray(self.trendingHist.GetArray(), self.trendingHist.GetNcells())
+            errorArray = utilities.convertToNPArray(self.trendingHist.GetArrayErrors(), self.trendingHist.GetNcells())
+
+            # Insert back into histogram
+            self.trendingHist.SetContent(utilities.removeOldestValueAndInsert(valArray))
+            self.trendingHist.SetErrorContent(utilities.removeOldestValueAndInsert(errorArray))
+
+            # Increment the time offset
+            # TODO: Determine how to get this value
+            self.trendingHist.GetXaxis().SetTimeOffset()
+        else:
+            if self.nextEntry == 1:
+                # TODO: Determine how to get this value
+                self.trendingHist.GetXaxis().SetTimeOffset()
+
+            # Fill into the trending histogram
+            self.trendingHist.SetBinContent(self.nextEntry, value)
+            self.trendingHist.SetBinError(self.nextEntry, error)
+
+        # Keep track to move to the next entry
+        self.nextEntry += 1
+
