@@ -3,6 +3,7 @@
 from __future__ import print_function
 
 import os
+import stat
 import signal
 import logging
 import argparse
@@ -105,6 +106,34 @@ def tunnel(config, receiverConfig):
                 ]
         # Official: autossh -M ${monitorPorts[n]} -o ServerAliveInterval 30 -o ServerAliveCountMax 3 -p ${sshPorts[n]} -f -N -l zmq-tunnel  -L ${internalReceiverPorts[n]}:localhost:${externalReceiverPorts[n]} ${sshServerAddress}
 
+def writeCert(config):
+    """ Write cert from environment variable to file """
+    logger.info("Writing cert from environment variable")
+    # Get cert from environment
+    variableName = config["cert"].get("variableName", "cert")
+    cert = os.environ[variableName]
+    # Check that cert is not empty
+    if not cert:
+        raise ValueError("Empty certificate passed")
+    print("variableName: {}, cert: {}".format(variableName, cert))
+
+    # Write cert to file
+    # TODO: Update default location to "~/.globus/overwatchCert.pem" (?)
+    writeLocation = config["cert"].get("writeLocation", "overwatchCert.pem")
+    # Expand filename
+    writeLocation = os.path.expanduser(os.path.expandvars(writeLocation))
+    if not os.path.exists(os.path.dirname(writeLocation)):
+        os.makedirs(os.path.dirname(writeLocation))
+
+    # Ensure that we don't overwrite an existing cert!
+    if os.path.exists(writeLocation):
+        raise IOError("File at {0} already exists and will not be overwritten!".format(writeLocation))
+    with open(writeLocation, "wb") as f:
+        f.write(cert)
+
+    # Change permissions to 400
+    os.chmod(writeLocation, stat.S_IRUSR)
+
 def receiver(config):
     """ Start receivers """
     # Add receiver to path
@@ -114,6 +143,11 @@ def receiver(config):
     os.environ["PATH"] += os.pathsep + receiverPath
 
     for receiver, receiverConfig in config["receiver"].items():
+        # Only use iterable collections (which should correspond to a particular receiver config)
+        if not isinstance(receiver, collections.Iterable):
+            #logger.debug("Skipping entry \"{0}\" in the receiver config, as it it doesn't correspond to a iterable detector configuration".format(receiver))
+            continue
+        # Backup check, but could be ignored in the future
         if len(receiver) != 3:
             #logger.debug("Skipping entry \"{0}\" in the receiver config, as it it doesn't correspond to a detector".format(receiver))
             continue
@@ -292,11 +326,11 @@ lazy-apps = true
 
     if config["site"] == "yale":
         uwsgiConfiguration.format(socketSetup = yaleSocket,
-                                  processOptions = yaleProcessOptions
+                                  processOptions = yaleProcessOptions,
                                   additionalOptions = "")
     elif config["site"] == "docker":
         uwsgiConfiguration.format(socketSetup = yaleSocket,
-                                  processOptions = yaleProcessOptions
+                                  processOptions = yaleProcessOptions,
                                   additionalOptions = "")
     else:
         logger.critical("Site {0} not recognized!".format(config["site"]))
@@ -318,6 +352,9 @@ def startOverwatch(configFilename, avoidNohup = False):
     config["avoidNohup"] = avoidNohup
     logger.info("Config:")
     pprint.pprint(config)
+
+    if "cert" in config and config["cert"]["enabled"]:
+        writeCert(config)
 
     if "receiver" in config and config["receiver"]["enabled"]:
         # Start the receiver(s)
