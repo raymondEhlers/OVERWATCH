@@ -17,6 +17,7 @@ import persistent
 
 import os
 import time
+import ruamel.yaml as yaml
 import logging
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -40,6 +41,32 @@ class runContainer(persistent.Persistent):
         self.mode = fileMode
         self.subsystems = BTrees.OOBTree.BTree()
         self.hltMode = hltMode
+
+        # Try to retrieve the HLT mode if it was not passed
+        runInfoFilePath = os.path.join(processingParameters["dirPrefix"], self.runDir, "runInfo.yaml")
+        if not hltMode:
+            try:
+                with open(runInfoFilePath, "rb") as f:
+                    runInfo = yaml.load(f.read())
+
+                self.hltMode = runInfo["hltMode"]
+            except IOError as e:
+                # File does not exist
+                # HLT mode will have to be unknown
+                self.hltMode = "U"
+
+        # Run Information
+        # Since this is only information to save, only write it if the file doesn't exist
+        if not os.path.exists(runInfoFilePath):
+            runInfo = {}
+            # "U" for unknown
+            runInfo["hltMode"] = hltMode if hltMode else "U"
+
+            # Write information
+            if not os.path.exists(os.path.dirname(runInfoFilePath)):
+                os.makedirs(os.path.dirname(runInfoFilePath))
+            with open(runInfoFilePath, "wb") as f:
+                yaml.dump(runInfo, f)
 
     def isRunOngoing(self):
         """ Checks if one of the subsystems has a new file, indicating that the run is ongoing. """
