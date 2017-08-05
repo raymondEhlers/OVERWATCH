@@ -6,6 +6,7 @@ import logging
 import ruamel.yaml as yaml
 import sys
 import os
+import pkg_resources
 from flask_bcrypt import generate_password_hash
 
 import warnings
@@ -77,7 +78,8 @@ def readConfigFiles(fileList):
         try:
             f = open(filename, "r")
         except IOError:
-            logger.debug("Cannot open configuration file {0}".format(filename))
+            # Suppressed for cleaning up start up messages
+            #logger.debug("Cannot open configuration file \"{0}\"".format(filename))
             continue
         else:
             with f:
@@ -88,33 +90,38 @@ def readConfigFiles(fileList):
 
 def readConfig(configType):
     if configType == configurationType.processing or configType == configurationType.webApp:
+        # The earliest config files are given the _most_ precedence.
+        # ie. A value in the config in the local directory will override the same variable
+        #     defined in the config in the package base directory.
+        # For more on pkg_resources, see: https://stackoverflow.com/a/5601839
         fileList = [
+                    # Config file in the local directory where it is run
+                    "config.yaml",
+                    # Config in the home directory
                     # Ensures that we have "WebApp" here.
                     os.path.expandvars("~/.overwatch{0}").format(configType.name[0].upper() + configType.name[1:]),
-                    os.path.join(sys.prefix, "overwatch", "{0}".format(configType.name), "config.yaml"),
-                    os.path.join(sys.prefix, "overwatch", "{0}".format(configType.name), "shared.yaml")
+                    # Config type specific directory in the package (ex: "processing")
+                    # TODO: There is a problem when loading the shared configuration with the processing configuration
+                    #       because the shared configuration can have options which are defined in the web app config
+                    #       and therefore undefined when the web app config is not loaded!
+                    #       To resolve it temporarily, both configuration files will be included
+                    pkg_resources.resource_filename("overwatch.processing", "config.yaml"),
+                    pkg_resources.resource_filename("overwatch.webApp", "config.yaml"),
+                    #       Below is the line that should be used when the above issue is resolved
+                    #pkg_resources.resource_filename("overwatch.{0}".format(configType.name), "config.yaml"),
+                    # Shared config in the package base
+                    pkg_resources.resource_filename("overwatch.base", "config.yaml")
                     ]
     else:
         logger.critical("Unrecognized configuration type {0}!".format(configType.name))
         sys.exit(1)
 
-    logger.debug("Config filenames: {0}".format(fileList))
-    # TEMP
-    #fileList = [
-    #            "b.yaml",
-    #            "a.yaml"
-    #            ]
-    fileList = [
-                # Takes the config file in the local directory where it is run
-                "config.yaml",
-                os.path.join(os.path.dirname(os.path.realpath(__file__)),"..", "processing", "config.yaml"),
-                os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "webApp", "config.yaml"),
-                os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "base", "config.yaml")
-               ]
-    # ENDTEMP
+    # Suppressed for cleaning up start up messages
+    #logger.debug("Config filenames: {0}".format(fileList))
 
     (configs, filesRead) = readConfigFiles(fileList)
-    logger.debug("Read config files: {0}".format(filesRead))
+    # Suppressed for cleaning up start up messages
+    #logger.debug("Read config files: {0}".format(filesRead))
 
     # Merge the configurations together
     # List is reversed so the earlier listed config will always override settings from lower listed files

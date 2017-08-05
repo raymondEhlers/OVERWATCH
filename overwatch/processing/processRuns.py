@@ -54,18 +54,13 @@ import persistent
 
 # Config
 from ..base import config
-#from config.processingParams import processingParameters
 (processingParameters, filesRead) = config.readConfig(config.configurationType.processing)
-print("processing: {0}, filesRead: {1}".format(processingParameters, filesRead))
 
 # Module includes
 from ..base import utilities
 from . import mergeFiles
 from . import qa
 from . import processingClasses
-
-# TEMP
-print("__name__ in processRuns: {0}".format(__name__))
 
 ###################################################
 def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, processingOptions = None):
@@ -772,10 +767,6 @@ def processAllRuns():
         # Commit after we have successfully processed a run
         transaction.commit()
 
-    # Save the dict out
-    #pickle.dump(runs, open(os.path.join(processingParameters["dirPrefix"], "runs.p"), "wb"))
-    #pickle.dump(runs["Run123456"], open(os.path.join(processingParameters["dirPrefix"], "runs.p"), "wb"))
-    
     logger.info("Finished processing!")
 
     # Send data to pdsf via rsync

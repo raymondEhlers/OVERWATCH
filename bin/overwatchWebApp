@@ -4,15 +4,7 @@ import logging
 import socket
 import pprint
 
-# TEMP
-#import sys
-#import os
-#print("sys.path: {0}".format(sys.path))
-#print("os.environ[PYTHONPATH]: {}".format(os.environ["PYTHONPATH"]))
-# END TEMP
-
 # Config
-#from config.serverParams import serverParameters
 from overwatch.base import config
 # For configuring logger
 from overwatch.base import utilities
