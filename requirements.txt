@@ -1,6 +1,9 @@
 ### Requirements for OVERWATCH ###
 # Required
 
+# General
+enum34
+
 # For Python 2/3 support
 future
 
@@ -38,4 +41,5 @@ recommonmark
 pprint
 
 # Configuration
+yaml
 ruamel.yaml<=0.15
