@@ -96,7 +96,7 @@ def tunnel(config, receiverConfig):
                 "-L ${localPort}:localhost:${hltPort}".format(localPort = receiverConfig["localPort"],
                                                               hltPort = receiverConfig["hltPort"]),
                 "-o ServerAliveInterval 30", # Built-in ssh monitoring option
-                "-o ServerAliveCountMax 3",  # Built in ssh monitoring
+                "-o ServerAliveCountMax 3",  # Built-in ssh monitoring option
                 "-p {0}".format(config["port"]),
                 "-l {0}".format(config["username"]),
                 "{0}".format(config["address"]),
@@ -257,14 +257,12 @@ def database(config):
 
 def processing(config):
     """ Start processing. """
-    # Write out config options as necessary
-    # TODO: Transition configuration files!
+    # TODO: Write out config options as necessary
 
     # Start the processing
+    # Use the installed executable
     args = [
-            "python",
-            "../runProcessRuns.py",
-            "-b",   # Run in batch processing mode to suppress ROOT graphics
+            "overwatchProcessing"
             ]
 
     process = startProcessWithLog(args = args, name = "Process Runs", logFilename = "processRuns.log")
@@ -285,9 +283,9 @@ def webApp(config):
     else:
         # Use flask development server instead
         # Do not use in production!!
+        # Use the installed executable
         args = [
-                "python"
-                "../runWebApp.py"
+                "overwatchWebApp"
                 ]
 
 def uwsgiConfig(config):
