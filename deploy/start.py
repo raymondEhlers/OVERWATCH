@@ -104,35 +104,45 @@ def tunnel(config, receiverConfig):
                 "-f",
                 "-N"
                 ]
-        # Official: autossh -M ${monitorPorts[n]} -o ServerAliveInterval 30 -o ServerAliveCountMax 3 -p ${sshPorts[n]} -f -N -l zmq-tunnel  -L ${internalReceiverPorts[n]}:localhost:${externalReceiverPorts[n]} ${sshServerAddress}
+        # Official: autossh -o ServerAliveInterval 30 -o ServerAliveCountMax 3 -p ${sshPorts[n]} -f -N -l zmq-tunnel  -L ${internalReceiverPorts[n]}:localhost:${externalReceiverPorts[n]} ${sshServerAddress}
 
-def writeCert(config):
-    """ Write cert from environment variable to file """
-    logger.info("Writing cert from environment variable")
-    # Get cert from environment
-    variableName = config["cert"].get("variableName", "cert")
-    cert = os.environ[variableName]
-    # Check that cert is not empty
-    if not cert:
-        raise ValueError("Empty certificate passed")
-    print("variableName: {}, cert: {}".format(variableName, cert))
+def writeSensitiveVariableToFile(config, name, prettyName, defaultWriteLocation):
+    """ Write SSH key or certificate from environment variable to file. """
+    # Check name value (also acts as proxy for the other values)
+    if name != "sshKey" and name != "cert":
+        raise ValueError("Name \"{}\" is unrecognized! Aborting")
 
-    # Write cert to file
-    # TODO: Update default location to "~/.globus/overwatchCert.pem" (?)
-    writeLocation = config["cert"].get("writeLocation", "overwatchCert.pem")
+    #sensitiveVariable = getSensitiveVariableConfigurationValues(config, name = name, prettyName = prettyName)
+    logger.info("Writing {} from environment variable to file".format(prettyName))
+    # Get variable from environment
+    variableName = config[name].get("variableName", name)
+    sensitiveVariable = os.environ[variableName]
+    # Check that the variable is not empty
+    if not sensitiveVariable:
+        raise ValueError("Empty {} passed".format(prettyName))
+    print("variableName: {}, {}: {}".format(variableName, prettyName, sensitiveVariable))
+
+    # Write to file
+    writeLocation = config[name].get("writeLocation", defaultWriteLocation)
     # Expand filename
     writeLocation = os.path.expanduser(os.path.expandvars(writeLocation))
     if not os.path.exists(os.path.dirname(writeLocation)):
         os.makedirs(os.path.dirname(writeLocation))
 
-    # Ensure that we don't overwrite an existing cert!
+    # Ensure that we don't overwrite an existing file!
     if os.path.exists(writeLocation):
         raise IOError("File at {0} already exists and will not be overwritten!".format(writeLocation))
     with open(writeLocation, "wb") as f:
-        f.write(cert)
+        f.write(sensitiveVariable)
 
-    # Change permissions to 400
-    os.chmod(writeLocation, stat.S_IRUSR)
+    if name == "sshKey":
+        # Set the file permissions to 600
+        os.chmod(writeLocation, stat.S_IRUSR | stat.S_IWUSR)
+        # Set the folder permissions to 700
+        os.chmod(os.path.dirname(writeLocation), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+    elif name == "cert":
+        # Set the file permissions to 400
+        os.chmod(writeLocation, stat.S_IRUSR)
 
 def receiver(config):
     """ Start receivers """
@@ -354,7 +364,18 @@ def startOverwatch(configFilename, avoidNohup = False):
     pprint.pprint(config)
 
     if "cert" in config and config["cert"]["enabled"]:
-        writeCert(config)
+        # TODO: Update default location to "~/.globus/overwatchCert.pem" (?)
+        writeSensitiveVariableToFile(config = config,
+                                     name = "cert",
+                                     prettyName = "certificate",
+                                     defaultWriteLocation = "overwatchCert.pem")
+
+    if "sshKey" in config and config["sshKey"]["enabled"]:
+        # TODO: Update default write location to "~/ssh/id_rsa" (?)
+        writeSensitiveVariableToFile(config = config,
+                                     name = "sshKey",
+                                     prettyName = "SSH key",
+                                     defaultWriteLocation = "overwatch.id_rsa")
 
     if "receiver" in config and config["receiver"]["enabled"]:
         # Start the receiver(s)
