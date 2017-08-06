@@ -41,5 +41,5 @@ recommonmark
 pprint
 
 # Configuration
-yaml
+pyyaml
 ruamel.yaml<=0.15
