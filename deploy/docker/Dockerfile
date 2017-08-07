@@ -10,11 +10,14 @@ ENV ROOTSYS /opt/root
 # Download OVERWATCH, setup the needed python packages, and compile the reciever
 # Size increase here is mainly due to numpy
 RUN git clone https://github.com/raymondEhlers/OVERWATCH.git . \
+        && git checkout deploy2017
         && pip install --upgrade pip \
         && pip install -r requirements.txt \
         && mkdir -p receiver/build && cd receiver/build \
-        && cmake "../" -DCMAKE_INSTALL_PREFIX="../" -DZEROMQ="/usr" \
+        && cmake "../" -DCMAKE_INSTALL_PREFIX="/opt/receiver" -DZEROMQ="/usr" \
         && make install
+# Add receiver to path
+ENV PATH="/opt/receiver/bin:${PATH}"
 
 # Add bower, Polymer, webcomponents, jsRoot for OVERWATCH
 RUN ln -s /usr/bin/nodejs /usr/bin/node \
@@ -38,7 +41,7 @@ COPY nginx.conf /etc/nginx/sites-enabled/.
 
 # TEMP
 # NOTE: Will cause a problem if we make changes to the receiver
-RUN git fetch && git checkout deploy2017
+#RUN git fetch && git checkout deploy2017
 # ENDTEMP
 
 # Install OVERWATCH and the related scripts

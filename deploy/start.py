@@ -144,6 +144,28 @@ def writeSensitiveVariableToFile(config, name, prettyName, defaultWriteLocation)
         # Set the file permissions to 400
         os.chmod(writeLocation, stat.S_IRUSR)
 
+def setupRoot(config):
+    rootConfig = config["env"]["root"]
+
+    if rootConfig["script"]:
+        thisRootPath = os.path.join(rootConfig["script"], "bin", "thisroot.sh")
+        # Run thisroot.sh, extract the environment, and then set the python environment to those values
+        # See: https://stackoverflow.com/a/3505826
+        command = ["bash", "-c", "source {}  && env".format(thisRootPath)]
+
+        proc = subprocess.Popen(command, stdout = subprocess.PIPE)
+
+        # Load into the environment
+        # Note that this doesn't propagate to the shell where this was executed!
+        for line in proc.stdout:
+            (key, _, value) = line.partition("=")
+            os.environ[key] = value
+
+def setupEnv(config):
+    if "root" in config["env"] and config["env"]["root"]["enabled"]:
+        setupRoot(config)
+        print(os.environ)
+
 def receiver(config):
     """ Start receivers """
     # Add receiver to path
@@ -349,13 +371,18 @@ def webAppSetup(config):
     Maybe this can all be handled by WebAssets?? """
     pass
 
-def startOverwatch(configFilename, avoidNohup = False):
+def startOverwatch(configFilename, fromEnvironmen, avoidNohup = False):
     """ Start the various parts of Overwatch.
     
     Components are only started if they are included in the configuration. """
-    # Define config
-    with open(configFilename, "rb") as f:
-        config = yaml.load(f)
+    # Get configuration
+    if fromEnvironment:
+        # From environment
+        config = yaml.load(os.environ[fromEnvironment])
+    else:
+        # From file
+        with open(configFilename, "rb") as f:
+            config = yaml.load(f)
 
     config["avoidNohup"] = avoidNohup
     logger.info("Config:")
@@ -375,6 +402,10 @@ def startOverwatch(configFilename, avoidNohup = False):
                                      prettyName = "SSH key",
                                      defaultWriteLocation = "overwatch.id_rsa")
 
+    # Setup environment
+    if "env" in config and config["env"]["enabled"]:
+        setupEnv(config)
+
     if "receiver" in config and config["receiver"]["enabled"]:
         # Start the receiver(s)
         receiver(config)
@@ -393,9 +424,12 @@ if __name__ == "__main__":
     parser.add_argument("-c", "--config", metavar="configFile",
                         type=str, default="deployConfig.yaml",
                         help="Path to config filename")
+    parser.add_argument("-e", "--fromEnvironment", metavar="envVariable",
+                        type=str, default="",
+                        help="Take config from environment.")
     parser.add_argument("-l", "--logLevel", metavar="level",
                         type=str, default="DEBUG",
-                        help="Set the log leve.")
+                        help="Set the log level.")
     parser.add_argument("-a", "--avoidNohup",
                         action="store_true",
                         help="Pass this option to indicdate if nohup should be avoided (say, if systemd is calling the script)")
@@ -413,4 +447,4 @@ if __name__ == "__main__":
     level = args.logLevel.upper()
     logger.setLevel(level)
 
-    startOverwatch(configFilename = args.config, avoidNohup = args.avoidNohup)
+    startOverwatch(configFilename = args.config, fromEnvironment = args.fromEnvironment, avoidNohup = args.avoidNohup)
