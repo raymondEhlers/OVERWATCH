@@ -371,16 +371,18 @@ def webAppSetup(config):
     Maybe this can all be handled by WebAssets?? """
     pass
 
-def startOverwatch(configFilename, fromEnvironmen, avoidNohup = False):
+def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
     """ Start the various parts of Overwatch.
     
     Components are only started if they are included in the configuration. """
     # Get configuration
     if fromEnvironment:
         # From environment
+        logger.info("Loading configuration from environment variable \"{}\"".format(fromEnvironment))
         config = yaml.load(os.environ[fromEnvironment])
     else:
         # From file
+        logger.info("Loading configuration from file \"{}\"".format(configFilename))
         with open(configFilename, "rb") as f:
             config = yaml.load(f)
 

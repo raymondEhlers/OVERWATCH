@@ -10,7 +10,7 @@ ENV ROOTSYS /opt/root
 # Download OVERWATCH, setup the needed python packages, and compile the reciever
 # Size increase here is mainly due to numpy
 RUN git clone https://github.com/raymondEhlers/OVERWATCH.git . \
-        && git checkout deploy2017
+        && git checkout deploy2017 \
         && pip install --upgrade pip \
         && pip install -r requirements.txt \
         && mkdir -p receiver/build && cd receiver/build \
