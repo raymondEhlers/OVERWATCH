@@ -10,7 +10,9 @@ import argparse
 import subprocess
 import sys
 import time
+#import ruamel.yaml as yaml
 import yaml
+import collections
 
 logger = logging.getLogger("")
 
@@ -147,7 +149,7 @@ def writeSensitiveVariableToFile(config, name, prettyName, defaultWriteLocation)
 def setupRoot(config):
     rootConfig = config["env"]["root"]
 
-    if rootConfig["script"]:
+    if rootConfig["script"] and rootConfig["enabled"]:
         thisRootPath = os.path.join(rootConfig["script"], "bin", "thisroot.sh")
         # Run thisroot.sh, extract the environment, and then set the python environment to those values
         # See: https://stackoverflow.com/a/3505826
@@ -170,9 +172,11 @@ def receiver(config):
     """ Start receivers """
     # Add receiver to path
     receiverPath = config["receiver"].get("receiverPath", "/opt/receiver")
-    receiverPath = os.path.expandvars(receiverPath)
+    # Need to strip "\n" due to it being inserted when variables are expanded
+    receiverPath = os.path.expandvars(receiverPath).replace("\n", "")
     logger.debug("Adding receiver path \"{0}\" to PATH".format(receiverPath))
-    os.environ["PATH"] += os.pathsep + receiverPath
+    # Also remove "\n" at the end of the path variable for clarity
+    os.environ["PATH"] = os.environ["PATH"].rstrip() + os.pathsep + receiverPath
 
     for receiver, receiverConfig in config["receiver"].items():
         # Only use iterable collections (which should correspond to a particular receiver config)
