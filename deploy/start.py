@@ -73,10 +73,27 @@ def killExistingProcess(pidList, processType, processIdentifier, sig = signal.SI
 
     return pidList
 
-def startProcessWithLog(args, name, logFilename):
-    with open(logFilename, "wb") as logFile:
-        logger.debug("Starting \"{0}\" with args: {1}".format(name, args))
-        process = subprocess.Popen(args, stdout=logFile, stderr=subprocess.STDOUT)
+def startProcessWithLog(args, name, logFilename, supervisord = False):
+    if supervisord:
+        process = """
+[program:{name}]
+command={command}
+redirect_stderr=true
+# 5 MB log file with 10 backup files
+stdout_logfile_maxbytes=500000
+stdout_logfile_backups=10
+"""
+        process = process.format(name = name,
+                                 command = " ".join(args))
+        # Write the particular config
+        with open("supervisord.conf", "ab") as f:
+            f.write(process)
+        # process is not meaningful here, so it won't be launched until the end
+        process = None
+    else:
+        with open(logFilename, "wb") as logFile:
+            logger.debug("Starting \"{0}\" with args: {1}".format(name, args))
+            process = subprocess.Popen(args, stdout=logFile, stderr=subprocess.STDOUT)
 
     return process
 
@@ -145,6 +162,30 @@ def writeSensitiveVariableToFile(config, name, prettyName, defaultWriteLocation)
     elif name == "cert":
         # Set the file permissions to 400
         os.chmod(writeLocation, stat.S_IRUSR)
+
+def setupSupervisord(config):
+    # Write to the supervisord config
+    filename = "supervisord.conf"
+    if not os.path.exists(filename):
+        logger.info("Creating supervisord main config")
+        # Write the main config
+        mainConfig = """
+[supervisord]
+nodaemon=true
+# Use the overwatch data directory
+logfile=/opt/overwatch/data/supervisord.log
+childlogdir=/opt/overwatch/data/
+# Cannot use a new directory since supervisord won't make one and this causes problems with docker
+#logfile=/data/logs/supervisord.log
+#childlogdir=/data/logs/processes/
+# 5 MB log file with 10 backup files
+logfile_maxbytes=5000000
+logfile_backups=10
+"""
+        with open(filename, "wb+") as f:
+            f.write(mainConfig)
+    else:
+        logger.info("Supervisord config already exists - skipping creation.")
 
 def setupRoot(config):
     rootConfig = config["env"]["root"]
@@ -222,7 +263,7 @@ def receiver(config):
                     ]
             if "additionalOptions" in receiverConfig:
                 args.append(receiverConfig["additionalOptions"])
-            process = startProcessWithLog(args = args, name = "Receiver", logFilename = "{0}Receiver.log".format(receiver))
+            process = startProcessWithLog(args = args, name = "Receiver", logFilename = "{0}Receiver.log".format(receiver), supervisord = "supervisord" in config)
             #--verbose=1 --sleep=60 --timeout=100 --select="" --subsystem="${subsystems[n]}" ${additionalOptions}
 
             # From official script:
@@ -234,14 +275,15 @@ def receiver(config):
 
             # Check for receiver to ensure that it didn't just die immediately due to bad arguments, etc.
 
-            logger.info("Check that the process launched successfully...")
-            time.sleep(1.5)
-            processPIDs = checkForProcessPID(processIdentifier)
-            if processPIDs is None:
-                logger.critical("No process found corresponding to the just launched receiver! Check the log files!")
-                sys.exit(2)
-            else:
-                logger.info("Success!")
+            if process:
+                logger.info("Check that the process launched successfully...")
+                time.sleep(1.5)
+                processPIDs = checkForProcessPID(processIdentifier)
+                if processPIDs is None:
+                    logger.critical("No process found corresponding to the just launched receiver! Check the log files!")
+                    sys.exit(2)
+                else:
+                    logger.info("Success!")
         else:
             logger.info("Skipping receiver \"{0}\" since it already exists!".format(receiver))
 
@@ -390,7 +432,19 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
         with open(configFilename, "rb") as f:
             config = yaml.load(f)
 
-    config["avoidNohup"] = avoidNohup
+    # Setup
+    supervisord = "supervisord" in config
+    if supervisord:
+        logger.info("Setting up supervisord")
+
+        # Setup
+        setupSupervisord(config)
+
+        # Must be avoided when using supervisord
+        config["avoidNohup"] = True
+    else:
+        config["avoidNohup"] = avoidNohup
+
     logger.info("Config:")
     pprint.pprint(config)
 
@@ -423,6 +477,10 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
         if "setup" in config["webApp"]:
             webAppSetup(config)
         webApp(config)
+
+    # Start supervisord
+    #if "supervisord" in config:
+    #    raw_input("Press enter to exit...")
 
 if __name__ == "__main__":
     # Setup command line parser
