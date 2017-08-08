@@ -83,7 +83,8 @@ redirect_stderr=true
 stdout_logfile_maxbytes=500000
 stdout_logfile_backups=10
 """
-        process = process.format(name = name,
+        # Using logFilename to ensure that the name is more descriptive
+        process = process.format(name = logFilename,
                                  command = " ".join(args))
         # Write the particular config
         with open("supervisord.conf", "ab") as f:
@@ -91,7 +92,7 @@ stdout_logfile_backups=10
         # process is not meaningful here, so it won't be launched until the end
         process = None
     else:
-        with open(logFilename, "wb") as logFile:
+        with open("{0}.log".format(logFilename), "wb") as logFile:
             logger.debug("Starting \"{0}\" with args: {1}".format(name, args))
             process = subprocess.Popen(args, stdout=logFile, stderr=subprocess.STDOUT)
 
@@ -181,6 +182,9 @@ childlogdir=/opt/overwatch/data/
 # 5 MB log file with 10 backup files
 logfile_maxbytes=5000000
 logfile_backups=10
+
+[supervisorctl]
+serverurl = unix:///tmp/supervisor.sock
 """
         with open(filename, "wb+") as f:
             f.write(mainConfig)
@@ -263,7 +267,7 @@ def receiver(config):
                     ]
             if "additionalOptions" in receiverConfig:
                 args.append(receiverConfig["additionalOptions"])
-            process = startProcessWithLog(args = args, name = "Receiver", logFilename = "{0}Receiver.log".format(receiver), supervisord = "supervisord" in config)
+            process = startProcessWithLog(args = args, name = "Receiver", logFilename = "{0}Receiver".format(receiver), supervisord = "supervisord" in config)
             #--verbose=1 --sleep=60 --timeout=100 --select="" --subsystem="${subsystems[n]}" ${additionalOptions}
 
             # From official script:
@@ -333,7 +337,7 @@ def processing(config):
             "overwatchProcessing"
             ]
 
-    process = startProcessWithLog(args = args, name = "Process Runs", logFilename = "processRuns.log")
+    process = startProcessWithLog(args = args, name = "Process Runs", logFilename = "processRuns")
 
 def webApp(config):
     """ Start web app. """
@@ -479,8 +483,15 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
         webApp(config)
 
     # Start supervisord
-    #if "supervisord" in config:
-    #    raw_input("Press enter to exit...")
+    if "supervisord" in config:
+        # Only run if it's the first time
+        lockOutFilename = "supervisordRestartlockOut"
+        if not os.path.exists(lockOutFilename):
+            with open(lockOutFilename, "wb") as f:
+                f.write("")
+
+            # Restart supervisord
+            process = subprocess.Popen(["supervisorctl", "update"])
 
 if __name__ == "__main__":
     # Setup command line parser
