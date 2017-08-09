@@ -3,3 +3,6 @@ configOVERWATCH.sh
 
 # Used for controlling the zeo daemon
 zodb.zdsock
+
+# Supervisor config
+supervisord.conf
