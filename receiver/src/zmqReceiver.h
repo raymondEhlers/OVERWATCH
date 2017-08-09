@@ -27,7 +27,7 @@ class zmqReceiver
   /* @{
    * @name Main usage functions
    */
-  int InitZMQ();
+  int Init();
   int Run();
   void Cleanup();
   /* @} */
@@ -35,6 +35,9 @@ class zmqReceiver
   // Helper functions
   int ProcessOptions(int argc, char * argv[]);
   int ProcessOptionString(TString arguments);
+
+  /// Print usage information
+  static std::string Usage() { return fgUsage; }
 
  protected:
   // Parsing
@@ -47,10 +50,13 @@ class zmqReceiver
   void ReceiveData();
   void ClearData();
   void WriteToFile();
+  // ZMQ init
+  int InitZMQ();
   // ZMQ request
   void SendRequest();
 
   // Configuration
+  static const std::string fgUsage; //!<! Usage string
   // Receiver
   int fVerbose;             ///< Sets verbosity in printing
   int fRunNumber;           ///< Contains the run number
@@ -60,6 +66,7 @@ class zmqReceiver
   bool fRequestStreamers;   ///< True if the ROOT streamers schema should be requested from the merger
   std::string fHLTMode;     ///< Contains the HLT mode
   std::string fSelection;   ///< Selection option that should be requested to the merger
+  std::string fDataPath;    ///< Path to the data stroage directory
   // ZMQ
   int fPollInterval;        ///< Time between each request for data in milliseconds
   int fPollTimeout;         ///< Time to wait for data after each request In milliseconds

@@ -9,22 +9,40 @@
 #include <string>
 #include <sstream>
 #include <ctime>
+// For mkdir
+#include <sys/stat.h>
 
 // For timing
 #include <chrono>
 #include <thread>
-
-#include <AliZMQhelpers.h>
-#include <AliOptionParser.h>
 
 #include <TObject.h>
 #include <TFile.h>
 // If desired for more complicated selections
 //#include <TPRegexp.h>
 
+#include <AliZMQhelpers.h>
+#include <AliOptionParser.h>
+
 using namespace AliZMQhelpers;
 
 volatile sig_atomic_t zmqReceiver::fgSignalCaught = 0;
+
+const std::string zmqReceiver::fgUsage =
+  "zmqReceive\n"
+  "    Receive ROOT objects from the HLT via ZMQ.\n\n"
+  "Options:\n"
+  "    --in <address>: address for incoming ZMQ data. Format should be \"MODE>tcp://address:port\".\n"
+  "              For example: \"REQ>tcp://localhost:1234\"\n"
+  "    --verbose <level>: Control verbosity level. Disable with 0. Default: 1.\n"
+  "    --resetMerger: Reset the merger after each request. Use with care! Default: false\n"
+  "    --requestStreamers: Request ROOT streamers from the mergers. Default: true\n"
+  "    --select <string>: Selection string to request data from the merger.\n"
+  "              Defaults to \"\" (ie No special selection).\n"
+  "    --dataPath <string>: Path to the data directory.\n"
+  "    --sleep <seconds>: Time to sleep between each request in seconds. Default: 60.\n"
+  "    --timeout <seconds>: Time to wait for a response to a request in seconds. Default: 10.\n"
+  ;
 
 /**
  * Handle caught SIGINT signal.
@@ -49,6 +67,7 @@ zmqReceiver::zmqReceiver():
   fRequestStreamers(true),
   fHLTMode("B"),
   fSelection(""),
+  fDataPath("."),
   fPollInterval(60000),
   fPollTimeout(10000),
   fZMQconfigIn("SUB>tcp://localhost:60201"),
@@ -219,6 +238,7 @@ void zmqReceiver::WriteToFile()
   // Format is SUBSYSTEMhistos_runNumber_hltMode_time.root
   // For example, EMChistos_123456_B_2015_3_14_2_3_5.root
   TString filename = TString::Format("%shistos_%d_%s_%d_%d_%d_%d_%d_%d.root", fSubsystem.c_str(), fRunNumber, fHLTMode.c_str(), timestamp->tm_year+1900, timestamp->tm_mon+1, timestamp->tm_mday, timestamp->tm_hour, timestamp->tm_min, timestamp->tm_sec);
+  filename = fDataPath + "/" + filename;
 
   // Create file
   TFile * fOut = new TFile(filename.Data(), "RECREATE");
@@ -273,6 +293,24 @@ void zmqReceiver::ClearData()
   fData.clear();
 }
 
+int zmqReceiver::Init()
+{
+  // Setup data path
+  // Remove trailing slash if it exists for consistency
+  // Use TString for convenience
+  TString dataPath = fDataPath;
+  fDataPath = dataPath.Strip(TString::kTrailing, '/').Data();
+  // Ensure that fDataPath exists
+  // It creates it with read, write, and execute permissions
+  // If the directory already exists, it will fail silently
+  mkdir(fDataPath.c_str(), S_IRWXU);
+
+  int retVal = 0;
+  retVal = InitZMQ();
+
+  return retVal;
+}
+
 /**
  * Initialize ZMQ socket(s)
  */
@@ -307,6 +345,7 @@ std::string zmqReceiver::PrintConfiguration()
   status << "Running receiver with configuration:\n";
   status << "\tVerbosity: " << fVerbose << "\n";
   status << "\tSelection: \"" << fSelection << "\"\n";
+  status << "\tData directory: \"" << fDataPath << "\"\n";
   status << "\tRequest ROOT streamers: " << fRequestStreamers << "\n";
   status << "\tResetMerger: " << fResetMerger << "\n";
   status << "\tSleep time between requests: " << fPollInterval/1e3 << " s\n";
@@ -342,6 +381,10 @@ int zmqReceiver::ProcessOption(TString option, TString value)
   else if (option.EqualTo("select"))
   {
     fSelection = value;
+  }
+  else if (option.EqualTo("dataPath"))
+  {
+    fDataPath = value;
   }
   else if (option.EqualTo("requestStreamers"))
   {

@@ -271,6 +271,7 @@ def receiver(config):
                     os.path.join(receiverPath, "zmqReceive"),
                     "--subsystem={0}".format(receiver),
                     "--in=REQ>tcp://localhost:{0}".format(receiverConfig["localPort"]),
+                    "--dataPath={0}".format(config["receiver"].get("dataPath", "data")),
                     "--verbose=1",
                     "--sleep=60",
                     "--timeout=100",
