@@ -176,14 +176,27 @@ nodaemon=true
 # Use the overwatch data directory
 logfile=/opt/overwatch/data/supervisord.log
 childlogdir=/opt/overwatch/data/
-# Cannot use a new directory since supervisord won't make one and this causes problems with docker
-#logfile=/data/logs/supervisord.log
-#childlogdir=/data/logs/processes/
 # 5 MB log file with 10 backup files
 logfile_maxbytes=5000000
 logfile_backups=10
 
+[unix_http_server]
+file=/tmp/supervisor.sock   # (the path to the socket file)
+chmod=0700                  # sockef file mode (default 0700)
+
+#[supervisord]
+#logfile=/var/log/supervisor/supervisord.log ; (main log file;default $CWD/supervisord.log)
+#pidfile=/var/run/supervisord.pid ; (supervisord pidfile;default supervisord.pid)
+#childlogdir=/var/log/supervisor            ; ('AUTO' child log dir, default $TEMP)
+
+# the below section must remain in the config file for RPC
+# (supervisorctl/web interface) to work, additional interfaces may be
+# added by defining them in separate rpcinterface: sections
+[rpcinterface:supervisor]
+supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
+
 [supervisorctl]
+# Use a unix:// URL  for a unix socket
 serverurl = unix:///tmp/supervisor.sock
 """
         with open(filename, "wb+") as f:
@@ -216,6 +229,7 @@ def setupEnv(config):
 def receiver(config):
     """ Start receivers """
     # Add receiver to path
+    # We also launch the executable with the path to be certain that it launches properly
     receiverPath = config["receiver"].get("receiverPath", "/opt/receiver")
     # Need to strip "\n" due to it being inserted when variables are expanded
     receiverPath = os.path.expandvars(receiverPath).replace("\n", "")
@@ -244,7 +258,7 @@ def receiver(config):
             tunnel(config = config["tunnel"], receiverConfig = receiverConfig)
 
         processPIDs = checkForProcessPID(processIdentifier)
-        logger.debug("Found processPIDs: {0}".format(processPIDs))
+        #logger.debug("Found processPIDs: {0}".format(processPIDs))
 
         # Check whether we should kill the receivers
         if not processPIDs is None and (config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None)):
@@ -257,7 +271,7 @@ def receiver(config):
         if processPIDs is None:
             # Start receiver
             args = [
-                    "zmqReceive",
+                    os.path.join(receiverPath, "zmqReceive"),
                     "--subsystem={0}".format(receiver),
                     "--in=REQ>tcp://localhost:{0}".format(receiverConfig["localPort"]),
                     "--verbose=1",
@@ -484,14 +498,8 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
 
     # Start supervisord
     if "supervisord" in config:
-        # Only run if it's the first time
-        lockOutFilename = "supervisordRestartlockOut"
-        if not os.path.exists(lockOutFilename):
-            with open(lockOutFilename, "wb") as f:
-                f.write("")
-
-            # Restart supervisord
-            process = subprocess.Popen(["supervisorctl", "update"])
+        # Reload supervisor config
+        process = subprocess.Popen(["supervisorctl", "update"])
 
 if __name__ == "__main__":
     # Setup command line parser
