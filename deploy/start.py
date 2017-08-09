@@ -73,7 +73,7 @@ def killExistingProcess(pidList, processType, processIdentifier, sig = signal.SI
 
     return pidList
 
-def startProcessWithLog(args, name, logFilename, supervisord = False):
+def startProcessWithLog(args, name, logFilename, supervisord = False, shortExecutionTime = False):
     if supervisord:
         process = """
 [program:{name}]
@@ -81,8 +81,16 @@ command={command}
 redirect_stderr=true
 # 5 MB log file with 10 backup files
 stdout_logfile_maxbytes=500000
-stdout_logfile_backups=10
+stdout_logfile_backups=10"""
+
+        if shortExecutionTime:
+            process += """
+autorestart=false
+startsecs=0
 """
+        else:
+            process += "\n"
+
         # Using logFilename to ensure that the name is more descriptive
         process = process.format(name = logFilename,
                                  command = " ".join(args))
@@ -126,16 +134,8 @@ def tunnel(config, receiver, receiverConfig, supervisord):
                 "-N"
                 ]
         # Official: autossh -o ServerAliveInterval 30 -o ServerAliveCountMax 3 -p ${sshPorts[n]} -f -N -l zmq-tunnel  -L ${internalReceiverPorts[n]}:localhost:${externalReceiverPorts[n]} ${sshServerAddress}
-        process = startProcessWithLog(args = args, name = "{0} SSH Tunnel".format(receiver), logFilename = "{}sshTunnel".format(receiver), supervisord = supervisord)
-        if process:
-            logger.info("Check that the process launched successfully...")
-            time.sleep(1.5)
-            processPIDs = checkForProcessPID(processIdentifier)
-            if processPIDs is None:
-                logger.critical("No process found corresponding to the just launched tunnel! Check the log files!")
-                sys.exit(2)
-            else:
-                logger.info("Success!")
+        process = startProcessWithLog(args = args, name = "{0} SSH Tunnel".format(receiver), logFilename = "{}sshTunnel".format(receiver), supervisord = supervisord, shortExecutionTime = True)
+        # We don't want to check the process status, since autossh will go to the background immediately
 
 def writeSensitiveVariableToFile(config, name, prettyName, defaultWriteLocation):
     """ Write SSH key or certificate from environment variable to file. """
