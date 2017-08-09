@@ -343,6 +343,7 @@ std::string zmqReceiver::PrintConfiguration()
   std::stringstream status;
   status << std::boolalpha;
   status << "Running receiver with configuration:\n";
+  status << "\tSubsystem: \"" << fSubsystem << "\"\n";
   status << "\tVerbosity: " << fVerbose << "\n";
   status << "\tSelection: \"" << fSelection << "\"\n";
   status << "\tData directory: \"" << fDataPath << "\"\n";
