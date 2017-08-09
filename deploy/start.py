@@ -181,13 +181,10 @@ logfile_maxbytes=5000000
 logfile_backups=10
 
 [unix_http_server]
-file=/tmp/supervisor.sock   # (the path to the socket file)
-chmod=0700                  # sockef file mode (default 0700)
-
-#[supervisord]
-#logfile=/var/log/supervisor/supervisord.log ; (main log file;default $CWD/supervisord.log)
-#pidfile=/var/run/supervisord.pid ; (supervisord pidfile;default supervisord.pid)
-#childlogdir=/var/log/supervisor            ; ('AUTO' child log dir, default $TEMP)
+# (the path to the socket file)
+file=/tmp/supervisor.sock
+# socket file mode (default 0700)
+chmod=0700
 
 # the below section must remain in the config file for RPC
 # (supervisorctl/web interface) to work, additional interfaces may be
@@ -230,7 +227,7 @@ def receiver(config):
     """ Start receivers """
     # Add receiver to path
     # We also launch the executable with the path to be certain that it launches properly
-    receiverPath = config["receiver"].get("receiverPath", "/opt/receiver")
+    receiverPath = config["receiver"].get("receiverPath", "/opt/receiver/bin")
     # Need to strip "\n" due to it being inserted when variables are expanded
     receiverPath = os.path.expandvars(receiverPath).replace("\n", "")
     logger.debug("Adding receiver path \"{0}\" to PATH".format(receiverPath))
