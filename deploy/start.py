@@ -98,14 +98,15 @@ stdout_logfile_backups=10
 
     return process
 
-def tunnel(config, receiverConfig):
+def tunnel(config, receiver, receiverConfig, supervisord):
     """ Start tunnel """
-    processExists = checkForProcessPID("autossh -L {0}".format(receiverConfig["localPort"]))
+    processIdentifier = "autossh -L {0}".format(receiverConfig["localPort"])
+    processExists = checkForProcessPID(processIdentifier)
 
-    if config["forceRestart"] or receiverConfig["forceRestartTunnel"]:
+    if config.get("forceRestart", False) or receiverConfig.get("forceRestartTunnel", False):
         processPIDs = killExistingProcess(processPIDs,
-                                          processType = "{0} Receiver".format(receiver),
-                                          processIdentifier = "autossh -L {0}".format(receiverConfig["localPort"]))
+                                          processType = "{0} SSH Tunnel".format(receiver),
+                                          processIdentifier = processIdentifier)
         # processPIDs will be None if the processes were killed successfully
 
     if processExists is None:
@@ -113,7 +114,7 @@ def tunnel(config, receiverConfig):
         # TODO: Check order of args on VM
         args = [
                 "autossh",
-                "-L ${localPort}:localhost:${hltPort}".format(localPort = receiverConfig["localPort"],
+                "-L {localPort}:localhost:{hltPort}".format(localPort = receiverConfig["localPort"],
                                                               hltPort = receiverConfig["hltPort"]),
                 "-o ServerAliveInterval 30", # Built-in ssh monitoring option
                 "-o ServerAliveCountMax 3",  # Built-in ssh monitoring option
@@ -125,6 +126,16 @@ def tunnel(config, receiverConfig):
                 "-N"
                 ]
         # Official: autossh -o ServerAliveInterval 30 -o ServerAliveCountMax 3 -p ${sshPorts[n]} -f -N -l zmq-tunnel  -L ${internalReceiverPorts[n]}:localhost:${externalReceiverPorts[n]} ${sshServerAddress}
+        process = startProcessWithLog(args = args, name = "{0} SSH Tunnel".format(receiver), logFilename = "{}sshTunnel".format(receiver), supervisord = supervisord)
+        if process:
+            logger.info("Check that the process launched successfully...")
+            time.sleep(1.5)
+            processPIDs = checkForProcessPID(processIdentifier)
+            if processPIDs is None:
+                logger.critical("No process found corresponding to the just launched tunnel! Check the log files!")
+                sys.exit(2)
+            else:
+                logger.info("Success!")
 
 def writeSensitiveVariableToFile(config, name, prettyName, defaultWriteLocation):
     """ Write SSH key or certificate from environment variable to file. """
@@ -252,7 +263,7 @@ def receiver(config):
 
         # Start tunnel if requested
         if receiverConfig["tunnel"]:
-            tunnel(config = config["tunnel"], receiverConfig = receiverConfig)
+            tunnel(config = config["tunnel"], receiver = receiver, receiverConfig = receiverConfig, supervisord = "supervisord" in config)
 
         processPIDs = checkForProcessPID(processIdentifier)
         #logger.debug("Found processPIDs: {0}".format(processPIDs))
