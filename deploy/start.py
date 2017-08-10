@@ -124,8 +124,8 @@ def tunnel(config, receiver, receiverConfig, supervisord):
                 "autossh",
                 "-L {localPort}:localhost:{hltPort}".format(localPort = receiverConfig["localPort"],
                                                               hltPort = receiverConfig["hltPort"]),
-                "-o ServerAliveInterval 30", # Built-in ssh monitoring option
-                "-o ServerAliveCountMax 3",  # Built-in ssh monitoring option
+                "-o ServerAliveInterval=30", # Built-in ssh monitoring option
+                "-o ServerAliveCountMax=3",  # Built-in ssh monitoring option
                 "-p {0}".format(config["port"]),
                 "-l {0}".format(config["username"]),
                 "{0}".format(config["address"]),
