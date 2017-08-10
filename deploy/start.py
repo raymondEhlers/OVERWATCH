@@ -400,35 +400,48 @@ def webApp(config):
                 "overwatchWebApp"
                 ]
 
-def uwsgiConfig(config):
-    """ Write out uwsgi configuration file. """
-    dockerConfig = """# Socket setup
+def uwsgi(config, name):
+    """ Write out the configuration file. """
+#    dockerConfig = """# Socket setup
+#socket = /tmp/uwsgi.sock
+## Previously nginx:nginx , but in ubuntu nginx -> www-data
+##chown-socket = www-data:www-data
+##chmod-socket = 664
+## Remove socket when done
+#vacuum = true
+#    """
+#    yaleConfig = """# This uses the default protocol (which seems to be uwsgi):
+##socket = 127.0.0.1:8851
+#    """
+
+    uwsgiConfigFile = config[name]["uwsgi"]
+    uwsgiConfiguration = """
+# Socket setup
 socket = /tmp/uwsgi.sock
 # Previously nginx:nginx , but in ubuntu nginx -> www-data
-chown-socket = www-data:www-data
-chmod-socket = 664
+#chown-socket = www-data:www-data
+#chmod-socket = 664
 # Remove socket when done
 vacuum = true
-    """
-    yaleConfig = """# This uses the default protocol (which seems to be uwsgi):
-socket = 127.0.0.1:8851
-    """
 
-    uwsgiConfiguration = """
-{socketSetup}
 # Setup
 chdir = {baseDir}
 
 # App
-wsgi-file = runWebApp.py
+wsgi-file = {flaskApp}
 callable = app
 
 # Instances
-processes = 4
-threads = 2
+# Number of processes
+processes = {processes}
+# Number of threads
+threads = {threads}
+# Minimum number of workers to keep at all times
+cheaper = {cheaper}
 
 # Setup stats
-stats = 127.0.0.1:9191
+#stats = 127.0.0.1:9191
+stats = /tmp/stats.sock
 
 # Configure master
 master = true
@@ -439,27 +452,31 @@ master-fifo = {fifoLocation}
 #  and https://stackoverflow.com/questions/14499594/zeo-deadlocks-on-uwsgi-in-master-mode
 lazy-apps = true
 
-{processOptions}
-{additionalOptions}
-    """.format(baseDir = config.get("baseDir", "/opt/overwatch"),
-              fifoLocation = config.get("fifoLocation", "/opt/overwatch/deploy/wsgiMasterFifo"))
+{additionalOptions}"""
+    uwsgiConfiguration = uwsgiConfiguration.format(baseDir = uwsgiConfigFile.get("baseDir", "/opt/overwatch"),
+                                                   flaskApp = uwsgiConfigFile.get("flaskApp", "overwatchWebApp"),
+                                                   processes = uwsgiConfigFile.get("processes", 4),
+                                                   threads = uwsgiConfigFile.get("threads", 2),
+                                                   cheaper = uwsgiConfigFile.get("cheaper", 2),
+                                                   fifoLocation = uwsgiConfigFile.get("fifoLocation", "wsgiMasterFifo"),
+                                                   additionalOptions = uwsgiConfigFile.get("additionalOptions", ""))
 
-    if config["site"] == "yale":
-        uwsgiConfiguration.format(socketSetup = yaleSocket,
-                                  processOptions = yaleProcessOptions,
-                                  additionalOptions = "")
-    elif config["site"] == "docker":
-        uwsgiConfiguration.format(socketSetup = yaleSocket,
-                                  processOptions = yaleProcessOptions,
-                                  additionalOptions = "")
-    else:
-        logger.critical("Site {0} not recognized!".format(config["site"]))
+    filename = config.get("name", "{0}.wsgi".format(name))
+    logger.info("Writing configuration file to {0}".format(filename))
+    with open(filename, "wb") as f:
+        f.write(uwsgiConfiguration)
+
+def nginx(config):
+    """ Setup and launch nginx. """
+    pass
 
 def webAppSetup(config):
-    """ Setup web app, such as installing bower components, polymerizer, minify, etc.
-    
-    Maybe this can all be handled by WebAssets?? """
-    pass
+    """ Setup web app by installing bower components (polymer) and jsroot.
+
+    Polymerizer and minify is handled by webassets.
+    """
+    args = ["./installOverwatchExternalDependencies.sh"]
+    startProcessWithLog(args, name = "Install Overwatch external dependencies", logFilename = "installExternals")
 
 def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
     """ Start the various parts of Overwatch.
@@ -518,8 +535,12 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
         processing(config)
 
     if "webApp" in config and config["webApp"]["enabled"]:
-        if "setup" in config["webApp"]:
+        if "webServer" in config["webApp"]:
+            nginx(config)
+        if "uwsgiSetup" in config["webApp"]:
             webAppSetup(config)
+        if "uwsgi" in config["webApp"]:
+            uwsgi(config, name = "webApp")
         webApp(config)
 
     # Start supervisord
