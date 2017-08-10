@@ -117,9 +117,25 @@ def tunnel(config, receiver, receiverConfig, supervisord):
                                           processIdentifier = processIdentifier)
         # processPIDs will be None if the processes were killed successfully
 
+    # Ensure that the known_hosts file is populated if it wasn't already
+    knownHostsPath = os.path.expandvars(os.path.join("$HOME", ".ssh", "known_hosts").replace("\n", ""))
+    if not os.path.exists(knownHostsPath):
+        if not os.path.exists(os.path.dirname(knownHostsPath)):
+            os.makedirs(os.path.dirname(knownHostsPath))
+            # Set the proper permissions
+            os.chmod(os.path.dirname(knownHostsPath), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+        # ssh-keyscan -H {address}
+        args = ["ssh-keyscan",
+                "-p {0}".format(config["port"]),
+                "-H",
+                config["address"]
+                ]
+        with open(knownHostsPath, "wb") as logFile:
+            logger.debug("Starting \"{0}\" with args: {1}".format("SSH Keyscan", args))
+            process = subprocess.Popen(args, stdout=logFile)
+
     if processExists is None:
         # Create ssh tunnel
-        # TODO: Check order of args on VM
         args = [
                 "autossh",
                 "-L {localPort}:localhost:{hltPort}".format(localPort = receiverConfig["localPort"],
