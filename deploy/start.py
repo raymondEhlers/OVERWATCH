@@ -118,7 +118,8 @@ def tunnel(config, receiver, receiverConfig, supervisord):
         # processPIDs will be None if the processes were killed successfully
 
     # Ensure that the known_hosts file is populated if it wasn't already
-    knownHostsPath = os.path.expandvars(os.path.join("$HOME", ".ssh", "known_hosts").replace("\n", ""))
+    knownHostsPath = os.path.expandvars(os.path.join("$HOME", ".ssh", "known_hosts")).replace("\n", "")
+    logger.debug("Checking for known_hosts file at {}".format(knownHostsPath))
     if not os.path.exists(knownHostsPath):
         if not os.path.exists(os.path.dirname(knownHostsPath)):
             os.makedirs(os.path.dirname(knownHostsPath))
