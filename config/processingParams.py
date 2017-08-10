@@ -95,7 +95,7 @@ class processingParameters(object):
 
     # Set variables for testing
     if True:
-        forceReprocessing = True
+        #forceReprocessing = True
         sendData = False
         
     ###################################################

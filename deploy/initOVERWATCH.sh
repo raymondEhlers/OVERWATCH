@@ -37,6 +37,13 @@ then
     calledFromSystemd=true
 fi
 
+processingOverride=false
+if [[ -n "$1" && "$1" == "processingOverride" ]];
+then
+    echo "Using processing override"
+    processingOverride=true
+fi
+
 # Determine variables
 if [[ $HOSTNAME == *"pdsf"* || $HOSTNAME == *"sgn"* ]];
 then
@@ -147,7 +154,7 @@ if [[ "$sourcedScript" == true ]];
 then
     echo "INFO: Environment ready for use!"
 else
-    if [[ "$role" == "server" ]];
+    if [[ "$role" == "server" && "$processingOverride" == false ]];
     then
         # Start web server
         echo "INFO: Starting uwsgi with config at $projectPath/config/wsgi${location}.ini"
@@ -157,7 +164,7 @@ else
         else
             nohup uwsgi "$projectPath/config/wsgi${location}.ini" &> "$projectPath/app.log" &
         fi
-    elif [[ "$role" == "processing" ]];
+    elif [[ "$role" == "processing" || "$processingOverride" == true ]];
     then
         if [[ "$calledFromSystemd" == true ]];
         then

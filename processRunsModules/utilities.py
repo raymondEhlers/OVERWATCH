@@ -169,12 +169,24 @@ def enumerateFiles(dirPrefix, subsystem):
     else:
         currentDir = os.path.abspath(dirPrefix)
 
+    alreadyExistingRunNumbers = set()
+    try:
+        with open(os.path.join(currentDir, "{0}runNumbers.txt".format(subsystem)), "rb") as f:
+            alreadyExistingRunNumbers.update(f.read().splitlines())
+    except IOError as e:
+        # The file may not exist
+        pass
+
     filesToMove = []
     for name in os.listdir(currentDir):
-        if subsystem in name and ".root" in name:
+        # Changed because rsync sends files of the form .expectedName.root.randomString
+        # and those files should be excluded until they are completely transfered
+        if subsystem in name and name.endswith(".root") and name.split("_")[1] not in alreadyExistingRunNumbers:
+            #print("Append {0} with run number {1}".format(name, name.split("_")[1]))
             filesToMove.append(name)
             #print("name: %s" % name)
-        
+
+    #print("Subsystem: {0}, filesToMove: {1}".format(subsystem, filesToMove))
     return filesToMove
 
 ###################################################
@@ -232,9 +244,22 @@ def moveFiles(subsystemDict, dirPrefix):
 
             oldPath = os.path.join(dirPrefix, tempFilename)
             newPath = os.path.join(dirPrefix, runDirectoryPath, key, newFilename)
-            print("Moving %s to %s" % (oldPath, newPath))
+            # This is not robust! Careful!!
+            oldPathRelative = os.path.join("..", "..", "..", oldPath)
+            print("Symlinking %s to %s" % (newPath, oldPathRelative))
             # DON"T IMPORT MOVE. BAD CONSEQUENCES!!
-            shutil.move(oldPath, newPath)
+            #shutil.move(oldPath, newPath)
+            try:
+                os.symlink(oldPathRelative, newPath)
+            except OSError as e:
+                print("OSError {0} when trying to create symlink.".format(e))
+                if os.path.islink(newPath):
+                    print("Symlink already exists - skipping.")
+                else:
+                    print("Moving file to .bak")
+                    shutil.move(newPath, "{0}.bak".format(newPath))
+                    print("Attempting to symlink again")
+                    os.symlink(oldPathRelative, newPath)
 
 ###################################################
 def moveRootFiles(dirPrefix, subsystemList):
@@ -257,3 +282,31 @@ def moveRootFiles(dirPrefix, subsystemList):
     
     moveFiles(subsystemDict, dirPrefix)
 
+    # Necessary since we're not moving files anymore and we need to keep track of which files
+    # have already been handled
+    subsystemDict = writeMovedFiles(subsystemDict, dirPrefix)
+
+def writeMovedFiles(subsystemDict, dirPrefix):
+    """ Write out all run numbers that have been processed """
+    for subsystem in subsystemDict:
+        runNumbers = set()
+        filename = os.path.join(dirPrefix, "{0}runNumbers.txt".format(subsystem))
+        try:
+            print("Reading run numbers file {0}".format(filename))
+            with open(filename, "rb") as f:
+                runNumbers.update(f.read().splitlines())
+        except IOError as e:
+            # The file may not exist
+            pass
+
+        # Make sure that we only select the run number from the filename
+        runNumbers.update([el.split("_")[1] for el in subsystemDict[subsystem]])
+
+        with open(filename, "wb") as f:
+            # Ignore last 5 to ensure that the 5 most recent runs with possible updated files are not ignored
+            for el in sorted(list(runNumbers))[:-5]:
+                f.write("{0}\n".format(el))
+
+        subsystemDict[subsystem] = list(runNumbers)
+
+    return subsystemDict
