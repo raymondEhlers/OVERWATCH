@@ -2,3 +2,7 @@
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
+
+__all__ = [
+           "webApp"
+          ]
