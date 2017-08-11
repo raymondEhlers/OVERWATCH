@@ -49,6 +49,7 @@ setup(
     packages=find_packages(exclude=("deploy", ".git")),
 
     scripts=[
+             "bin/overwatchDQMReceiver",
              "bin/overwatchProcessing",
              "bin/overwatchWebApp"
              ],
@@ -62,6 +63,7 @@ setup(
         "Flask-Assets",
         "ZODB",
         "Flask-Bcrypt",
+        "pyyaml",
         "ruamel.yaml"
     ],
 

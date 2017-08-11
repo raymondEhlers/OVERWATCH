@@ -20,6 +20,7 @@ logger = logging.getLogger(__name__)
 class configurationType(enum.Enum):
     processing = 0
     webApp = 1
+    dqmReceiver = 2
 
 # Join passed paths
 # Inspired by: https://stackoverflow.com/a/23212524
@@ -89,7 +90,7 @@ def readConfigFiles(fileList):
     return (configs, filesRead)
 
 def readConfig(configType):
-    if configType == configurationType.processing or configType == configurationType.webApp:
+    if configType in configurationType:
         # The earliest config files are given the _most_ precedence.
         # ie. A value in the config in the local directory will override the same variable
         #     defined in the config in the package base directory.
@@ -105,14 +106,17 @@ def readConfig(configType):
                     #       because the shared configuration can have options which are defined in the web app config
                     #       and therefore undefined when the web app config is not loaded!
                     #       To resolve it temporarily, both configuration files will be included
-                    pkg_resources.resource_filename("overwatch.processing", "config.yaml"),
                     pkg_resources.resource_filename("overwatch.webApp", "config.yaml"),
+                    pkg_resources.resource_filename("overwatch.processing", "config.yaml"),
+                    pkg_resources.resource_filename("overwatch.receiver", "config.yaml"),
                     #       Below is the line that should be used when the above issue is resolved
                     #pkg_resources.resource_filename("overwatch.{0}".format(configType.name), "config.yaml"),
                     # Shared config in the package base
                     pkg_resources.resource_filename("overwatch.base", "config.yaml")
                     ]
     else:
+        # Cannot just be the logger because the logger many not yet be initialized
+        print("CRITICAL: Unrecognized configuration type {0}!".format(configType.name))
         logger.critical("Unrecognized configuration type {0}!".format(configType.name))
         sys.exit(1)
 

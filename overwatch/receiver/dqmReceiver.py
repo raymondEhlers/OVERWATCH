@@ -239,9 +239,4 @@ def returnFile(filename):
     return send_from_directory(outputDir, filename)
 
 if __name__ == "__main__":
-    logger.info("Starting flask app")
-    # Turn on flask debugging
-    app.debug = True
-    # Careful with threaded, but it can be useful to test the status page, since the post request succeeds!
-    app.run(host="127.0.0.1",
-            port=8080)#, threaded=True)
+    print("Run with overwatchDQMReceiver instead of directly!")
