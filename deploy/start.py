@@ -198,6 +198,7 @@ def setupSupervisord(config):
     if not os.path.exists(filename):
         logger.info("Creating supervisord main config")
         # Write the main config
+        # TODO: Automatically determine the logfile and childlodir paths so that it works anywhere
         mainConfig = """
 [supervisord]
 nodaemon=true
@@ -461,24 +462,13 @@ def webApp(config):
 
 def uwsgi(config, name):
     """ Write out the configuration file. """
-#    dockerConfig = """# Socket setup
-#socket = /tmp/uwsgi.sock
-## Previously nginx:nginx , but in ubuntu nginx -> www-data
-##chown-socket = www-data:www-data
-##chmod-socket = 664
-## Remove socket when done
-#vacuum = true
-#    """
-#    yaleConfig = """# This uses the default protocol (which seems to be uwsgi):
-##socket = 127.0.0.1:8851
-#    """
-
     uwsgiConfigFile = config[name]["uwsgi"]
 
     if not uwsgiConfigFile["enabled"]:
         logger.warn("uwsgi configuration present for {0}, but not enabled".format(name))
 
     uwsgiConfiguration = """
+[uwsgi]
 # Socket setup
 socket = /tmp/{name}.sock
 # Previously nginx:nginx , but in ubuntu nginx -> www-data
@@ -550,7 +540,7 @@ server {
 }"""
     mainNginxConfig = mainNginxConfig % {"name": name}
 
-    nginxBasePath = config["webServer"]["basePath"]
+    nginxBasePath = config["webServer"].get("basePath", "/etc/nginx")
     nginxConfigPath = os.path.join(nginxBasePath, config["webServer"].get("configPath", "conf.d"))
     nginxSitesPath = os.path.join(nginxBasePath, config["webServer"].get("sitesPath", "sites-enabled"))
 
