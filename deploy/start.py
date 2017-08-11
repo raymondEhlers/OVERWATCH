@@ -466,9 +466,56 @@ lazy-apps = true
     with open(filename, "wb") as f:
         f.write(uwsgiConfiguration)
 
-def nginx(config):
+def nginx(config, name):
     """ Setup and launch nginx. """
-    pass
+    mainNginxConfig = """
+server {
+    listen 80 default_server;
+    # "_" is a wildcard for all possible server names
+    server_name _;
+    location / {
+        include uwsgi_params;
+        uwsgi_pass unix:///tmp/{name}.sock;
+    }
+}"""
+    mainNginxConfig = mainNginxConfig.format(name = "name")
+
+    #with open("/etc/nginx/sites-enabled/{0}Nginx.conf".format(name), "wb") as f:
+    with open("{0}Nginx.conf".format(name), "wb") as f:
+        f.write(mainNginxConfig)
+
+    gzipConfig = """
+# GZip configuration
+# Already setup in main config!
+#gzip on;
+#gzip_disable "msie6";
+
+gzip_vary on;
+gzip_proxied any;
+gzip_comp_level 6;
+gzip_buffers 16 8k;
+gzip_http_version 1.1;
+gzip_min_length 256;
+gzip_types
+    text/plain
+    text/css
+    application/json
+    application/x-javascript
+    text/xml
+    application/xml
+    application/xml+rss
+    application/javascript
+    text/javascript
+    application/vnd.ms-fontobject
+    application/x-font-ttf
+    font/opentype
+    image/svg+xml
+    image/x-icon;
+"""
+
+    #with open("/etc/nginx/conf.d/gzip.conf", "wb") as f:
+    with open("gzip.conf", "wb") as f:
+        f.write(gzipConfig)
 
 def webAppSetup(config):
     """ Setup web app by installing bower components (polymer) and jsroot.
@@ -535,9 +582,9 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
         processing(config)
 
     if "webApp" in config and config["webApp"]["enabled"]:
-        if "webServer" in config["webApp"]:
-            nginx(config)
-        if "uwsgiSetup" in config["webApp"]:
+        if "webServer" in config["webApp"] and config["webApp"]["webServer"]:
+            nginx(config, name = "webApp")
+        if "uwsgiSetup" in config["webApp"] and config["webApp"]["uwsgiSetup"]:
             webAppSetup(config)
         if "uwsgi" in config["webApp"]:
             uwsgi(config, name = "webApp")
