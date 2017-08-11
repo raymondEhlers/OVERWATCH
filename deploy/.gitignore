@@ -6,3 +6,8 @@ zodb.zdsock
 
 # Supervisor config
 supervisord.conf
+
+# Ignore common generated configuration files
+nginx/
+*.wsgi
+*.ini
