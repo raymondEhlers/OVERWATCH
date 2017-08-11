@@ -259,7 +259,7 @@ def dqmReceiver(config, receiver, receiverConfig):
 
         # Configure nginx
         if "webServer" in receiverConfig and receiverConfig["webServer"]:
-            nginx(name = "dqmReceiver")
+            nginx(config, name = "dqmReceiver")
 
         # Start nginx
         startNginx(name = "nginx", logFilename = "nginx", supervisord = "supervisord" in config)
@@ -536,7 +536,7 @@ def startNginx(name = "nginx", logFilename = "nginx", supervisord = False):
             ]
     startProcessWithLog(args = args, name = name, logFilename = logFilename, supervisord = supervisord)
 
-def nginx(name):
+def nginx(config, name):
     """ Setup and launch nginx. """
     mainNginxConfig = """
 server {
@@ -550,8 +550,19 @@ server {
 }"""
     mainNginxConfig = mainNginxConfig % {"name": name}
 
-    #with open("/etc/nginx/sites-enabled/{0}Nginx.conf".format(name), "wb") as f:
-    with open("test/{0}Nginx.conf".format(name), "wb") as f:
+    nginxBasePath = config["webServer"]["basePath"]
+    nginxConfigPath = os.path.join(nginxBasePath, config["webServer"].get("configPath", "conf.d"))
+    nginxSitesPath = os.path.join(nginxBasePath, config["webServer"].get("sitesPath", "sites-enabled"))
+
+    # Create folders that dont' exist
+    # But don't mess with this if it's in /etc/nginx
+    if nginxBasePath != "/etc/nginx":
+        paths = [nginxBasePath, nginxConfigPath, nginxSitesPath]
+        for path in paths:
+            if not os.path.exists(path):
+                os.makedirs(path)
+
+    with open(os.path.join(nginxSitesPath, "{0}Nginx.conf".format(name)), "wb") as f:
         f.write(mainNginxConfig)
 
     gzipConfig = """
@@ -583,8 +594,7 @@ gzip_types
     image/x-icon;
 """
 
-    #with open("/etc/nginx/conf.d/gzip.conf", "wb") as f:
-    with open("test/gzip.conf", "wb") as f:
+    with open(os.path.join(nginxConfigPath, "gzip.conf"), "wb") as f:
         f.write(gzipConfig)
 
 def webAppSetup(config):
