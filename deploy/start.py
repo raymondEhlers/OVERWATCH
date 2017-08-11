@@ -251,6 +251,114 @@ def setupEnv(config):
         setupRoot(config)
         print(os.environ)
 
+def dqmReceiver(config, receiver, receiverConfig):
+    """ Start the DQM receiver """
+    if "uwsgi" in receiverConfig and receiverConfig["uwsgi"]["enabled"]:
+        configFilename = "{0}Receiver.ini".format(receiver.lower())
+        processIdentifier = "uwsgi {configFile}".format(configFile = configFilename)
+
+        # Configure nginx
+        if "webServer" in receiverConfig and receiverConfig["webServer"]:
+            nginx(name = "dqmReceiver")
+
+        # Start nginx
+        startNginx(name = "nginx", logFilename = "nginx", supervisord = "supervisord" in config)
+
+        # Write the uwsgi configuration
+        uwsgi(config = config["receiver"], name = "DQM")
+
+        args = [
+                "uwsgi",
+                configFilename
+                ]
+    else:
+        processIdentifier = "overwatchDQMReciever"
+
+        args = [
+                "overwatchDQMReciever",
+                ]
+
+    processPIDs = checkForProcessPID(processIdentifier)
+
+    if not processPIDs is None and (config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None)):
+        logger.debug("Found processPIDs: {0}".format(processPIDs))
+        processPIDs = killExistingProcess(processPIDs,
+                                          processType = "{0} Receiver".format(receiver),
+                                          processIdentifier = processIdentifier)
+        # processPIDs will be None if the processes were killed successfully
+
+    if not config["avoidNohup"]:
+        # Only append "nohup" if it is _NOT_ called from systemd or supervisord
+        args = ["nohup"] + args
+
+    process = startProcessWithLog(args, name = "dqmReceiver", logFilename = "dqmReceiver", supervisord = "supervisord" in config)
+
+    if process:
+        logger.info("Check that the process launched successfully...")
+        time.sleep(1.5)
+        processPIDs = checkForProcessPID(processIdentifier)
+        if processPIDs is None:
+            logger.critical("No process found corresponding to the just launched receiver! Check the log files!")
+            sys.exit(2)
+        else:
+            logger.info("Success!")
+
+def zmqReceiver(config, receiver, receiverConfig, receiverPath):
+    processIdentifier = "zmqReceive --subsystem={0}".format(receiver)
+
+    # Start tunnel if requested
+    if receiverConfig["tunnel"]:
+        tunnel(config = config["tunnel"], receiver = receiver, receiverConfig = receiverConfig, supervisord = "supervisord" in config)
+
+    processPIDs = checkForProcessPID(processIdentifier)
+    #logger.debug("Found processPIDs: {0}".format(processPIDs))
+
+    # Check whether we should kill the receivers
+    if not processPIDs is None and (config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None)):
+        logger.debug("Found processPIDs: {0}".format(processPIDs))
+        processPIDs = killExistingProcess(processPIDs,
+                                          processType = "{0} Receiver".format(receiver),
+                                          processIdentifier = processIdentifier)
+        # processPIDs will be None if the processes were killed successfully
+
+    if processPIDs is None:
+        # Start receiver
+        args = [
+                os.path.join(receiverPath, "zmqReceive"),
+                "--subsystem={0}".format(receiver),
+                "--in=REQ>tcp://localhost:{0}".format(receiverConfig["localPort"]),
+                "--dataPath={0}".format(config["receiver"].get("dataPath", "data")),
+                "--verbose=1",
+                "--sleep=60",
+                "--timeout=100",
+                "--select={0}".format(receiverConfig.get("select",""))
+                ]
+        if "additionalOptions" in receiverConfig:
+            args.append(receiverConfig["additionalOptions"])
+        process = startProcessWithLog(args = args, name = "Receiver", logFilename = "{0}Receiver".format(receiver), supervisord = "supervisord" in config)
+        #--verbose=1 --sleep=60 --timeout=100 --select="" --subsystem="${subsystems[n]}" ${additionalOptions}
+
+        # From official script:
+        # zmqReceive --in=REQ>tcp://localhost:60323 --verbose=1 --sleep=60 --timeout=100 --select= --subsystem=TPC
+        # From this script:
+        # zmqReceive --subsystem=EMC --in=REQ>tcp://localhost:60321 --verbose=1 --sleep=60 --timeout=100 --select=
+        #
+        # --> Don't need to escape most quotes!
+
+        # Check for receiver to ensure that it didn't just die immediately due to bad arguments, etc.
+
+        if process:
+            logger.info("Check that the process launched successfully...")
+            time.sleep(1.5)
+            processPIDs = checkForProcessPID(processIdentifier)
+            if processPIDs is None:
+                logger.critical("No process found corresponding to the just launched receiver! Check the log files!")
+                sys.exit(2)
+            else:
+                logger.info("Success!")
+    else:
+        logger.info("Skipping receiver \"{0}\" since it already exists!".format(receiver))
+
 def receiver(config):
     """ Start receivers """
     # Add receiver to path
@@ -276,60 +384,11 @@ def receiver(config):
 
         # Ensure that the detector name is upper case
         receiver = receiver.upper()
-        processIdentifier = "zmqReceive --subsystem={0}".format(receiver)
 
-        # Start tunnel if requested
-        if receiverConfig["tunnel"]:
-            tunnel(config = config["tunnel"], receiver = receiver, receiverConfig = receiverConfig, supervisord = "supervisord" in config)
-
-        processPIDs = checkForProcessPID(processIdentifier)
-        #logger.debug("Found processPIDs: {0}".format(processPIDs))
-
-        # Check whether we should kill the receivers
-        if not processPIDs is None and (config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None)):
-            logger.debug("Found processPIDs: {0}".format(processPIDs))
-            processPIDs = killExistingProcess(processPIDs,
-                                              processType = "{0} Receiver".format(receiver),
-                                              processIdentifier = processIdentifier)
-            # processPIDs will be None if the processes were killed successfully
-
-        if processPIDs is None:
-            # Start receiver
-            args = [
-                    os.path.join(receiverPath, "zmqReceive"),
-                    "--subsystem={0}".format(receiver),
-                    "--in=REQ>tcp://localhost:{0}".format(receiverConfig["localPort"]),
-                    "--dataPath={0}".format(config["receiver"].get("dataPath", "data")),
-                    "--verbose=1",
-                    "--sleep=60",
-                    "--timeout=100",
-                    "--select={0}".format(receiverConfig.get("select",""))
-                    ]
-            if "additionalOptions" in receiverConfig:
-                args.append(receiverConfig["additionalOptions"])
-            process = startProcessWithLog(args = args, name = "Receiver", logFilename = "{0}Receiver".format(receiver), supervisord = "supervisord" in config)
-            #--verbose=1 --sleep=60 --timeout=100 --select="" --subsystem="${subsystems[n]}" ${additionalOptions}
-
-            # From official script:
-            # zmqReceive --in=REQ>tcp://localhost:60323 --verbose=1 --sleep=60 --timeout=100 --select= --subsystem=TPC
-            # From this script:
-            # zmqReceive --subsystem=EMC --in=REQ>tcp://localhost:60321 --verbose=1 --sleep=60 --timeout=100 --select=
-            #
-            # --> Don't need to escape most quotes!
-
-            # Check for receiver to ensure that it didn't just die immediately due to bad arguments, etc.
-
-            if process:
-                logger.info("Check that the process launched successfully...")
-                time.sleep(1.5)
-                processPIDs = checkForProcessPID(processIdentifier)
-                if processPIDs is None:
-                    logger.critical("No process found corresponding to the just launched receiver! Check the log files!")
-                    sys.exit(2)
-                else:
-                    logger.info("Success!")
+        if receiver == "DQM":
+            dqmReceiver(config = config, receiver = receiver, receiverConfig = receiverConfig)
         else:
-            logger.info("Skipping receiver \"{0}\" since it already exists!".format(receiver))
+            zmqReceiver(config = config, receiver = receiver, receiverConfig = receiverConfig, receiverPath = receiverPath)
 
 def database(config):
     """ Start the database on it's own. """
@@ -390,7 +449,7 @@ def webApp(config):
                 "{0}".format(webAppConfig["wsgiConfigFilename"])
                 ]
         if not config["avoidNohup"]:
-            # Only append "nohup" if it is _NOT_ called from systemd
+            # Only append "nohup" if it is _NOT_ called from systemd or supervisord
             args = ["nohup"] + args
     else:
         # Use flask development server instead
@@ -415,9 +474,13 @@ def uwsgi(config, name):
 #    """
 
     uwsgiConfigFile = config[name]["uwsgi"]
+
+    if not uwsgiConfigFile["enabled"]:
+        logger.warn("uwsgi configuration present for {0}, but not enabled".format(name))
+
     uwsgiConfiguration = """
 # Socket setup
-socket = /tmp/uwsgi.sock
+socket = /tmp/{name}.sock
 # Previously nginx:nginx , but in ubuntu nginx -> www-data
 #chown-socket = www-data:www-data
 #chmod-socket = 664
@@ -453,20 +516,27 @@ master-fifo = {fifoLocation}
 lazy-apps = true
 
 {additionalOptions}"""
-    uwsgiConfiguration = uwsgiConfiguration.format(baseDir = uwsgiConfigFile.get("baseDir", "/opt/overwatch"),
+    uwsgiConfiguration = uwsgiConfiguration.format(name = uwsgiConfigFile.get("name", "webApp"),
+                                                   baseDir = uwsgiConfigFile.get("baseDir", "/opt/overwatch"),
                                                    flaskApp = uwsgiConfigFile.get("flaskApp", "overwatchWebApp"),
                                                    processes = uwsgiConfigFile.get("processes", 4),
                                                    threads = uwsgiConfigFile.get("threads", 2),
                                                    cheaper = uwsgiConfigFile.get("cheaper", 2),
-                                                   fifoLocation = uwsgiConfigFile.get("fifoLocation", "wsgiMasterFifo"),
+                                                   fifoLocation = uwsgiConfigFile.get("fifoLocation", "wsgiMasterFifo{0}".format(name)),
                                                    additionalOptions = uwsgiConfigFile.get("additionalOptions", ""))
 
-    filename = config.get("name", "{0}.wsgi".format(name))
+    filename = "{0}.ini".format(uwsgiConfigFile.get("name", "{0}".format(name)))
     logger.info("Writing configuration file to {0}".format(filename))
     with open(filename, "wb") as f:
         f.write(uwsgiConfiguration)
 
-def nginx(config, name):
+def startNginx(name = "nginx", logFilename = "nginx", supervisord = False):
+    args = [
+            "/usr/sbin/nginx"
+            ]
+    startProcessWithLog(args = args, name = name, logFilename = logFilename, supervisord = supervisord)
+
+def nginx(name):
     """ Setup and launch nginx. """
     mainNginxConfig = """
 server {
@@ -475,13 +545,13 @@ server {
     server_name _;
     location / {
         include uwsgi_params;
-        uwsgi_pass unix:///tmp/{name}.sock;
+        uwsgi_pass unix:///tmp/%(name)s.sock;
     }
 }"""
-    mainNginxConfig = mainNginxConfig.format(name = "name")
+    mainNginxConfig = mainNginxConfig % {"name": name}
 
     #with open("/etc/nginx/sites-enabled/{0}Nginx.conf".format(name), "wb") as f:
-    with open("{0}Nginx.conf".format(name), "wb") as f:
+    with open("test/{0}Nginx.conf".format(name), "wb") as f:
         f.write(mainNginxConfig)
 
     gzipConfig = """
@@ -514,7 +584,7 @@ gzip_types
 """
 
     #with open("/etc/nginx/conf.d/gzip.conf", "wb") as f:
-    with open("gzip.conf", "wb") as f:
+    with open("test/gzip.conf", "wb") as f:
         f.write(gzipConfig)
 
 def webAppSetup(config):
@@ -583,7 +653,10 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
 
     if "webApp" in config and config["webApp"]["enabled"]:
         if "webServer" in config["webApp"] and config["webApp"]["webServer"]:
+            # Configure and start nginx
             nginx(config, name = "webApp")
+            startNginx(name = "nginx", logFilename = "nginx", supervisord = "supervisord" in config)
+
         if "uwsgiSetup" in config["webApp"] and config["webApp"]["uwsgiSetup"]:
             webAppSetup(config)
         if "uwsgi" in config["webApp"]:
