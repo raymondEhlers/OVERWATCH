@@ -494,7 +494,7 @@ cheaper = {cheaper}
 
 # Setup stats
 #stats = 127.0.0.1:9191
-stats = /tmp/stats.sock
+stats = /tmp/{anme}Stats.sock
 
 # Configure master
 master = true
@@ -503,7 +503,8 @@ master-fifo = {fifoLocation}
 # Load code into each worker instead of the master to help with ZODB locks
 # See: https://uwsgi-docs.readthedocs.io/en/latest/ThingsToKnow.html
 #  and https://stackoverflow.com/questions/14499594/zeo-deadlocks-on-uwsgi-in-master-mode
-lazy-apps = true
+# This causes segfaults with ROOT!!
+#lazy-apps = true
 
 {additionalOptions}"""
     uwsgiConfiguration = uwsgiConfiguration.format(name = uwsgiConfigFile.get("name", "webApp"),
