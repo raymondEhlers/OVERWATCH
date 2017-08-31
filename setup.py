@@ -48,11 +48,19 @@ setup(
 
     packages=find_packages(exclude=("deploy", ".git")),
 
-    scripts=[
-             "bin/overwatchDQMReceiver",
-             "bin/overwatchProcessing",
-             "bin/overwatchWebApp"
-             ],
+    # Rename scripts to the desired executable names
+    # See: https://stackoverflow.com/a/8506532
+    entry_points = {
+        "console_scripts" : [
+            # Note that the flask apss only run the flask development server through these scripts
+            # because they will be launched directly via uwsgi (ie not through these scripts)
+            "overwatchDQMReceiver = overwatch.receiver.run:runDevelopment",
+            "overwatchWebApp = overwatch.webApp.run:runDevelopment",
+            # The processing will be launched this way in both production and development, so it 
+            # points to a different type of function
+            "overwatchProcessing = overwatch.processing.run:run"
+            ],
+        },
 
     # This is usually the minimal set of the required packages.
     # Packages should be installed via pip -r requirements.txt !

@@ -22,10 +22,13 @@ utilities.setupLogging(logger, receiverParameters["loggingLevel"], receiverParam
 # Imports are below here so that they can be logged
 from overwatch.receiver.dqmReceiver import app
 
-if __name__ == "__main__":
+def runDevelopment():
     logger.info("Starting dqmReceiver app")
     # Turn on flask debugging
     app.debug = receiverParameters["debug"]
     # Careful with threaded, but it can be useful to test the status page, since the post request succeeds!
     app.run(host=receiverParameters["receiverIP"],
             port=receiverParameters["receiverPort"])#, threaded=True)
+
+if __name__ == "__main__":
+    runDevelopment()

@@ -24,7 +24,7 @@ logger.info(processingParameters)
 # Imports are below here so that they can be logged
 from overwatch.processing import processRuns
 
-if __name__ == "__main__":
+def run():
     # Process all of the run data
     processRuns.processAllRuns()
     # Function calls that be used for debugging
@@ -55,3 +55,6 @@ if __name__ == "__main__":
     #logging.info("\n\t\t1-3:")
     #returnValue = processTimeSlices(runs, "Run300005", 1, 3, "EMC", {})
     #logging.info("1-3 UUID: {0}".format(returnValue))
+
+if __name__ == "__main__":
+    run()

@@ -481,7 +481,8 @@ vacuum = true
 chdir = {baseDir}
 
 # App
-wsgi-file = {flaskApp}
+#wsgi-file = {flaskApp}
+module = {flaskApp}
 callable = app
 
 # Instances
@@ -494,7 +495,7 @@ cheaper = {cheaper}
 
 # Setup stats
 #stats = 127.0.0.1:9191
-stats = /tmp/{anme}Stats.sock
+stats = /tmp/{name}Stats.sock
 
 # Configure master
 master = true
@@ -509,7 +510,7 @@ master-fifo = {fifoLocation}
 {additionalOptions}"""
     uwsgiConfiguration = uwsgiConfiguration.format(name = uwsgiConfigFile.get("name", "webApp"),
                                                    baseDir = uwsgiConfigFile.get("baseDir", "/opt/overwatch"),
-                                                   flaskApp = uwsgiConfigFile.get("flaskApp", "overwatchWebApp"),
+                                                   flaskApp = uwsgiConfigFile.get("flaskApp", "overwatch.webApp.run"),
                                                    processes = uwsgiConfigFile.get("processes", 4),
                                                    threads = uwsgiConfigFile.get("threads", 2),
                                                    cheaper = uwsgiConfigFile.get("cheaper", 2),

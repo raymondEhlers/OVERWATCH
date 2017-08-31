@@ -49,9 +49,7 @@ if not serverParameters["debug"]:
     # Instead, we just leave it up to flask_zodb to manage everything
     #connection.close()
 
-# Support both the WSGI server mode, as well as standalone
-#app.run(host="0.0.0.0")
-if __name__ == "__main__":
+def runDevelopment():
     if "pdsf" in socket.gethostname():
         from flup.server.fcgi import WSGIServer
         logger.info("Starting flup WSGI app")
@@ -65,3 +63,6 @@ if __name__ == "__main__":
         # Careful with threaded, but it can be useful to test the status page, since the post request succeeds!
         app.run(host=serverParameters["ipAddress"],
                 port=serverParameters["port"])#, threaded=True)
+
+if __name__ == "__main__":
+    runDevelopment()
