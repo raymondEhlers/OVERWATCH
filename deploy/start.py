@@ -266,12 +266,14 @@ def dqmReceiver(config, receiver, receiverConfig):
         configFilename = "{0}Receiver.yaml".format(receiver.lower())
         processIdentifier = "uwsgi --yaml {configFile}".format(configFile = configFilename)
 
-        # Configure nginx
+        # Handle nginx setup.
+        # We would only want to start nginx if we are using uwsgi
         if "webServer" in receiverConfig and receiverConfig["webServer"]:
+            # Configure nginx
             nginx(config, name = "dqmReceiver")
 
-        # Start nginx
-        startNginx(name = "nginx", logFilename = "nginx", supervisord = "supervisord" in config)
+            # Start nginx
+            startNginx(name = "nginx", logFilename = "nginx", supervisord = "supervisord" in config)
 
         # Write the uwsgi configuration
         uwsgi(config = config["receiver"], name = "DQM")
@@ -290,6 +292,7 @@ def dqmReceiver(config, receiver, receiverConfig):
 
     processPIDs = checkForProcessPID(processIdentifier)
 
+    # NOTE: This won't work properly with uwsgi!
     if not processPIDs is None and (config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None)):
         logger.debug("Found processPIDs: {0}".format(processPIDs))
         processPIDs = killExistingProcess(processPIDs,
@@ -449,25 +452,70 @@ def processing(config):
     process = startProcessWithLog(args = args, name = "Process Runs", logFilename = "processRuns")
 
 def webApp(config):
-    """ Start web app. """
+    """ Setup and start web app. """
     # Handle both renning locally for development, as well as starting uwsgi when required
     webAppConfig = config["webApp"]
-    useWsgi = webAppConfig.get("wsgi", False)
-    if useWsgi:
+
+    # Run webApp setup if necessary
+    if "webAppSetup" in webAppConfig and webAppConfig["webAppSetup"]:
+        webAppSetup(config)
+
+    if "uwsgi" in webAppConfig and webAppConfig["uwsgi"]["enabled"]:
+        configFilename = "{0}".format(webAppConfig.get("wsgiConfigFilename", "webApp.yaml"))
+        processIdentifier = "uwsgi --yaml {0}".format(configFilename)
+
+        # Handle nginx setup.
+        # We would only want to start nginx if we are using uwsgi
+        if "webServer" in webAppConfig and webAppConfig["webServer"]:
+            # Configure nginx
+            nginx(config, name = "webApp")
+
+            # Start nginx
+            startNginx(name = "nginx", logFilename = "nginx", supervisord = "supervisord" in config)
+
+        # Configure uwsgi
+        uwsgi(config, name = "webApp")
+
         args = [
                 "uwsgi",
-                "{0}".format(webAppConfig["wsgiConfigFilename"])
+                "--yaml",
+                configFilename
                 ]
-        if not config["avoidNohup"]:
-            # Only append "nohup" if it is _NOT_ called from systemd or supervisord
-            args = ["nohup"] + args
     else:
         # Use flask development server instead
         # Do not use in production!!
+        processIdentifier = "overwatchWebApp"
+
         # Use the installed executable
         args = [
                 "overwatchWebApp"
                 ]
+
+    processPIDs = checkForProcessPID(processIdentifier)
+
+    # NOTE: This won't work properly with uwsgi!
+    if not processPIDs is None and (config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None)):
+        logger.debug("Found processPIDs: {0}".format(processPIDs))
+        processPIDs = killExistingProcess(processPIDs,
+                                          processType = "{0} Receiver".format(receiver),
+                                          processIdentifier = processIdentifier)
+        # processPIDs will be None if the processes were killed successfully
+
+    if not config["avoidNohup"]:
+        # Only append "nohup" if it is _NOT_ called from systemd or supervisord
+        args = ["nohup"] + args
+
+    process = startProcessWithLog(args, name = "webApp", logFilename = "webApp", supervisord = "supervisord" in config)
+
+    if process:
+        logger.info("Check that the process launched successfully...")
+        time.sleep(1.5)
+        processPIDs = checkForProcessPID(processIdentifier)
+        if processPIDs is None:
+            logger.critical("No process found corresponding to the just launched webApp! Check the log files!")
+            sys.exit(2)
+        else:
+            logger.info("Success!")
 
 def uwsgi(config, name):
     """ Write out the configuration file. """
@@ -661,15 +709,6 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
         processing(config)
 
     if "webApp" in config and config["webApp"]["enabled"]:
-        if "webServer" in config["webApp"] and config["webApp"]["webServer"]:
-            # Configure and start nginx
-            nginx(config, name = "webApp")
-            startNginx(name = "nginx", logFilename = "nginx", supervisord = "supervisord" in config)
-
-        if "uwsgiSetup" in config["webApp"] and config["webApp"]["uwsgiSetup"]:
-            webAppSetup(config)
-        if "uwsgi" in config["webApp"]:
-            uwsgi(config, name = "webApp")
         webApp(config)
 
     # Start supervisord
