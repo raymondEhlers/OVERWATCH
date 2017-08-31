@@ -10,14 +10,22 @@ import argparse
 import subprocess
 import sys
 import time
-#import ruamel.yaml as yaml
-import yaml
+import ruamel.yaml as yaml
 import collections
 
 logger = logging.getLogger("")
 
 # Convenience
 import pprint
+
+# Utility function to handle expanding environmental variables from YAML
+def expandEnvironmentalVars(loader, node):
+    val = loader.construct_scalar(node)
+    # Need to strip "\n" due to it being inserted when variables are expanded
+    val = os.path.expandvars(val).replace("\n", "")
+    return str(val)
+
+yaml.SafeLoader.add_constructor('!expandVars', expandEnvironmentalVars)
 
 def checkForProcessPID(processIdentifier):
     """ Check for a process by a process identifier string via pgrep.
@@ -255,8 +263,8 @@ def setupEnv(config):
 def dqmReceiver(config, receiver, receiverConfig):
     """ Start the DQM receiver """
     if "uwsgi" in receiverConfig and receiverConfig["uwsgi"]["enabled"]:
-        configFilename = "{0}Receiver.ini".format(receiver.lower())
-        processIdentifier = "uwsgi {configFile}".format(configFile = configFilename)
+        configFilename = "{0}Receiver.yaml".format(receiver.lower())
+        processIdentifier = "uwsgi --yaml {configFile}".format(configFile = configFilename)
 
         # Configure nginx
         if "webServer" in receiverConfig and receiverConfig["webServer"]:
@@ -270,6 +278,7 @@ def dqmReceiver(config, receiver, receiverConfig):
 
         args = [
                 "uwsgi",
+                "--yaml",
                 configFilename
                 ]
     else:
@@ -462,65 +471,63 @@ def webApp(config):
 
 def uwsgi(config, name):
     """ Write out the configuration file. """
+    # Get the uwsgi user options
     uwsgiConfigFile = config[name]["uwsgi"]
+    # Not necessarily the same as "name". For example, the DQM receiver has name = "DQM"
+    # and uwsgiName = "dqmReceiver"
+    uwsgiName = uwsgiConfigFile.get("name", "{0}".format(name))
+
+    if not "wsgi-file" in uwsgiConfigFile and not "module" in uwsgiConfigFile:
+        raise KeyError("Must pass either \"wsgi-file\" or \"module\" for the uwsgi configuration!"
+                       " \"wsgi-file\" corresponds to a path to a python file which contains the app."
+                       " \"module\" is the python module path to a module containing the app.")
 
     if not uwsgiConfigFile["enabled"]:
         logger.warn("uwsgi configuration present for {0}, but not enabled".format(name))
 
-    uwsgiConfiguration = """
-[uwsgi]
-# Socket setup
-socket = /tmp/{name}.sock
-# Previously nginx:nginx , but in ubuntu nginx -> www-data
-#chown-socket = www-data:www-data
-#chmod-socket = 664
-# Remove socket when done
-vacuum = true
+    # This is the base configuration which sets the default values
+    uwsgiConfig = {
+        # Socket setup
+        "socket" : "/tmp/{name}.sock",
+        "vacuum" : True,
+        # Stats
+        "stats" : "/tmp/{name}Stats.sock",
 
-# Setup
-chdir = {baseDir}
+        # Setup
+        "chdir" : "/opt/overwatch",
 
-# App
-#wsgi-file = {flaskApp}
-module = {flaskApp}
-callable = app
+        # App
+        # Need either wsgi-file or module!
+        "callable" : "app",
 
-# Instances
-# Number of processes
-processes = {processes}
-# Number of threads
-threads = {threads}
-# Minimum number of workers to keep at all times
-cheaper = {cheaper}
+        # Instances
+        # Number of processes
+        "processes" : 4,
+        # Number of threads
+        "threads": 2,
+        # Minimum number of workers to keep at all times
+        "cheaper": 2,
 
-# Setup stats
-#stats = 127.0.0.1:9191
-stats = /tmp/{name}Stats.sock
+        # Configure master
+        "master" : True,
+        "master-fifo" : "wsgiMasterFifo{name}"
+    }
 
-# Configure master
-master = true
-master-fifo = {fifoLocation}
+    # Add the custom configuration into the default configuration defined above
+    uwsgiConfig.update(uwsgiConfigFile)
 
-# Load code into each worker instead of the master to help with ZODB locks
-# See: https://uwsgi-docs.readthedocs.io/en/latest/ThingsToKnow.html
-#  and https://stackoverflow.com/questions/14499594/zeo-deadlocks-on-uwsgi-in-master-mode
-# This causes segfaults with ROOT!!
-#lazy-apps = true
+    # Inject name into the various values if needed
+    for k, v in uwsgiConfig.iteritems():
+        if isinstance(v, str):
+            uwsgiConfig[k] = v.format(name = uwsgiConfigFile.get("name", "webApp"))
 
-{additionalOptions}"""
-    uwsgiConfiguration = uwsgiConfiguration.format(name = uwsgiConfigFile.get("name", "webApp"),
-                                                   baseDir = uwsgiConfigFile.get("baseDir", "/opt/overwatch"),
-                                                   flaskApp = uwsgiConfigFile.get("flaskApp", "overwatch.webApp.run"),
-                                                   processes = uwsgiConfigFile.get("processes", 4),
-                                                   threads = uwsgiConfigFile.get("threads", 2),
-                                                   cheaper = uwsgiConfigFile.get("cheaper", 2),
-                                                   fifoLocation = uwsgiConfigFile.get("fifoLocation", "wsgiMasterFifo{0}".format(name)),
-                                                   additionalOptions = uwsgiConfigFile.get("additionalOptions", ""))
+    # Put dict inside of "uwsgi" block for it to be read properly by uwsgi
+    uwsgiConfig = { "uwsgi" : uwsgiConfig }
 
-    filename = "{0}.ini".format(uwsgiConfigFile.get("name", "{0}".format(name)))
+    filename = "{0}.yaml".format(uwsgiName)
     logger.info("Writing configuration file to {0}".format(filename))
     with open(filename, "wb") as f:
-        f.write(uwsgiConfiguration)
+        yaml.dump(uwsgiConfig, f, default_flow_style = False)
 
 def startNginx(name = "nginx", logFilename = "nginx", supervisord = False):
     args = [
@@ -605,12 +612,12 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
     if fromEnvironment:
         # From environment
         logger.info("Loading configuration from environment variable \"{}\"".format(fromEnvironment))
-        config = yaml.load(os.environ[fromEnvironment])
+        config = yaml.load(os.environ[fromEnvironment], Loader=yaml.SafeLoader)
     else:
         # From file
         logger.info("Loading configuration from file \"{}\"".format(configFilename))
         with open(configFilename, "rb") as f:
-            config = yaml.load(f)
+            config = yaml.load(f, Loader=yaml.SafeLoader)
 
     # Setup
     supervisord = "supervisord" in config
@@ -666,7 +673,7 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
         webApp(config)
 
     # Start supervisord
-    if "supervisord" in config:
+    if "supervisord" in config and config["supervisord"]:
         # Reload supervisor config
         process = subprocess.Popen(["supervisorctl", "update"])
 
