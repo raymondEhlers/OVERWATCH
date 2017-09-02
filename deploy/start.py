@@ -262,6 +262,9 @@ def setupEnv(config):
 
 def dqmReceiver(config, receiver, receiverConfig):
     """ Start the DQM receiver """
+    # Write out custom config
+    writeCustomConfig(receiverConfig)
+
     if "uwsgi" in receiverConfig and receiverConfig["uwsgi"]["enabled"]:
         configFilename = "{0}Receiver.yaml".format(receiver.lower())
         processIdentifier = "uwsgi --yaml {configFile}".format(configFile = configFilename)
@@ -435,13 +438,46 @@ def database(config):
     processPIDs = checkForProcessPID("runzeo -C zeoGenerated.conf".format(receiver))
     logger.debug("processPIDs: {0}".format(processPIDs))
 
+    # Only start if not already running
     if processPIDs is None:
         # Start database
-        pass
+        args = [
+                "runzeo",
+                "-C zeoGenerated.conf"
+                ]
+
+        if not config["avoidNohup"]:
+            # Only append "nohup" if it is _NOT_ called from systemd or supervisord
+            args = ["nohup"] + args
+
+        process = startProcessWithLog(args = args, name = "ZODB", logFilename = "ZODB")
+
+        if process:
+            logger.info("Check that the process launched successfully...")
+            time.sleep(1.5)
+            processPIDs = checkForProcessPID(processIdentifier)
+            if processPIDs is None:
+                logger.critical("No process found corresponding to the just launched ZODB database! Check the log files!")
+                sys.exit(2)
+            else:
+                logger.info("Success!")
+
+def writeCustomConfig(config, filename = "config.yaml"):
+    if "customConfig" in config:
+        if os.path.exists(filename):
+            # Append if it already exists
+            mode = "ab"
+        else:
+            mode = "wb"
+
+        # Write out configuration
+        with open(filename, mode) as f:
+            yaml.dump(config["customConfig"], f, default_flow_style = False)
 
 def processing(config):
     """ Start processing. """
-    # TODO: Write out config options as necessary
+    # Write out custom configuration
+    writeCustomConfig(config["processing"])
 
     # Start the processing
     # Use the installed executable
@@ -449,12 +485,31 @@ def processing(config):
             "overwatchProcessing"
             ]
 
-    process = startProcessWithLog(args = args, name = "Process Runs", logFilename = "processRuns")
+    if not config["avoidNohup"]:
+        # Only append "nohup" if it is _NOT_ called from systemd or supervisord
+        args = ["nohup"] + args
+
+    process = startProcessWithLog(args = args, name = "Processing", logFilename = "processing")
+
+    if process:
+        logger.info("Check that the process launched successfully...")
+        time.sleep(1.5)
+        processPIDs = checkForProcessPID(processIdentifier)
+        if processPIDs is None:
+            logger.critical("No process found corresponding to the just launched processing! Check the log files!")
+            sys.exit(2)
+        else:
+            logger.info("Success!")
 
 def webApp(config):
-    """ Setup and start web app. """
-    # Handle both renning locally for development, as well as starting uwsgi when required
+    """ Setup and start web app.
+
+    Handles running both locally for development, as well as starting uwsgi when required
+    """
     webAppConfig = config["webApp"]
+
+    # Write out custom configuration
+    writeCustomConfig(config["webApp"])
 
     # Run webApp setup if necessary
     if "webAppSetup" in webAppConfig and webAppConfig["webAppSetup"]:
