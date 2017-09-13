@@ -9,17 +9,17 @@ from __future__ import print_function
 
 # Python logging system
 import logging
+
+from overwatch.base import config
+# For configuring logger
+from overwatch.base import utilities
+(receiverParameters, filesRead) = config.readConfig(config.configurationType.dqmReceiver)
+
 # Setup logger
-if __name__ == "__main__":
-    # By not setting a name, we get everything!
-    logger = logging.getLogger("")
-    # Alternatively, we could set "webApp" to get everything derived from that
-    #logger = logging.getLogger("webApp")
-else:
-    # When imported, we just want it to take on it normal name
-    logger = logging.getLogger(__name__)
-    # Alternatively, we could set "webApp" to get everything derived from that
-    #logger = logging.getLogger("webApp")
+# When imported, we just want it to take on it normal name
+logger = logging.getLogger(__name__)
+# Alternatively, we could set "overwatch.receiver" to get everything derived from that
+#logger = logging.getLogger("overwatch.receiver")
 
 from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, Markup, jsonify, session
 from werkzeug.utils import secure_filename
@@ -38,12 +38,9 @@ ROOT.std.__file__ = "ROOT.std.py"
 app = Flask(__name__)
 
 # Configuration
-outputDir = "rootFiles"
-if not os.path.exists(outputDir):
-    os.makedirs(outputDir)
-
-# Token
-app.config["token"] = "abcdef"
+# Ensure the folder to write to exists
+if not os.path.exists(receiverParameters["dataFolder"]):
+    os.makedirs(receiverParameters["dataFolder"])
 
 # From: http://flask.pocoo.org/docs/0.12/patterns/apierrors/
 class InvalidUsage(Exception):
@@ -77,8 +74,8 @@ def checkForToken(func):
             raise InvalidUsage("Must pass a token!")
 
         # Execute if the token matches
-        #print("Token: {0}".format(request.headers["token"]))
-        if request.headers["token"] == app.config["token"]:
+        logger.debug("Token: {0}".format(request.headers["token"]))
+        if request.headers["token"] == receiverParameters["apiToken"]:
             return func(*args, **kwargs)
 
         # Note that it is invalid otherwise
@@ -97,17 +94,17 @@ def dqm():
     """ Handle DQM data """
     response = dict()
     if request.method == "GET":
-        availableFiles = [f for f in os.listdir(outputDir) if os.path.isfile(os.path.join(outputDir, f))]
+        availableFiles = [f for f in os.listdir(receiverParameters["dataFolder"]) if os.path.isfile(os.path.join(receiverParameters["dataFolder"], f))]
         response["files"] = availableFiles
         resp = jsonify(response)
         resp.status_code = 200
         return resp
 
     # Print received header information
-    print("Headers:")
+    logger.info("Headers:")
     requestHeaders = dict()
     for header, val in request.headers.iteritems():
-        print("\"{0}\":, \"{1}\"".format(header, val))
+        logger.debug("\"{0}\":, \"{1}\"".format(header, val))
         requestHeaders[header] = val
 
     response["receivedHeaders"] = requestHeaders
@@ -129,14 +126,14 @@ def dqm():
     # TString filename = TString::Format("%shistos_%d_%s_%d_%d_%d_%d_%d_%d.root", fSubsystem.c_str(), fRunNumber, fHLTMode.c_str(), timestamp->tm_year+1900, timestamp->tm_mon+1, timestamp->tm_mday, timestamp->tm_hour, timestamp->tm_min, timestamp->tm_sec);
     # NOTE: these values are zero padded! However, this should be fine.
     timeStr = time.strftime("%Y_%m_%d_%H_%M_%S", timeTuple)
-    print("timeStr: {0}".format(timeStr))
+    logger.info("timeStr: {0}".format(timeStr))
 
     # If the mode needs to be one letter, perhaps make it "Z" to make it obvious or "D" for DQM?
     filename = "{amoreAgent}histos_{runNumber}_{mode}_{timestamp}.root".format(amoreAgent = agent, runNumber = runNumber, mode = "DQM", timestamp = timeStr)
     # Just to be safe!
     filename = secure_filename(filename)
     # True file path
-    outputPath = os.path.join(outputDir, filename)
+    outputPath = os.path.join(receiverParameters["dataFolder"], filename)
 
     # Handle body
     # For more details, see:
@@ -149,7 +146,7 @@ def dqm():
         # This is the preferred method!
 
         # Get file
-        print("Handling file in form via form/multi-part")
+        logger.info("Handling file in form via form/multi-part")
         # NOTE: This means that the form object must be called "file"!
         payloadFile = request.files["file"]
 
@@ -158,12 +155,12 @@ def dqm():
         savedFile = True
     else:
         # Get the payload 
-        print("Handling payload directly")
+        logger.info("Handling payload directly")
         # Can use request.stream to get the data in an unmodified way
         # Can use request.data to get the data as a string
         # Can use request.get_data() to get all non-form data as the bytes of whatever is in the body
         payload = request.get_data()
-        print("payload: {0}".format(payload[:100]))
+        logger.info("payload: {0}".format(payload[:100]))
         if payload:
             # Not opening as ROOT file since we are just writing the bytes to a file
             with open(outputPath, "wb") as fOut:
@@ -184,7 +181,7 @@ def dqm():
                     # pyyaml can serialize entire objects. Perhaps we can use it??
                     #hist.Write()
         else:
-            print("No payload...")
+            logger.warning("No payload...")
 
     if savedFile:
         # Extract received object info
@@ -210,7 +207,7 @@ def dqm():
     resp.status_code = response["status"]
 
     # Print and return
-    print("Response: {0}, resp: {1}".format(resp, response))
+    logger.info("Response: {0}, resp: {1}".format(resp, response))
     return resp
 
 def receivedObjectInfo(outputPath):
@@ -227,7 +224,7 @@ def receivedObjectInfo(outputPath):
         success = True
 
     # Print to log for convenience
-    print(receivedObjects)
+    logger.info(receivedObjects)
 
     return (success, receivedObjects)
 
@@ -236,7 +233,7 @@ def receivedObjectInfo(outputPath):
 def returnFile(filename):
     """ Return the ROOT file. """
     filename = secure_filename(filename)
-    return send_from_directory(outputDir, filename)
+    return send_from_directory(receiverParameters["dataFolder"], filename)
 
 if __name__ == "__main__":
     print("Run with overwatchDQMReceiver instead of directly!")

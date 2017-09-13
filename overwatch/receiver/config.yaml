@@ -4,5 +4,6 @@
 ## Author: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 
 receiverIP: "127.0.0.1"
-
 receiverPort: 8080
+
+apiToken: "abcdefghi"
