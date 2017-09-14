@@ -3,6 +3,7 @@
 # For python 3 support
 from __future__ import print_function
 
+import os
 # Python logging system
 import logging
 
@@ -24,17 +25,28 @@ from flask_zodb import ZODB
 app = Flask(__name__)
 api = flask_restful.Api(app)
 
+app.config["ZODB_STORAGE"] = "file://../../data/overwatch.fs"
 #app.config["ZODB_STORAGE"] = serverParameters["databaseLocation"]
-#db = ZODB(app)
+db = ZODB(app)
+dirPrefix = "dirPrefixPlaceholder"
 
 class Runs(flask_restful.Resource):
     def get(self, run = None):
+        # TODO: Validate
         print("run: {0}".format(run))
+
+        runs = db["runs"]
+        response = {}
         if not run:
             # List runs
-            return "Get no args"
+            response["runs"] = list(runs.keys())
+            print("response: {0}".format(response))
+            return response
+
         # Return information on a particular run
-        return "Get with run {0}".format(run)
+        response["run"] = run
+        response["subsystems"] = list(runs["Run{0}".format(run)].subsystems.keys())
+        return response
 
     def put(self, run):
         # NOT IMPLEMENTED
@@ -42,17 +54,36 @@ class Runs(flask_restful.Resource):
 
 class FilesAccess(flask_restful.Resource):
     def get(self, run, subsystem, filename = None):
-        # Return the filename for the particular run
+        # TODO: Validate
 
+        # Return the filename for the particular run
+        subsystemContainer = db["runs"]["Run{0}".format(run)].subsystems[subsystem]
+
+        # TODO: Return response?
+        response = {}
+        response["run"] = run
+        response["subsystem"] = subsystem
         if not filename:
+            # Return the available files
+            response["files"] = [tempFile.filename.split("/")[-1] for tempFile in subsystemContainer.files.values()]
+            return response
+        elif filename == "combined":
             # Return the combined file
-            return "No filename passed"
+            return os.path.join(dirPrefix, subsystemContainer.combinedFile.filename)
             
-        return "Filename : {0}".format(filename)
-        pass
+        #requestedFile = next(fileContainer for fileContainer in subsystemContainer.files.values() if fileContainer.filename == filename)
+        print(filename)
+        print(subsystemContainer.files.itervalues().next().filename)
+        try:
+            requestedFile = next(fileContainer for fileContainer in subsystemContainer.files.values() if fileContainer.filename.split("/")[-1] == filename)
+        except StopIteration as e:
+            response["error"] = "Could not find requested file {0}".format(filename)
+            return response
+        return os.path.join(dirPrefix, requestedFile.filename)
 
     def put(self, run, filename):
         # NOT IMPLEMENTED
+        # TODO: Can the DQM receiver be implemented here?
         pass
 
 api.add_resource(FilesAccess, "/rest/api/v1/files/<int:run>/<string:subsystem>",
