@@ -11,6 +11,7 @@ future
 flask
 Flask-Login
 Flask-Assets
+Flask-RESTful
 
 # Database
 ZODB

@@ -69,6 +69,7 @@ setup(
         "flask",
         "Flask-Login",
         "Flask-Assets",
+        "Flask-RESTful",
         "ZODB",
         "Flask-Bcrypt",
         "pyyaml",
