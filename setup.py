@@ -58,7 +58,9 @@ setup(
             "overwatchWebApp = overwatch.webApp.run:runDevelopment",
             # The processing will be launched this way in both production and development, so it 
             # points to a different type of function
-            "overwatchProcessing = overwatch.processing.run:run"
+            "overwatchProcessing = overwatch.processing.run:run",
+            # Deployment script
+            "overwatchDeploy = overwatch.base.deploy:run"
             ],
         },
 

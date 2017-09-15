@@ -771,7 +771,7 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
         # Reload supervisor config
         process = subprocess.Popen(["supervisorctl", "update"])
 
-if __name__ == "__main__":
+def run():
     # Setup command line parser
     parser = argparse.ArgumentParser(description = "Start Overwatch")
     parser.add_argument("-c", "--config", metavar="configFile",
@@ -801,3 +801,6 @@ if __name__ == "__main__":
     logger.setLevel(level)
 
     startOverwatch(configFilename = args.config, fromEnvironment = args.fromEnvironment, avoidNohup = args.avoidNohup)
+
+if __name__ == "__main__":
+    run()
