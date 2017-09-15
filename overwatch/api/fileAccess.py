@@ -7,10 +7,11 @@ import os
 # Python logging system
 import logging
 
-#from overwatch.base import config
+# Configuration
+from overwatch.base import config
 ## For configuring logger
-#from overwatch.base import utilities
-#(receiverParameters, filesRead) = config.readConfig(config.configurationType.dqmReceiver)
+from overwatch.base import utilities
+(apiParameters, filesRead) = config.readConfig(config.configurationType.apiConfig)
 
 # Setup logger
 # When imported, we just want it to take on it normal name
@@ -20,15 +21,15 @@ logger = logging.getLogger(__name__)
 
 from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, Markup, jsonify, session
 import flask_restful
-from flask_zodb import ZODB
+import flask_zodb
 
 app = Flask(__name__)
 api = flask_restful.Api(app)
 
-app.config["ZODB_STORAGE"] = "file://../../data/overwatch.fs"
-#app.config["ZODB_STORAGE"] = serverParameters["databaseLocation"]
-db = ZODB(app)
-dirPrefix = "dirPrefixPlaceholder"
+app.config["ZODB_STORAGE"] = apiParameters["databaseLocation"]
+#app.config["ZODB_STORAGE"] = "file://../../data/overwatch.fs"
+db = flask_zodb.ZODB(app)
+#dirPrefix = "dirPrefixPlaceholder"
 
 class Runs(flask_restful.Resource):
     def get(self, run = None):
@@ -69,7 +70,7 @@ class FilesAccess(flask_restful.Resource):
             return response
         elif filename == "combined":
             # Return the combined file
-            return os.path.join(dirPrefix, subsystemContainer.combinedFile.filename)
+            return os.path.join(apiParameters["dirPrefix"], subsystemContainer.combinedFile.filename)
             
         #requestedFile = next(fileContainer for fileContainer in subsystemContainer.files.values() if fileContainer.filename == filename)
         print(filename)
@@ -79,7 +80,7 @@ class FilesAccess(flask_restful.Resource):
         except StopIteration as e:
             response["error"] = "Could not find requested file {0}".format(filename)
             return response
-        return os.path.join(dirPrefix, requestedFile.filename)
+        return os.path.join(apiParameters["dirPrefix"], requestedFile.filename)
 
     def put(self, run, filename):
         # NOT IMPLEMENTED

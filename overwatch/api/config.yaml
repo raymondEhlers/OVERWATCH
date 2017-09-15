@@ -1,0 +1,6 @@
+## Holds all of the DQM receiver parameters
+## Note that this configuration file will be imported after the shared parameters config
+##
+## Author: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
+
+

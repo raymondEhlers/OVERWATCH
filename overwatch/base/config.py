@@ -21,6 +21,7 @@ class configurationType(enum.Enum):
     processing = 0
     webApp = 1
     dqmReceiver = 2
+    apiConfig = 3
 
 # Join passed paths
 # Inspired by: https://stackoverflow.com/a/23212524
@@ -109,6 +110,7 @@ def readConfig(configType):
                     pkg_resources.resource_filename("overwatch.webApp", "config.yaml"),
                     pkg_resources.resource_filename("overwatch.processing", "config.yaml"),
                     pkg_resources.resource_filename("overwatch.receiver", "config.yaml"),
+                    pkg_resources.resource_filename("overwatch.api", "config.yaml"),
                     #       Below is the line that should be used when the above issue is resolved
                     #pkg_resources.resource_filename("overwatch.{0}".format(configType.name), "config.yaml"),
                     # Shared config in the package base
