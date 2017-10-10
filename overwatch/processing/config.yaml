@@ -11,7 +11,7 @@ forceReprocessing: false
 forceNewMerge: False
 
 #: Transfer data to the remote system.
-sendData: True
+sendData: False
 
 #: Set the type of merging based on the data we are receiving. If set to true, that means we are receiving
 #: cumulative files (i.e. the hists are not reset after they are sent by the HLT). In that case,

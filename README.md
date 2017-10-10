@@ -1,243 +1,229 @@
-# ALICE OVERWATCH
+# OVERWATCH
+
+Welcome to ALICE Overwatch[\*](#name-meaning), a project to provide real-time online data monitoring and
+quality assurance using timestamped data from the ALICE High Level Trigger (HLT) and Data Quality Monitoring (DQM).
+
+# Quick Start
+
+## Setup Overwatch
+
+Along with a variety of dependencies which can be handled by pip, ROOT is required. ROOT 6 is recommended.
+
+### Local development
+
+To setup for local development is also straightforward.
+
+```bash
+$ git clone https://github.com/raymondEhlers/OVERWATCH.git overwatch
+$ cd overwatch
+# Probably best to do this in a virtualenv
+$ pip install -r requirements.txt
+# Install webApp static data (Google Polymer and jsRoot)
+$ cd overwatch/webApp/static && bower install && git clone https://github.com/root-project/jsroot.git jsRoot && cd -
+# Install for local development.
+$ pip install -e .
+```
+
+### Docker Image
+
+A docker image is available on Docker Hub under the name `rehlers/overwatch`. Be certain to mount a directory
+containing data into the image so it can be used! If the data is in a folder called `data`, it should look something
+like:
+
+```bash
+$ docker run -v data:/overwatch/data rehlers/overwatch
+```
+
+## Using Overwatch
+
+### Retrieving test data
+
+To use most parts of the Overwatch project, you need some data provided by the HLT. The latest five runs of data
+received by Overwatch can be accessed
+[here](https://aliceoverwatch.physics.yale.edu/testingDataArchive). The login credentials are available on
+the [ALICE TWiki](https://twiki.cern.ch/twiki/bin/view/ALICE/L1TriggerMonitoring).
+
+### Process the data with `overwatchProcessing`
+
+Create a basic configuration file named `config.yaml` containing something like:
+
+```yaml
+# Main options
+# Enable debug settings, messages at the debug level
+debug: true
+loggingLevel: "DEBUG"
+# Reprocess the data each time, even if it is not detected as needed. It can be useful
+# to test modifications to the processing
+forceReprocessing: true
+
+# The directory defaults to "data", which is the recommended name
+dataFolder: &dataFolder "path/to/data"
+```
+
+Then, start processing the data with:
+
+```bash
+$ overwatchProcessing
+```
+
+### Visualizing the data with `overwatchWebApp`
+
+For the webApp, add something similar to the following to your `config.yaml`:
+
+```yaml
+# Define users for local usage
+_users: !bcrypt
+    bcryptLogRounds: *bcryptLogRounds
+    # You can change these values as desired
+    username: "password"
+```
+
+Then, to start the webApp for data visualization, run:
+
+```bash
+$ overwatchWebApp
+```
+
+By default, the webApp will be available at [http://127.0.0.1:8850](http://127.0.0.1:8850) using the flask
+development server (**not for production**). Login with the credentials that were specified in your
+configuration file.
+
+# Table of Contents
+
+1. [Overwatch Overview and Architecture](#overwatch-overview-and-architecture)
+    - [Processing](#overwatch-processing)
+    - [Web App](@overwatch-webapp)
+    - [Data Receivers](#overwatch-receivers)
+2. [Overwatch Configuration](#overwatch-configuration)
+3. [Overwatch Deployment](#overwatch-deployment)
+
+# Overwatch Architecture
+
+![](doc/images/overwatchArch.png)
+
+The Overwatch architecture is as shown above. Incoming data is handled by the receivers, which then make that data
+available to be processed by the processing module. The output of the processing is then visualized via the WebApp.
+In terms of code, the dependencies are as follows:
+
+```
+python modules
+---
+base <- processing <- webApp
+     <- dqmReceiver
+
+c++
+---
+zmqReceiver
+```
+
+Further information on each component is available in the sections below.
+
+## Overwatch Processing
+
+The main processing component of Overwatch is responsible for transforming the received data into a viewable
+form, while also extracting derived quantities and performing checks for alarms. The main processing module is
+written in python and depends heavily on PyRoot, with some functionality implemented through numpy. The module
+is located in `overwatch/processing`, with the file `processRuns.py` driving the processing.
+
+At a high level, the processing pipeline looks like:
+
+- Extract run metadata (run number, HLT mode, detector subsystem being processed, available histograms in the particular run, etc).
+- Determine which runs need processing.
+    - For example, if a new file has arrived for a particular run, then that run should be processed.
+- If the run is new, determine which objects (histograms) are included and to which groups they belong, which processing functions need to be run, etc.
+    - The processing functions are implemented by each detector and called when requested by the particular detector.
+- Apply those processing functions for each object (histogram), and store the outputs.
+
+Each detector (also known as a subsystem) is given the opportunity to plug into the processing pipeline at nearly every stage. Each one is identified by the three letter detector name. The detector specific code is located in `overwatch/processing/detectors/` and can be enable through the processing configuration.
+
+## Overwatch WebApp
+
+![An Overwatch run page](doc/images/overwatch.upgrade.runPage.png)
+
+The web app visualizes the information provided by the processing. The WebApp is based on flask and serves
+the various forms of visualization, as well as providing an interface to request on-demand processing of the
+data with customized parameters. Note that this causes a direct dependence on the processing module. The main
+mode of visualization is via json files displayed using JSRoot, which provides interactivity with the data.
+
+## Overwatch Data Receivers
+
+The receivers are responsible for receiving data from the various input sources and writing them out.
+Receivers write out ROOT files with the same filename information, thereby allowing for them to be processed
+the same regardless of their source.
+
+_Note that these receivers need to be deployed in the production environment, but would rarely, if ever,
+need to be used by standard Overwatch users!_
+
+### HLT Receivers
+
+Data from the HLT consists of ROOT TObject-derived objects sent via ZeroMQ (ZMQ). The receiver is built in C++,
+with dependencies on HLT files automatically downloaded, compiled, and linked with the receiver code when the
+receiver is compiled.
+
+Installation follows the typical CMake pattern for an out of source build. When configuring, remember to specifying
+the location of ZMQ and ROOT as necessary. Once built, the receiver executable is named `zmqReceive`. A variety of
+options are available - for the precise options, see the help (`-h` or `--help`).
+
+Note that if there is a ROOT version mismatch (for example, ROOT 5 on the HLT but ROOT 6 for Overwatch), it is
+imperative to request the relevant ROOT streamers with the '--requestStreamers' option. Note that this option can
+potentially trigger an internal ROOT bug, and therefore should not be used too frequently. Thus, the request is only
+sent once when the receiver is started, and it should not be frequently restarted.
+
+### DQM Receiver
+
+Data from DQM consists of ROOT files sent via a rest API. The DQM receiver code is written as a flask app.
+The web app is installed as part of the Overwatch package and can be run using the flask development server
+via `overwatchDQMReceiver`. It is configured using the same system as the rest of the Overwatch package, as
+described [here](overwatch-configuration).
+
+For the APIs that are made available, please see the main server code in `overwatch/receiver/dqmReceiver.py`.
+
+# Overwatch Configuration
+
+Overwatch is configured via options defined in YAML configuration files. There is one configuration file each for
+the Overwatch module (DQM receiver, processing, and webApp). Given the dependency of the various module on each
+other, the configuration files are also interconnected. For example, if the webApp is loaded, it will also load
+the processing configuration, along with the other configurations on which the processing depends. In particular,
+below is the ordered precedence for configuration files.
+
+```
+./config.yaml
+~/overwatch{Module}.yaml
+overwatch/webApp/config.yaml
+overwatch/processing/config.yaml
+overwatch/receiver/config.yaml
+overwatch/base/config.yaml
+```
+
+For a list of the available configuration options, see the `config.yaml` file in the desired module.
+
+# Overwatch Deployment
+
+All of the components of Overwatch can be configured and launched by the `overwatchDeploy` executable.
+Overwatch is intended to be deployed with a docker image. Within this image, configurations are
+managed by `supervisord`. All web apps are deployed behind nginx.
+
+The Dockerfiles and additional information is available in the `deploy/docker` directory.
+
+## Configuring Deployment
+
+For a configuration file containing all available options, see `overwatch/base/deployConfig.yaml`. Note that
+this particular file is _not_ considered when configuring a deployment - it only considers the file that is passed
+to it.
+
+## Deployment with the docker image
+
+The role of the image is determined by the configuration passed into the environment variable config.
+Available configuration options are described in the section
+on [configuring Overwatch for deployment](#configuring-deployment).
+
+The image can then be run with something like (using an external configuration file call config.yaml):
+
+```bash
+$ docker run -d -v data:/overwatch/data -e config="$(config.yaml)" rehlers/overwatch
+```
+
+## Name Meaning
 
 **OVERWATCH**: **O**nline **V**isualization of **E**merging t**R**ends and **W**eb **A**ccessible de**T**ector **C**onditions using the **H**LT.
 
-Welcome to OVERWATCH, an online monitoring framework utilizing detector histograms provided by the HLT. The OVERWATCH framework processes these histograms and displays them minute-by-minute on this website; this allows for real-time monitoring of detector performance, effortlessly available to any ALICE member at any location. For example, a collaborator in the US can monitor the EMCal trigger patch ADC spectrum for noisy TRUs in the comfort of daylight hours, while the CERN-based detector expert sleeps.
-
-The framework also features the ability to automate QA functions to identify detector performance problems, as well as the ability to examine detector behavior during user-specified time ranges within a run. Moreover, the framework provides long-term trending info, i.e. the ability to plot detector quantities as a function of run number. OVERWATCH complements the DQM framework, allowing remote monitoring and easily implementable user customization. We provide extensive documentation for any detector system to be easily added to OVERWATCH, and encourage more subsystems to take advantage of the framework. For more information, [see below](#adding-a-detector).
-
-If you accessed this page via the _Web App_ and want to return back, either use the back button or <a href="javascript:history.back()">click here</a>.
-
-## Introduction
-
-This project utilizes data from the HLT. Histograms are received and should be saved out at a fixed time interval (outside of the scope of this project). _Process Runs_  will move, classify, and process the files. This includes printing the histograms, and transferring to the files to PDSF for wider access to the data. This data is then served by the _Web App_. It also handles calls to _Process Runs_ for dynamic features, including stepping through the data in time, both within a run and by run, as well as basic QA.
-
-The rest of this README is intended for **technical users**, such as those adding detector functionality. Any general users will likely want to return back to the _Web App_.
-
-#### Technical Description
-
-This project utilizes data from the HLT (although it could be from any source of histograms if they were saved properly). Access to the HLT must be handled and is outside the scope of this package - our current setup uses a number of systems at CERN. The histograms are received from the HLT, and then saved to a file at a fixed time interval (this is currently performed every minute). A cron job is then setup to run _Process Runs_ at some short time interval. It is generally best to run _Process Runs_ less frequently than the interval between writes of the HLT files. _Process Runs_ will move, classify, and process the files. This includes printing the histograms, and transferring to the files to PDSF for wider access to the data. _Process Runs_ also contains functions to allow more dynamic processing of the data, including stepping through the data in time, both within a run and by run, as well as basic QA.
-
-To handle viewing of the data, the server _Web App_ is used. It serves up the processed and printed data. This also handles stepping through time slices (both within runs as well as by run using the QA features) of the data by hooking into functions defined in _Process Runs_. It can also be configured to provide direct access to the underlying ROOT files. The _Web App_ can serve run pages based on Jinja2 templates (preferred) or fully static web pages, as both are written out. See [here](#directory-structure) for more information about the files that are written out. 
-
-The _Web App_ is configured to work as both a full web server or a WSGI server. Since authentication is required for all of the data, Flask must serve all files. (/static could be served by a traditional server, since no authentication is needed for those files, but there are only a few small files, so it does not seem worthwhile to add the complicated when Flask seems to work fine, if not at the best performance). 
-
-A full, high performance web server is available in _Full Stack Server_. It is extremely simple, but it can act as a front end to the Flask server, which is a task usually performed by a more traditional web server such as Apache or Nginx. When the _Full Stack Server_ is used, the _Web App_ is used as a WSGI server and it will automatically be loaded by the _Full Stack Server_.
-
-This package has only had basic testing against python 3.
-
-## Setup and Usage
-
-This is a `python` based project, so pip (ie `pip install <packageName>`) is the recommended way to install dependencies.
-
- 1. Install dependencies: `flask Flask-Login Flask-Bcrypt bcrypt numpy flup future`. This can be accomplished by running `pip install -r requirements.txt`. If using the _Web App_ with a WSGI server, then `uwsgi` is also needed. It is not needed for a normal user.
-
- 2. Optional, but recommended: Build the documentation. See [here](#documentation).
-
- 3. Configure _Process Runs_ and the _Web App_ with files in the `config` directory. Copy `serverParams_stub` to `serverParams` so that it is usable. Begin configuring with the options in `sharedParams` file, and then configure `processingParams` and `serverParams` as necessary. Most defaults should be fine but at minimum, the `users` and `secretKey` must be configured in `serverParams`. Each option is extensively documented, which can be viewed in the source file or the documentation.
-
- 4. Configure the directory structure. See [here](#directory-structure).
-
- 5. Run _Process Runs_ to process the available data. `python processRuns.py`
-
- 6. Run the _Web App_ to look at the data in a better organized way. `python webApp.py`. It can then be accessed at `http://localhost:portNumber`, where `portNumber` is the port defined in the `serverParams` file.
-
-## Setup jsRoot
-
-TODO: Explain this section.
-
-Copy the ``scripts/`` and ``style/`` directories from jsRoot into the ``static/`` directory of OVERWATCH!
-
-## Creating a vulcanized file to use polymer.
-
-TODO: Expand on this section! This is not needed for normal users!! It should just work.
-
-Generate the vulcanized file with:
-
-```bash
-# Setup npm and bower
-# Install node via a package manager - should include npm
-# Install bower
-npm install -g bower
-# Install the required polymer components via bower
-cd static/
-bower install
-# From the OVERWATCH root, generate the vulcanized file
-vulcanize --inline-scripts -p . static/polymerComponents.html > static/polymerComponents.vulcanized.html
-```
-
-## Full deployment
-
-TODO: Expand on this section!
-
-Roughly, use initOVERWATCH.sh and ``logrotate.conf`` to keep the receiver log size under control. Edit the paths in ``logrotate.conf`` and then install to ``/etc/logrotate.conf``. Ideally, use the docker image if possible, as the logs are taken care of automatically!
-
-## Documentation
-
-Based on `sphinx-autodoc` generation, the documentation is generated from the docstrings in the code. While they can be viewed in the source files or via python, sphinx compiles them into HTML, facilitating a cleaner view of the information. To build the documentation,
-
- 1. Install the dependencies. The documentation requires the python packages `sphinx sphinxcontrib-napoleon recommonmark`. Pip is the recommended install method.
- 
- 2. Build the documentation using:
-
-    ```bash
-    cd doc
-    make html
-    open doc/build/html/index.html
-    ```
-
-The documentation will be created and available in the `doc/build/html/`. It is recommended to start with the `index.html` page.
-
-## Adding a Detector
-
-Adding a new detector to the project is well documented in the `processRuns.detectors` package. Please look at it in the documentation (or look at it via python or the source file, `processRuns/detectors/__init__.py`). After following this guide, create a pull request for this repository at [raymondEhlers/OVERWATCH](https://github.com/raymondEhlers/OVERWATCH).
-
-## File Structure
-
-### Files
-
- - `processRuns.py` - Moves, classifies, and processes files from the HLT. It will drive functions to produce html and images to display the data for arbitrary times and runs. This file and the associated modules contains functions that provide a large majority of the overall functionality.
-
- - `webApp.py` - A Flask application which handles serving either dynamic (template) or static (simple html pages) run pages to display the QA data. It handles authentication, as well as allowing dynamic features, such as viewing time slices of the data within and between runs.
-
- Inside of the data folder, there are a few main HTML files. `(subsystem)output.html` displays images from the run. `(subsystem)ROOTFiles.html` links to the raw ROOT files that are saved out for each write of histograms from the HLT. In both cases, `(subsystem)` is the three letter name of a detector in all caps.
-
-### Directory Structure
-
-There are specific directories for data, docs, config, templates, modules, and additional static files.
-
-**IMPORTANT NOTE**: _Process Runs_ saves many files, including templates, relative to the `data/` directory (it was done for historical reasons). Consequently, **if the data directory is not going to be stored in the root folder of this repository, then create a symlink to it and call it `data`**. For instance, if it the data is going to be stored at `/path/to/data`, then in the root folder of the repository, one should run `ln -s /path/to/data data`.
-
- - data/ - Contains all of the histogram data. Also contains static HTML pages that are an alternative to the dynamic templates normally used to render the site.
-
- - doc/ - Contains the files to build the documentation for the project. See [here](#documentation).
-
- - config/ - Contains all of the configuration files for _Process Runs_, the _Web App_, and running the _Web App_ as a WSGI server. See the documentation or the source files for more information about the individual options.
-
- - processRuns/ - Contains most of the functionality of _Process Runs_, as well as some generally useful utilities. See the documentation for more information.
-
- - templates/ - Contains all of the jinja2 templates needed to render the website. The main templates are stored in the root of the folder, while templates related to the data are stored in a "data" directory that mirrors the structure of the main "data" directory.
-
- - static/ - Contains the shared `css`, `javascript`, and background texture. 
-
- - webApp/ - Contains helper functions for the _Web App_. See the documentation for more information.
-
-For reference, an example file structure is shown below.
-
-```bash
-.
-├── processRuns.py
-├── README.html
-├── README.md
-├── startWSGIServer.sh
-├── webApp.py
-├── config
-│   ├── __init__.py
-│   ├── processingParams.py
-│   ├── serverParams.py
-│   ├── serverParams_stub.py
-│   ├── sharedParams.py
-│   └── wsgiConfig.ini
-├── data
-│   ├── Run123456
-│   │   ├── EMC
-│   │   │   ├── EMChists.*.root
-│   │   │   ├── EMCoutput.html
-│   │   │   ├── hists.combined.*.root
-│   │   │   └── img [contains *.png]
-│   ├── Run123457
-│   │   ├── EMC
-│   │   │   ├── EMChists.*.root
-│   │   │   ├── EMCoutput.html
-│   │   │   ├── hists.combined.*.root
-│   │   │   ├── img [contains *.png]
-│   │   │   └── timeSlices
-│   │   │       ├── timeSlice.*
-│   │   │       │   ├── EMCoutput.html
-│   │   │       │   └── img [contains *.png]
-│   │   │       └── timeSlice.*.root
-│   │   └── HLT
-│   │       ├── HLTROOTFiles.html
-│   │       ├── HLThists.*.root
-│   │       ├── HLToutput.html
-│   │       ├── TPCoutput.html
-│   │       ├── hists.combined.*.root
-│   │       ├── img [ contains *.png ]
-│   │       └── timeSlices
-│   │           ├── timeSlice.*
-│   │           │   ├── HLToutput.html
-│   │           │   └── img [ contains *.png ]
-│   │           └── timeSlice.*.root
-│   ├── determineMedianSlope [ Could be another QA function ]
-│   │   └── medianSlope.png
-│   ├── runList.html
-│   └── testingDataArchive.zip
-├── doc
-│   ├── Makefile
-│   └── source
-│       ├── _static
-│       ├── _templates
-│       ├── conf.py
-│       ├── config.rst
-│       ├── index.rst
-│       ├── processRuns.rst
-│       ├── processRunsModules.detectors.rst
-│       ├── processRunsModules.rst
-│       ├── webApp.rst
-│       └── webAppModules.rst
-├── processRuns
-│   ├── __init__.py
-│   ├── detectors
-│   │   ├── EMC.py
-│   │   ├── HLT.py
-│   │   ├── __init__.py
-│   ├── generateHtml.py
-│   ├── generateWebPages.py
-│   ├── mergeFiles.py
-│   ├── qa.py
-│   ├── utilities.py
-├── static
-│   ├── cream-pixels.png
-│   ├── shared.js
-│   └── style.css
-├── templates
-|   ├── data
-|   │   ├── Run123456
-|   │   │   └── EMC
-|   │   │       └── EMCoutput.html
-|   │   ├── Run123457
-|   │   │   ├── EMC
-|   │   │   │   ├── EMCoutput.html
-|   │   │   │   └── timeSlices
-|   │   │   │       └── timeSlice.*
-|   │   │   │           └── EMCoutput.html
-|   │   │   └── HLT
-|   │   │       ├── HLTROOTFiles.html
-|   │   │       ├── HLToutput.html
-|   │   │       ├── TPCoutput.html
-|   │   │       └── timeSlices
-|   │   │           └── timeSlice.*
-|   │   │               └── HLToutput.html
-|   │   └── runList.html
-|   ├── contact.html
-|   ├── error.html
-|   ├── layout.html
-|   ├── login.html
-|   ├── qa.html
-|   └── qaResult.html
-└── webApp
-    ├── __init__.py
-    ├── auth.py
-    ├── routing.py
-    └── validation.py
-```
-
-## Development Note
-
-This project was originally developed in the [alice-yale-dev](https://gitlab.cern.ch/ALICEYale/alice-yale-dev) repository. All older development history is available there.
-
-## Authors
-
- - [Raymond Ehlers](mailto:raymond.ehlers@cern.ch), Yale University 
-
- - [James Mulligan](mailto:james.mulligan@yale.edu), Yale University 
