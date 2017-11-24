@@ -7,11 +7,17 @@ RUN apt-get update && apt-get install -y \
         autossh \
     && rm -rf /var/lib/apt/lists/*
 
+# AliEn Certs needed for EOS
+COPY buildScripts/buildAlienCAs.sh /opt/scratch/buildScripts/buildAlienCAs.sh
+RUN mkdir -p /opt/scratch/alienCAs && cd /opt/scratch/alienCAs \
+        && git clone https://github.com/alisw/alien-cas.git . \
+        && /opt/scratch/buildScripts/buildAlienCAs.sh /opt/scratch/alienCAs /opt/alienCAs \
+        && rm -r /opt/scratch/alienCAs
+ENV X509_CERT_DIR="/opt/alienCAs"
+
 # Setup OVERWATCH
 ENV OVERWATCH_ROOT /opt/overwatch
 WORKDIR ${OVERWATCH_ROOT}
-# Ensure that ROOT is found by cmake
-ENV ROOTSYS /opt/root
 # Download OVERWATCH, setup the needed python packages, and compile the reciever
 # Size increase here is mainly due to the numpy dependency
 RUN git clone https://github.com/raymondEhlers/OVERWATCH.git . \
@@ -22,6 +28,7 @@ RUN git clone https://github.com/raymondEhlers/OVERWATCH.git . \
         && make install
 # Add receiver to path
 ENV PATH="/opt/receiver/bin:${PATH}"
+ENV LD_LIBRARY_PATH="/opt/receiver/lib:${LD_LIBRARY_PATH}"
 
 # Add bower, Polymer, webcomponents, jsRoot for OVERWATCH
 RUN ln -s /usr/bin/nodejs /usr/bin/node \
@@ -39,7 +46,7 @@ RUN ln -s /usr/bin/nodejs /usr/bin/node \
 # vim can always be installed later if necessary...
 #RUN apt-get update && apt-get install -y vim
 # NOTE: Updating here will cause a problem if we make changes to the receiver
-RUN git fetch && echo "" && echo "" && echo "" && echo "" && git checkout deploy2017 && git pull
+RUN git fetch && echo "" && echo "" && git checkout deploy2017 && git pull
 # ENDTEMP
 
 # Configure OVERWATCH

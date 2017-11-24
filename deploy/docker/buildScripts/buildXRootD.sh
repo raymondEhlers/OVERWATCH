@@ -5,4 +5,5 @@ SRC=$1
 INST=$2
 
 cmake "${SRC}" \
-    -DCMAKE_INSTALL_PREFIX="${INST}"
+    -DCMAKE_INSTALL_PREFIX="${INST}" \
+    -DENABLE_KRBS=TRUE

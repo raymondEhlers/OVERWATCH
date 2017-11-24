@@ -2,6 +2,9 @@
 FROM ubuntu:latest
 LABEL maintainer "Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University"
 
+# Needed to ensure that krb5-user installs successfully
+# See: https://stackoverflow.com/a/39805151
+ENV DEBIAN_FRONTEND noninteractive
 # Installed neede packages
 # ROOT dependencies from https://root.cern.ch/build-prerequisites
 #   - The required dependencies span from git to python
@@ -13,6 +16,7 @@ LABEL maintainer "Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University"
 #   - nginx is required to serve the webapp
 #   - zmq is required for the overwatch HLT receiver.
 #         NOTE: libzmqq3-dev is actually version 4 (ie up to date)...
+#   - libkrb5-dev and krb5-user are for kerberos (XRootD needs it for auth)
 RUN apt-get update && apt-get install -y \
         git \
         dpkg-dev \
@@ -34,6 +38,8 @@ RUN apt-get update && apt-get install -y \
         supervisor \
         nginx \
         libzmq3-dev \
+        libkrb5-dev \
+        krb5-user \
     && rm -rf /var/lib/apt/lists/* \
     && mkdir -p /opt/scratch
         # We delete the intermediate apt-get files once we are done
@@ -68,6 +74,14 @@ RUN mkdir -p /opt/scratch/root && cd /opt/scratch/root \
         && make -j2 install \
         && rm -r /opt/scratch/root
 # Remove src and build files
+
+# Setup ENV for XRootD, Root
+# Perhaps move to respective installations?
+ENV XROOTDSYS="/opt/xrootd"
+ENV ROOTSYS="/opt/root"
+ENV PATH="${XROOTDSYS}/bin:${ROOTSYS}/bin:${PATH}"
+ENV LD_LIBRARY_PATH="${XROOTDSYS}/lib:${ROOTSYS}/lib:${LD_LIBRARY_PATH}"
+ENV PYTHONPATH="${ROOTSYS}/lib:${PYTHONPATH}"
 
 # Nothing further is configured here since this is just a base image!
 CMD ["/bin/bash"]
