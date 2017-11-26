@@ -56,7 +56,7 @@ class Runs(flask_restful.Resource):
 
 def responseForSendingFile(filename = None, response = None, additionalHeaders = {}):
     if not filename and not response:
-        raise InputError("Must pass filename or response")
+        response = make_response()
 
     # Open file and make response if requested
     if filename and not response:
@@ -77,62 +77,51 @@ def responseForSendingFile(filename = None, response = None, additionalHeaders =
 class FilesAccess(flask_restful.Resource):
     def get(self, run, subsystem, filename = None):
         # TODO: Validate
-
-        # Return the filename for the particular run
-        subsystemContainer = db["runs"]["Run{0}".format(run)].subsystems[subsystem]
-
         responseHeaders = {}
         responseHeaders["run"] = run
         responseHeaders["run"] = run
         responseHeaders["subsystem"] = subsystem
         responseHeaders["filenames"] = []
+
+        # Return the filename for the particular run
+        subsystemContainer = db["runs"]["Run{0}".format(run)].subsystems[subsystem]
+
+        # Handle special cases
         if not filename:
             # Return the available files
             responseHeaders["filenames"] = [tempFile.filename.split("/")[-1] for tempFile in subsystemContainer.files.values()]
-            return responseForSendingFile(response = make_response(), additionalHeaders = responseHeaders)
+            return responseForSendingFile(additionalHeaders = responseHeaders)
         elif filename == "combined":
             # Return the combined file
             responseHeaders["filenames"].append(os.path.join(apiParameters["dirPrefix"], subsystemContainer.combinedFile.filename))
             response = responseForSendingFile(filename = subsystemContainer.combinedFile.filename, additionalHeaders = responseHeaders)
             print("response: {}".format(response))
             return response
-            #response["files"] = send_from_directory(os.path.realpath(apiParameters["dirPrefix"]), subsystemContainer.combinedFile.filename)
-            #response = make_response(send_from_directory(os.path.realpath(apiParameters["dirPrefix"]), subsystemContainer.combinedFile.filename))
-            #print(send_from_directory(os.path.realpath(apiParameters["dirPrefix"]), subsystemContainer.combinedFile.filename))
-            #print("response: {}".format(response))
-            #return jsonify(response)
-            #for k, v in responseHeaders.iteritems():
-            #    response.headers[k] = v
-            #return response
-            
-        #requestedFile = next(fileContainer for fileContainer in subsystemContainer.files.values() if fileContainer.filename == filename)
-        print(filename)
+
+        filename = secure_filename(filename)
+
+        # Look for the file
         print(subsystemContainer.files.itervalues().next().filename)
         try:
             requestedFile = next(fileContainer for fileContainer in subsystemContainer.files.values() if fileContainer.filename.split("/")[-1] == filename)
         except StopIteration as e:
-            #responseHeaders["error"] = "Could not find requested file {0}".format(filename)
             response = responseForSendingFile(additionalHeaders = responseHeaders)
             response.body = "Error: Could not find requested file {0}".format(filename)
             return response
 
         responseHeaders["filenames"].append(os.path.join(apiParameters["dirPrefix"], requestedFile.filename))
         return responseForSendingFile(filename = requestedFile.filename, additionalHeaders = responseHeaders)
-        #response = make_response(end_from_directory(apiParameters["dirPrefix"], requestedFile.filename))
-        #for k, v in responseHeaders.iteritems():
-        #    response.headers[k] = v
-        #return response
 
     def put(self, run, subsystem, filename):
-        # Validate input!
-
-        # Store passed file
+        # TODO: Validate input!
 
         # Just to be safe!
         filename = secure_filename(filename)
 
         print("request: ".format(request))
+        print("request.files: ".format(request.files))
 
+        # Store passed file
         savedFile = False
         if "file" in request.files:
             # Handle multi-part file request
@@ -143,12 +132,13 @@ class FilesAccess(flask_restful.Resource):
             # NOTE: This means that the form object must be called "file"!
             payloadFile = request.files["file"]
             print("payloadFile: {}".format(payloadFile))
+            print("payloadFile.read: {}".format(payloadFile.read()))
 
             # Save it out
             #payloadFile.save(outputPath)
-            #savedFile = True
+            savedFile = True
 
-        return "True"
+        return savedFile
 
 api.add_resource(FilesAccess, "/rest/api/v1/files/<int:run>/<string:subsystem>",
                               "/rest/api/v1/files/<int:run>/<string:subsystem>/<string:filename>")
