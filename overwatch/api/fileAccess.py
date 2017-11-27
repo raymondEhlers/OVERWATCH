@@ -60,6 +60,7 @@ def responseForSendingFile(filename = None, response = None, additionalHeaders =
 
     # Open file and make response if requested
     if filename and not response:
+        # TODO: Handle various file sources
         response = make_response(send_from_directory(os.path.realpath(apiParameters["dirPrefix"]), filename))
 
     # Add requested filenames
@@ -78,7 +79,6 @@ class FilesAccess(flask_restful.Resource):
     def get(self, run, subsystem, filename = None):
         # TODO: Validate
         responseHeaders = {}
-        responseHeaders["run"] = run
         responseHeaders["run"] = run
         responseHeaders["subsystem"] = subsystem
         responseHeaders["filenames"] = []
@@ -105,10 +105,13 @@ class FilesAccess(flask_restful.Resource):
         try:
             requestedFile = next(fileContainer for fileContainer in subsystemContainer.files.values() if fileContainer.filename.split("/")[-1] == filename)
         except StopIteration as e:
+            print("Stop iteration error!")
             response = responseForSendingFile(additionalHeaders = responseHeaders)
-            response.body = "Error: Could not find requested file {0}".format(filename)
+            response.headers["error"] = "Could not find requested file {0}".format(filename)
+            response.status_code = 404
             return response
 
+        print("filename for requested file: {}".format(os.path.join(apiParameters["dirPrefix"], requestedFile.filename)))
         responseHeaders["filenames"].append(os.path.join(apiParameters["dirPrefix"], requestedFile.filename))
         return responseForSendingFile(filename = requestedFile.filename, additionalHeaders = responseHeaders)
 
@@ -117,9 +120,6 @@ class FilesAccess(flask_restful.Resource):
 
         # Just to be safe!
         filename = secure_filename(filename)
-
-        print("request: ".format(request))
-        print("request.files: ".format(request.files))
 
         # Store passed file
         savedFile = False
@@ -132,11 +132,18 @@ class FilesAccess(flask_restful.Resource):
             # NOTE: This means that the form object must be called "file"!
             payloadFile = request.files["file"]
             print("payloadFile: {}".format(payloadFile))
-            print("payloadFile.read: {}".format(payloadFile.read()))
+            # Read for notes and then reset to the start
+            #print("payloadFile.read: {}".format(payloadFile.read()))
+            #payloadFile.seek(0)
 
             # Save it out
-            #payloadFile.save(outputPath)
+            # TODO: Handle writing to the proper source
+            outputPath = os.path.join(apiParameters["dirPrefix"], "Run{0}".format(run), subsystem, filename)
+            payloadFile.save(outputPath)
             savedFile = True
+        else:
+            savedFile = False
+            raise InputError("No valid file passed.")
 
         return savedFile
 
