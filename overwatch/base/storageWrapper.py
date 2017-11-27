@@ -8,6 +8,7 @@ Wrapper to handle file access via EOS
 
 import XRootD
 from XRootD.client.flags import OpenFlags
+import contextlib
 
 ## Relevant operations
 # Read (get)
@@ -15,7 +16,7 @@ from XRootD.client.flags import OpenFlags
 # Delete (del)
 
 # Global list of storage elements
-gStorageElemenets = set()
+gStorageElements = set()
 
 def StorageElement(object):
     def __init__(self, storageLocation):
@@ -78,6 +79,11 @@ def XRDStorageElement(StorageElement):
         # Return False if unsuccessful
         return (fullFilename, False)
 
+def defineLocalFile(basePath):
+    def localFileWrapper(filename, mode):
+        return localFile(os.path.join(basePath, filename), mode)
+    return localFileWrapper
+
 @contextlib.contextmanager
 def localFile(filename, mode):
     __basePath__ = ""
@@ -121,7 +127,7 @@ def DefineStorageElementsFromConfig(storageLocations):
     for storageLocation in storageLocations:
         if storageLocation.startswith("file://"):
             # "file://" Should not be included in the path!
-            gStorageElements.update(LocalStorageElement(storageLocation.replace("file://")))
+            gStorageElements.update(LocalStorageElement(storageLocation.replace("file://", "")))
         elif storageLocation.startswith("xrd://") or storageLocation.startswith("eos://"):
             gStorageElements.update(XRDStorageElement(storageLocation))
         else:
@@ -260,7 +266,7 @@ class StorageWrapper(object):
     # Normal mode should be to return the file,
     # with the option to only return the filename
     def _AccessFile(filePath, mode, rootFile = None):
-        if rootFile is None
+        if rootFile is None:
             # Only check if the user doesn't specify
             if ".root" in filePath:
                 rootFile = True
@@ -274,23 +280,26 @@ class StorageWrapper(object):
                 remoteLocation = True
 
             # Open file
-            try
+            try:
                 f = Open(filePath, mode)
                 return f
             except IOError:
                 # File doesn't exist - look at remote
+                pass
 
         if remoteCache:
             # Write to EOS
             if EOS:
                 ROOT.TFile.Cp(os.path.join(eosPath, filePath), localPath)
 
-                try
+                try:
                     f = Open(filePath, mode)
                     return f
                 except IOError:
                     # File doesn't exist. Fatal
+                    pass
             else:
+                pass
 
     def writeFile(localCache = False):
         pass
