@@ -81,7 +81,7 @@ ENV XROOTDSYS="/opt/xrootd"
 ENV ROOTSYS="/opt/root"
 ENV PATH="${XROOTDSYS}/bin:${ROOTSYS}/bin:${PATH}"
 ENV LD_LIBRARY_PATH="${XROOTDSYS}/lib:${ROOTSYS}/lib:${LD_LIBRARY_PATH}"
-ENV PYTHONPATH="${ROOTSYS}/lib:${PYTHONPATH}"
+ENV PYTHONPATH="${ROOTSYS}/lib:${XROOTDSYS}/lib/python2.7/site-packages/:${PYTHONPATH}"
 
 # Nothing further is configured here since this is just a base image!
 CMD ["/bin/bash"]

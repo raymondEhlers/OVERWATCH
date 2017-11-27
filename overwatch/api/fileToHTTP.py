@@ -108,19 +108,20 @@ def FileWithLocalFilename(filename, writeFile = False):
             print("Potentially writing file")
             if writeFile:
                 (success, status, returnValue) = putFile(filename = filename, file = f)
-                print("Successfully wrote file")
+                print("Wrote file. success: {}, status: {}, returnValue: {}".format(success, status, returnValue))
         finally:
             print("Finally exiting from FileWithLocalFilename")
 
 if __name__ == "__main__":
     # Get the file
     #(success, status, strIO) = getFile(filename = "246980/EMC/combined")
+    writeFile = True
     textFile = False
     rootFile = True
     if textFile:
         try:
             #with FileInMemory(filename = "246980/EMC/helloworld.txt", writeFile = True) as (success, status, fileInMemory):
-            with FileInMemory(filename = "246980/EMC/EMChists.2015_12_13_5_8_22.root", writeFile = True) as (success, status, fileInMemory):
+            with FileInMemory(filename = "246980/EMC/EMChists.2015_12_13_5_8_22.root", writeFile = writeFile) as (success, status, fileInMemory):
                 # Just to find the length
                 fileInMemory.seek(0)
                 print("fileInMemory.read(): {}".format(fileInMemory.read()))
@@ -133,7 +134,7 @@ if __name__ == "__main__":
             print(e)
 
         try:
-            with FileWithLocalFilename(filename = "246980/EMC/EMChists.2015_12_13_5_8_22.root", writeFile = True) as filename:
+            with FileWithLocalFilename(filename = "246980/EMC/EMChists.2015_12_13_5_8_22.root", writeFile = writeFile) as filename:
                 # Stricktly speaking, this only works on unix! But this should be fine for our purposes,
                 # as Overwatch is not designed to work on Windows anyway.
                 # "w" does not seem to work properly, even if we page to the end of the file!
@@ -150,12 +151,14 @@ if __name__ == "__main__":
 
     if rootFile:
         try:
-            with FileWithLocalFilename(filename = "246980/EMC/EMChists.2015_12_13_5_7_22.root", writeFile = True) as filename:
+            with FileWithLocalFilename(filename = "246980/EMC/EMChists.2015_12_13_5_7_22.root", writeFile = writeFile) as filename:
                 print("Temporary filename: {}".format(filename))
                 testHist = ROOT.TH1F("testHist", "testHist", 10, 0, 10)
                 testHist.Fill(3)
                 # Stricktly speaking, this only works on unix! But this should be fine for our purposes,
                 # as Overwatch is not designed to work on Windows anyway.
+                # "RECREATE" will not work, as the file is being recreated in a way that isn't
+                # compatiable with the temp file!
                 with rootpy.io.root_open(filename, "UPDATE") as f:
                     print("f.ls()  pre write:")
                     # Needs to be in a separate line. Otherwise, it will print before saying "pre/post write"
@@ -166,6 +169,12 @@ if __name__ == "__main__":
 
                     # Needs to be in a separate line. Otherwise, it will print before saying "pre/post write"
                     print("f.ls() post write:")
+                    # Needs to be in a separate line. Otherwise, it will print before saying "pre/post write"
+                    f.ls()
+
+                # Check that it was written properly
+                with rootpy.io.root_open(filename, "READ") as f:
+                    print("f.ls() post post write:")
                     # Needs to be in a separate line. Otherwise, it will print before saying "pre/post write"
                     f.ls()
         except ErrorInGettingFile as e:
