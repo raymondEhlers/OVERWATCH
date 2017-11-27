@@ -9,8 +9,13 @@ Wrapper to handle file access via EOS
 import XRootD
 from XRootD.client.flags import OpenFlags
 
+## Relevant operations
+# Read (get)
+# Write (put)
+# Delete (del)
+
 # Global list of storage elements
-gStroageElemenets = set()
+gStorageElemenets = set()
 
 def StorageElement(object):
     def __init__(self, storageLocation):
@@ -35,6 +40,10 @@ def LocalStorageElement(StorageElement):
 
         # Return False if unsuccessful
         return (fullFilename, False)
+
+def LocalFile(object):
+    def __init__(self):
+        pass
 
     def OpenFile(self, filename, mode, **kwargs):
         # TODO: Careful here: This is a specific file, but the class is for general storage!
@@ -69,18 +78,44 @@ def XRDStorageElement(StorageElement):
         # Return False if unsuccessful
         return (fullFilename, False)
 
-    def OpenFile(self, filename, mode = "", **kwargs):
-        # TODO: Careful here: This is a specific file, but the class is for general storage!
-        # TODO: Careful too: Would usually use a "with" statement!
-        self.openFile = self.client.File()
-        if mode in self.__modes__:
-            mode = self.__modes__[mode]
+@contextlib.contextmanager
+def localFile(filename, mode):
+    __basePath__ = ""
+    path = os.path.join(__basePath__, filename)
+    with open(path, mode) as f:
+        try:
+            yield f
+            print("Finished local file")
+        finally:
+            print("Finally finished local file")
 
-        status, _ = f.Open(self.FullFilename(filename), mode)
-        if status.ok:
-            return self.openFile
+@contextlib.contextmanager
+def XRDFile(filename, mode):
+    __baseUrl__ = ""
+    # Translation of modes from rootpy
+    # Defined in rootpy.io.root_open.mode_map
+    __modes__ = {"a": OpenFlags.UPDATE,
+                 "a+": OpenFlags.UPDATE,
+                 "r": OpenFlags.READ,
+                 "r+": OpenFlags.UPDATE,
+                 "w": OpenFlags.RECREATE,
+                 "w+": OpenFlags.RECREATE}
 
-        return IOError("Failed to open XRD file. Message: {}".format(status.message))
+    with XRootD.client.File() as f:
+        try:
+            if mode in __modes__:
+                mode = __modes__[mode]
+            # Should work despite note being the obivous option
+            path = os.path.join(__baseUrl__, filename)
+            f.open(path)
+
+            status, _ = f.Open(self.FullFilename(filename), mode)
+            if status.ok:
+                yield f
+            else:
+                yield IOError("Failed to open XRD file. Message: {}".format(status.message))
+        finally:
+            print("Exiting XRD file")
 
 def DefineStorageElementsFromConfig(storageLocations):
     for storageLocation in storageLocations:
