@@ -2,9 +2,12 @@
 FROM rehlers/overwatch-base:latest
 LABEL maintainer Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 
-# Install autossh
+# Additional installation (TODO: move to Dockerfile.build)
+# - autossh is required for connecting to the HLT
+# - wget is required for n (updated nodejs)
 RUN apt-get update && apt-get install -y \
         autossh \
+        wget \
     && rm -rf /var/lib/apt/lists/*
 
 # AliEn Certs needed for EOS
@@ -30,9 +33,13 @@ RUN git clone https://github.com/raymondEhlers/OVERWATCH.git . \
 ENV PATH="/opt/receiver/bin:${PATH}"
 ENV LD_LIBRARY_PATH="/opt/receiver/lib:${LD_LIBRARY_PATH}"
 
-# Add bower, Polymer, webcomponents, jsRoot for OVERWATCH
+# Add bower, polymer-bundler, Polymer, webcomponents, jsRoot for OVERWATCH
+# bower is required for isntalling polymer packages (should move to yarn eventually).
+# polymer-bundler is for combining polymer packages into one file for efficiency.
+# n allows updates of nodejs, which is needed for polymer-bundler.
 RUN ln -s /usr/bin/nodejs /usr/bin/node \
-        && npm install -g bower \
+        && npm install -g bower polymer-bundler n \
+        && n lts \
         && cd overwatch/webApp/static \
         && bower --allow-root install \
         && cd /tmp && git clone https://github.com/root-project/jsroot.git \
