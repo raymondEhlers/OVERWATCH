@@ -23,10 +23,10 @@
 
         {# See: http://flask.pocoo.org/docs/0.11/patterns/jquery/ -#}
         {#- Loads jQuery from google if available, or locaclly is not -#}
+        <!-- Ensure that we can use jQuery here! -->
         <script src="//ajax.googleapis.com/ajax/libs/jquery/1.9.1/jquery.min.js"></script>
         <script>window.jQuery || document.write('<script src="{{ url_for('static', filename='scripts/jquery.min.js') }}">\x3C/script>')</script>
 
-        <!-- Ensure that we can use jQuery here! -->
         {% assets "minJS" -%}
             <script async src="{{ ASSET_URL }}" type="text/javascript"></script>
         {%- endassets %}
@@ -55,7 +55,7 @@
                 head.removeChild(srcElement);
             }
             document.write('<script src="//root.cern.ch/js/latest/scripts/JSRootCore.js?2d">\x3C/script>');
-            /*window.alert("Using CDN for JSROOT!");*/
+            console.log("Using CDN for JSROOT");
         }
         </script>
         <!--<script src="//root.cern.ch/js/latest/scripts/JSRootCore.js?2d" type="text/javascript"></script>

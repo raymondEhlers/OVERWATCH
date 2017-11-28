@@ -147,6 +147,21 @@ h2 {
     /* Ensures that headers do not overflow the width of the page */
     word-wrap: break-word;
 }
+/* Handle keeping a 4:3 ratio for the histograms
+ * See: https://stackoverflow.com/a/24175439 */
+.histogramContainerStyle:before {
+    content: "";
+    float: left;
+    /* Effectively setting the width to be a percentage of the height
+     * Here I'm selecting 4:3 */
+    padding-bottom: 75%;
+}
+/* Clearfix */
+.histogramContainerStyle:after {
+    content: "";
+    display: table;
+    clear: both;
+}
 img, .histogramContainerStyle {
     /* Ensure images fit on the screen */
     max-width: 100%;

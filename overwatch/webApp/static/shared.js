@@ -491,6 +491,7 @@ function jsRootRequest() {
     console.log("Handling js root request!");
     // Find all histograms that should be requested
     var requestedHists = Polymer.dom(this.root).querySelectorAll(".histogramContainer");
+    $(requestedHists).addClass("histogramContainerStyle");
 
     // Request each jsRoot object
     $(requestedHists).each(function() {
@@ -511,7 +512,8 @@ function jsRootRequest() {
             // Then select the corresponding one to draw in after each request
 
             // (re)draw jsRootObj at specified frame "objectToDrawIn"
-            JSROOT.redraw(objectToDrawIn, jsRootObj, "colz");
+            //JSROOT.redraw(objectToDrawIn, jsRootObj, "colz");
+            JSROOT.draw(objectToDrawIn, jsRootObj, "colz");
         });
 
         // Actually send the request
