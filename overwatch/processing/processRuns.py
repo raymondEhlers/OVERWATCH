@@ -789,7 +789,7 @@ def processAllRuns():
     # Add users and secret key if debugging
     # This needs to be done manually if deploying, since this requires some care to ensure that everything is configured properly
     if processingParameters["debug"]:
-        utilities.updateDBSensitiveParameters(dbRoot, debug=processingParameters["debug"])
+        utilities.updateDBSensitiveParameters(dbRoot)
 
     # Ensure that any additional changes are committed
     transaction.commit()
