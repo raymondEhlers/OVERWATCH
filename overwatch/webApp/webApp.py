@@ -82,6 +82,10 @@ bcrypt = Bcrypt(app)
 
 # Setup flask assets
 assets = Environment(app)
+# Set the Flask Assets debug mode
+# Note that the bundling is _only_ performed when flask assets is _not_ in debug mode.
+# Thus, we want it to follow the global debug setting unless we explicit set it otherwise.
+app.config["ASSETS_DEBUG"] = serverParameters["flaskAssetsDebug"] if not serverParameters["flaskAssetsDebug"] is None else serverParameters["debug"]
 """
 Some notes on webassets:
  - Most filters, including this one, won't build in debug mode!
