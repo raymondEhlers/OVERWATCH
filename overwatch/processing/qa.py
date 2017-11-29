@@ -28,8 +28,15 @@ currentModule = sys.modules[__name__]
 
 ###################################################
 def createHistGroups(subsystem):
-    """ Properly route histogram group function for each subsystem
-    
+    """ Properly route histogram group function for each subsystem.
+
+    Functions should be of the form `create(SUBSYSTEM)HistogramGroups`
+
+    Args:
+        subsystem (subsystemContainer): Current subsystem container
+
+    Returns:
+        bool: True if the function was called
     """
     functionName = "create" + subsystem.subsystem + "HistogramGroups"
     # Get the function
@@ -45,7 +52,11 @@ def createHistGroups(subsystem):
 ###################################################
 def createHistogramStacks(subsystem):
     """ Properly routes histogram stack function for each subsystem
-    
+
+    Functions should be of the form `create(SUBSYSTEM)HistogramStacks`
+
+    Args:
+        subsystem (subsystemContainer): Current subsystem container
     """
     functionName = "create" + subsystem.subsystem + "HistogramStacks"
     histogramStackFunction = getattr(currentModule, functionName, None)
@@ -59,7 +70,11 @@ def createHistogramStacks(subsystem):
 ###################################################
 def setHistogramOptions(subsystem):
     """ Properly routes histogram options function for each subsystem
+
+    Functions should be of the form set(SUBSYSTEM)HistogramOptions
     
+    Args:
+        subsystem (subsystemContainer): Current subsystem container
     """
     functionName = "set" + subsystem.subsystem + "HistogramOptions"
     histogramStackFunction = getattr(currentModule, functionName, None)
@@ -73,7 +88,12 @@ def setHistogramOptions(subsystem):
 ###################################################
 def findFunctionsForHist(subsystem, hist):
     """ Determines which functions should be applied to a histogram
+
+    Functions should be of the form findFunctionsFor(SUBSYSTEM)Histogram
     
+    Args:
+        subsystem (subsystemContainer): Current subsystem container
+        hist (histogramContainer): The current histogram to be processed
     """
     functionName = "findFunctionsFor" + subsystem.subsystem + "Histogram"
     findFunction = getattr(currentModule, functionName, None)
