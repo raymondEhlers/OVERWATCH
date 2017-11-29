@@ -27,11 +27,11 @@ $ pip install -e .
 ### Docker Image
 
 A docker image is available on Docker Hub under the name `rehlers/overwatch`. Be certain to mount a directory
-containing data into the image so it can be used! If the data is in a folder called `data`, it should look something
-like:
+containing data into the image so it can be used! Note that you will likely want to use this image interactively (-it)
+and may want to remove the container when you are done (--rm). If the data is in a folder called `data`, it should look something like:
 
 ```bash
-$ docker run -v data:/overwatch/data rehlers/overwatch
+$ docker run -it --rm -v data:/overwatch/data rehlers/overwatch /bin/bash
 ```
 
 ## Using Overwatch
@@ -75,7 +75,9 @@ For the webApp, add something similar to the following to your `config.yaml`:
 _users: !bcrypt
     bcryptLogRounds: *bcryptLogRounds
     # You can change these values as desired
+    # The key, (below is "username") is the the name of your user, while the value, (below is "password") is your password
     username: "password"
+# Continue to keep debug: true . It often helps with ZODB difficulties.
 ```
 
 Then, to start the webApp for data visualization, run:
