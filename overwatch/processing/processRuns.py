@@ -63,7 +63,7 @@ from . import qa
 from . import processingClasses
 
 ###################################################
-def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, processingOptions = None):
+def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, processingOptions = None, forceRecreateSubsystem = False):
     """ Process a given root file, printing out all histograms.
 
     The function also applies QA as appropriate (either always applied or from a particular QA request) via
@@ -92,6 +92,13 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
 
     # Sorts keys so that we can have consistency when histograms are processed.
     keysInFile.Sort()
+
+    if forceRecreateSubsystem:
+        # Clear the stored hist information so we can recreate (reprocess) the subsystem
+        del subsystem.histGroups[:]
+        subsystem.histsInFile.clear()
+        subsystem.histsAvailable.clear()
+        subsystem.hists.clear()
 
     # Get histograms and sort them if they do not exist in the subsystem
     # Only need to do this the first time for each run
@@ -759,7 +766,8 @@ def processAllRuns():
                 outputFormattingSave = os.path.join("%s", "%s.%s") 
                 processRootFile(os.path.join(processingParameters["dirPrefix"], subsystem.combinedFile.filename),
                                 outputFormattingSave,
-                                subsystem)
+                                subsystem,
+                                forceRecreateSubsystem = processingParameters["forceRecreateSubsystem"])
             else:
                 # We often want to skip this point since most runs will not need to be processed most times
                 logger.debug("Don't need to process {0}. It has already been processed".format(run.prettyName))

@@ -6,6 +6,10 @@
 #: Force each run to be reprinted and regenerate the pages.
 forceReprocessing: false
 
+#: Force the subsystem to be recreated during processing.
+#: This will allow the applied functions to be re-determined
+forceRecreateSubsystem: false
+
 #: Force each run to be re-merged.
 #: Note that this can change the merging if new information has arrived since the last merge.
 forceNewMerge: False
