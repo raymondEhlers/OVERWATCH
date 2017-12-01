@@ -116,23 +116,28 @@ if __name__ == "__main__":
     # Get the file
     #(success, status, strIO) = getFile(filename = "246980/EMC/combined")
     writeFile = True
-    textFile = False
+    textFile = True
+    textFileTempFile = True
     rootFile = True
     if textFile:
         try:
             #with FileInMemory(filename = "246980/EMC/helloworld.txt", writeFile = True) as (success, status, fileInMemory):
             with FileInMemory(filename = "246980/EMC/EMChists.2015_12_13_5_8_22.root", writeFile = writeFile) as (success, status, fileInMemory):
-                # Just to find the length
-                fileInMemory.seek(0)
-                print("fileInMemory.read(): {}".format(fileInMemory.read()))
-                fileInMemory.seek(0, os.SEEK_END)
-                print("success: {}, status: {}, file length: {}".format(success, status, fileInMemory.tell()))
-                fileInMemory.write("Appended information in memory.\n")
-                fileInMemory.seek(0)
-                print("fileInMemory.read(): {}".format(fileInMemory.read()))
+                if success:
+                    # Just to find the length
+                    fileInMemory.seek(0)
+                    print("fileInMemory.read(): {}".format(fileInMemory.read()))
+                    fileInMemory.seek(0, os.SEEK_END)
+                    print("success: {}, status: {}, file length: {}".format(success, status, fileInMemory.tell()))
+                    fileInMemory.write("Appended information in memory.\n")
+                    fileInMemory.seek(0)
+                    print("fileInMemory.read(): {}".format(fileInMemory.read()))
+                else:
+                    print("Failed to retrieve file. status: {}".format(status))
         except ErrorInGettingFile as e:
             print(e)
 
+    if textFileTempFile:
         try:
             with FileWithLocalFilename(filename = "246980/EMC/EMChists.2015_12_13_5_8_22.root", writeFile = writeFile) as filename:
                 # Stricktly speaking, this only works on unix! But this should be fine for our purposes,
