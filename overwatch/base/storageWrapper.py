@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 
-import XRootD
-from XRootD.client.flags import OpenFlags
+#import XRootD
+#from XRootD.client.flags import OpenFlags
 import contextlib
 
 import os
@@ -18,8 +18,12 @@ def defineFileAccess(basePath):
         func = localFileWrapper
     return func
 
-def defineLocalFile(basePath):
+def defineLocalFile(basePath, useGenerator = False):
     def localFileWrapper(filename, mode):
+        if useGenerator:
+            def localFileGenerator():
+                pass
+
         return open(os.path.join(basePath, filename), mode)
     return localFileWrapper
 
@@ -36,6 +40,7 @@ def localFile(filename, mode):
     print("Filename: {}, mode: {}".format(filename, mode))
     with open(filename, mode) as f:
         try:
+            print("About to yield local file")
             yield f
             print("Finished local file")
         finally:
@@ -62,6 +67,7 @@ def XRDFile(filename, mode):
             #path = os.path.join(__baseUrl__, filename)
             status, _ = f.Open(filename, mode)
             if status.ok:
+                print("XRD status okay, yielding file")
                 yield f
             else:
                 yield IOError("Failed to open XRD file. Message: {}".format(status.message))

@@ -26,6 +26,7 @@ WORKDIR ${OVERWATCH_ROOT}
 RUN git clone https://github.com/raymondEhlers/OVERWATCH.git . \
         && pip install --upgrade pip \
         && pip install -r requirements.txt \
+        && echo "" \
         && mkdir -p receiver/build && cd receiver/build \
         && cmake "../" -DCMAKE_INSTALL_PREFIX="/opt/receiver" -DZEROMQ="/usr" \
         && make install
@@ -53,7 +54,7 @@ RUN ln -s /usr/bin/nodejs /usr/bin/node \
 # vim can always be installed later if necessary...
 #RUN apt-get update && apt-get install -y vim
 # NOTE: Updating here will cause a problem if we make changes to the receiver
-RUN git fetch && echo "" && echo "" && git checkout deploy2017 && git pull
+RUN git fetch && echo "" && git checkout deploy2017 && git pull
 # ENDTEMP
 
 # Configure OVERWATCH
