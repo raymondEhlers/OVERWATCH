@@ -154,7 +154,6 @@ class subsystemContainer(persistent.Persistent):
         # Depends on whether the subsystem actually contains the files!
         self.baseDir = os.path.join(runDir, self.fileLocationSubsystem)
         self.imgDir = os.path.join(self.baseDir, "img")
-        logger.info("imgDir: {0}".format(self.imgDir))
         self.jsonDir = os.path.join(self.baseDir, "json")
         # Ensure that they exist
         if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.imgDir)):
@@ -201,6 +200,72 @@ class subsystemContainer(persistent.Persistent):
         timeString = time.strftime("%A, %d %b %Y %H:%M:%S", timeStruct)
 
         return timeString
+
+    def resetContainer(self):
+        """  Clear the stored hist information so we can recreate (reprocess) the subsystem. """
+        del self.histGroups[:]
+        self.histsInFile.clear()
+        self.histsAvailable.clear()
+        self.hists.clear()
+
+class trendingContainer(persistent.Persistent):
+    """ Structure of the trending container (quite similar to that of the subsystem container):
+
+        """
+    def __init__(self, trendingDB):
+        self.subsystem = "TDG"
+
+        # Main container of the trendingObjects
+        self.trendingObjects = trendingDB
+
+        # True if the trending container trending objects are entirely filled and up to date
+        # Could be used to refill the trending container if it is empty
+        # TODO: Implement fully
+        self.updateToDate = False
+
+        # Directories for storage
+        self.baseDir = self.subsystem
+        self.imgDir = os.path.join(self.baseDir, "img")
+        self.jsonDir = os.path.join(self.baseDir, "json")
+        # Ensure that they exist
+        if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.imgDir)):
+            os.makedirs(os.path.join(processingParameters["dirPrefix"], self.imgDir))
+        if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.jsonDir)):
+            os.makedirs(os.path.join(processingParameters["dirPrefix"], self.jsonDir))
+
+
+        # Processing options
+        # Implemented by the detector to note how it was processed that may be changed during time slice processing
+        # This allows us return full processing when appropriate
+        self.processingOptions = persistent.mapping.PersistentMapping()
+
+    def addSubsystemTrendingObjects(self, subsystem, trendingObjects):
+        """ Add a given subsystem and set of associated trending objects to the trending container.
+
+        Args:
+            subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
+            trendingObjects (list): List of TrendingObject derived objects.
+        """
+        if not subsystem in self.trendingObjects.keys():
+            self.trendingObjects[subsystem] = BTrees.OOBTree.BTree()
+
+        for name, obj in trendingObjects.iteritems():
+            self.trendingObjects[subsystem][name] = obj
+
+    def resetContainer(self):
+        """ Reset the trending container """
+        self.trendingObjects.ckear()
+
+    def findTrendingFunctionsForHist(self, hist):
+        """ Given a hist, determine the trending objects (and therefore functions) which should be applied. """
+        for subsystemName, subsystem in self.trendingObjects.iteritems():
+            for trendingObjName, trendingObj in subsystems.iteritems():
+                if hist.GetName() in trendingObj.histNames:
+                    # Define the temporary function so it can be executed later.
+                    #def tempFunc():
+                    #    return self.trendingObjects[subsystemName][trendingObjName].Fill(hist)
+                    #hist.append(tempFunc)
+                    hist.appned(self.trendingObjects[subsystemName][trendingObjName].Fill)
 
 ###################################################
 class timeSliceContainer(persistent.Persistent):
@@ -330,18 +395,29 @@ class histogramContainer(persistent.Persistent):
         # Contains the canvas where the hist may be plotted, along with additional content
         self.canvas = None
         self.functionsToApply = persistent.list.PersistentList()
+        # Could also be folded into functionsToApply
+        self.trendingFunctionsToApply = persistent.list.PersistentList()
 
-    def retrieveHistogram(self, fIn, ROOT):
-        if self.histList is not None:
-            self.hist = ROOT.THStack(self.histName, self.histName)
-            for name in self.histList:
-                logger.debug("HistName in list: {0}".format(name))
-                self.hist.Add(fIn.GetKey(name).ReadObj())
-            self.drawOptions += "nostack"
-            # TODO: Allow for further configuration of THStack, like TLegend and such
+    def retrieveHistogram(self, ROOT, fIn = None, trending = None):
+        if fIn:
+            if self.histList is not None:
+                self.hist = ROOT.THStack(self.histName, self.histName)
+                for name in self.histList:
+                    logger.debug("HistName in list: {0}".format(name))
+                    self.hist.Add(fIn.GetKey(name).ReadObj())
+                self.drawOptions += "nostack"
+                # TODO: Allow for further configuration of THStack, like TLegend and such
+            else:
+                logger.debug("HistName: {0}".format(self.histName))
+                self.hist = fIn.GetKey(self.histName).ReadObj()
+        elif trending:
+            # Not particularly efficient
+            for subsystemName, subsystem in trending.trendingObjects.iteritems():
+                for name, trendingObject in subsystem.iteritems():
+                    if self.histName in trendingObject.hist.histName:
+                        self.hist = trending.trendingObjects[subsystemName][self.histName].trendingHist
         else:
-            logger.debug("HistName: {0}".format(self.histName))
-            self.hist = fIn.GetKey(self.histName).ReadObj()
+            logger.warning("Unable to retrieve histogram {}".format(self.histName))
 
 ###################################################
 class qaFunctionContainer(persistent.Persistent):
@@ -486,6 +562,9 @@ class TrendingObject(object):
         self.trendingHist = trendingHist
         self.trendingFunction = None
 
+        self.hist = histogramContainer(trendingName)
+        self.hist.hist = self.trendingHist
+
         # Set histograms to be included
         # TODO: Should these be hist containers??
         if not histNames:
@@ -495,6 +574,21 @@ class TrendingObject(object):
 
         # Where the next entry should go
         self.nextEntry = 1
+
+        # Visualization of the trending object
+        self.canvas = None
+
+    # Handles requests to .hist in the processHist() function
+    #@property
+    #def hist(self):
+    #    return self.trendingHist
+
+    #@hist.setter
+    #def hist(self, val):
+    #    if val == None:
+    #        pass
+    #    else:
+    #        self.trendingHist = val
 
     def Fill1D(self, value, error):
         # TODO: Determine best way to get the previous histogram!

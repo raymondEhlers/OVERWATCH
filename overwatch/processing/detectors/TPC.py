@@ -15,9 +15,9 @@ from .. import processingClasses
 ##################
 # Trending Classes
 ##################
-class TPCTrendingObject(processingClasses.TrendingObject):
+class TPCTrendingObjectMean(processingClasses.TrendingObject):
     def __init__(self, trendingHistName, trendingHistTitle, histNames, nEntries = 100):
-        super(TPCTrendingObject, self).__init__(trendingName = trendingName, trendingHist = None, histNames = histNames)
+        super(TPCTrendingObjectMean, self).__init__(trendingName = trendingHistName, trendingHist = None, histNames = histNames)
 
         # Determine the number of desired time entires
         self.nEntries = nEntries
@@ -32,9 +32,13 @@ class TPCTrendingObject(processingClasses.TrendingObject):
         # Set the histogrma to display a time axis
         self.trendingHist.GetXaxis().SetTimeDisplay(1)
 
+        self.hist.hist = self.trendingHist
+
+        print("self.hist: {}, self.hist.hist: {}".format(self.hist, self.hist.hist))
+
     def Fill(self, hists):
         if len(self.histNames) > 1:
-            print("Too many histograms passed to {0}!".format(self.))
+            print("Too many histograms passed to {0}!".format(self.histNames))
             return
 
         fillVal = 0
@@ -47,7 +51,7 @@ class TPCTrendingObject(processingClasses.TrendingObject):
 
         self.Fill1D(fillVal, fillValError)
 
-def defineTPCTrendingHists(trending, subsystem):
+def defineTPCTrendingObjects(trending):
     # Being a bit clever so we don't have to repeat too much code
     names = [["TPCClusterTrending", "<TPC clusters>:   (p_{T} > 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_0_5_7_restrictedPtEta"]],
              ["TPCFoundClusters", "<Found/Findable TPC clusters>:   (p_{T} > 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_2_5_7_restrictedPtEta"]],
@@ -63,7 +67,9 @@ def defineTPCTrendingHists(trending, subsystem):
         # Create it if it doens't exist
         if not name in trending.keys():
             # Define new trending histogram
-            trending[name] = TPCTrendingObject(name, title, histNames)
+            trending[name] = TPCTrendingObjectMean(name, title, histNames)
+
+    return trending
 
 ######################################################################################################
 ######################################################################################################
@@ -83,16 +89,16 @@ def findFunctionsForTPCHistogram(subsystem, hist):
              "TPCQA/h_tpc_track_all_recvertex_2_5_7",
              "TPCQA/h_tpc_track_all_recvertex_3_5_7",
              "TPCQA/h_tpc_track_all_recvertex_4_5_7"]
-    if hist.GetName() in names:
-        hist.functionsToApply(restrictRangeAndProjectTo1D)
+    if hist.histName in names:
+        hist.functionsToApply.append(restrictRangeAndProjectTo1D)
 
     names = ["TPCQA/h_tpc_track_pos_recvertex_3_5_6",
              "TPCQA/h_tpc_track_neg_recvertex_3_5_6",
              "TPCQA/h_tpc_track_pos_recvertex_4_5_6",
              "TPCQA/h_tpc_track_neg_recvertex_4_5_6"]
-    if hist.GetName() in names:
-        hist.functionsToApply(aSideProjectToXZ)
-        hist.functionsToApply(cSideProjectToXZ)
+    if hist.histName in names:
+        hist.functionsToApply.append(aSideProjectToXZ)
+        hist.functionsToApply.append(cSideProjectToXZ)
 
 def createTPCHistogramGroups(subsystem):
     # Sort the filenames of the histograms into catagories for better presentation
@@ -143,7 +149,7 @@ def cSideProjectToXZ():
 
     return cSideWrapped
 
-def projectToXZ(subsystem, hist, processingOptions, aSide)
+def projectToXZ(subsystem, hist, processingOptions, aSide):
     if aSide == True:
         hist.GetYaxis().SetRangeUser(0, 1)
     else:

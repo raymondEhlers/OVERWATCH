@@ -17,6 +17,9 @@ subsystemList: &subsystemList
 #: Each of these subsystems will also get an individual page for access to their respective ROOT files.
 subsystemsWithRootFilesToShow: *subsystemList
 
+#: Select whether to enable trending
+trending: true
+
 # These are the QA functions that should be displayed as options on the QA page.
 # 
 # The functions should be sorted by subsystem. They will only work on the defined subsystem.

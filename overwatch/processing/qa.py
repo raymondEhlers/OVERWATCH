@@ -100,7 +100,25 @@ def findFunctionsForHist(subsystem, hist):
     if findFunction is not None:
         findFunction(subsystem, hist)
     else:
-        logger.info("Could not find histogram function sorting function for subsystem {0}".format(subsystem.subsystem))
+        logger.info("Could not find histogram function for subsystem {0}".format(subsystem.subsystem))
+
+###################################################
+def defineTrendingObjects(subsystem):
+    """ Defines trending histograms and the histograms from which they should be extracted.
+
+    Args:
+        subsystem (subsystemContainer): Current subsystem container
+        subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
+    """
+    functionName = "define" + subsystem + "TrendingObjects"
+    findFunction = getattr(currentModule, functionName, None)
+    trending = {}
+    if findFunction is not None:
+        trending = findFunction(trending)
+    else:
+        logger.info("Could not find histogram trending function for subsystem {0}".format(subsystem))
+
+    return trending
 
 ###################################################
 def checkHist(hist, qaContainer):
