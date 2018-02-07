@@ -233,13 +233,12 @@ class trendingContainer(persistent.Persistent):
         if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.jsonDir)):
             os.makedirs(os.path.join(processingParameters["dirPrefix"], self.jsonDir))
 
-
         # Processing options
         # Implemented by the detector to note how it was processed that may be changed during time slice processing
         # This allows us return full processing when appropriate
         self.processingOptions = persistent.mapping.PersistentMapping()
 
-    def addSubsystemTrendingObjects(self, subsystem, trendingObjects):
+    def addSubsystemTrendingObjects(self, subsystem, trendingObjects, forceRecreateSubsystem):
         """ Add a given subsystem and set of associated trending objects to the trending container.
 
         Args:
@@ -249,23 +248,31 @@ class trendingContainer(persistent.Persistent):
         if not subsystem in self.trendingObjects.keys():
             self.trendingObjects[subsystem] = BTrees.OOBTree.BTree()
 
+        logger.debug("self.trendingObjects[{}]: {}".format(subsystem, self.trendingObjects[subsystem]))
+
         for name, obj in trendingObjects.iteritems():
-            self.trendingObjects[subsystem][name] = obj
+            if not name in self.trendingObjects[subsystem] or forceRecreateSubsystem:
+                logger.debug("Adding trending object {} from subsystem {} to the trending objects".format(name, subsystem))
+                self.trendingObjects[subsystem][name] = obj
+            else:
+                logger.debug("Trending object {} (name: {}) already exists in subsystem {}".format(self.trendingObjects[subsystem][name], name, subsystem))
 
     def resetContainer(self):
         """ Reset the trending container """
-        self.trendingObjects.ckear()
+        self.trendingObjects.clear()
 
     def findTrendingFunctionsForHist(self, hist):
         """ Given a hist, determine the trending objects (and therefore functions) which should be applied. """
+        logger.debug("Looking for trending objects for hist {}".format(hist.histName))
         for subsystemName, subsystem in self.trendingObjects.iteritems():
-            for trendingObjName, trendingObj in subsystems.iteritems():
-                if hist.GetName() in trendingObj.histNames:
+            for trendingObjName, trendingObj in subsystem.iteritems():
+                if hist.histName in trendingObj.histNames:
                     # Define the temporary function so it can be executed later.
                     #def tempFunc():
                     #    return self.trendingObjects[subsystemName][trendingObjName].Fill(hist)
                     #hist.append(tempFunc)
-                    hist.appned(self.trendingObjects[subsystemName][trendingObjName].Fill)
+                    logger.debug("Found trending object match for hist {}, trendingObject: {}".format(hist.histName, self.trendingObjects[subsystemName][trendingObjName].name))
+                    hist.trendingFunctionsToApply.append(self.trendingObjects[subsystemName][trendingObjName])
 
 ###################################################
 class timeSliceContainer(persistent.Persistent):
@@ -592,6 +599,7 @@ class TrendingObject(object):
 
     def Fill1D(self, value, error):
         # TODO: Determine best way to get the previous histogram!
+        print("name: {}, self.nextEntry: {}, value: {}".format(self.name, self.nextEntry, value))
         if self.nextEntry > self.nEntries:
             # Get the array and convert to np array so it can be fed back to the hist
             valArray = utilities.convertToNPArray(self.trendingHist.GetArray(), self.trendingHist.GetNcells())
@@ -603,11 +611,12 @@ class TrendingObject(object):
 
             # Increment the time offset
             # TODO: Determine how to get this value
-            self.trendingHist.GetXaxis().SetTimeOffset()
+            #self.trendingHist.GetXaxis().SetTimeOffset()
         else:
             if self.nextEntry == 1:
                 # TODO: Determine how to get this value
-                self.trendingHist.GetXaxis().SetTimeOffset()
+                #self.trendingHist.GetXaxis().SetTimeOffset()
+                pass
 
             # Fill into the trending histogram
             self.trendingHist.SetBinContent(self.nextEntry, value)

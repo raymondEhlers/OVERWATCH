@@ -162,6 +162,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
                 # Determine the trending functions to apply
                 if trendingContainer:
                     trendingContainer.findTrendingFunctionsForHist(hist)
+                    print("trending container: {}, hist: {}, ")
                 # Add it to the subsystem
                 subsystem.hists[hist.histName] = hist
             else:
@@ -187,10 +188,6 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
 
 ###################################################
 def processTrending(outputFormatting, trending, processingOptions = None, forceRecreateSubsystem = False):
-    if forceRecreateSubsystem:
-        # Clear the stored hist information so we can recreate (reprocess) the subsystem
-        trending.resetContainer()
-
     # Set the proper processing options
     # If it was passed in, it was from time slices
     if processingOptions == None:
@@ -200,12 +197,19 @@ def processTrending(outputFormatting, trending, processingOptions = None, forceR
     # Cannot have same name as other canvases, otherwise the canvas will be replaced, leading to segfaults
     canvas = ROOT.TCanvas("processTrendingCanvas", "processTrendingCanvas")
 
+    logger.debug("trending.trendingObjects: {}".format([key for key in trending.trendingObjects.keys()]))
+    logger.debug("trending.trendingObjects: {}".format(trending.trendingObjects["TPC"]))
     for subsystemName, subsystem in trending.trendingObjects.iteritems():
-        print("{}: subsystem from trending: {}".format(subsystemName, subsystem))
+        logger.debug("{}: subsystem from trending: {}".format(subsystemName, subsystem))
         for name, trendingObject in subsystem.iteritems():
             #hist = trendingObject.hist
             #hist.retrieveHistogram(trending = trending, ROOT = ROOT)
-            print("trendingObject: {}, hist: {}, hist.histName: {}, hist.hist: {}".format(trendingObject, trendingObject.hist, trendingObject.hist.histName, trendingObject.hist.hist))
+            logger.debug("trendingObject: {}, hist: {}, hist.histName: {}, hist.hist: {}".format(trendingObject, trendingObject.hist, trendingObject.hist.histName, trendingObject.hist.hist))
+            logger.debug("entries: {}".format(trendingObject.hist.hist.GetEntries()))
+            # TEMP - Check for entries!
+            nonzeroBins = [index for index in range(0, trendingObject.hist.hist.GetXaxis().GetNbins()) if  trendingObject.hist.hist.GetBinContent(index) > 0.]
+            logger.debug("nonzeroBins: {}".format(nonzeroBins))
+            # ENDTEMP
             processHist(subsystem = trending, hist = trendingObject.hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions, qaContainer = None)
 
 ###################################################
@@ -231,12 +235,15 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, qa
     # Call functions for each hist
     #logger.debug("Functions to apply: {0}".format(hist.functionsToApply))
     for func in hist.functionsToApply:
-        #logger.debug("Calling func: {0}".format(func))
+        logger.debug("Calling func: {0}".format(func))
         func(subsystem, hist, processingOptions)
 
     # Apply trending functions
-    for func in hist.trendingFunctionsToApply:
-        func(hist)
+    print("hist {} trending funcs: {}".format(hist.histName, hist.trendingFunctionsToApply))
+    for trendingObject in hist.trendingFunctionsToApply:
+        logger.debug("Filling trending object {}".format(trendingObject.name))
+        trendingObject.Fill(hist)
+        #func(hist)
 
     if qaContainer:
         # Various checks and QA that are performed on hists
@@ -259,6 +266,7 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, qa
     outputFilename = outputFormatting % (os.path.join(processingParameters["dirPrefix"], subsystem.imgDir),
                                          outputName,
                                          processingParameters["fileExtension"])
+    print("Saving hist to {}".format(outputFilename))
     hist.canvas.SaveAs(outputFilename)
 
     # Write BufferJSON
@@ -798,7 +806,7 @@ def processAllRuns():
         # TDG corresponds to general trending histograms (perhaps between two subsystem)
         for subsystem in processingParameters["subsystemList"] + ["TDG"]:
             trendingObjects = qa.defineTrendingObjects(subsystem)
-            trendingContainer.addSubsystemTrendingObjects(subsystem, trendingObjects)
+            trendingContainer.addSubsystemTrendingObjects(subsystem, trendingObjects, forceRecreateSubsystem = processingParameters["forceRecreateSubsystem"])
     else:
         trendingContainer = None
 
@@ -808,14 +816,15 @@ def processAllRuns():
         #for subsystem in subsystems:
         for subsystem in run.subsystems.values():
             # Process if there is a new file or if forceReprocessing
-            if subsystem.newFile == True or processingParameters["forceReprocessing"] == True:
+            logger.debug("runDir: {}, reprocessRuns: {}".format(runDir.replace("Run", ""), processingParameters["forceReprocessRuns"]))
+            if subsystem.newFile == True or processingParameters["forceReprocessing"] == True or int(runDir.replace("Run","")) in processingParameters["forceReprocessRuns"]:
                 # Process combined root file: plot histos and save in imgDir
                 logger.info("About to process {0}, {1}".format(run.prettyName, subsystem.subsystem))
                 processRootFile(os.path.join(processingParameters["dirPrefix"], subsystem.combinedFile.filename),
                                 outputFormattingSave,
                                 subsystem,
                                 forceRecreateSubsystem = processingParameters["forceRecreateSubsystem"],
-                                trendingContainer = None)
+                                trendingContainer = trendingContainer)
                 if trendingContainer and not trendingContainer.updateToDate:
                     # Loop over process root file with various until it is up to date
                     pass
@@ -830,7 +839,7 @@ def processAllRuns():
 
     if trendingContainer:
         # Run trending once we have gotten to the most recent run
-        logger.info("About to process trending with {}".format(run.prettyName))
+        logger.info("About to process trending")
         processTrending(outputFormatting = outputFormattingSave,
                         trending = trendingContainer,
                         forceRecreateSubsystem = processingParameters["forceRecreateSubsystem"])

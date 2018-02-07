@@ -16,40 +16,53 @@ from .. import processingClasses
 # Trending Classes
 ##################
 class TPCTrendingObjectMean(processingClasses.TrendingObject):
-    def __init__(self, trendingHistName, trendingHistTitle, histNames, nEntries = 100):
+    def __init__(self, trendingHistName, trendingHistTitle, histNames, nEntries = 50):
         super(TPCTrendingObjectMean, self).__init__(trendingName = trendingHistName, trendingHist = None, histNames = histNames)
 
         # Determine the number of desired time entires
         self.nEntries = nEntries
 
         # Setup trending histogram
+        # Multiply by 60.0 because it expects the times in seconds
         self.trendingHist = ROOT.TH1D(trendingHistName,
                                       trendingHistTitle,
                                       self.nEntries,
                                       0.,
-                                      self.nEntries);
+                                      self.nEntries * 60.0);
 
         # Set the histogrma to display a time axis
         self.trendingHist.GetXaxis().SetTimeDisplay(1)
+        #self.trendingHist.GetXaxis().SetTimeFormat()
+
+        # Make it more visible
+        self.trendingHist.SetMarkerStyle(ROOT.kFullCircle)
 
         self.hist.hist = self.trendingHist
 
         print("self.hist: {}, self.hist.hist: {}".format(self.hist, self.hist.hist))
 
-    def Fill(self, hists):
+    def Fill(self, hist):
         if len(self.histNames) > 1:
             print("Too many histograms passed to {0}!".format(self.histNames))
             return
 
+        print("Filling hist {}, histNames: {}".format(self.hist, self.histNames))
         fillVal = 0
         fillValError = 0
-        for histName in self.histNames:
-            hist = hists[histName]
-            # Could do something more complicated here, but we really only want the one value
-            fillVal += hist.GetMean()
-            fillValError += hist.GetMeanError()
+        #for histName in self.histNames:
+        #    hist = hists[histName]
+        # Could do something more complicated here, but we really only want the one value
+        fillVal += hist.hist.GetMean()
+        fillValError += hist.hist.GetMeanError()
 
+        print("Filling value: {}, error: {}".format(fillVal, fillValError))
         self.Fill1D(fillVal, fillValError)
+
+def tpcMeanFillWrapper(trendingObject):
+    def tpcMeanFill(hist):
+        return trendingObject.Fill(hist)
+
+    return tpcMeanFill
 
 def defineTPCTrendingObjects(trending):
     # Being a bit clever so we don't have to repeat too much code
@@ -124,42 +137,36 @@ def createTPCHistogramGroups(subsystem):
 def restrictRangeAndProjectTo1D(subsystem, hist, processingOptions):
     # Restrict pt and eta ranges
     # Pt
-    hist.GetZaxis().SetRangeUser(0.25,10);
+    hist.hist.GetZaxis().SetRangeUser(0.25,10);
     # Eta
-    hist.GetYaxis().SetRangeUser(-1,1);
+    hist.hist.GetYaxis().SetRangeUser(-1,1);
     # TODO: Reset range after projection (if needed)!!
 
     # Project
-    tempHist = hist.ProjectionX("_{0}".format(hist.GetName(), "_restrictedPtEta"))
+    tempHist = hist.hist.ProjectionX("_{0}".format(hist.hist.GetName(), "_restrictedPtEta"))
 
     # TODO: Create histogram container and save the projected hist
     #       Include axis labels, etc
 
-# Wrapper for projectToXZ
-def aSideProjectToXZ():
-    def aSideWrapped():
-        return projectToXZ(subsystem, hist, processingOptions, aSide = True)
+# Helper for projectToXZ
+def aSideProjectToXZ(subsystem, hist, processingOptions):
+    return projectToXZ(subsystem, hist, processingOptions, aSide = True)
 
-    return aSideWrapped
-
-# Wrapper for projectToXZ
-def cSideProjectToXZ():
-    def cSideWrapped():
-        return projectToXZ(subsystem, hist, processingOptions, aSide = False)
-
-    return cSideWrapped
+# Helper for projectToXZ
+def cSideProjectToXZ(subsystem, hist, processingOptions):
+    return projectToXZ(subsystem, hist, processingOptions, aSide = False)
 
 def projectToXZ(subsystem, hist, processingOptions, aSide):
     if aSide == True:
-        hist.GetYaxis().SetRangeUser(0, 1)
+        hist.hist.GetYaxis().SetRangeUser(0, 1)
     else:
-        hist.GetYaxis().SetRangeUser(-1, 0)
+        hist.hist.GetYaxis().SetRangeUser(-1, 0)
 
     # TODO: Reset range after projection (if needed)!!
 
     # Project to xz
-    tempHist = hist.Project3D("xz")
-    tempHist.SetName("{0}_xz".format(hist.GetName()))
+    tempHist = hist.hist.Project3D("xz")
+    tempHist.SetName("{0}_xz".format(hist.hist.GetName()))
 
     # TODO: Create histogram container and save the projected hist
     #       Include axis labels, etc
