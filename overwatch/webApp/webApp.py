@@ -146,7 +146,7 @@ def login():
             # It should be extremely unlikely for this condition to be met!
             logger.warning("Since we are debugging, adding users to the database automatically!")
             # Transactions saved in the function
-            baseUtilities.updateDBSensitiveParameters(db, debug = serverParameters["debug"])
+            baseUtilities.updateDBSensitiveParameters(db)
 
     # A post request Attempt to login the user in
     if request.method == "POST":
