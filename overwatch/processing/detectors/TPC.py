@@ -15,7 +15,7 @@ from .. import processingClasses
 ##################
 # Trending Classes
 ##################
-class TPCTrendingObjectMean(processingClasses.TrendingObject):
+class TPCTrendingObjectMean(processingClasses.trendingObject):
     def __init__(self, trendingHistName, trendingHistTitle, histNames, nEntries = 50):
         super(TPCTrendingObjectMean, self).__init__(trendingName = trendingHistName, trendingHist = None, histNames = histNames)
 
@@ -56,7 +56,7 @@ class TPCTrendingObjectMean(processingClasses.TrendingObject):
         fillValError += hist.hist.GetMeanError()
 
         print("Filling value: {}, error: {}".format(fillVal, fillValError))
-        self.Fill1D(fillVal, fillValError)
+        super(TPCTrendingObjectMean, self).Fill(fillVal, fillValError)
 
 def tpcMeanFillWrapper(trendingObject):
     def tpcMeanFill(hist):
@@ -64,7 +64,7 @@ def tpcMeanFillWrapper(trendingObject):
 
     return tpcMeanFill
 
-def defineTPCTrendingObjects(trending):
+def defineTPCTrendingObjects(trending, *args, **kwargs):
     # Being a bit clever so we don't have to repeat too much code
     names = [["TPCClusterTrending", "<TPC clusters>:   (p_{T} > 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_0_5_7_restrictedPtEta"]],
              ["TPCFoundClusters", "<Found/Findable TPC clusters>:   (p_{T} > 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_2_5_7_restrictedPtEta"]],

@@ -272,7 +272,7 @@ class trendingContainer(persistent.Persistent):
                     #    return self.trendingObjects[subsystemName][trendingObjName].Fill(hist)
                     #hist.append(tempFunc)
                     logger.debug("Found trending object match for hist {}, trendingObject: {}".format(hist.histName, self.trendingObjects[subsystemName][trendingObjName].name))
-                    hist.trendingFunctionsToApply.append(self.trendingObjects[subsystemName][trendingObjName])
+                    hist.trendingObjects.append(self.trendingObjects[subsystemName][trendingObjName])
 
 ###################################################
 class timeSliceContainer(persistent.Persistent):
@@ -401,9 +401,10 @@ class histogramContainer(persistent.Persistent):
         self.drawOptions = ""
         # Contains the canvas where the hist may be plotted, along with additional content
         self.canvas = None
+        # Functions which will be applied to the histogram each time it is processed
         self.functionsToApply = persistent.list.PersistentList()
-        # Could also be folded into functionsToApply
-        self.trendingFunctionsToApply = persistent.list.PersistentList()
+        # Trending objects which use this histogram
+        self.trendingObjects = persistent.list.PersistentList()
 
     def retrieveHistogram(self, ROOT, fIn = None, trending = None):
         if fIn:
@@ -562,7 +563,7 @@ class qaFunctionContainer(persistent.Persistent):
             logger.warning("histName {0} not in qa container, so it could not be removed!".format(histName))
 
 ###################################################
-class TrendingObject(object):
+class trendingObject(object):
     """ Base trending object """
     def __init__(self, trendingName, trendingHist, histNames = None):
         self.name = trendingName
@@ -597,7 +598,8 @@ class TrendingObject(object):
     #    else:
     #        self.trendingHist = val
 
-    def Fill1D(self, value, error):
+    def Fill(self, value, error):
+        """ 1D filling function. """
         # TODO: Determine best way to get the previous histogram!
         print("name: {}, self.nextEntry: {}, value: {}".format(self.name, self.nextEntry, value))
         if self.nextEntry > self.nEntries:

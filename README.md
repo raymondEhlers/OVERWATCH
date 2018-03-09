@@ -197,6 +197,11 @@ overwatch/receiver/config.yaml
 overwatch/base/config.yaml
 ```
 
+The ordering of the configuration files means that values can be overridden in configurations that defined
+with a higher precedence. For example, to enable debugging, simply set `debug: true` in your `./config.yaml`
+(stored in your current working directory) - it will override the definition of `debug` as false in the base
+configuration.
+
 For a list of the available configuration options, see the `config.yaml` file in the desired module.
 
 # Overwatch Deployment

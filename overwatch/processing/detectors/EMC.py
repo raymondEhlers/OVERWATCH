@@ -169,7 +169,7 @@ def setEMCHistogramOptions(subsystem):
     subsystem.processingOptions["hotChannelThreshold"] = 0
 
 ###################################################
-def generalEMCOptions(subsystem, hist, processingOptions):
+def generalEMCOptions(subsystem, hist, processingOptions, *args, **kwargs):
     # Set options for when not debugging
     if processingParameters["debug"] == False:
         # Disable hist stats

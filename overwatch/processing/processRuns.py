@@ -239,8 +239,8 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, qa
         func(subsystem, hist, processingOptions)
 
     # Apply trending functions
-    print("hist {} trending funcs: {}".format(hist.histName, hist.trendingFunctionsToApply))
-    for trendingObject in hist.trendingFunctionsToApply:
+    print("hist {} trending objects: {}".format(hist.histName, hist.trendingObjects))
+    for trendingObject in hist.trendingObjects:
         logger.debug("Filling trending object {}".format(trendingObject.name))
         trendingObject.Fill(hist)
         #func(hist)
