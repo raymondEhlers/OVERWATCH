@@ -38,7 +38,7 @@ def createHistGroups(subsystem):
     Returns:
         bool: True if the function was called
     """
-    functionName = "create" + subsystem.subsystem + "HistogramGroups"
+    functionName = "create{}HistogramGroups".format(subsystem.subsystem)
     # Get the function
     sortFunction = getattr(currentModule, functionName, None)
     if sortFunction is not None:
@@ -50,6 +50,23 @@ def createHistGroups(subsystem):
     return False
 
 ###################################################
+def createAdditionalHistograms(subsystem):
+    """ Properly routes additional histogram creation functions for each subsystem
+
+    Functions should be of the form `createAdditional(SUBSYSTEM)Histograms`
+
+    Args:
+        subsystem (subsystemContainer): Current subsystem container
+    """
+    functionName = "createAdditional{}Histograms".format(subsystem.subsystem)
+    histogramCreationFunction = getattr(currentModule, functionName, None)
+    if histogramCreationFunction is not None:
+        logger.info("Found additional histogram creation function for subsystem {}".format(subsystem.subsystem))
+        histogramCreationFunction(subsystem)
+    else:
+        logger.info("Could not find additional histogram creation function for subsystem {}.".format(subsystem.subsystem))
+
+###################################################
 def createHistogramStacks(subsystem):
     """ Properly routes histogram stack function for each subsystem
 
@@ -58,7 +75,7 @@ def createHistogramStacks(subsystem):
     Args:
         subsystem (subsystemContainer): Current subsystem container
     """
-    functionName = "create" + subsystem.subsystem + "HistogramStacks"
+    functionName = "create{}HistogramStacks".format(subsystem.subsystem)
     histogramStackFunction = getattr(currentModule, functionName, None)
     if histogramStackFunction is not None:
         histogramStackFunction(subsystem)
@@ -76,14 +93,12 @@ def setHistogramOptions(subsystem):
     Args:
         subsystem (subsystemContainer): Current subsystem container
     """
-    functionName = "set" + subsystem.subsystem + "HistogramOptions"
-    histogramStackFunction = getattr(currentModule, functionName, None)
-    if histogramStackFunction is not None:
-        histogramStackFunction(subsystem)
+    functionName = "set{}HistogramOptions".format(subsystem.subsystem)
+    histogramOptionsFunction = getattr(currentModule, functionName, None)
+    if histogramOptionsFunction is not None:
+        histogramOptionsFunction(subsystem)
     else:
         logger.info("Could not find histogram options function for subsystem {0}.".format(subsystem.subsystem))
-        # Ensure that the histograms propagate to the next dict if there is not stack function!
-        subsystem.histsAvailable = subsystem.histsInFile
 
 ###################################################
 def findFunctionsForHist(subsystem, hist):
@@ -95,7 +110,7 @@ def findFunctionsForHist(subsystem, hist):
         subsystem (subsystemContainer): Current subsystem container
         hist (histogramContainer): The current histogram to be processed
     """
-    functionName = "findFunctionsFor" + subsystem.subsystem + "Histogram"
+    functionName = "findFunctionsFor{}Histogram".format(subsystem.subsystem)
     findFunction = getattr(currentModule, functionName, None)
     if findFunction is not None:
         findFunction(subsystem, hist)
@@ -110,7 +125,7 @@ def defineTrendingObjects(subsystem):
         subsystem (subsystemContainer): Current subsystem container
         subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
     """
-    functionName = "define" + subsystem + "TrendingObjects"
+    functionName = "define{}TrendingObjects".format(subsystem)
     findFunction = getattr(currentModule, functionName, None)
     trending = {}
     if findFunction is not None:

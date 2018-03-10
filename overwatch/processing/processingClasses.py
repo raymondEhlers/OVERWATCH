@@ -401,23 +401,38 @@ class histogramContainer(persistent.Persistent):
         self.drawOptions = ""
         # Contains the canvas where the hist may be plotted, along with additional content
         self.canvas = None
+        # Functions which will be applied to project an available histogram to a new derived histogram
+        self.projectionFunctionsToApply = persistent.list.PersistentList()
         # Functions which will be applied to the histogram each time it is processed
         self.functionsToApply = persistent.list.PersistentList()
         # Trending objects which use this histogram
         self.trendingObjects = persistent.list.PersistentList()
 
     def retrieveHistogram(self, ROOT, fIn = None, trending = None):
+        """
+
+        """
         if fIn:
-            if self.histList is not None:
-                self.hist = ROOT.THStack(self.histName, self.histName)
-                for name in self.histList:
-                    logger.debug("HistName in list: {0}".format(name))
-                    self.hist.Add(fIn.GetKey(name).ReadObj())
-                self.drawOptions += "nostack"
-                # TODO: Allow for further configuration of THStack, like TLegend and such
+            if not self.histList is None:
+                if len(self.histList) > 1:
+                    self.hist = ROOT.THStack(self.histName, self.histName)
+                    for name in self.histList:
+                        logger.debug("HistName in list: {0}".format(name))
+                        self.hist.Add(fIn.GetKey(name).ReadObj())
+                    self.drawOptions += "nostack"
+                    # TODO: Allow for further configuration of THStack, like TLegend and such
+                elif len(self.histList) == 1:
+                    # Projective histogram
+                    histName = next(iter(self.histList))
+                    logger.debug("Retrieving histogram {} for projection!".format(histName))
+                    # Clone the histogram so restricted ranges don't propagate to other uses of this hist
+                    self.hist = fIn.GetKey(histName).ReadObj().Clone("{}_temp".format(histName))
+                else:
+                    logger.warning("histList for hist {} is defined, but is empty".format(histName))
             else:
                 logger.debug("HistName: {0}".format(self.histName))
                 self.hist = fIn.GetKey(self.histName).ReadObj()
+
         elif trending:
             # Not particularly efficient
             for subsystemName, subsystem in trending.trendingObjects.iteritems():

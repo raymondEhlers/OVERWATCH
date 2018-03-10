@@ -60,10 +60,11 @@ executed for a particular run, they will not be repeated again until the next ru
 They plug-in functions are listed below in the order that they are called.
 
 1. Create [groups of histograms](#histogram-groups): `createSYSHistogramGroups(subsystemContainer)`.
-2. Create [stack of histograms](#histogram-stacks): `createSYSHistogramStacks(subsystemContainer)`.
-3. Set [histogram processing options](#general-histogram-processing-options) or set options that apply to the entire subsystem:
+2. Create [new additional histogmras](#additional-histograms): `createAdditionalSYSHistograms(subsystemContainer)`.
+3. Create [stack of histograms](#histogram-stacks): `createSYSHistogramStacks(subsystemContainer)`.
+4. Set [histogram processing options](#general-histogram-processing-options) or set options that apply to the entire subsystem:
   `setSYSHistogramOptions(subsystemContainer)`.
-4. [Find processing functions](#find-processing-functions) that apply to particular histograms for a given
+5. [Find processing functions](#find-processing-functions) that apply to particular histograms for a given
    subsystem: `findFunctionsForSYSHistogram(subsystemContainer, histogramContainer)`
 
 Note that the find processing functions plug-in is most important. It is how a detector maps particular
@@ -96,6 +97,47 @@ Note that an empty histogram group will not be displayed in the webApp. This can
 histograms are available at different times - for example, if a histogram that was previously available is
 not being sent anymore, it is not necessary to modify the histogram group configuration.
 
+### Additional Histograms
+
+While a specific set of histograms is provided by the HLT, subsystems are not limited to displaying only those
+histograms. The available histograms provide a wealth of information, such that different projections can
+clarify different aspects of detector performance. Consequently, it is possible to define new histograms which
+will depend on projections of existing histograms. Note that if you instead want to extract values (eg. time
+series of mean), use the [trending framework](#trending) instead.
+
+To create new histograms, implement the function `createAdditionalSYSHistograms(subsystemContainer)` and add a
+new `histogramContainer` to the `subsystemContainer.histsAvailable` list. When specifying the histogram
+container, the histogram it will be projected from must be specified! Then, the projection function must be
+appended to the list `histogramContainer.projectionFunctionsToApply`. Note that additional processing
+functions can still be [added later](#find-processing-functions). Remember that the histogram to project is
+cloned, and therefore the user does not need to reset the axes ranges.
+
+As an example, consider the following implementation:
+
+```python
+def createAdditionalSYSHistograms(subsystem):
+    # Define additional histogram
+    histName = "projectedHist"
+    histToProjectFrom = ["histToProjectFrom"]
+    histCont = processingClasses.histogramContainer(histName, histToProjectFrom)
+    # Add projection function
+    histCont.projectionFunctionsToApply(projectionFunction)
+
+    # Store the additiaonl histogram
+    subsystem.histsAvailable[histName] = histCont
+
+def projectionFunction(subsystem, hist, processingOptions, *args, **kwargs):
+    hist.hist.GetXaxis().SetRangeUser(0, 2)
+    proj = hist.hist.ProjectionX(hist.histName)
+
+    # IMPORTANT!!
+    # Reassign the hist field of the histogram container to the new projection
+    hist.hist = proj
+```
+
+Note that for an optimal workflow, a histogram group should be defined that will pick up any additional
+histograms that will be created.
+
 ### Histogram Stacks
 
 At times, it is desirable to display sets of histograms on top of each other. For example, comparison between
@@ -110,7 +152,7 @@ dictionary. In the most trivial case where all histograms would be kept and none
 have the following trivial piece of code (note that in such a case, we could just leave out the function
 entirely to get the same effect):
 
-```
+```python
 for histName in subsystem.histsInFile:
     # Just add if we don't want need to stack
     subsystem.histsAvailable[histName] = subsystem.histsInFile[histName]
@@ -120,16 +162,17 @@ If the case where we would want stack two histograms, `spectraA` and `spectraB`,
 new `histogramContainer` for the spectra, and then we would want to skip `spectraA` and `spectraB`. This would
 look something like
 
-```
+```python
 # Define and store the stacked spectra.
 # Note that the stacked histogram container must be available of the names of the histograms
 # which will be stacked
+histName = "stackedSpectra"
 histsToStack = ["spectraA", "spectraB"]
-stackedSpectra = processingClasses.histogramContainer("stackedSpectra", histsToStack)
-subsystem.histsAvailable["stackedSpectra"] = stackedSpectra:
+stackedSpectraCont = processingClasses.histogramContainer(histName, histsToStack)
+subsystem.histsAvailable[histName] = stackedSpectraCont
 
 # Iterate over all of the histograms
-for histNAme in subsystem.histsInFile:
+for histName in subsystem.histsInFile:
     # Skip the spectra that will be stacked
     if histName in histsToStack:
         continue
@@ -194,10 +237,6 @@ In the case of the original histogram not being needed, the approach is straight
 existing histogram in the current `histogramContainer` with the new histogram. This new histogram will be then
 be printed in the place of the existing histogram. Please note that if this could cause problems if additional
 functions rely on the histogram.
-
------------
-
-TODO: Adding new projected histograms
 
 ## Trending 
 

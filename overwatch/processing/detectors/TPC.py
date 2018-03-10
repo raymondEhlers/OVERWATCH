@@ -9,6 +9,11 @@ This currently serves as a catch all for unsorted histograms. No additional QA f
 
 import ROOT
 
+# General includes
+import logging
+# Setup logger
+logger = logging.getLogger(__name__)
+
 # Used for sorting and generating html
 from .. import processingClasses
 
@@ -98,12 +103,12 @@ def findFunctionsForTPCHistogram(subsystem, hist):
     # General TPC Options
     hist.functionsToApply.append(generalTPCOptions)
 
-    names = ["TPCQA/h_tpc_track_all_recvertex_0_5_7",
-             "TPCQA/h_tpc_track_all_recvertex_2_5_7",
-             "TPCQA/h_tpc_track_all_recvertex_3_5_7",
-             "TPCQA/h_tpc_track_all_recvertex_4_5_7"]
-    if hist.histName in names:
-        hist.functionsToApply.append(restrictRangeAndProjectTo1D)
+    #names = ["TPCQA/h_tpc_track_all_recvertex_0_5_7",
+    #         "TPCQA/h_tpc_track_all_recvertex_2_5_7",
+    #         "TPCQA/h_tpc_track_all_recvertex_3_5_7",
+    #         "TPCQA/h_tpc_track_all_recvertex_4_5_7"]
+    #if hist.histName in names:
+    #    hist.functionsToApply.append(restrictRangeAndProjectTo1D)
 
     names = ["TPCQA/h_tpc_track_pos_recvertex_3_5_6",
              "TPCQA/h_tpc_track_neg_recvertex_3_5_6",
@@ -134,19 +139,25 @@ def createTPCHistogramGroups(subsystem):
     if subsystem.subsystem == subsystem.fileLocationSubsystem:
         subsystem.histGroups.append(processingClasses.histogramGroupContainer("Non TPC", ""))
 
+def createAdditionalTPCHistograms(subsystem):
+    # DCA vs Phi
+    # NOTE: This is just an example and may not be the right histogram!
+    histCont = processingClasses.histogramContainer("dcaVsPhi", ["TPCQA/h_tpc_track_all_recvertex_4_5_7"])
+    histCont.projectionFunctionsToApply.append(restrictRangeAndProjectTo1D)
+    subsystem.histsAvailable["dcaVsPhi"] = histCont
+
 def restrictRangeAndProjectTo1D(subsystem, hist, processingOptions):
     # Restrict pt and eta ranges
     # Pt
-    hist.hist.GetZaxis().SetRangeUser(0.25,10);
-    # Eta
-    hist.hist.GetYaxis().SetRangeUser(-1,1);
-    # TODO: Reset range after projection (if needed)!!
+    #hist.hist.GetZaxis().SetRangeUser(0.25,10);
+    ## Eta
+    #hist.hist.GetYaxis().SetRangeUser(-1,1);
 
-    # Project
-    tempHist = hist.hist.ProjectionX("_{0}".format(hist.hist.GetName(), "_restrictedPtEta"))
-
-    # TODO: Create histogram container and save the projected hist
-    #       Include axis labels, etc
+    # Project and store the projection
+    logger.debug("Projecting hist {}".format(hist.hist.GetName()))
+    tempHist = hist.hist.ProjectionX("{}_{}".format(hist.hist.GetName(), "restrictedPtEta"))
+    logger.debug("Projection entries: {}".format(tempHist.GetEntries()))
+    hist.hist = tempHist
 
 # Helper for projectToXZ
 def aSideProjectToXZ(subsystem, hist, processingOptions):

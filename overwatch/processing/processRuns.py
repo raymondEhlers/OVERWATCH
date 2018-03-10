@@ -121,6 +121,9 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
                 if "events" in hist.histName.lower():
                     subsystem.nEvents = key.ReadObj().GetBinContent(1)
 
+        # Create additional histograms
+        qa.createAdditionalHistograms(subsystem)
+
         # Create the subsystem stacks
         qa.createHistogramStacks(subsystem)
 
@@ -226,10 +229,16 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, qa
     # Ensure we plot onto the right canvas
     hist.canvas.cd()
 
+    # Apply projection functions
+    # Must be done before drawing!
+    for func in hist.projectionFunctionsToApply:
+        logger.debug("Calling projection func: {0}".format(func))
+        func(subsystem, hist, processingOptions)
+
     # Setup and draw histogram
     # Turn off title, but store the value
     ROOT.gStyle.SetOptTitle(0)
-    print("hist: {}, hist.hist: {}".format(hist, hist.hist))
+    logger.debug("hist: {}, hist.hist: {}".format(hist, hist.hist))
     hist.hist.Draw(hist.drawOptions)
 
     # Call functions for each hist
@@ -237,6 +246,8 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, qa
     for func in hist.functionsToApply:
         logger.debug("Calling func: {0}".format(func))
         func(subsystem, hist, processingOptions)
+
+    logger.debug("histName: {}, hist: {}, hist entries: {}".format(hist.histName, hist.hist, hist.hist.GetEntries()))
 
     # Apply trending functions
     print("hist {} trending objects: {}".format(hist.histName, hist.trendingObjects))
@@ -266,7 +277,7 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, qa
     outputFilename = outputFormatting % (os.path.join(processingParameters["dirPrefix"], subsystem.imgDir),
                                          outputName,
                                          processingParameters["fileExtension"])
-    print("Saving hist to {}".format(outputFilename))
+    logger.debug("Saving hist to {}".format(outputFilename))
     hist.canvas.SaveAs(outputFilename)
 
     # Write BufferJSON
