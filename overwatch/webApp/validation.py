@@ -193,6 +193,37 @@ def validateRunPage(runDir, subsystemName, requestedFileType, runs):
         return (error, None, None, None, None, None, None, None, None, None)
 
 ###################################################
+def validateTrending():
+    """
+    Validate requests to the trending page.
+    """
+    error = {}
+    try:
+        # Determine request parameters
+        jsRoot = convertRequestToPythonBool("jsRoot", request.args)
+        ajaxRequest = convertRequestToPythonBool("ajaxRequest", request.args)
+        # Reuse the hist group infrastructure for retrieving the subsystem
+        requestedHistGroup = convertRequestToStringWhichMayBeEmpty("histGroup", request.args)
+        subsystemName = requestedHistGroup
+        requestedHist = convertRequestToStringWhichMayBeEmpty("histName", request.args)
+
+        # subsystemName could be None, so we only check if it exists
+        if subsystemName and not subsystemName in serverParameters["subsystemList"] + ["TDG"]:
+            error.setdefault("Subsystem", []).append("{} is not a valid subsystem!".format(subsystemName))
+    except KeyError as e:
+        # Format is:
+        # errors = {'hello2': ['world', 'world2'], 'hello': ['world', 'world2']}
+        # See: https://stackoverflow.com/a/2052206
+        error.setdefault("keyError", []).append("Key error in " + e.args[0])
+    except Exception as e:
+        error.setdefault("generalError", []).append("Unknown exception! " + str(e))
+
+    if error == {}:
+        return (error, subsystemName, requestedHist, jsRoot, ajaxRequest)
+    else:
+        return (error, None, None, None, None)
+
+###################################################
 def validateQAPostRequest(request, runList):
     """ Validates the QA POST request.
 

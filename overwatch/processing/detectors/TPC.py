@@ -22,7 +22,7 @@ from .. import processingClasses
 ##################
 class TPCTrendingObjectMean(processingClasses.trendingObject):
     def __init__(self, trendingHistName, trendingHistTitle, histNames, nEntries = 50):
-        super(TPCTrendingObjectMean, self).__init__(trendingName = trendingHistName, trendingHist = None, histNames = histNames)
+        super(TPCTrendingObjectMean, self).__init__(trendingName = trendingHistName, prettyTrendingName = trendingHistTitle, trendingHist = None, histNames = histNames)
 
         # Determine the number of desired time entires
         self.nEntries = nEntries
@@ -71,10 +71,10 @@ def tpcMeanFillWrapper(trendingObject):
 
 def defineTPCTrendingObjects(trending, *args, **kwargs):
     # Being a bit clever so we don't have to repeat too much code
-    names = [["TPCClusterTrending", "<TPC clusters>:   (p_{T} > 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_0_5_7_restrictedPtEta"]],
-             ["TPCFoundClusters", "<Found/Findable TPC clusters>:   (p_{T} > 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_2_5_7_restrictedPtEta"]],
-             ["TPCdcaR", "<DCAr> (cm)>:   (p_{T}>  0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_3_5_7_restrictedPtEta"]],
-             ["TPCdcaZ", "<DCAz> (cm)>:   (p_{T}>  0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_4_5_7_restrictedPtEta"]],
+    names = [["TPCClusterTrending", "<TPC clusters>: (p_{T} > 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_0_5_7_restrictedPtEta"]],
+             ["TPCFoundClusters", "<Found/Findable TPC clusters>: (p_{T} > 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_2_5_7_restrictedPtEta"]],
+             ["TPCdcaR", "<DCAr> (cm)>: (p_{T}> 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_3_5_7_restrictedPtEta"]],
+             ["TPCdcaZ", "<DCAz> (cm)>: (p_{T}> 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_4_5_7_restrictedPtEta"]],
              ["histvx", "<vx> (cm)", ["TPCQA/h_tpc_event_recvertex_0"]],
              ["histvy", "<vy> (cm)", ["TPCQA/h_tpc_event_recvertex_1"]],
              ["histvz", "<vz> (cm)", ["TPCQA/h_tpc_event_recvertex_2"]],

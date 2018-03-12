@@ -213,10 +213,15 @@ def processTrending(outputFormatting, trending, processingOptions = None, forceR
             nonzeroBins = [index for index in range(0, trendingObject.hist.hist.GetXaxis().GetNbins()) if  trendingObject.hist.hist.GetBinContent(index) > 0.]
             logger.debug("nonzeroBins: {}".format(nonzeroBins))
             # ENDTEMP
-            processHist(subsystem = trending, hist = trendingObject.hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions, qaContainer = None)
+            processHist(subsystem = trending, hist = trendingObject.hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions, qaContainer = None, subsystemName = subsystemName)
 
 ###################################################
-def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, qaContainer):
+def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, qaContainer, subsystemName = None):
+    # In the case of trending, we have to pass a separate subsystem name because the trending container
+    # holds hists from various subsystems
+    if subsystemName is None:
+        subsystemName = subsystem.subsystem
+
     if hist.canvas is None:
         # Reset canvas and make it accessible through the hist object
         hist.canvas = canvas
@@ -274,14 +279,14 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, qa
     outputName = hist.histName
     # Replace any slashes with underscores to ensure that it can be used safely as a filename
     outputName = outputName.replace("/", "_")
-    outputFilename = outputFormatting % (os.path.join(processingParameters["dirPrefix"], subsystem.imgDir),
+    outputFilename = outputFormatting % (os.path.join(processingParameters["dirPrefix"], subsystem.imgDir % {"subsystem" : subsystemName}),
                                          outputName,
                                          processingParameters["fileExtension"])
     logger.debug("Saving hist to {}".format(outputFilename))
     hist.canvas.SaveAs(outputFilename)
 
     # Write BufferJSON
-    jsonBufferFile = outputFormatting % (os.path.join(processingParameters["dirPrefix"], subsystem.jsonDir),
+    jsonBufferFile = outputFormatting % (os.path.join(processingParameters["dirPrefix"], subsystem.jsonDir % {"subsystem" : subsystemName}),
                                          outputName,
                                          "json")
     #logger.debug("jsonBufferFile: {0}".format(jsonBufferFile))

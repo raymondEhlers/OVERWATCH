@@ -56,6 +56,7 @@ from . import utilities
 # Processing module includes
 from ..processing import processRuns
 from ..processing import qa
+from ..processing import processingClasses
 
 # Flask setup
 app = Flask(__name__, static_url_path=serverParameters["staticURLPath"], static_folder=serverParameters["staticFolder"], template_folder=serverParameters["templateFolder"])
@@ -364,7 +365,7 @@ def runPage(runNumber, subsystemName, requestedFileType):
                 returnValue = render_template("rootfiles.html", run = run, subsystem = subsystemName)
             else:
                 # Redundant, but good to be careful
-                error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
+                error.setdefault("Template Error", []).append("Request page: \"{0}\", but it was not found!".format(requestedFileType))
 
         if error != {}:
             logger.warning("error: {0}".format(error))
@@ -401,7 +402,7 @@ def runPage(runNumber, subsystemName, requestedFileType):
                 mainContent = render_template("rootfilesMainContent.html", run = run, subsystem = subsystemName)
             else:
                 # Redundant, but good to be careful
-                error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
+                error.setdefault("Template Error", []).append("Request page: \"{0}\", but it was not found!".format(requestedFileType))
 
         if error != {}:
             logger.warning("error: {0}".format(error))
@@ -544,6 +545,78 @@ def timeSlice():
 
     else:
         return render_template("error.html", errors={"error": ["Need to access through a run page!"]})
+
+###################################################
+#@app.route("/trending/<string:subsystemName>", methods=["GET", "POST"])
+@app.route("/trending", methods=["GET", "POST"])
+@login_required
+def trending():
+    """ Trending visualization.
+
+    """
+    error = {}
+
+    logger.debug("request: {0}".format(request.args))
+    # Validate request
+    (error, subsystemName, requestedHist, jsRoot, ajaxRequest) = validation.validateTrending()
+
+    # Create trending container from stored trending information
+    trendingContainer = processingClasses.trendingContainer(db["trending"])
+
+    # Determine the subsytemName
+    if not subsystemName:
+        #subsystemName = next((subsystemNamae for subsystemName, subsystem in trendingContainer.trendingObjects.iteritems() if len(subsystem) > 0))
+        for subsystemName, subsystem in trendingContainer.trendingObjects.iteritems():
+            if len(subsystem) > 0:
+                subsystemName = subsystemName
+                break
+
+    # Template paths to the individual files
+    imgFilenameTemplate = os.path.join(trendingContainer.imgDir % {"subsystem" : subsystemName}, "{0}." + serverParameters["fileExtension"])
+    jsonFilenameTemplate = os.path.join(trendingContainer.jsonDir % {"subsystem" : subsystemName}, "{0}.json")
+
+    if ajaxRequest != True:
+        if error == {}:
+            try:
+                returnValue = render_template("trending.html", trendingContainer = trendingContainer,
+                                              selectedHistGroup = subsystemName, selectedHist = requestedHist,
+                                              jsonFilenameTemplate = jsonFilenameTemplate,
+                                              imgFilenameTemplate = imgFilenameTemplate,
+                                              jsRoot = jsRoot)
+            except jinja2.exceptions.TemplateNotFound as e:
+                error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
+
+        if error != {}:
+            logger.warning("error: {0}".format(error))
+            returnValue = render_template("error.html", errors = error)
+
+        return returnValue
+    else:
+        if error == {}:
+            try:
+                drawerContent = render_template("trendingDrawer.html", trendingContainer = trendingContainer,
+                                                selectedHistGroup = subsystemName, selectedHist = requestedHist,
+                                                jsonFilenameTemplate = jsonFilenameTemplate,
+                                                imgFilenameTemplate = imgFilenameTemplate,
+                                                jsRoot = jsRoot)
+                mainContent = render_template("trendingMainContent.html", trendingContainer = trendingContainer,
+                                              selectedHistGroup = subsystemName, selectedHist = requestedHist,
+                                              jsonFilenameTemplate = jsonFilenameTemplate,
+                                              imgFilenameTemplate = imgFilenameTemplate,
+                                              jsRoot = jsRoot)
+            except jinja2.exceptions.TemplateNotFound as e:
+                error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
+
+        if error != {}:
+            logger.warning("error: {0}".format(error))
+            drawerContent = ""
+            mainContent =  render_template("errorMainContent.html", errors = error)
+
+        # Includes hist group and hist name for time slices since it is easier to pass it here than parse the get requests. Otherwise, they are ignored.
+        return jsonify(drawerContent = drawerContent,
+                       mainContent = mainContent,
+                       histName = requestedHist,
+                       histGroup = subsystemName)
 
 ###################################################
 @app.route("/processQA", methods=["GET", "POST"])

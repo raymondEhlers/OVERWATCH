@@ -224,14 +224,18 @@ class trendingContainer(persistent.Persistent):
         self.updateToDate = False
 
         # Directories for storage
-        self.baseDir = self.subsystem
-        self.imgDir = os.path.join(self.baseDir, "img")
-        self.jsonDir = os.path.join(self.baseDir, "json")
-        # Ensure that they exist
-        if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.imgDir)):
-            os.makedirs(os.path.join(processingParameters["dirPrefix"], self.imgDir))
-        if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.jsonDir)):
-            os.makedirs(os.path.join(processingParameters["dirPrefix"], self.jsonDir))
+        # Should be of the form, for example, "tredning/SYS/json"
+        #self.baseDir = self.subsystem
+        self.baseDir = "trending"
+        # Need to define the names later because there are multiple subsystems inside of the trending container
+        self.imgDir = os.path.join(self.baseDir, "%(subsystem)s", "img")
+        self.jsonDir = os.path.join(self.baseDir, "%(subsystem)s", "json")
+        # Ensure that they exist for each subsystem
+        for subsystemName in processingParameters["subsystemList"] + ["TDG"]:
+            if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.imgDir % {"subsystem" : subsystemName})):
+                os.makedirs(os.path.join(processingParameters["dirPrefix"], self.imgDir % {"subsystem" : subsystemName}))
+            if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.jsonDir % {"subsystem" : subsystemName})):
+                os.makedirs(os.path.join(processingParameters["dirPrefix"], self.jsonDir % {"subsystem" : subsystemName}))
 
         # Processing options
         # Implemented by the detector to note how it was processed that may be changed during time slice processing
@@ -580,8 +584,9 @@ class qaFunctionContainer(persistent.Persistent):
 ###################################################
 class trendingObject(object):
     """ Base trending object """
-    def __init__(self, trendingName, trendingHist, histNames = None):
+    def __init__(self, trendingName, prettyTrendingName, trendingHist, histNames = None):
         self.name = trendingName
+        self.prettyName = prettyTrendingName
         self.trendingHist = trendingHist
         self.trendingFunction = None
 
