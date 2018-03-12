@@ -223,65 +223,6 @@ def validateTrending():
     else:
         return (error, None, None, None, None)
 
-###################################################
-def validateQAPostRequest(request, runList):
-    """ Validates the QA POST request.
-
-    Args:
-        request (Flask.request): The request object from Flask.
-        runList (list): List of all available runs, with entries in the form of "Run#" (str).
-
-    Returns:
-        tuple: Tuple containing:
-
-            error (dict): Dict containing errors. Allows appending so that now errors are lost.
-                Ex: ``errors = {'hello2': ['world', 'world2', 'world3'], 'hello': ['world', 'world2']}``
-
-            firstRun (str): The first (ie: lowest) run in the form "Run#". Ex: "Run123"
-            
-            lastRun (str): The last (ie: highest) run in the form "Run#". Ex: "Run123"
-            
-            subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
-
-            qaFunction (str): Name of the QA function to be executed.
-
-    """
-    error = {}
-    try:
-        firstRun = request.form["firstRun"]
-        lastRun = request.form["lastRun"]
-        subsystem = request.form["subsystem"]
-        qaFunction = request.form["qaFunction"]
-    # See: https://stackoverflow.com/a/23139085
-    except KeyError as e:
-        # Format is:
-        # errors = {'hello2': ['world', 'world2'], 'hello': ['world', 'world2']}
-        # See: https://stackoverflow.com/a/2052206
-        error.setdefault("keyError", []).append("Key error in " + e.args[0])
-
-    # Validate values
-    try:
-        if firstRun not in runList:
-            error.setdefault("firstRun", []).append(firstRun + " not in run list!")
-        if lastRun not in runList:
-            error.setdefault("lastRun", []).append(lastRun + " not in run list!")
-        if int(firstRun.replace("Run","")) > int(lastRun.replace("Run", "")):
-            error.setdefault("runNumberOrder", []).append(firstRun + " is greater than " + lastRun)
-        #if subsystem not in serverParameters["subsystemList"]:
-        #    error.setdefault("subsystem", []).append("subsystem " + subsystem + " is not valid")
-        #if any(qaFunction not in funcNames for funcNames in serverParameters["qaFunctionsList"].values()):
-        #    error.setdefault("qaFunction:", []).append(qaFunction + " is not a QA function defined for subsystem %s!" % subsystem)
-        if subsystem not in serverParameters["qaFunctionsList"]:
-            error.setdefault("qaFunction:", []).append("Subsystem " + subsystem + " not available in the QA function list!")
-        else:
-            if qaFunction not in serverParameters["qaFunctionsList"][subsystem]:
-                error.setdefault("qaFunction:", []).append(qaFunction + " not usable with subsystem " + subsystem)
-    # Handle an unexpected exception
-    except Exception as e:
-        error.setdefault("generalError", []).append("Unknown exception! " + str(e))
-
-    return (error, firstRun, lastRun, subsystem, qaFunction)
-
 # Validate individual values
 
 # bool (jsRoot and ajaxRequest)

@@ -136,50 +136,14 @@ def defineTrendingObjects(subsystem):
     return trending
 
 ###################################################
-def checkHist(hist, qaContainer):
-    """ Selects and calls the proper qa function based on the input.
-
-    Args:
-        hist (TH1): The histogram to be processed.
-        qaContainer (:class:`~processRuns.processingClasses.qaFunctionContainer`): Contains information about the qa
-            function and histograms, as well as the run being processed.
-
-    Returns:
-        bool: Returns true if the histogram that is being processed should not be printed.
-            This is usually true if we are processing all hists to extract a QA value and 
-            usually false if we are trying to process all hists to check for outliers or 
-            add a legend or check to a particular hist.
-    """
-    #print "called checkHist()"
-    skipPrinting = False
-
-    # Python functions to apply for processing a particular QA function
-    # Only a single function is selected on the QA page, so no loop is necessary
-    # (ie only one call can be made).
-    skipPrinting = getattr(currentModule, qaContainer.qaFunctionName)(hist, qaContainer)
-
-    return skipPrinting
-
-###################################################
 # Load detector functions from other modules
 ###################################################
 #print dir(currentModule)
 # For more details on how this is possible, see: https://stackoverflow.com/a/3664396
 logger.info("\nLoading modules for detectors:")
 
-# For saving and show the docstrings on the QA page.
-qaFunctionDocstrings = {}
-
-# We need to combine the available subsystems. subsystemList is not sufficient because we may want QA functions
-# but now to split out the hists on the web page.
-# Need to call list so that subsystemList is not modified.
-# See: https://stackoverflow.com/a/2612815
-subsystems = list(processingParameters["subsystemList"])
-for subsystem in processingParameters["qaFunctionsList"]:
-    subsystems.append(subsystem)
-
 # Make sure that we have a unique list of subsystems.
-subsystems = list(set(subsystems))
+subsystems = list(set(processingParameters["subsystemList"]))
 
 # Load functions
 for subsystem in subsystems:
@@ -210,19 +174,6 @@ for subsystem in subsystems:
             # Save the function name so that it can be printed
             functionNames.append(funcName)
             
-            # Save the function name so it can be shown on the QA page
-            if subsystem in processingParameters["qaFunctionsList"]:
-                if funcName in processingParameters["qaFunctionsList"][subsystem]:
-                    # Retreive the docstring
-                    functionDocstring = inspect.getdoc(func)
-
-                    # Remove anything after and including "Args", since it is not interesting
-                    # on the QA page.
-                    functionDocstring = functionDocstring[:functionDocstring.find("\nArgs:")]
-
-                    # Save the docstring
-                    qaFunctionDocstrings[subsystem + funcName] = [subsystem, functionDocstring]
-
         # Print out the function names that have been loaded
         #print(functionNames)
         if functionNames != []:

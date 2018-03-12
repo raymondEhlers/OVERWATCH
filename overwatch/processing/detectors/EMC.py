@@ -301,7 +301,7 @@ def generalEMCOptions(subsystem, hist, processingOptions, *args, **kwargs):
 ###################################################
 # Checking for outliers
 ###################################################
-def checkForOutliers(hist, qaContainer):
+def checkForOutliers(hist):
     """ Checks for outliers in selected histograms.
 
     Outliers are calculated by looking at the standard deviation. See: :func:`hasSignalOutlier()`.
@@ -313,8 +313,6 @@ def checkForOutliers(hist, qaContainer):
 
     Args:
         hist (TH1): The histogram to be processed.
-        qaContainer (:class:`~processRuns.qa.qaFunctionContainer`): Contains information
-            about the QA function and histograms, as well as the run being processed.
 
     Returns:
         None
@@ -411,71 +409,6 @@ def hasSignalOutlier(hist):
         newStdev = numpy.std(newSignal)
 
     return [len(outlierList), mean, stdev, newMean, newStdev] # info for legend
-
-###################################################
-# Median Slope Value
-###################################################
-def determineMedianSlope(hist, qaContainer):
-    """ Determines the slope of EMCal vs DCal Median and plots it in a histogram.
-
-    This is a fairly simple function, but it performs the desired example. It also serves as
-    an example for more complicated QA functions. It shows how to create a histogram, extract
-    a value for each run, and then save out the final histogram during the last run.
-
-    Selects the histogram "EMCTRQA_histEMCalMedianVsDCalMedianRecalc".
-
-    Args:
-        hist (TH1): The histogram to be processed.
-        qaContainer (:class:`~processRuns.qa.qaFunctionContainer`): Contains information
-            about the QA function and histograms, as well as the run being processed.
-
-    Returns:
-        bool: True if the histogram passed to the function should not be printed. For QA
-            functions, this is the desired default.
-
-    """
-    if qaContainer is not None:
-        #print hist.GetName()
-        medianHistName = "medianSlope"
-        if hist.GetName() == "EMCTRQA_histEMCalMedianVsDCalMedianRecalc":
-            logger.info("qaContainer.currentRun: {0}".format(qaContainer.currentRun))
-            # Create histogram if it is the first run
-            #if qaContainer.currentRun == qaContainer.firstRun:
-            # Can check for the first run as in the commented line above, but this will not work if the first run does not contain
-            # the deisred histogram. This could also be achieved by creating the necessary histogram before checking the passed
-            # hists name and then setting a flag (could also override the filledValueInRun flag) to note that it is created.
-            logger.info("getHist: {0}".format(qaContainer.getHist(medianHistName)))
-            if qaContainer.getHist(medianHistName) is None:
-                logger.info("Creating hist", medianHistName)
-                medianHist = TH1F(medianHistName, "Median vs Median Slope", len(qaContainer.runDirs), 0, len(qaContainer.runDirs))
-                # Save the histogram to the qaContainer.
-                qaContainer.addHist(medianHist, medianHist.GetName())
-
-                # Set bin labels
-                for i in range(0, len(qaContainer.runDirs)):
-                    medianHist.GetXaxis().SetBinLabel(i+1, qaContainer.runDirs[i].replace("Run",""))
-
-            # Fill profile hist and perform a linear fit
-            prof = hist.ProfileX()
-            linearFit = TF1("fit", "[0]*x+[1]")
-            linearFit.SetParameter(0, float(1))
-            linearFit.SetParameter(1, float(0))
-            prof.Fit(linearFit)
-
-            logger.info("qaContainer.hists: {0}".format(qaContainer.getHists()))
-            logger.info("Entries: {0}".format(qaContainer.getHist(medianHistName).GetEntries()))
-            #medianHist.SetBinContent(qaContainer.runDirs.index(qaContainer.currentRun) + 1, linearFit.GetParameter("0"))
-            # Extract the slope and fill it into the histogram
-            qaContainer.getHist(medianHistName).SetBinContent(qaContainer.runDirs.index(qaContainer.currentRun) + 1, linearFit.GetParameter(0))
-
-            # Possible to fill only a single value per run by using this flag.
-            # Set this bool so that we know a value was filled.
-            #qaContainer.filledValueInRun = True
-
-        # Always want to skip printing the normal histograms when processing.
-        return True
-    else:
-        logger.error("qaContainer must exist to determine the median slope.")
 
 ###################################################
 # Plot Patch Spectra with logy and grad 
@@ -688,13 +621,6 @@ def patchAmpOptions(subsystem, hist, processingOptions):
     # Setup canvas as desired
     hist.canvas.SetLogy(True)
     hist.canvas.SetGrid(1,1)
-
-    # Check for the corresponding hist
-    #if "DCal" in hist.GetName():
-    #    nameToCheck = hist.GetName().replace("DCal", "EMCal")
-    #else:
-    #    nameToCheck = hist.GetName().replace("EMCal", "DCal")
-    #otherHist = qaContainer.getHist(nameToCheck)
 
     # Plot both on the same canvas if they both exist
     #if otherHist is not None:

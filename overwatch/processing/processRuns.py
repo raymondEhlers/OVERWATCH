@@ -63,13 +63,8 @@ from . import qa
 from . import processingClasses
 
 ###################################################
-def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, processingOptions = None, forceRecreateSubsystem = False, trendingContainer = None):
+def processRootFile(filename, outputFormatting, subsystem, processingOptions = None, forceRecreateSubsystem = False, trendingContainer = None):
     """ Process a given root file, printing out all histograms.
-
-    The function also applies QA as appropriate (either always applied or from a particular QA request) via
-    :func:`~processRuns.qa.checkHist()`. It is expected that the qaContainer is only passed when
-    processing a particular QA request (ie. it should *not* be passed when called by, for example,
-    :func:`processAllRuns()`).
 
     Args:
         filename (str): The full path to the file to be processed.
@@ -77,8 +72,6 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
             The string contains "%s" to print the filename contained in listOfHists. It also includes the file
             extension. Ex: "img/%s.png".
         subsystem (:class:`~subsystemProperties`): Contains information about the current subsystem.
-        qaContainer (Optional[:class:`~processRuns.processingClasses.qaFunctionContainer`]): Contains information
-            about the QA function and histograms, as well as the run being processed.
 
     Returns:
         list: Contains all of the names of the histograms that were printed.
@@ -187,7 +180,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
             # Retrieve histogram and canvas
             hist = subsystem.hists[histName]
             hist.retrieveHistogram(fIn = fIn, ROOT = ROOT)
-            processHist(subsystem = subsystem, hist = hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions, qaContainer = qaContainer)
+            processHist(subsystem = subsystem, hist = hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions)
 
 ###################################################
 def processTrending(outputFormatting, trending, processingOptions = None, forceRecreateSubsystem = False):
@@ -213,10 +206,10 @@ def processTrending(outputFormatting, trending, processingOptions = None, forceR
             nonzeroBins = [index for index in range(0, trendingObject.hist.hist.GetXaxis().GetNbins()) if  trendingObject.hist.hist.GetBinContent(index) > 0.]
             logger.debug("nonzeroBins: {}".format(nonzeroBins))
             # ENDTEMP
-            processHist(subsystem = trending, hist = trendingObject.hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions, qaContainer = None, subsystemName = subsystemName)
+            processHist(subsystem = trending, hist = trendingObject.hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions, subsystemName = subsystemName)
 
 ###################################################
-def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, qaContainer, subsystemName = None):
+def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, subsystemName = None):
     # In the case of trending, we have to pass a separate subsystem name because the trending container
     # holds hists from various subsystems
     if subsystemName is None:
@@ -261,15 +254,6 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, qa
         trendingObject.Fill(hist)
         #func(hist)
 
-    if qaContainer:
-        # Various checks and QA that are performed on hists
-        skipPrinting = qa.checkHist(hist.hist, qaContainer)
-
-        # Skips printing out the histogram
-        if skipPrinting == True:
-            logger.debug("Skip printing histogram {0}".format(hist.GetName()))
-            return None
-
     # Filter here for hists in the subsystem if subsystem != fileLocationSubsystem
     # Thus, we can filter the proper subsystems for subsystems that don't have their own data files
     #if subsystem.subsystem != subsystem.fileLocationSubsystem and subsystem.subsystem not in hist.GetName():
@@ -297,115 +281,6 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, qa
     # Clear hist and canvas so that we can successfully save
     hist.hist = None
     hist.canvas = None
-
-###################################################
-def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
-    """ Processes a particular QA function over a set of runs.
-
-    Usually invoked via the web app.
-
-    Args:
-        firstRun (str): The first (ie: lowest) run in the form "Run#". Ex: "Run123"
-        lastRun (str): The last (ie: highest) run in the form "Run#". Ex: "Run123"
-        subsystemName (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
-        qaFunction (str): Name of the QA function to be executed.
-
-    Returns:
-        dict: The dict values contain paths to the printed histograms generated by the QA function. 
-            The keys are from the labels in the qaContainer (usually the histogram names).
-
-    """
-
-    logger.critical("Not yet updated!")
-    return None
-    # Find all possible runs, and then select the runs between [firstRun, lastRun] (inclusive)
-    runDirs = utilities.findCurrentRunDirs(processingParameters["dirPrefix"])
-    tempDirs = []
-    for runDir in runDirs:
-        if int(runDir.replace("Run","")) >= int(firstRun.replace("Run","")) and int(runDir.replace("Run","")) <= int(lastRun.replace("Run","")):
-            tempDirs.append(runDir)
-
-    # Reassign for clarity since that is the name used in other functions.
-    runDirs = tempDirs
-
-    # Find directories that exist for each subsystem
-    subsystemRunDirDict = {}
-    for subsystem in [subsystemName, "HLT"]:
-        subsystemRunDirDict[subsystem] = []
-        for runDir in runDirs:
-            if os.path.exists(os.path.join(processingParameters["dirPrefix"], runDir, subsystem)):
-                subsystemRunDirDict[subsystem].append(runDir)
-
-    # Create subsystem object
-    subsystem = subsystemProperties(subsystem = subsystemName, runDirs = subsystemRunDirDict)
-
-    # Create necessary dirs
-    dataDir = os.path.join(processingParameters["dirPrefix"], qaFunctionName)
-    if not os.path.exists(dataDir):
-        os.makedirs(dataDir)
-
-    # Create objects to setup for processRootFile() call
-    # QA class
-    qaContainer = processingClasses.qaFunctionContainer(firstRun, lastRun, runDirs, qaFunctionName)
-
-    # Formatting
-    outputFormatting = os.path.join(dataDir, "%s.png")
-
-    # Call processRootFile looping over all the runs found above
-    for runDir in subsystem.runDirs:
-        # Update the QA container
-        qaContainer.currentRun = runDir
-        qaContainer.filledValueInRun = False
-
-        # Get length of run and set the value
-        [mergeDict, runLength] = utilities.createFileDictionary(processingParameters["dirPrefix"], runDir, subsystem.fileLocationSubsystem)
-        qaContainer.runLength = runLength
-        
-        # Print current progress
-        logger.info("Processing run", qaContainer.currentRun)
-
-        # Determine the proper combined file for input
-        combinedFile = next(name for name in os.listdir(os.path.join(processingParameters["dirPrefix"], runDir, subsystem.fileLocationSubsystem)) if "combined" in name)
-        inputFilename = os.path.join(processingParameters["dirPrefix"], runDir, subsystem.fileLocationSubsystem, combinedFile)
-        logger.debug(inputFilename)
-
-        # Process the file
-        outputHistNames = processRootFile(inputFilename, outputFormatting, subsystem = subsystem, qaContainer = qaContainer)
-
-    # Need to remove the dirPrefix to get the proper URL
-    # pathToRemove must end with a slash to ensure that the img path set below is valid
-    pathToRemove = processingParameters["dirPrefix"]
-    if not pathToRemove.endswith("/"):
-        pathToRemove = pathToRemove + "/"
-
-    # Print histograms from QA and setup the return value
-    returnValues = {}
-    canvas = ROOT.TCanvas("canvas", "canvas")
-
-    # Create root file to save out
-    fOut = ROOT.TFile(os.path.join(dataDir, qaContainer.qaFunctionName + ".root"), "RECREATE")
-
-    for label, hist in qaContainer.getHistsDict().items():
-        # Print the histogram
-        hist.Draw()
-        canvas.SaveAs(outputFormatting % label)
-
-        # Write histogram to file
-        hist.Write()
-
-        # Set img path in the return value
-        # Need to remove the pathToRemove defined above to ensure that the url doesn't include the directory
-        # (ie. so it is /monitoring/protected, not /monitoring/protected/data)
-        logger.debug(outputFormatting)
-        logger.debug(pathToRemove)
-        returnValues[label] = outputFormatting.replace(pathToRemove, "") % label
-
-    # Write root file
-    fOut.Close()
-
-    logger.info("returnValues:", returnValues)
-
-    return returnValues
 
 ###################################################
 def compareProcessingOptionsDicts(inputProcessingOptions, processingOptions):
@@ -582,7 +457,6 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
                                                    subsystem.baseDir,
                                                    timeSlice.filename.filename),
                                       outputFormattingSave, subsystem,
-                                      qaContainer = None,
                                       processingOptions = timeSlice.processingOptions)
 
     logger.info("Finished processing {0}!".format(run.prettyName))

@@ -565,7 +565,6 @@ def trending():
 
     # Determine the subsytemName
     if not subsystemName:
-        #subsystemName = next((subsystemNamae for subsystemName, subsystem in trendingContainer.trendingObjects.iteritems() if len(subsystem) > 0))
         for subsystemName, subsystem in trendingContainer.trendingObjects.iteritems():
             if len(subsystem) > 0:
                 subsystemName = subsystemName
@@ -617,76 +616,6 @@ def trending():
                        mainContent = mainContent,
                        histName = requestedHist,
                        histGroup = subsystemName)
-
-###################################################
-@app.route("/processQA", methods=["GET", "POST"])
-@login_required
-def processQA():
-    """ Handles QA functions.
-
-    In the case of a GET request, it serves a page showing the possible QA options. In the case of a
-    POST request, it handles, validates and executes the QA task, rendering the result template.
-
-    It also supports the ability to add GET parameters to the returned values for the result template
-    to ensure that the browser doesn't cache things that have actually changed. Such parameters will
-    be ignored without any other intervention.
-
-    """
-    logger.debug("request: {0}".format(request.args))
-    ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
-
-    runs = db["runs"]
-    runList = runs.keys()
-    logger.debug("runList: {0}".format(list(runList)))
-
-    if request.method == "POST":
-        # Validate post request
-        (error, firstRun, lastRun, subsystem, qaFunction) = validation.validateQAPostRequest(request, runList)
-
-        # Process
-        if error == {}:
-            # Print input values
-            logger.debug("firstRun:", firstRun)
-            logger.debug("lastRun:", lastRun)
-            logger.debug("subsystem:", subsystem)
-            logger.debug("qaFunction:", qaFunction)
-
-            # Process the QA
-            returnValues = processRuns.processQA(firstRun, lastRun, subsystem, qaFunction)
-
-            # Ensures that the image is not cached by adding a meaningless but unique argument.
-            histPaths = {}
-            for name, histPath in returnValues.items():
-                # Can add an argument with "&arg=value" if desired
-                histPaths[name] = histPath + "?time=" + str(time.time())
-                logger.debug("histPaths[{0}]: {1}".format(name, histPaths[name]))
-
-            # Ensures that the root file is not cached by adding a meaningless but unique argument.
-            rootFilePath = os.path.join(qaFunction, qaFunction + ".root")
-            rootFilePath += "?time=" + str(time.time())
-
-            return render_template("qaResult.html", firstRun=firstRun, lastRun=lastRun, qaFunctionName=qaFunction, subsystem=subsystem, hists=histPaths, rootFilePath=rootFilePath)
-        else:
-            return render_template("error.html", errors=error)
-
-    else:
-        # We need to combine the available subsystems. subsystemList is not sufficient because we may want QA functions
-        # but now to split out the hists on the web page.
-        # Need to call list so that subsystemList is not modified.
-        # See: https://stackoverflow.com/a/2612815
-        subsystems = list(serverParameters["subsystemList"])
-        for subsystem in serverParameters["qaFunctionsList"]:
-            subsystems.append(subsystem)
-
-        # Make sure that we have a unique list of subsystems.
-        subsystems = sorted(set(subsystems))
-
-        if ajaxRequest == False:
-            return render_template("qa.html", runList=runList, qaFunctionsList=serverParameters["qaFunctionsList"], subsystemList=subsystems, docStrings=qa.qaFunctionDocstrings)
-        else:
-            drawerContent = render_template("qaDrawer.html", subsystemList=subsystems, qaFunctionsList=serverParameters["qaFunctionsList"])
-            mainContent = render_template("qaMainContent.html", runList=runList, qaFunctionsList=serverParameters["qaFunctionsList"], subsystemList=subsystems, docStrings=qa.qaFunctionDocstrings)
-            return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
 ###################################################
 @app.route("/testingDataArchive")
