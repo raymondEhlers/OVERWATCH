@@ -48,6 +48,18 @@ interval during each run. This is the focus on the [plug-in functionality](#avai
 a particular time interval during each run. This functional is described in the section on
 [trending](#trending).
 
+### Note on Database Scheme and Troubleshooting
+
+If the variables or functionality of a class changes too drastically, it can cause problems with the metadata
+database schema evolution. To avoid these issues, when adding a field, be certain to give it a default value
+in the base definition of the object (not just the constructor!) so that older objects can successfully
+constructed.
+
+Sometimes the charges are too large to resolve easily. In the case, it is easier to rebuild the database from
+scratch. Fortunately, Overwatch is designed such that it should always be possible to rebuild it from
+scratch.To do so, simply delete the database file (usually located at `data/overwatch.fs`) and it should be
+recreated automatically.
+
 ## Available Plug-in Functions
 
 Plug-ins are available at all steps throughout the processing. The following functions are called for each new
@@ -123,7 +135,7 @@ def createAdditionalSYSHistograms(subsystem):
     # Add projection function
     histCont.projectionFunctionsToApply(projectionFunction)
 
-    # Store the additiaonl histogram
+    # Store the additional histogram
     subsystem.histsAvailable[histName] = histCont
 
 def projectionFunction(subsystem, hist, processingOptions, *args, **kwargs):

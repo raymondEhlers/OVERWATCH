@@ -82,7 +82,9 @@ def createHistogramStacks(subsystem):
     else:
         logger.info("Could not find histogram stack function for subsystem {0}.".format(subsystem.subsystem))
         # Ensure that the histograms propagate to the next dict if there is not stack function!
-        subsystem.histsAvailable = subsystem.histsInFile
+        # Copy by key and value so any existing hists in histsAvailable are preserved
+        for k in subsystem.histsInFile.iterkeys():
+            subsystem.histsAvailable[k] = subsystem.histsInFile[k]
 
 ###################################################
 def setHistogramOptions(subsystem):

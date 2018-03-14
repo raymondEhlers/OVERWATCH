@@ -18,6 +18,7 @@ import persistent
 import os
 import time
 import ruamel.yaml as yaml
+import numpy as np
 import logging
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -411,6 +412,7 @@ class histogramContainer(persistent.Persistent):
         """
 
         """
+        returnValue = True
         if fIn:
             if not self.histList is None:
                 if len(self.histList) > 1:
@@ -425,12 +427,21 @@ class histogramContainer(persistent.Persistent):
                     histName = next(iter(self.histList))
                     logger.debug("Retrieving histogram {} for projection!".format(histName))
                     # Clone the histogram so restricted ranges don't propagate to other uses of this hist
-                    self.hist = fIn.GetKey(histName).ReadObj().Clone("{}_temp".format(histName))
+                    tempHist = fIn.GetKey(histName)
+                    if tempHist:
+                        self.hist = tempHist.ReadObj().Clone("{}_temp".format(histName))
+                    else:
+                        returnValue = False
                 else:
                     logger.warning("histList for hist {} is defined, but is empty".format(histName))
+                    returnValue = False
             else:
                 logger.debug("HistName: {0}".format(self.histName))
-                self.hist = fIn.GetKey(self.histName).ReadObj()
+                tempHist = fIn.GetKey(self.histName)
+                if tempHist:
+                    self.hist = tempHist.ReadObj()
+                else:
+                    returnValue = False
 
         elif trending:
             # Not particularly efficient
@@ -440,6 +451,9 @@ class histogramContainer(persistent.Persistent):
                         self.hist = trending.trendingObjects[subsystemName][self.histName].trendingHist
         else:
             logger.warning("Unable to retrieve histogram {}".format(self.histName))
+            returnValue = False
+
+        return returnValue
 
 ###################################################
 class trendingObject(object):

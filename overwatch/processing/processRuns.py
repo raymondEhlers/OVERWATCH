@@ -114,8 +114,12 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
                 if "events" in hist.histName.lower():
                     subsystem.nEvents = key.ReadObj().GetBinContent(1)
 
+        #logger.debug("pre  create additional histsAvailable: {}".format(", ".join(subsystem.histsAvailable.keys())))
+
         # Create additional histograms
         qa.createAdditionalHistograms(subsystem)
+
+        #logger.debug("post create additional histsAvailable: {}".format(", ".join(subsystem.histsAvailable.keys())))
 
         # Create the subsystem stacks
         qa.createHistogramStacks(subsystem)
@@ -137,6 +141,8 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
                     selection = ""
                 logger.info("selection: {0}".format(selection))
                 subsystem.histGroups.append(processingClasses.histogramGroupContainer(subsystem.subsystem + " Histograms", selection))
+
+        logger.debug("post groups histsAvailable: {}".format(", ".join(subsystem.histsAvailable.keys())))
 
         # Finally classify into the groups and determine which functions to apply
         for hist in subsystem.histsAvailable.values():
@@ -179,7 +185,10 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
         for histName in histGroup.histList:
             # Retrieve histogram and canvas
             hist = subsystem.hists[histName]
-            hist.retrieveHistogram(fIn = fIn, ROOT = ROOT)
+            retrievedHist = hist.retrieveHistogram(fIn = fIn, ROOT = ROOT)
+            if not retrievedHist:
+                logger.warning("Could not retrieve histogram for hist {}, histList: {}".format(hist.histName, hist.histList))
+                continue
             processHist(subsystem = subsystem, hist = hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions)
 
 ###################################################
