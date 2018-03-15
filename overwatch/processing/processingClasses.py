@@ -19,6 +19,8 @@ import os
 import time
 import ruamel.yaml as yaml
 import numpy as np
+import ROOT
+import ctypes
 import logging
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -256,6 +258,7 @@ class trendingContainer(persistent.Persistent):
                 self.trendingObjects[subsystem][name] = obj
             else:
                 logger.debug("Trending object {} (name: {}) already exists in subsystem {}".format(self.trendingObjects[subsystem][name], name, subsystem))
+                logger.debug("Trending next entry: {}".format(self.trendingObjects[subsystem][name].nextEntry))
 
     def resetContainer(self):
         """ Reset the trending container """
@@ -444,11 +447,15 @@ class histogramContainer(persistent.Persistent):
                     returnValue = False
 
         elif trending:
+            returnValue = False
             # Not particularly efficient
             for subsystemName, subsystem in trending.trendingObjects.iteritems():
                 for name, trendingObject in subsystem.iteritems():
                     if self.histName in trendingObject.hist.histName:
-                        self.hist = trending.trendingObjects[subsystemName][self.histName].trendingHist
+                        # Define the TH1 and make it available
+                        trendingObject.retrieveHist()
+                        returnValue = True
+                        #self.hist = trending.trendingObjects[subsystemName][self.histName].trendingHist
         else:
             logger.warning("Unable to retrieve histogram {}".format(self.histName))
             returnValue = False
@@ -456,19 +463,21 @@ class histogramContainer(persistent.Persistent):
         return returnValue
 
 ###################################################
-class trendingObject(object):
+class trendingObject(persistent.Persistent):
     """ Base trending object """
-    def __init__(self, trendingName, prettyTrendingName, trendingHist, histNames = None):
+    def __init__(self, trendingName, prettyTrendingName, nEntries, trendingHist = None, histNames = None):
         self.name = trendingName
         self.prettyName = prettyTrendingName
-        self.trendingHist = trendingHist
-        self.trendingFunction = None
+        self.nEntries = nEntries
+        # Store the trending values
+        # TODO: Should the unix time also be included?
+        # Tuple of (value, error)
+        self.values = np.zeros((nEntries, 2), dtype=np.float)
 
         self.hist = histogramContainer(trendingName)
-        self.hist.hist = self.trendingHist
+        self.hist.hist = trendingHist
 
         # Set histograms to be included
-        # TODO: Should these be hist containers??
         if not histNames:
             histNames = []
         # Ensure that a copy is name by wrapping in list
@@ -492,32 +501,55 @@ class trendingObject(object):
     #    else:
     #        self.trendingHist = val
 
-    def Fill(self, value, error):
+    def fill(self, value, error):
         """ 1D filling function. """
-        # TODO: Determine best way to get the previous histogram!
         print("name: {}, self.nextEntry: {}, value: {}".format(self.name, self.nextEntry, value))
+        currentEntry = self.nextEntry - 1
         if self.nextEntry > self.nEntries:
-            # Get the array and convert to np array so it can be fed back to the hist
-            valArray = utilities.convertToNPArray(self.trendingHist.GetArray(), self.trendingHist.GetNcells())
-            errorArray = utilities.convertToNPArray(self.trendingHist.GetArrayErrors(), self.trendingHist.GetNcells())
+            # Remove the oldest entry
+            utilities.removeOldestValueAndInsert(self.values, (value, error))
 
-            # Insert back into histogram
-            self.trendingHist.SetContent(utilities.removeOldestValueAndInsert(valArray))
-            self.trendingHist.SetErrorContent(utilities.removeOldestValueAndInsert(errorArray))
-
-            # Increment the time offset
-            # TODO: Determine how to get this value
-            #self.trendingHist.GetXaxis().SetTimeOffset()
-        else:
-            if self.nextEntry == 1:
-                # TODO: Determine how to get this value
-                #self.trendingHist.GetXaxis().SetTimeOffset()
-                pass
-
-            # Fill into the trending histogram
-            self.trendingHist.SetBinContent(self.nextEntry, value)
-            self.trendingHist.SetBinError(self.nextEntry, error)
+        self.values[currentEntry] = (value, error)
+        print("name: {}, values: {}".format(self.name, self.values))
 
         # Keep track to move to the next entry
         self.nextEntry += 1
 
+    def retrieveHist(self):
+        """ Create a graph based on the np array """
+
+        # The creation of this hist can be overridden by creating the histogram before now
+        if not self.hist.hist:
+            # Define TGraph
+            # TH1's need to be defined more carefully, as they seem to possible cause memory corruption
+            # Multiply by 60.0 because it expects the times in seconds
+            self.hist.hist = ROOT.TGraphErrors(self.nEntries)
+
+            # Set options
+            self.hist.hist.SetName(self.name)
+            self.hist.hist.SetTitle(self.prettyName)
+            # Ensure that the axis and points are drawn on the TGraph
+            self.hist.drawOptions = "AP"
+
+        # Handle histogram, which needs overflow and underflow
+        if self.hist.hist.InheritsFrom(ROOT.TH1.Class()):
+            logger.debug("GetNbins: {}, GetEntries: {}".format(self.hist.hist.GetXaxis().GetNbins(), self.hist.hist.GetEntries()))
+
+            # Need to pass with zeros for the over and underflow bins values, errors
+            valuesWithOverAndUnderflow = np.concatenate([[(0,0)], self.values, [(0,0)]])
+            logger.debug("valuesWithOverAndUnderflow: {}".format(valuesWithOverAndUnderflow))
+
+            # Access the ctypes via: https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.ndarray.ctypes.html
+            self.hist.hist.SetContent(valuesWithOverAndUnderflow[:, 0].ctypes.data_as(ctypes.POINTER(ctypes.c_long)))
+            self.hist.hist.SetError(valuesWithOverAndUnderflow[:, 1].ctypes.data_as(ctypes.POINTER(ctypes.c_long)))
+        else:
+            # Handle points in a TGraph
+            #logger.debug("Filling TGraph with array values of {}".format(self.values))
+            for i in range(0, len(self.values)):
+                #logger.debug("Setting point {} to ({}, {}) with error {}".format(i, i, self.values[i, 0], self.values[i,1]))
+                self.hist.hist.SetPoint(i, i, self.values[i, 0])
+                self.hist.hist.SetPointError(i, i, self.values[i, 1])
+
+        # The hist is already availabe through the histogram container, but we return the hist
+        # incase the caller wants to do additional customization
+        return self.hist

@@ -261,9 +261,10 @@ Overwatch to O2.
 
 Trending is implemented through custom objects which perform the trending action and store the result. These
 objects should be implemented in each subsystem file and should inherit from `processingClasses.trendingObject`.
-In particular, they should implement a `Fill(hist)` method which takes the histogram, extract the value and error,
-and then calls the base class `Fill(value, error)` method to fill the trending histogram at the time stamp of the
-current file.
+In particular, they should implement a `fill(hist)` method which takes the histogram, extract the value and error,
+and then calls the base class `fill(value, error)` method to fill the trending histogram at the time stamp of
+the current file. The `fill()` function in the base class will store the value in a `numpy` array, which can
+later be used to construct a `ROOT.TGraph` or `ROOT.TH1` to display the trended values.
 
 For an example, see `proccessing.detectors.TPC.TPCTrendingObjectMean`.
 
@@ -278,8 +279,13 @@ supposed to be used with. For example, a trending object could extract the mean 
 that extracted value would be trended. The trended object should be added to the dictionary with a descriptive
 key, such as the object name.
 
-Once defined, everything else will be taken care of automatically. The object will be called any time the
-histogram is being processed, similar to processing functions. 
+Once defined, the `fill(...)` function will be called automatically any time the histogram is being processed,
+similar to processing functions.
+
+For the trended values to be displayed, a `ROOT.TGraph` or `ROOT.TH1` must be defined, and the trended values
+copied in. As a default option, `trendingObject.retrieveHist()` will automatically define a `TGraph` based on
+the number of entries specified during object construction. It can be overridden by defining an object to be
+stored in `histContainer.hist` before calling the base class `retrieveHist()`.
 
 For an example, see `processing.detectors.TPC.defineTPCTrendingObjects`.
 

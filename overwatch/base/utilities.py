@@ -15,6 +15,7 @@ import time
 from calendar import timegm
 from subprocess import call
 import shutil
+import numpy as np
 
 # ZODB
 import ZODB
@@ -403,16 +404,9 @@ def updateDBSensitiveParameters(db, overwriteSecretKey = True):
 ####################
 def removeOldestValueAndInsert(arr, value):
     # Remove oldest value
-    np.delete(arr, 1)
-    # Insert at the end (before the last entry because the last value is overflow)
-    np.insert(arr, -1, value)
+    np.delete(arr, 0, axis=0)
+    # Insert at the end
+    arr[-1] = value
 
     return arr
-
-def convertToNPArray(arr, nCells):
-    # Necessary to prevent a crash...
-    # See: https://root-forum.cern.ch/t/tspectrum-and-root-pybuffers/20650/3
-    arr.SetSize(nCells)
-    # Convert to np array
-    return np.asarray(arr)
 

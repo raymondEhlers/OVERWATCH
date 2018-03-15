@@ -22,31 +22,21 @@ from .. import processingClasses
 ##################
 class TPCTrendingObjectMean(processingClasses.trendingObject):
     def __init__(self, trendingHistName, trendingHistTitle, histNames, nEntries = 50):
-        super(TPCTrendingObjectMean, self).__init__(trendingName = trendingHistName, prettyTrendingName = trendingHistTitle, trendingHist = None, histNames = histNames)
+        super(TPCTrendingObjectMean, self).__init__(trendingName = trendingHistName, prettyTrendingName = trendingHistTitle, nEntries = nEntries, trendingHist = None, histNames = histNames)
 
-        # Determine the number of desired time entires
-        self.nEntries = nEntries
-
-        # Setup trending histogram
-        # Multiply by 60.0 because it expects the times in seconds
-        self.trendingHist = ROOT.TH1D(trendingHistName,
-                                      trendingHistTitle,
-                                      self.nEntries,
-                                      0.,
-                                      self.nEntries * 60.0);
+    def retrieveHist(self):
+        super(TPCTrendingObjectMean, self).retrieveHist()
 
         # Set the histogrma to display a time axis
-        self.trendingHist.GetXaxis().SetTimeDisplay(1)
+        self.hist.hist.GetXaxis().SetTimeDisplay(1)
         #self.trendingHist.GetXaxis().SetTimeFormat()
 
         # Make it more visible
-        self.trendingHist.SetMarkerStyle(ROOT.kFullCircle)
-
-        self.hist.hist = self.trendingHist
+        self.hist.hist.SetMarkerStyle(ROOT.kFullCircle)
 
         print("self.hist: {}, self.hist.hist: {}".format(self.hist, self.hist.hist))
 
-    def Fill(self, hist):
+    def fill(self, hist):
         if len(self.histNames) > 1:
             print("Too many histograms passed to {0}!".format(self.histNames))
             return
@@ -61,13 +51,7 @@ class TPCTrendingObjectMean(processingClasses.trendingObject):
         fillValError += hist.hist.GetMeanError()
 
         print("Filling value: {}, error: {}".format(fillVal, fillValError))
-        super(TPCTrendingObjectMean, self).Fill(fillVal, fillValError)
-
-def tpcMeanFillWrapper(trendingObject):
-    def tpcMeanFill(hist):
-        return trendingObject.Fill(hist)
-
-    return tpcMeanFill
+        super(TPCTrendingObjectMean, self).fill(fillVal, fillValError)
 
 def defineTPCTrendingObjects(trending, *args, **kwargs):
     # Being a bit clever so we don't have to repeat too much code

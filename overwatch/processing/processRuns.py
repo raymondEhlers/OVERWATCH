@@ -207,15 +207,28 @@ def processTrending(outputFormatting, trending, processingOptions = None, forceR
     for subsystemName, subsystem in trending.trendingObjects.iteritems():
         logger.debug("{}: subsystem from trending: {}".format(subsystemName, subsystem))
         for name, trendingObject in subsystem.iteritems():
-            #hist = trendingObject.hist
-            #hist.retrieveHistogram(trending = trending, ROOT = ROOT)
-            logger.debug("trendingObject: {}, hist: {}, hist.histName: {}, hist.hist: {}".format(trendingObject, trendingObject.hist, trendingObject.hist.histName, trendingObject.hist.hist))
-            logger.debug("entries: {}".format(trendingObject.hist.hist.GetEntries()))
+            hist = trendingObject.hist
+            hist.retrieveHistogram(trending = trending, ROOT = ROOT)
+            logger.debug("trendingObject: {}, hist: {}, hist.histName: {}, hist.hist: {}".format(trendingObject, hist, hist.histName, hist.hist))
+            #logger.debug("entries: {}".format(hist.hist.GetEntries()))
             # TEMP - Check for entries!
-            nonzeroBins = [index for index in range(0, trendingObject.hist.hist.GetXaxis().GetNbins()) if  trendingObject.hist.hist.GetBinContent(index) > 0.]
-            logger.debug("nonzeroBins: {}".format(nonzeroBins))
+            if hist.hist.InheritsFrom(ROOT.TH1.Class()):
+                nonzeroBins = [index for index in range(0, hist.hist.GetXaxis().GetNbins()) if hist.hist.GetBinContent(index) > 0.]
+            else:
+                import ctypes
+                x = ctypes.c_double(0.)
+                y = ctypes.c_double(0.)
+                nonzeroBins = []
+                values = []
+                for index in range(0, hist.hist.GetN()):
+                    hist.hist.GetPoint(index, x, y)
+                    values.append(y.value)
+                    if y.value > 0:
+                        nonzeroBins.append(index)
+                logger.debug("nonzeroBins: {}".format(nonzeroBins))
+                logger.debug("values: {}".format(values))
             # ENDTEMP
-            processHist(subsystem = trending, hist = trendingObject.hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions, subsystemName = subsystemName)
+            processHist(subsystem = trending, hist = hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions, subsystemName = subsystemName)
 
 ###################################################
 def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, subsystemName = None):
@@ -254,13 +267,14 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, su
         logger.debug("Calling func: {0}".format(func))
         func(subsystem, hist, processingOptions)
 
-    logger.debug("histName: {}, hist: {}, hist entries: {}".format(hist.histName, hist.hist, hist.hist.GetEntries()))
+    logger.debug("histName: {}, hist: {}".format(hist.histName, hist.hist))
+    #logger.debug("histName: {}, hist: {}, hist entries: {}".format(hist.histName, hist.hist, hist.hist.GetEntries()))
 
     # Apply trending functions
     print("hist {} trending objects: {}".format(hist.histName, hist.trendingObjects))
     for trendingObject in hist.trendingObjects:
         logger.debug("Filling trending object {}".format(trendingObject.name))
-        trendingObject.Fill(hist)
+        trendingObject.fill(hist)
         #func(hist)
 
     # Filter here for hists in the subsystem if subsystem != fileLocationSubsystem
