@@ -236,7 +236,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
             #logger.debug("jsonBufferFile: {0}".format(jsonBufferFile))
             # GZip is performed by the web server, not here!
             with open(jsonBufferFile, "wb") as f:
-                f.write(ROOT.TBufferJSON.ConvertToJSON(canvas).Data())
+                f.write(ROOT.TBufferJSON.ConvertToJSON(canvas).Data().encode())
 
             # Clear hist and canvas so that we can successfully save
             hist.hist = None
@@ -640,7 +640,7 @@ def processAllRuns():
     (dbRoot, connection) = utilities.getDB(processingParameters["databaseLocation"])
 
     # Create runs list
-    if dbRoot.has_key("runs"):
+    if "runs" in dbRoot:
         # The objects exist, so just use the stored copy and update it.
         logger.info("Utilizing existing database!")
         runs = dbRoot["runs"]
@@ -730,7 +730,7 @@ def processAllRuns():
         transaction.commit()
 
     # Create configuration list
-    if not dbRoot.has_key("config"):
+    if "config" not in dbRoot:
         dbRoot["config"] = persistent.mapping.PersistentMapping()
 
     logger.info("runs: {0}".format(list(runs.keys())))

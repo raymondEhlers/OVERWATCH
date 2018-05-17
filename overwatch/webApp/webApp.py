@@ -140,7 +140,7 @@ def login():
     nextValue = routing.getRedirectTarget()
 
     # Check for users and notify if there are none!
-    if not db["config"].has_key("users") or not db["config"]["users"]:
+    if "users" not in db["config"] or not db["config"]["users"]:
         logger.fatal("No users found in database!")
         if serverParameters["debug"]:
             # It should be extremely unlikely for this condition to be met!
@@ -690,7 +690,7 @@ def status():
     # Add to status
     statuses["Ongoing run?"] = "{0} {1}".format(runOngoing, runOngoingNumber)
 
-    if db.has_key("config") and db["config"].has_key("receiverLogLastModified"):
+    if "config" in db and "receiverLogLastModified" in db["config"]:
         receiverLogLastModified = db["config"]["receiverLogLastModified"]
         lastModified = time.time() - receiverLogLastModified
         # Display in minutes

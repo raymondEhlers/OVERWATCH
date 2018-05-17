@@ -101,7 +101,7 @@ def readConfig(configType):
                     "config.yaml",
                     # Config in the home directory
                     # Ensures that we have "WebApp" here.
-                    os.path.expandvars("~/.overwatch{0}").format(configType.name[0].upper() + configType.name[1:]),
+                    os.path.expanduser("~/.overwatch{0}.yaml").format(configType.name[0].upper() + configType.name[1:]),
                     # Config type specific directory in the package (ex: "processing")
                     # TODO: There is a problem when loading the shared configuration with the processing configuration
                     #       because the shared configuration can have options which are defined in the web app config
@@ -138,6 +138,10 @@ def readConfig(configType):
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
         globalConfig = yaml.load(configs, Loader=yaml.SafeLoader)
+
+    dbLoc = globalConfig["databaseLocation"]
+    dbLoc = dbLoc if dbLoc.startswith("file://") else "file://" + dbLoc
+    globalConfig["databaseLocation"] = dbLoc
 
     return (globalConfig, filesRead)
 

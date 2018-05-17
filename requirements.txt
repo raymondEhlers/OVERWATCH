@@ -17,7 +17,9 @@ Flask-RESTful
 ZODB
 #Flask-ZODB
 # Install from git repo to support the newer hook
-git+https://github.com/dag/flask-zodb.git
+# git+https://github.com/dag/flask-zodb.git
+# for compability for python 3
+git+https://github.com/SpotlightKid/flask-zodb.git
 
 # Login
 bcrypt
