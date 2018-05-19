@@ -9,8 +9,8 @@ Everything is configured by the settings in config.yaml
 """
 
 __all__ = [
-           "mergeFiles",
-           "processRus",
-           "processingClasses",
-           "qa"
-          ]
+    "mergeFiles",
+    "processRuns",
+    "processingClasses",
+    "qa"
+]

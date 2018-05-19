@@ -12,7 +12,8 @@ from __future__ import print_function
 from builtins import range
 
 # Used for QA functions
-from ROOT import gStyle, TH1F, TH2, THStack, TF1, TGaxis, SetOwnership, TLegend, TLine, kRed, kBlue, kOpenCircle, kFullCircle
+from ROOT import gStyle, TH1F, TH2, THStack, TF1, TGaxis, SetOwnership, TLegend, TLine, kRed, kBlue, kOpenCircle, \
+    kFullCircle
 
 # Used for the outlier detection function
 import numpy
@@ -22,6 +23,7 @@ import itertools
 
 # General includes
 import logging
+
 # Setup logger
 logger = logging.getLogger(__name__)
 
@@ -31,7 +33,9 @@ from .. import processingClasses
 # For retrieving debug configuration
 print("EMC name: {0}".format(__name__))
 from ...base import config
+
 (processingParameters, filesRead) = config.readConfig(config.configurationType.processing)
+
 
 ######################################################################################################
 ######################################################################################################
@@ -72,11 +76,12 @@ def sortSMsInPhysicalOrder(histList):
     logger.info(len(histList))
     for i in range(0, len(histList), 2):
         # Protect against overflowing the list
-        if i != (len(histList)-1):
-            tempList.append(histList[i+1])
+        if i != (len(histList) - 1):
+            tempList.append(histList[i + 1])
         tempList.append(histList[i])
 
     return tempList
+
 
 ###################################################
 def checkForEMCHistStack(subsystem, histName, skipList, selector):
@@ -95,6 +100,7 @@ def checkForEMCHistStack(subsystem, histName, skipList, selector):
 
     # Return false otherwise
     return False
+
 
 ###################################################
 def createEMCHistogramStacks(subsystem):
@@ -115,6 +121,7 @@ def createEMCHistogramStacks(subsystem):
         # Just add if we don't want need to stack
         subsystem.histsAvailable[histName] = subsystem.histsInFile[histName]
 
+
 ###################################################
 def createEMCHistogramGroups(subsystem):
     # Sort the filenames of the histograms into catagories for better presentation
@@ -122,12 +129,22 @@ def createEMCHistogramGroups(subsystem):
     # Plot by SM
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("FEE vs TRU", "FEEvsTRU_SM", "_SM"))
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("FEE vs STU", "FEEvsSTU_SM", "_SM"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L0 (hits with ADC > 0)", "FastORL0_SM", "_SM"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L0 Amp (hits weighted with ADC value)", "FastORL0Amp_SM", "_SM"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L0 Large Amp (hits above 400 ADC)", "FastORL0LargeAmp_SM", "_SM"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L1 (hits with ADC > 0)", "FastORL1_SM", "_SM"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L1 Amp (hits weighted with ADC value)", "FastORL1Amp_SM", "_SM"))
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L1 Large Amp (hits above 400 ADC)", "FastORL1LargeAmp_SM", "_SM"))
+    subsystem.histGroups.append(
+        processingClasses.histogramGroupContainer("FastOR L0 (hits with ADC > 0)", "FastORL0_SM", "_SM"))
+    subsystem.histGroups.append(
+        processingClasses.histogramGroupContainer("FastOR L0 Amp (hits weighted with ADC value)", "FastORL0Amp_SM",
+                                                  "_SM"))
+    subsystem.histGroups.append(
+        processingClasses.histogramGroupContainer("FastOR L0 Large Amp (hits above 400 ADC)", "FastORL0LargeAmp_SM",
+                                                  "_SM"))
+    subsystem.histGroups.append(
+        processingClasses.histogramGroupContainer("FastOR L1 (hits with ADC > 0)", "FastORL1_SM", "_SM"))
+    subsystem.histGroups.append(
+        processingClasses.histogramGroupContainer("FastOR L1 Amp (hits weighted with ADC value)", "FastORL1Amp_SM",
+                                                  "_SM"))
+    subsystem.histGroups.append(
+        processingClasses.histogramGroupContainer("FastOR L1 Large Amp (hits above 400 ADC)", "FastORL1LargeAmp_SM",
+                                                  "_SM"))
     # Trigger classes
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("Gamma Trigger Low", "GAL"))
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("Gamma Trigger High", "GAH"))
@@ -141,9 +158,11 @@ def createEMCHistogramGroups(subsystem):
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("Other EMC", "EMC"))
 
     # Catch all of the other hists
-    # NOTE: We only want to do this if we are using a subsystem that actually has a file. Otherwise, you end up with lots of irrelevant histograms
+    # NOTE: We only want to do this if we are using a subsystem that actually has a file.
+    #  Otherwise, you end up with lots of irrelevant histograms
     if subsystem.subsystem == subsystem.fileLocationSubsystem:
         subsystem.histGroups.append(processingClasses.histogramGroupContainer("Non EMC", ""))
+
 
 ###################################################
 def setEMCHistogramOptions(subsystem):
@@ -168,10 +187,11 @@ def setEMCHistogramOptions(subsystem):
     # Sets the hot channel threshold. 0 uses the default in the defined function
     subsystem.processingOptions["hotChannelThreshold"] = 0
 
+
 ###################################################
 def generalEMCOptions(subsystem, hist, processingOptions, *args, **kwargs):
     # Set options for when not debugging
-    if processingParameters["debug"] == False:
+    if not processingParameters["debug"]:
         # Disable hist stats
         hist.hist.SetStats(False)
 
@@ -186,8 +206,9 @@ def generalEMCOptions(subsystem, hist, processingOptions, *args, **kwargs):
     # See: https://root.cern.ch/root/roottalk/roottalk02/3965.html
     hist.canvas.Modified()
 
+
 ###################################################
-#def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem = "EMC"):
+# def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem = "EMC"):
 #    """ Sorts and displays EMC histograms.
 #
 #    Heavily relies on :func:`~processRuns.generateHtml.generateHtmlForHistLinkOnRunPage`
@@ -204,92 +225,95 @@ def generalEMCOptions(subsystem, hist, processingOptions, *args, **kwargs):
 #            Default: "EMC"
 #
 #    Returns:
-#        str: HTML containing all of the EMC histograms, with proper formatting and links from the top of the page to the named images.
+#        str: HTML containing all of the EMC histograms,
+#       with proper formatting and links from the top of the page to the named images.
 #
 #    """
 
-    ## Group filenames
-    #for filename in outputHistNames:
-    #    for group in groupedHists:
-    #        if group.selectionPattern in filename:
-    #            group.histList.append(filename)
-    #            # Break so that we don't have multiple copies of hists!
-    #            break
+## Group filenames
+# for filename in outputHistNames:
+#    for group in groupedHists:
+#        if group.selectionPattern in filename:
+#            group.histList.append(filename)
+#            # Break so that we don't have multiple copies of hists!
+#            break
 
-    ## Sort
-    #for group in groupedHists:
-    #    if group.histList == []:
-    #        continue
-    #    if group.plotInGrid == True:
-    #        # If we do not sort more carefully, then it will go 1, 10, 11, .., 2, 3, 4,..
-    #        # since the numbers are contained in strings.
-    #        # NOTE: This find could cause sorting problems if plotInGridSelectionPattern is not in the hist names!
-    #        # However, this would mean that the object has been set up incorrectly
-    #        # NOTE: Reverse so that we plot SMs in descending order
-    #        group.histList = sorted(group.histList, key=lambda x: int(x[x.find(group.plotInGridSelectionPattern) + len(group.plotInGridSelectionPattern):]), reverse=True)
-    #        group.histList = sortSMsInPhysicalOrder(group.histList)
-    #    else:
-    #        # Sort hists
-    #        group.histList.sort()
+## Sort
+# for group in groupedHists:
+#    if group.histList == []:
+#        continue
+#    if group.plotInGrid == True:
+#        # If we do not sort more carefully, then it will go 1, 10, 11, .., 2, 3, 4,..
+#        # since the numbers are contained in strings.
+#        # NOTE: This find could cause sorting problems if plotInGridSelectionPattern is not in the hist names!
+#        # However, this would mean that the object has been set up incorrectly
+#        # NOTE: Reverse so that we plot SMs in descending order
+#        group.histList = sorted(group.histList, key=lambda x: int(x[x.find(group.plotInGridSelectionPattern) + len(group.plotInGridSelectionPattern):]), reverse=True)
+#        group.histList = sortSMsInPhysicalOrder(group.histList)
+#    else:
+#        # Sort hists
+#        group.histList.sort()
 
-    ## Links to histograms
-    #htmlText = ""
-    #htmlText += "<div class=\"contentDivider\">\n"
-    ## Get the proper label for the plots by SM section
-    ## This depends on all SM plots being processed first
-    #for group in groupedHists:
-    #    if group.plotInGrid == True and group.histList != []:
-    #        htmlText += "<h3>Plots By SM</h3>\n"
-    #        # We only want to make the label once
-    #        break
+## Links to histograms
+# htmlText = ""
+# htmlText += "<div class=\"contentDivider\">\n"
+## Get the proper label for the plots by SM section
+## This depends on all SM plots being processed first
+# for group in groupedHists:
+#    if group.plotInGrid == True and group.histList != []:
+#        htmlText += "<h3>Plots By SM</h3>\n"
+#        # We only want to make the label once
+#        break
 
-    ## Generate the actual links
-    #for group in groupedHists:
-    #    # We don't want to generate any links if there are no hists in the category
-    #    if group.histList == []:
-    #        continue
+## Generate the actual links
+# for group in groupedHists:
+#    # We don't want to generate any links if there are no hists in the category
+#    if group.histList == []:
+#        continue
 
-    #    if group.plotInGrid == True:
-    #        # Create a link to the group that will be displayed in a grid
-    #        # Seperate out into EMCal and DCal
-    #        # EMCal
-    #        htmlText += generateHtml.generateHtmlForPlotInGridLinks(group.name + " - EMCal")
-    #        # DCal
-    #        htmlText += generateHtml.generateHtmlForPlotInGridLinks(group.name + " -  DCal")
-    #    else:
-    #        # Create label for group
-    #        htmlText += "<h3>" + group.name + "</h3>\n"
-    #        startOfName = 12
-    #        if group.selectionPattern == "":
-    #            startOfName = 0
-    #        # Create links to all hists in the group
-    #        htmlText += generateHtml.generateHtmlForHistLinkOnRunPage(group.histList, startOfName)
+#    if group.plotInGrid == True:
+#        # Create a link to the group that will be displayed in a grid
+#        # Seperate out into EMCal and DCal
+#        # EMCal
+#        htmlText += generateHtml.generateHtmlForPlotInGridLinks(group.name + " - EMCal")
+#        # DCal
+#        htmlText += generateHtml.generateHtmlForPlotInGridLinks(group.name + " -  DCal")
+#    else:
+#        # Create label for group
+#        htmlText += "<h3>" + group.name + "</h3>\n"
+#        startOfName = 12
+#        if group.selectionPattern == "":
+#            startOfName = 0
+#        # Create links to all hists in the group
+#        htmlText += generateHtml.generateHtmlForHistLinkOnRunPage(group.histList, startOfName)
 
-    ## Close the div
-    #htmlText += "</div>\n"
+## Close the div
+# htmlText += "</div>\n"
 
-    ## Display histograms in the same order as anchors
-    #for group in groupedHists:
-    #    # We don't want to add any images if there are no hists in the category
-    #    if group.histList == []:
-    #        continue
+## Display histograms in the same order as anchors
+# for group in groupedHists:
+#    # We don't want to add any images if there are no hists in the category
+#    if group.histList == []:
+#        continue
 
-    #    if group.plotInGrid == True:
-    #        # Add images in a grid
-    #        # Seperate out into EMCal and DCal
-    #        # EMCal
-    #        htmlText += generateHtml.generateHtmlForPlotInGrid(group.histList[8:], group.name + " - EMCal", outputFormatting, nColumns = 2)
-    #        # DCal
-    #        htmlText += generateHtml.generateHtmlForPlotInGrid(group.histList[:8], group.name + " -  DCal", outputFormatting, nColumns = 2)
-    #    else:
-    #        # This ensures that we don't cut the names of the non-EMC hists
-    #        startOfName = 12
-    #        if group.selectionPattern == "":
-    #            startOfName = 0
-    #        # Add images for this group
-    #        htmlText += generateHtml.generateHtmlForHistOnRunPage(group.histList, outputFormatting, startOfName)
+#    if group.plotInGrid == True:
+#        # Add images in a grid
+#        # Seperate out into EMCal and DCal
+#        # EMCal
+#        htmlText += generateHtml.generateHtmlForPlotInGrid(group.histList[8:], group.name + " - EMCal",
+#                                                           outputFormatting, nColumns = 2)
+#        # DCal
+#        htmlText += generateHtml.generateHtmlForPlotInGrid(group.histList[:8], group.name + " -  DCal",
+#                                                           outputFormatting, nColumns = 2)
+#    else:
+#        # This ensures that we don't cut the names of the non-EMC hists
+#        startOfName = 12
+#        if group.selectionPattern == "":
+#            startOfName = 0
+#        # Add images for this group
+#        htmlText += generateHtml.generateHtmlForHistOnRunPage(group.histList, outputFormatting, startOfName)
 
-    #return htmlText
+# return htmlText
 
 
 ######################################################################################################
@@ -320,13 +344,13 @@ def checkForOutliers(hist):
     """
     # If outlier data point, print warning banner
     if hist.GetName() == "":
-        tempList = hasSignalOutlier(hist) # array of info from hasSignalOutlier function, to print on legend
+        tempList = hasSignalOutlier(hist)  # array of info from hasSignalOutlier function, to print on legend
         numOutliers = tempList[0]
         mean = tempList[1]
         stdev = tempList[2]
         newMean = tempList[3]
         newStdev = tempList[4]
-        if(numOutliers):
+        if (numOutliers):
             # Create TLegend and fill with information if there is an outlier.
             leg = TLegend(0.15, 0.5, 0.7, 0.8)
             SetOwnership(leg, False)
@@ -334,11 +358,12 @@ def checkForOutliers(hist):
             leg.SetBorderSize(4)
             leg.SetShadowColor(2)
             leg.SetHeader("#splitline{OUTLIER SIGNAL DETECTED}{IN %s BINS!}" % numOutliers)
-            leg.AddEntry(None, "Mean: %s, Stdev: %s" % ('%.2f'%mean, '%.2f'%stdev), "")
-            leg.AddEntry(None, "New mean: %s, New Stdev: %s" % ('%.2f'%newMean, '%.2f'%newStdev), "")
+            leg.AddEntry(None, "Mean: %s, Stdev: %s" % ('%.2f' % mean, '%.2f' % stdev), "")
+            leg.AddEntry(None, "New mean: %s, New Stdev: %s" % ('%.2f' % newMean, '%.2f' % newStdev), "")
             leg.SetTextSize(0.04)
             leg.SetTextColor(2)
             leg.Draw()
+
 
 ###################################################
 def hasSignalOutlier(hist):
@@ -365,22 +390,22 @@ def hasSignalOutlier(hist):
             newStdev (float): Recalculated standard deviation after excluding the outlier(S)
 
     """
-    ignoreEmptyBins = False     # whether to include empty bins in mean/stdev calculation
+    ignoreEmptyBins = False  # whether to include empty bins in mean/stdev calculation
     xbins = hist.GetNbinsX()
     ybins = hist.GetNbinsY()
-    totalBins = xbins*ybins
+    totalBins = xbins * ybins
     signal = numpy.zeros(totalBins)
-    
+
     # Get bins for hist
-    for binX in range(1, xbins+1):
-        for binY in range(1, ybins+1):
+    for binX in range(1, xbins + 1):
+        for binY in range(1, ybins + 1):
             binContent = hist.GetBinContent(binX, binY)
-            signal[(binX-1) + (binY-1)*xbins] = binContent #bins start at 1, arrays at 0
+            signal[(binX - 1) + (binY - 1) * xbins] = binContent  # bins start at 1, arrays at 0
 
     # Change calculation technique depending on option and type of hist
     if ignoreEmptyBins:
-        mean = numpy.mean(signal[signal>0])
-        stdev = numpy.std(signal[signal>0])
+        mean = numpy.mean(signal[signal > 0])
+        stdev = numpy.std(signal[signal > 0])
     else:
         mean = numpy.mean(signal)
         stdev = numpy.std(signal)
@@ -388,27 +413,29 @@ def hasSignalOutlier(hist):
     # Set thresholds for outliers
     threshUp = mean + stdev
     threshDown = mean - stdev
-    
-    outlierList = [] # index of outliers in signal array
+
+    outlierList = []  # index of outliers in signal array
     # Determine if a bin is an outlier
-    for binX in range(1, xbins+1):
-        for binY in range(1, ybins+1):
-            amp = signal[(binX-1) + (binY-1)*xbins]
-            if(amp > threshUp or amp < threshDown):
-                if not ignoreEmptyBins or amp > 0: 
-                    logger.info("bin (" + repr(binX) + "," + repr(binY) + ") has amplitude " + repr(amp) + "! This is outside of threshold, [" + '%.2f'%threshDown + "," + '%.2f'%threshUp + "]")
-                    outlierList.append((binX-1) + (binY-1)*xbins)
-    
+    for binX in range(1, xbins + 1):
+        for binY in range(1, ybins + 1):
+            amp = signal[(binX - 1) + (binY - 1) * xbins]
+            if (amp > threshUp or amp < threshDown):
+                if not ignoreEmptyBins or amp > 0:
+                    logger.info("bin (" + repr(binX) + "," + repr(binY) + ") has amplitude " + repr(amp) +
+                                "! This is outside of threshold, [{.2f},{.2f}]".format(threshDown, threshUp))
+                    outlierList.append((binX - 1) + (binY - 1) * xbins)
+
     # Exclude outliers and recalculate
     newSignal = numpy.delete(signal, outlierList)
     if ignoreEmptyBins:
-        newMean = numpy.mean(newSignal[newSignal>0])
-        newStdev = numpy.std(newSignal[newSignal>0])
+        newMean = numpy.mean(newSignal[newSignal > 0])
+        newStdev = numpy.std(newSignal[newSignal > 0])
     else:
         newMean = numpy.mean(newSignal)
         newStdev = numpy.std(newSignal)
 
-    return [len(outlierList), mean, stdev, newMean, newStdev] # info for legend
+    return [len(outlierList), mean, stdev, newMean, newStdev]  # info for legend
+
 
 ###################################################
 # Plot Patch Spectra with logy and grad 
@@ -429,7 +456,8 @@ def properlyPlotPatchSpectra(subsystem, hist, processingOptions):
 
     """
     hist.canvas.SetLogy()
-    hist.canvas.SetGrid(1,1)
+    hist.canvas.SetGrid(1, 1)
+
 
 ###################################################
 # Add Energy Axis to Patch Amplitude Spectra
@@ -455,17 +483,18 @@ def addEnergyAxisToPatches(subsystem, hist, processingOptions):
         None
 
     """
-    kEMCL1ADCtoGeV = 0.07874   # Conversion from EMCAL Level1 ADC to energy
+    kEMCL1ADCtoGeV = 0.07874  # Conversion from EMCAL Level1 ADC to energy
     adcMin = hist.hist.GetXaxis().GetXmin()
     adcMax = hist.hist.GetXaxis().GetXmax()
-    EMax = adcMax*kEMCL1ADCtoGeV
-    EMin = adcMin*kEMCL1ADCtoGeV
-    #yMax = gPad.GetUymax()    # this function does not work here (log problem)
-    yMax= 2*hist.hist.GetMaximum()
-    energyAxis = TGaxis(adcMin,yMax,adcMax,yMax,EMin,EMax,510,"-")
+    EMax = adcMax * kEMCL1ADCtoGeV
+    EMin = adcMin * kEMCL1ADCtoGeV
+    # yMax = gPad.GetUymax()    # this function does not work here (log problem)
+    yMax = 2 * hist.hist.GetMaximum()
+    energyAxis = TGaxis(adcMin, yMax, adcMax, yMax, EMin, EMax, 510, "-")
     SetOwnership(energyAxis, False)
     energyAxis.SetTitle("Energy (GeV)")
     energyAxis.Draw()
+
 
 ###################################################
 # Label each individual super module (SM) plot
@@ -477,10 +506,11 @@ def labelSupermodules(hist):
 
     """
     if "_SM" in hist.histName[-5:]:
-        smNumber = hist.histName[hist.histName.find("_SM")+3:]
+        smNumber = hist.histName[hist.histName.find("_SM") + 3:]
         hist.hist.SetTitle("SM {0}".format(smNumber))
         # Show title
         gStyle.SetOptTitle(1)
+
 
 ###################################################
 # Add a grid representing the TRUs to a canvas.
@@ -505,7 +535,7 @@ def addTRUGrid(subsystem, hist):
         SetOwnership(line, False)
         line.Draw()
     # 60 + 1 to ensure that 60 is plotted
-    for y in range(12, 60+1, 12):
+    for y in range(12, 60 + 1, 12):
         line = TLine(0, y, 48, y)
         SetOwnership(line, False)
         line.Draw()
@@ -523,9 +553,9 @@ def addTRUGrid(subsystem, hist):
         if (x == 24):
             # skip PHOS hole
             continue
-        line = TLine(x, 64, x, 100);
+        line = TLine(x, 64, x, 100)
         SetOwnership(line, False)
-        line.Draw();
+        line.Draw()
     for y in range(76, 100, 12):
         line = TLine(0, y, 16, y)
         SetOwnership(line, False)
@@ -543,6 +573,7 @@ def addTRUGrid(subsystem, hist):
     SetOwnership(line, False)
     line.Draw()
 
+
 ###################################################
 def edgePosOptions(subsystem, hist, processingOptions):
     if processingOptions["scaleHists"]:
@@ -553,18 +584,21 @@ def edgePosOptions(subsystem, hist, processingOptions):
         # Add grid of TRU boundaries
         addTRUGrid(subsystem, hist)
 
+
 ###################################################
 def smOptions(subsystem, hist, processingOptions):
-    #canvas.SetLogz(logz)
+    # canvas.SetLogz(logz)
     if processingOptions["scaleHists"]:
         hist.hist.Scale(1. / subsystem.nEvents)
     labelSupermodules(hist)
+
 
 ###################################################
 def feeSMOptions(subsystem, hist, processingOptions):
     hist.canvas.SetLogz(True)
     hist.hist.GetXaxis().SetRangeUser(0, 250)
     hist.hist.GetYaxis().SetRangeUser(0, 20)
+
 
 ###################################################
 def fastOROptions(subsystem, hist, processingOptions):
@@ -593,7 +627,7 @@ def fastOROptions(subsystem, hist, processingOptions):
         if processingOptions["hotChannelThreshold"] > 0:
             # Normalize by 1000, since it is displayed that way on the site to make it readable.
             # ie. Map 0 to 1e3 -> 1e-3 to 1
-            threshold = processingOptions["hotChannelThreshold"]/1000.0
+            threshold = processingOptions["hotChannelThreshold"] / 1000.0
 
         # Set hist options
         hist.hist.Sumw2()
@@ -603,12 +637,12 @@ def fastOROptions(subsystem, hist, processingOptions):
         # Set style
         hist.hist.SetMarkerStyle(kFullCircle)
         hist.hist.SetMarkerSize(0.8)
-        hist.hist.SetMarkerColor(kBlue+1)
-        hist.hist.SetLineColor(kBlue+1)
+        hist.hist.SetMarkerColor(kBlue + 1)
+        hist.hist.SetLineColor(kBlue + 1)
 
         # Find bins above the threshold
         absIdList = []
-        for iBin in range(1, hist.hist.GetXaxis().GetNbins()+1):
+        for iBin in range(1, hist.hist.GetXaxis().GetNbins() + 1):
             if hist.hist.GetBinContent(iBin) > threshold:
                 # Translate back from bin number (1, Nbins() + 1) to fastOR ID (0, Nbins())
                 absIdList.append(iBin - 1)
@@ -616,14 +650,15 @@ def fastOROptions(subsystem, hist, processingOptions):
         hist.information["Threshold"] = threshold
         hist.information["Fast OR Hot Channels ID"] = absIdList
 
+
 ###################################################
 def patchAmpOptions(subsystem, hist, processingOptions):
     # Setup canvas as desired
     hist.canvas.SetLogy(True)
-    hist.canvas.SetGrid(1,1)
+    hist.canvas.SetGrid(1, 1)
 
     # Plot both on the same canvas if they both exist
-    #if otherHist is not None:
+    # if otherHist is not None:
     if hist.hist.InheritsFrom(THStack.Class()):
         # Add legend
         legend = TLegend(0.6, 0.9, 0.9, 0.7)
@@ -633,7 +668,7 @@ def patchAmpOptions(subsystem, hist, processingOptions):
 
         # Lists to use to plot
         detectors = ["EMCal", "DCal"]
-        colors = [kRed+1, kBlue+1]
+        colors = [kRed + 1, kBlue + 1]
         markers = [kFullCircle, kOpenCircle]
         options = ["", ""]
 
@@ -646,13 +681,13 @@ def patchAmpOptions(subsystem, hist, processingOptions):
             tempHist.SetMarkerColor(color)
 
             if processingOptions["scaleHists"]:
-                tempHist.Scale(1./subsystem.nEvents)
+                tempHist.Scale(1. / subsystem.nEvents)
             tempHist.GetYaxis().SetTitle("entries / events")
 
             # Draw hists
             # This is not the usual philosophy. We are clearing the canvas and then plotting
             # the second hist on it
-            #tempHist.Draw(option)
+            # tempHist.Draw(option)
             legend.AddEntry(tempHist, detector, "pe")
 
         # Add legend
@@ -664,37 +699,37 @@ def patchAmpOptions(subsystem, hist, processingOptions):
         # Add energy axis
         addEnergyAxisToPatches(subsystem, hist, processingOptions)
 
+
 ###################################################
 # Add drawing options to plots
 # Plots come in 4 types: PlotbySM, Plot2D, Plot1D, PlotMaxMatch
 ###################################################
 def findFunctionsForEMCHistogram(subsystem, hist):
-
     # General EMC Options
     hist.functionsToApply.append(generalEMCOptions)
 
     # Plot by SM
     if "SM" in hist.histName:
         hist.functionsToApply.append(smOptions)
-       
+
         # For FEE plots, set a different range
         if "FEE" in hist.histName:
             hist.functionsToApply.append(feeSMOptions)
-                    
+
     # EdgePos plots
     if "EdgePos" in hist.histName:
         hist.functionsToApply.append(edgePosOptions)
-        
+
     # Check summary FastOR hists
     # First determine possible fastOR names
     fastORLevels = ["EMCTRQA_histFastORL0", "EMCTRQA_histFastORL1"]
     fastORTypes = ["", "Amp", "LargeAmp"]
-    possibleFastORNames = [a + b for a,b in list(itertools.product(fastORLevels, fastORTypes))]
-    #logger.debug(possibleFastORNames)
-    #if "FastORL" in hist.GetName() and "SM" not in hist.GetName(): 
+    possibleFastORNames = [a + b for a, b in list(itertools.product(fastORLevels, fastORTypes))]
+    # logger.debug(possibleFastORNames)
+    # if "FastORL" in hist.GetName() and "SM" not in hist.GetName():
     if any(substring == hist.histName for substring in possibleFastORNames):
         hist.functionsToApply.append(fastOROptions)
-            
+
     # PlotMaxPatch plots
     # Ideally EMCal and DCal histos should be plot on the same plot
     # However, sometimes they are unpaired and must be printed individually
@@ -704,9 +739,11 @@ def findFunctionsForEMCHistogram(subsystem, hist):
         hist.functionsToApply.append(patchAmpOptions)
 
     # Essentially only for legacy support. Newer instances of this plot are handled above
-    if any(substring in hist.histName for substring in ["EMCalPatchEnergy", "EMCalPatchAmp", "EMCalMaxPatchAmp", "DCalPatchAmp", "DCalPatchEnergy", "DCalMaxPatchAmp"]):
+    if any(substring in hist.histName for substring in
+           ["EMCalPatchEnergy", "EMCalPatchAmp", "EMCalMaxPatchAmp", "DCalPatchAmp", "DCalPatchEnergy",
+            "DCalMaxPatchAmp"]):
         hist.functionsToApply.append(properlyPlotPatchSpectra)
 
-    if any(substring in hist.histName for substring in ["EMCalPatchAmp", "EMCalMaxPatchAmp", "DCalPatchAmp", "DCalMaxPatchAmp"]):
+    if any(substring in hist.histName for substring in
+           ["EMCalPatchAmp", "EMCalMaxPatchAmp", "DCalPatchAmp", "DCalMaxPatchAmp"]):
         hist.functionsToApply.append(addEnergyAxisToPatches)
-

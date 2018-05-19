@@ -13,28 +13,31 @@ import logging
 from overwatch.base import config
 # For configuring logger
 from overwatch.base import utilities
+
 (receiverParameters, filesRead) = config.readConfig(config.configurationType.dqmReceiver)
 
 # Setup logger
 # When imported, we just want it to take on it normal name
 logger = logging.getLogger(__name__)
 # Alternatively, we could set "overwatch.receiver" to get everything derived from that
-#logger = logging.getLogger("overwatch.receiver")
+# logger = logging.getLogger("overwatch.receiver")
 
-from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, Markup, jsonify, session
+from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, Markup, jsonify, \
+    session
 from werkzeug.utils import secure_filename
 
 import os
 import time
 import functools
 import ROOT
+
 # Fix Flask debug mode with ROOT 5 issue.
 # See: https://root-forum.cern.ch/t/pyroot-and-spyder-re-running-error/20926/5
 ROOT.std.__file__ = "ROOT.std.py"
-#import rootpy.io
-#import rootpy.ROOT as ROOT
+# import rootpy.io
+# import rootpy.ROOT as ROOT
 
-#app = Flask(__name__, static_url_path=serverParameters.staticURLPath, static_folder=serverParameters.staticFolder, template_folder=serverParameters.templateFolder)
+# app = Flask(__name__, static_url_path=serverParameters.staticURLPath, static_folder=serverParameters.staticFolder, template_folder=serverParameters.templateFolder)
 app = Flask(__name__)
 
 # Configuration
@@ -42,11 +45,12 @@ app = Flask(__name__)
 if not os.path.exists(receiverParameters["dataFolder"]):
     os.makedirs(receiverParameters["dataFolder"])
 
+
 # From: http://flask.pocoo.org/docs/0.12/patterns/apierrors/
 class InvalidUsage(Exception):
     status_code = 400
 
-    def __init__(self, message, status_code = None, payload = None):
+    def __init__(self, message, status_code=None, payload=None):
         Exception.__init__(self)
         self.message = message
         if status_code is not None:
@@ -58,11 +62,13 @@ class InvalidUsage(Exception):
         rv['message'] = self.message
         return rv
 
+
 @app.errorhandler(InvalidUsage)
 def handle_invalid_usage(error):
     response = jsonify(error.to_dict())
     response.status_code = error.status_code
     return response
+
 
 def checkForToken(func):
     # wraps is necessary to ensure that function names don't collide.
@@ -80,7 +86,9 @@ def checkForToken(func):
 
         # Note that it is invalid otherwise
         raise InvalidUsage("Invalid token!")
+
     return decoratedCheckToken
+
 
 @app.route("/", methods=["GET", "POST"])
 @checkForToken
@@ -88,13 +96,15 @@ def index():
     """ Redirect everything else. """
     raise InvalidUsage("Not implemented")
 
+
 @app.route("/rest/api/files", methods=["GET", "POST"])
 @checkForToken
 def dqm():
     """ Handle DQM data """
     response = dict()
     if request.method == "GET":
-        availableFiles = [f for f in os.listdir(receiverParameters["dataFolder"]) if os.path.isfile(os.path.join(receiverParameters["dataFolder"], f))]
+        availableFiles = [f for f in os.listdir(receiverParameters["dataFolder"]) if
+                          os.path.isfile(os.path.join(receiverParameters["dataFolder"], f))]
         response["files"] = availableFiles
         resp = jsonify(response)
         resp.status_code = 200
@@ -103,7 +113,7 @@ def dqm():
     # Print received header information
     logger.info("Headers:")
     requestHeaders = dict()
-    for header, val in request.headers.iteritems():
+    for header, val in request.headers.items():
         logger.debug("\"{0}\":, \"{1}\"".format(header, val))
         requestHeaders[header] = val
 
@@ -129,7 +139,8 @@ def dqm():
     logger.info("timeStr: {0}".format(timeStr))
 
     # If the mode needs to be one letter, perhaps make it "Z" to make it obvious or "D" for DQM?
-    filename = "{amoreAgent}histos_{runNumber}_{mode}_{timestamp}.root".format(amoreAgent = agent, runNumber = runNumber, mode = "DQM", timestamp = timeStr)
+    filename = "{amoreAgent}histos_{runNumber}_{mode}_{timestamp}.root".format(amoreAgent=agent, runNumber=runNumber,
+                                                                               mode="DQM", timestamp=timeStr)
     # Just to be safe!
     filename = secure_filename(filename)
     # True file path
@@ -164,22 +175,22 @@ def dqm():
         if payload:
             # Not opening as ROOT file since we are just writing the bytes to a file
             with open(outputPath, "wb") as fOut:
-                fOut.write(payload)
-            
+                fOut.write(payload.encode())
+
             savedFile = True
 
             # For handling serialized objects (later)
             # Write out the object to file
-            #with rootpy.io.File.Open(filename, "RECREATE") as fOut:
+            # with rootpy.io.File.Open(filename, "RECREATE") as fOut:
 
-                # For the future, how would we handle a more complex payload?
-                #for hist in payload:
-                #    pass
-                    # Can eval be used here? Or the safer literal_eval? -> Can't use literal_eval because it is too simple
-                    # Perhaps the easiest is TMessage::WriteObject() and TMessage::ReadObject()? -> But how do I reconstruct the TMessage??
-                    # May need to a two line c++ program to take a string of bytes and reinterpret_cast<TH1 *>(). Could just use gROOT.ProcessLine(...)
-                    # pyyaml can serialize entire objects. Perhaps we can use it??
-                    #hist.Write()
+            # For the future, how would we handle a more complex payload?
+            # for hist in payload:
+            #    pass
+            # Can eval be used here? Or the safer literal_eval? -> Can't use literal_eval because it is too simple
+            # Perhaps the easiest is TMessage::WriteObject() and TMessage::ReadObject()? -> But how do I reconstruct the TMessage??
+            # May need to a two line c++ program to take a string of bytes and reinterpret_cast<TH1 *>(). Could just use gROOT.ProcessLine(...)
+            # pyyaml can serialize entire objects. Perhaps we can use it??
+            # hist.Write()
         else:
             logger.warning("No payload...")
 
@@ -210,6 +221,7 @@ def dqm():
     logger.info("Response: {0}, resp: {1}".format(resp, response))
     return resp
 
+
 def receivedObjectInfo(outputPath):
     """ Print the objects in the received file """
     # Open the root file and print the object information
@@ -228,12 +240,14 @@ def receivedObjectInfo(outputPath):
 
     return (success, receivedObjects)
 
+
 @app.route("/rest/api/files/<string:filename>", methods=["GET"])
 @checkForToken
 def returnFile(filename):
     """ Return the ROOT file. """
     filename = secure_filename(filename)
     return send_from_directory(receiverParameters["dataFolder"], filename)
+
 
 if __name__ == "__main__":
     print("Run with overwatchDQMReceiver instead of directly!")

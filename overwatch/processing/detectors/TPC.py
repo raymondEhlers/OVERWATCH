@@ -36,7 +36,7 @@ class TPCTrendingObjectMean(processingClasses.trendingObject):
 
         print("self.hist: {}, self.hist.hist: {}".format(self.hist, self.hist.hist))
 
-    def fill(self, hist):
+    def fill(self, hist, _error=None):
         if len(self.histNames) > 1:
             print("Too many histograms passed to {0}!".format(self.histNames))
             return
@@ -152,7 +152,7 @@ def cSideProjectToXZ(subsystem, hist, processingOptions):
     return projectToXZ(subsystem, hist, processingOptions, aSide = False)
 
 def projectToXZ(subsystem, hist, processingOptions, aSide):
-    if aSide == True:
+    if aSide:
         hist.hist.GetYaxis().SetRangeUser(0, 1)
     else:
         hist.hist.GetYaxis().SetRangeUser(-1, 0)
