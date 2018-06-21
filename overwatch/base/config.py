@@ -1,23 +1,20 @@
 #!/usr/bin/env python
 
-import enum
+import aenum
 import logging
-#import yaml
 import ruamel.yaml as yaml
 import sys
 import os
+import pprint
 import pkg_resources
 from flask_bcrypt import generate_password_hash
 
 import warnings
 
-# TEMP
-import pprint
-# ENDTEMP
 
 logger = logging.getLogger(__name__)
 
-class configurationType(enum.Enum):
+class configurationType(aenum.Enum):
     processing = 0
     webApp = 1
     dqmReceiver = 2

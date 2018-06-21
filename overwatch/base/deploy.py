@@ -1,6 +1,7 @@
 #!/usr/bin/env python
 
 from __future__ import print_function
+from future.utils import iteritems
 
 import os
 import stat
@@ -580,13 +581,13 @@ def uwsgi(config, name):
     # and uwsgiName = "dqmReceiver"
     uwsgiName = uwsgiConfigFile.get("name", "{0}".format(name))
 
-    if not "wsgi-file" in uwsgiConfigFile and not "module" in uwsgiConfigFile:
+    if "wsgi-file" not in uwsgiConfigFile and "module" not in uwsgiConfigFile:
         raise KeyError("Must pass either \"wsgi-file\" or \"module\" for the uwsgi configuration!"
                        " \"wsgi-file\" corresponds to a path to a python file which contains the app."
                        " \"module\" is the python module path to a module containing the app.")
 
     if not uwsgiConfigFile["enabled"]:
-        logger.warn("uwsgi configuration present for {0}, but not enabled".format(name))
+        logger.warning("uwsgi configuration present for {0}, but not enabled".format(name))
 
     # This is the base configuration which sets the default values
     uwsgiConfig = {
@@ -620,7 +621,7 @@ def uwsgi(config, name):
     uwsgiConfig.update(uwsgiConfigFile)
 
     # Inject name into the various values if needed
-    for k, v in uwsgiConfig.iteritems():
+    for k, v in iteritems(uwsgiConfig):
         if isinstance(v, str):
             uwsgiConfig[k] = v.format(name = uwsgiConfigFile.get("name", "webApp"))
 

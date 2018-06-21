@@ -2,7 +2,7 @@
 # Required
 
 # General
-enum34
+aenum
 
 # For Python 2/3 support
 future
@@ -17,7 +17,7 @@ Flask-RESTful
 ZODB
 #Flask-ZODB
 # Install from git repo to support the newer hook
-git+https://github.com/dag/flask-zodb.git
+git+https://github.com/SpotlightKid/flask-zodb.git
 
 # Login
 bcrypt
@@ -42,5 +42,4 @@ recommonmark
 pprint
 
 # Configuration
-pyyaml
 ruamel.yaml<=0.15

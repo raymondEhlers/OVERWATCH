@@ -2,6 +2,8 @@
 
 # For python 3 support
 from __future__ import print_function
+from future.utils import iteritems
+from future.utils import itervalues
 
 import os
 # Python logging system
@@ -23,7 +25,7 @@ logger = logging.getLogger(__name__)
 from flask import Flask, url_for, request, render_template, redirect, flash, send_file, send_from_directory, Markup, jsonify, session, make_response, stream_with_context, Response
 import flask_restful
 import flask_zodb
-import cStringIO
+from io import StringIO
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -77,7 +79,7 @@ def responseForSendingFile(filename = None, response = None, additionalHeaders =
         additionalHeaders["filenames"] = ";".join(additionalHeaders["filenames"])
 
     # Add headers to response
-    for k, v in additionalHeaders.iteritems():
+    for k, v in iteritems(additionalHeaders):
         if k in response.headers.keys():
             print("WARNING: Header {} (value: {}) already exists in the response and will be overwritten".format(k, response.headers[k]))
         response.headers[k] = v
@@ -110,7 +112,7 @@ class FilesAccess(flask_restful.Resource):
         #filename = secure_filename(filename)
 
         # Look for the file
-        print(subsystemContainer.files.itervalues().next().filename)
+        print(next(itervalues(subsystemContainer.files)).filename)
         try:
             requestedFile = next(fileContainer for fileContainer in subsystemContainer.files.values() if fileContainer.filename.split("/")[-1] == filename)
         except StopIteration as e:
@@ -132,8 +134,8 @@ class FilesAccess(flask_restful.Resource):
             # it will leak memory.
             # For more, see: https://stackoverflow.com/q/13344538 (no definitive solution)
             #                https://stackoverflow.com/a/25150805 (gave me the idea to just create a new StringIO)
-            # cStringIO was selected based on https://stackoverflow.com/a/37463095
-            return make_response(send_file(cStringIO.StringIO(f.read()), as_attachment = True, attachment_filename = filename))
+            # StringIO was selected based on https://stackoverflow.com/a/37463095
+            return make_response(send_file(StringIO.StringIO(f.read()), as_attachment = True, attachment_filename = filename))
 
         #with openFile(requestedFile.filename, "rb") as f:
         #    f.seek(0)
@@ -172,7 +174,7 @@ class FilesAccess(flask_restful.Resource):
             #payloadFile.save(outputPath)
 
             with openFile(outputPath, "w+") as f:
-                f.write(payloadFile.read())
+                f.write(payloadFile.read().encode())
 
             savedFile = True
         else:

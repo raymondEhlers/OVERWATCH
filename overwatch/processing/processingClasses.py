@@ -10,6 +10,7 @@ or read from file.
 
 from __future__ import print_function
 from __future__ import absolute_import
+from future.utils import iteritems
 
 # Database
 import BTrees.OOBTree
@@ -245,14 +246,14 @@ class trendingContainer(persistent.Persistent):
 
         Args:
             subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
-            trendingObjects (list): List of TrendingObject derived objects.
+            trendingObjects (dict): dict of TrendingObject derived objects.
         """
         if not subsystem in self.trendingObjects.keys():
             self.trendingObjects[subsystem] = BTrees.OOBTree.BTree()
 
         logger.debug("self.trendingObjects[{}]: {}".format(subsystem, self.trendingObjects[subsystem]))
 
-        for name, obj in trendingObjects.iteritems():
+        for name, obj in iteritems(trendingObjects):
             if not name in self.trendingObjects[subsystem] or forceRecreateSubsystem:
                 logger.debug("Adding trending object {} from subsystem {} to the trending objects".format(name, subsystem))
                 self.trendingObjects[subsystem][name] = obj
@@ -267,8 +268,8 @@ class trendingContainer(persistent.Persistent):
     def findTrendingFunctionsForHist(self, hist):
         """ Given a hist, determine the trending objects (and therefore functions) which should be applied. """
         logger.debug("Looking for trending objects for hist {}".format(hist.histName))
-        for subsystemName, subsystem in self.trendingObjects.iteritems():
-            for trendingObjName, trendingObj in subsystem.iteritems():
+        for subsystemName, subsystem in iteritems(self.trendingObjects):
+            for trendingObjName, trendingObj in iteritems(subsystem):
                 if hist.histName in trendingObj.histNames:
                     # Define the temporary function so it can be executed later.
                     #def tempFunc():
@@ -392,7 +393,7 @@ class histogramContainer(persistent.Persistent):
         #histName = histName.replace("/", "_")
         self.histName = histName
         # Only assign if meaningful
-        if prettyName != None:
+        if prettyName is not None:
             self.prettyName = prettyName
         else:
             self.prettyName = self.histName
@@ -449,8 +450,8 @@ class histogramContainer(persistent.Persistent):
         elif trending:
             returnValue = False
             # Not particularly efficient
-            for subsystemName, subsystem in trending.trendingObjects.iteritems():
-                for name, trendingObject in subsystem.iteritems():
+            for subsystemName, subsystem in iteritems(trending.trendingObjects):
+                for name, trendingObject in iteritems(subsystem):
                     if self.histName in trendingObject.hist.histName:
                         # Define the TH1 and make it available
                         trendingObject.retrieveHist()

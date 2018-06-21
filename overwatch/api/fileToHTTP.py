@@ -2,7 +2,7 @@
 
 import requests
 import json
-import StringIO # Should I use the io module instead?
+from io import StringIO
 import os
 import contextlib
 import tempfile
@@ -29,7 +29,7 @@ def getFile(filename, fileObject, stream = False):
         # Write in chunks to allow for streaming. See: https://stackoverflow.com/a/13137873
         # To stream a response, we need a generator. See: https://gist.github.com/gear11/8006132#file-main-py-L36
         for chunk in r:
-            fileObject.write(chunk)
+            fileObject.write(chunk.encode())
         # Return to start of file so the read is seamless
         fileObject.seek(0)
         return (r.ok, r.status_code, fileObject)
@@ -81,7 +81,7 @@ def FileWithLocalFilename(filename, writeFile = False):
                 if success:
                     print("Writing to temporary file")
                     print("success: {}, status: {}".format(success, status))
-                    f.write(fileInMemory.read())
+                    f.write(fileInMemory.read().encode())
                     f.flush()
                     #f.write("Hello")
                     # Return to start of file so the read is seamless

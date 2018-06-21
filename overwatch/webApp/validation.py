@@ -361,7 +361,7 @@ def extractValueFromNextOrRequest(paramName):
                 # Has a one entry list
                 paramValue = params.get(paramName, "")[0]
             except (KeyError, IndexError) as e:
-                logger.warn("Error in getting {0}: {1}".format(paramName, e.args[0]))
+                logger.warning("Error in getting {0}: {1}".format(paramName, e.args[0]))
                 paramValue = ""
 
     # Just try to extract directly if it isn't in the next parameter

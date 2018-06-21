@@ -6,6 +6,7 @@
 # For python 3 support
 from __future__ import print_function
 from builtins import range
+from future.utils import iteritems
 
 # General includes
 import os
@@ -141,7 +142,7 @@ def login():
     nextValue = routing.getRedirectTarget()
 
     # Check for users and notify if there are none!
-    if not db["config"].has_key("users") or not db["config"]["users"]:
+    if "users" not in db["config"] or not db["config"]["users"]:
         logger.fatal("No users found in database!")
         if serverParameters["debug"]:
             # It should be extremely unlikely for this condition to be met!
@@ -155,7 +156,7 @@ def login():
         (errorValue, username, password) = validation.validateLoginPostRequest(request)
 
         # If there is an error, just drop through to return an error on the login page
-        if errorValue == None:
+        if errorValue is None:
             # Validate user
             validUser = auth.authenticateUser(username, password, db)
 
@@ -565,7 +566,7 @@ def trending():
 
     # Determine the subsytemName
     if not subsystemName:
-        for subsystemName, subsystem in trendingContainer.trendingObjects.iteritems():
+        for subsystemName, subsystem in iteritems(trendingContainer.trendingObjects):
             if len(subsystem) > 0:
                 subsystemName = subsystemName
                 break
@@ -692,7 +693,7 @@ def status():
     # Add to status
     statuses["Ongoing run?"] = "{0} {1}".format(runOngoing, runOngoingNumber)
 
-    if db.has_key("config") and db["config"].has_key("receiverLogLastModified"):
+    if "config" in db and "receiverLogLastModified" in db["config"]:
         receiverLogLastModified = db["config"]["receiverLogLastModified"]
         lastModified = time.time() - receiverLogLastModified
         # Display in minutes
@@ -707,7 +708,7 @@ def status():
     # Determine server statuses
     # TODO: Consider reducing the max number of retries
     sites = serverParameters["statusRequestSites"]
-    for site, url in sites.iteritems():
+    for site, url in iteritems(sites):
         serverError = {}
         statusResult = ""
         try:

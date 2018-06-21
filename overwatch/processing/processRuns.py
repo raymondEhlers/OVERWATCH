@@ -9,6 +9,7 @@ then writes out histograms to webpage.
 
 """
 from __future__ import print_function
+from future.utils import iteritems
 
 # ROOT
 import ROOT
@@ -172,7 +173,7 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
 
     # Set the proper processing options
     # If it was passed in, it was from time slices
-    if processingOptions == None:
+    if processingOptions is None:
         processingOptions = subsystem.processingOptions
     logger.debug("processingOptions: {0}".format(processingOptions))
 
@@ -204,9 +205,9 @@ def processTrending(outputFormatting, trending, processingOptions = None, forceR
 
     logger.debug("trending.trendingObjects: {}".format([key for key in trending.trendingObjects.keys()]))
     logger.debug("trending.trendingObjects: {}".format(trending.trendingObjects["TPC"]))
-    for subsystemName, subsystem in trending.trendingObjects.iteritems():
+    for subsystemName, subsystem in iteritems(trending.trendingObjects):
         logger.debug("{}: subsystem from trending: {}".format(subsystemName, subsystem))
-        for name, trendingObject in subsystem.iteritems():
+        for name, trendingObject in iteritems(subsystem):
             hist = trendingObject.hist
             hist.retrieveHistogram(trending = trending, ROOT = ROOT)
             logger.debug("trendingObject: {}, hist: {}, hist.histName: {}, hist.hist: {}".format(trendingObject, hist, hist.histName, hist.hist))
@@ -299,7 +300,7 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, su
     #logger.debug("jsonBufferFile: {0}".format(jsonBufferFile))
     # GZip is performed by the web server, not here!
     with open(jsonBufferFile, "wb") as f:
-        f.write(ROOT.TBufferJSON.ConvertToJSON(canvas).Data())
+        f.write(ROOT.TBufferJSON.ConvertToJSON(canvas).Data().encode())
 
     # Clear hist and canvas so that we can successfully save
     hist.hist = None
@@ -314,7 +315,7 @@ def compareProcessingOptionsDicts(inputProcessingOptions, processingOptions):
     
     """
     processingOptionsAreTheSame = True
-    for key,val in inputProcessingOptions.iteritems():
+    for key,val in iteritems(inputProcessingOptions):
         if key not in processingOptions:
             return (None, None, {"Processing option error": ["Key \"{0}\" in inputProcessingOptions ({1}) is not in subsystem processingOptions {2}!".format(key, inputProcessingOptions, processingOptions)]})
         if val != processingOptions[key]:
@@ -331,7 +332,7 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
 
     # If max filter time is greater than max file time, merge up to and including last file
     if maxTimeCutUnix > subsystem.endOfRun:
-        logger.warngin("Input max time exceeds data! It has been reset to the maximum allowed.")
+        logger.warning("Input max time exceeds data! It has been reset to the maximum allowed.")
         maxTimeMinutes = subsystem.runLength
         maxTimeCutUnix = subsystem.endOfRun
 
@@ -375,7 +376,7 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
 
     # Check if it already exists and return if that is the case
     #logger.info("subsystem.timeSlice: {0}".format(subsystem.timeSlices))
-    for key, timeSlice in subsystem.timeSlices.iteritems():
+    for key, timeSlice in iteritems(subsystem.timeSlices):
         #logger.info("minFilteredTimeStamp: {0}, maxFilteredTimeStamp: {1}, timeSlice.minTime: {2}, timeSlice.maxTime: {3}".format(minFilteredTimeStamp, maxFilteredTimeStamp, timeSlice.minTime, timeSlice.maxTime))
         processingOptionsAreTheSame = compareProcessingOptionsDicts(inputProcessingOptions, timeSlice.processingOptions)
         if timeSlice.minUnixTimeAvailable == minFilteredTimeStamp and timeSlice.maxUnixTimeAvailable == maxFilteredTimeStamp and processingOptionsAreTheSame:
@@ -384,7 +385,7 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
 
     # Hash processing options so that we can compare
     # The hash is needed to ensure that different options with the same times don't overwrite each other!
-    optionsHash = hashlib.sha1(str(inputProcessingOptions)).hexdigest()
+    optionsHash = hashlib.sha1(str(inputProcessingOptions).encode()).hexdigest()
     # Determine index by UUID to ensure that there is no clash
     timeSliceCont = processingClasses.timeSliceContainer(minUnixTimeRequested = minTimeCutUnix,
                                                           maxUnixTimeRequested = maxTimeCutUnix,
@@ -394,7 +395,7 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
                                                           filesToMerge = filesToMerge,
                                                           optionsHash = optionsHash)
     # Set the processing options in the time slice container
-    for key, val in inputProcessingOptions.iteritems():
+    for key, val in iteritems(inputProcessingOptions):
         timeSliceCont.processingOptions[key] = val
 
     uuidDictKey = str(uuid.uuid4())
@@ -592,7 +593,7 @@ def processAllRuns():
     (dbRoot, connection) = utilities.getDB(processingParameters["databaseLocation"])
 
     # Create runs list
-    if dbRoot.has_key("runs"):
+    if "runs" in dbRoot:
         # The objects exist, so just use the stored copy and update it.
         logger.info("Utilizing existing database!")
         runs = dbRoot["runs"]
@@ -601,7 +602,7 @@ def processAllRuns():
         # They are not anymore, so we mark them as processed
         for runDir,run in runs.items():
             for subsystemName, subsystem in run.subsystems.items():
-                if subsystem.newFile == True:
+                if subsystem.newFile:
                     subsystem.newFile = False
     else:
         # Create the runs tree to store the information
@@ -683,11 +684,11 @@ def processAllRuns():
         transaction.commit()
 
     # Create trending if necessary
-    if not dbRoot.has_key("trending") and processingParameters["trending"]:
+    if "trending" not in dbRoot and processingParameters["trending"]:
         dbRoot["trending"] = BTrees.OOBTree.BTree()
 
     # Create configuration list
-    if not dbRoot.has_key("config"):
+    if "config" not in dbRoot:
         dbRoot["config"] = persistent.mapping.PersistentMapping()
 
     logger.info("runs: {0}".format(list(runs.keys())))
@@ -730,7 +731,7 @@ def processAllRuns():
         for subsystem in run.subsystems.values():
             # Process if there is a new file or if forceReprocessing
             logger.debug("runDir: {}, reprocessRuns: {}".format(runDir.replace("Run", ""), processingParameters["forceReprocessRuns"]))
-            if subsystem.newFile == True or processingParameters["forceReprocessing"] == True or int(runDir.replace("Run","")) in processingParameters["forceReprocessRuns"]:
+            if subsystem.newFile or processingParameters["forceReprocessing"] or int(runDir.replace("Run","")) in processingParameters["forceReprocessRuns"]:
                 # Process combined root file: plot histos and save in imgDir
                 logger.info("About to process {0}, {1}".format(run.prettyName, subsystem.subsystem))
                 processRootFile(os.path.join(processingParameters["dirPrefix"], subsystem.combinedFile.filename),
@@ -763,7 +764,7 @@ def processAllRuns():
     logger.info("Finishing trending")
 
     # Send data to pdsf via rsync
-    if processingParameters["sendData"] == True:
+    if processingParameters["sendData"]:
         logger.info("Preparing to send data")
         utilities.rsyncData(dirPrefix, processingParameters["remoteUsername"], processingParameters["remoteSystems"], processingParameters["remoteFileLocations"])
 
