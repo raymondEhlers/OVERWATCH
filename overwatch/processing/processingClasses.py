@@ -270,7 +270,7 @@ class trendingContainer(persistent.Persistent):
             else:
                 logger.debug("Trending object {} (name: {}) already exists in subsystem {}".format(
                     self.trendingObjects[subsystem][name], name, subsystem))
-                logger.debug("Trending next entry: {}".format(self.trendingObjects[subsystem][name].nextEntry))
+                # logger.debug("Trending next entry: {}".format(self.trendingObjects[subsystem][name].nextEntry))
 
     def resetContainer(self):
         """ Reset the trending container """
