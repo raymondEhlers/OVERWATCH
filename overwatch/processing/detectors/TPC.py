@@ -16,7 +16,7 @@ logger = logging.getLogger(__name__)
 
 from .. import processingClasses
 
-from ..trendingClasses import TPCTrendingObjectMean, createIfNotExist
+from ..trendingClasses import TrendingObjectMean, createIfNotExist
 
 def defineTPCTrendingObjects(trending, *args, **kwargs):
     # Being a bit clever so we don't have to repeat too much code

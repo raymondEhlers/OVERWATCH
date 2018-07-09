@@ -12,14 +12,14 @@ from . import processingClasses
 ##################
 # Trending Classes
 ##################
-class TPCTrendingObjectMean(processingClasses.trendingObject):
+class TrendingObjectMean(processingClasses.trendingObject):
     def __init__(self, trendingHistName, trendingHistTitle, histNames, nEntries = 50):
 
 
-        super(TPCTrendingObjectMean, self).__init__(trendingName = trendingHistName, prettyTrendingName = trendingHistTitle, nEntries = nEntries, trendingHist = None, histNames = histNames)
+        super(TrendingObjectMean, self).__init__(trendingName = trendingHistName, prettyTrendingName = trendingHistTitle, nEntries = nEntries, trendingHist = None, histNames = histNames)
 
     def retrieveHist(self):
-        super(TPCTrendingObjectMean, self).retrieveHist()
+        super(TrendingObjectMean, self).retrieveHist()
 
         # Set the histogrma to display a time axis
         self.hist.hist.GetXaxis().SetTimeDisplay(1)
@@ -45,7 +45,7 @@ class TPCTrendingObjectMean(processingClasses.trendingObject):
         fillValError += hist.hist.GetMeanError()
 
         print("Filling value: {}, error: {}".format(fillVal, fillValError))
-        super(TPCTrendingObjectMean, self).fill(fillVal, fillValError)
+        super(TrendingObjectMean, self).fill(fillVal, fillValError)
 
 
 def createIfNotExist(trending, names):
@@ -54,6 +54,6 @@ def createIfNotExist(trending, names):
         if not name in trending.keys():
             # Define new trending histogram
 
-            trending[name] = TPCTrendingObjectMean(name, title, histNames)
+            trending[name] = TrendingObjectMean(name, title, histNames)
 
     return trending
