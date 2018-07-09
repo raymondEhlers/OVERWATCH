@@ -324,6 +324,11 @@ function routeLinks() {
             return;
         }
 
+        // Skip links which are supposed to open externally (ie where target = "_blank")
+        if ($(this).attr("target") === "_blank") {
+            return;
+        }
+
         // Prevent the link from being evaluated directly
         event.preventDefault();
 
