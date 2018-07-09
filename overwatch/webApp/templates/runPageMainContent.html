@@ -2,7 +2,8 @@
 <h1 id="mainContentTitle">{{ run.prettyName }}</h1>
 <p>
 {{ run.prettyName }} started at approximately {{ subsystem.prettyPrintUnixTime(subsystem.startOfRun) }} (CERN time zone){%- if run.hltMode and run.hltMode != "U" %} and received via HLT Mode {{ run.hltMode }}{%- endif -%}.</br>
-   <a target="_blank" href="https://alice-logbook.cern.ch/logbook/date_online.php?p_cont=rund&p_run={{ run.runNumber }}">Logbook entry</a>
+   <a target="_blank" href="https://alice-logbook.cern.ch/logbook/date_online.php?p_cont=rund&p_run={{ run.runNumber }}">Logbook entry</a>,
+   <a target="_blank" href="https://alimonitor.cern.ch/runview/?run={{ run.runNumber }}">RCT</a>
 </p>
 {%- if timeSlice != None -%}
 <p>
