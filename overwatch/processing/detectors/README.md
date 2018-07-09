@@ -10,6 +10,11 @@ As a general convention throughout this documentation, `SYS` should be replaced 
 your desired subsystem (ie a detector). As an example, if you are working with the EMCal and are attempting to
 create groups of histograms, `createSYSHistogramGroups(...)` would be `createEMCHistogramGroups(...)`.
 
+## Table of Contents
+
+- [Subsystem plugins](#general-philosophy)
+- [Available histograms](#available-histograms)
+
 ## General Philosophy
 
 Processing is written to be as flexible as possible by allowing detectors to plugin into every step. This way,
@@ -297,3 +302,109 @@ subsystem.
 During processing, trending objects are treated the same as histograms in terms of processing. Consequently,
 there are similar opportunities for processing functions, options, etc. The exposure of such settings in a
 framework is under construction.
+
+# Available histograms
+
+This list can by looking at the histograms that are available in the test data. As of 9 July 2018 in Run
+289210, these include:
+
+- EMC:
+
+    ``` 
+    # 2D histograms with respect to row, column of EMCal
+    # Integrated trigger amplitues
+    KEY: TH2F     EMCTRQA_histAmpEdgePosEMCGAHOffline;1   Integrated amplitude EMCGAH patch Offline
+    KEY: TH2F     EMCTRQA_histAmpEdgePosEMCGAHOnline;1    Integrated amplitude EMCGAH patch Online
+    KEY: TH2F     EMCTRQA_histAmpEdgePosEMCGAHRecalc;1    Integrated amplitude EMCGAH patch Recalc
+    KEY: TH2F     EMCTRQA_histAmpEdgePosEMCGALOnline;1    Integrated amplitude EMCGAL patch Online
+    KEY: TH2F     EMCTRQA_histAmpEdgePosEMCJEHOffline;1   Integrated amplitude EMCJEH patch Offline
+    KEY: TH2F     EMCTRQA_histAmpEdgePosEMCJEHOnline;1    Integrated amplitude EMCJEH patch Online
+    KEY: TH2F     EMCTRQA_histAmpEdgePosEMCJEHRecalc;1    Integrated amplitude EMCJEH patch Recalc
+    KEY: TH2F     EMCTRQA_histAmpEdgePosEMCJELOnline;1    Integrated amplitude EMCJEL patch Online
+    KEY: TH2F     EMCTRQA_histAmpEdgePosEMCL0Offline;1    Integrated amplitude EMCL0 patch Offline
+    KEY: TH2F     EMCTRQA_histAmpEdgePosEMCL0Online;1     Integrated amplitude EMCL0 patch Online
+    KEY: TH2F     EMCTRQA_histAmpEdgePosEMCL0Recalc;1     Integrated amplitude EMCL0 patch Recalc
+    KEY: TH1F     EMCTRQA_histEvents;1    				  Number of events
+    # Trigger patch max edge value 
+    KEY: TH2F     EMCTRQA_histMaxEdgePosEMCGAHOffline;1   Edge Position Max EMCGAH patch Offline
+    KEY: TH2F     EMCTRQA_histMaxEdgePosEMCGAHOnline;1    Edge Position Max EMCGAH patch Online
+    KEY: TH2F     EMCTRQA_histMaxEdgePosEMCGAHRecalc;1    Edge Position Max EMCGAH patch Recalc
+    KEY: TH2F     EMCTRQA_histMaxEdgePosEMCGALOnline;1    Edge Position Max EMCGAL patch Online
+    KEY: TH2F     EMCTRQA_histMaxEdgePosEMCJEHOffline;1   Edge Position Max EMCJEH patch Offline
+    KEY: TH2F     EMCTRQA_histMaxEdgePosEMCJEHOnline;1    Edge Position Max EMCJEH patch Online
+    KEY: TH2F     EMCTRQA_histMaxEdgePosEMCJEHRecalc;1    Edge Position Max EMCJEH patch Recalc
+    KEY: TH2F     EMCTRQA_histMaxEdgePosEMCJELOnline;1    Edge Position Max EMCJEL patch Online
+    KEY: TH2F     EMCTRQA_histMaxEdgePosEMCL0Offline;1    Edge Position Max EMCL0 patch Offline
+    KEY: TH2F     EMCTRQA_histMaxEdgePosEMCL0Online;1     Edge Position Max EMCL0 patch Online
+    KEY: TH2F     EMCTRQA_histMaxEdgePosEMCL0Recalc;1     Edge Position Max EMCL0 patch Recalc
+    # L0 and L1 trigger information
+    KEY: TH1F     EMCTRQA_histFastORL0;1  				  L0 entires vs FastOR number
+    KEY: TH2F     EMCTRQA_histFastORL0Amp;1       		  L0 amplitudes vs position
+    KEY: TH1F     EMCTRQA_histFastORL0LargeAmp;1  		  L0 (amp>400) vs FastOR number
+    KEY: TH2F     EMCTRQA_histFastORL0Time;1      		  L0 trigger time vs FastOR number
+    KEY: TH1F     EMCTRQA_histFastORL1;1  				  L1 entries vs FastOR number
+    KEY: TH2F     EMCTRQA_histFastORL1Amp;1       		  L1 amplitudes
+    KEY: TH1F     EMCTRQA_histFastORL1LargeAmp;1  		  L1 (amp>400)
+    ```
+
+- HLT:
+
+    ```
+    KEY: TH1D     fHistClusterChargeMax;1         TPC Cluster ChargeMax
+    KEY: TH1D     fHistClusterChargeTot;1         TPC Cluster ChargeTotal
+    KEY: TH2F     fHistHLTInSize_HLTOutSize;1     HLT Out Size vs HLT In Size
+    KEY: TH2F     fHistHLTSize_HLTInOutRatio;1    HLT Out/In Size Ratio vs HLT Input Size
+    KEY: TH2F     fHistSDDclusters_SDDrawSize;1   SDD clusters vs SDD raw size
+    KEY: TH2F     fHistSPDclusters_SDDclusters;1  SDD clusters vs SPD clusters
+    KEY: TH2F     fHistSPDclusters_SPDrawSize;1   SPD clusters vs SPD raw size
+    KEY: TH2F     fHistSPDclusters_SSDclusters;1  SSD clusters vs SPD clusters
+    KEY: TH2F     fHistSSDclusters_SDDclusters;1  SDD clusters vs SSD clusters
+    KEY: TH2F     fHistSSDclusters_SSDrawSize;1   SSD clusters vs SSD raw size
+    KEY: TH2F     fHistTPCAallClustersRowPhi;1    TPCA clusters all, raw cluster coordinates
+    KEY: TH2F     fHistTPCAattachedClustersRowPhi;1       TPCA clusters attached to tracks, raw cluster coordinates
+    KEY: TH2F     fHistTPCCallClustersRowPhi;1    TPCC clusters all, raw cluster coordinates
+    KEY: TH2F     fHistTPCCattachedClustersRowPhi;1       TPCC clusters attached to tracks, raw cluster coordinates
+    KEY: TH1D     fHistTPCClusterFlags;1        TPC Cluster Flags
+    KEY: TH2F     fHistTPCClusterSize_TPCCompressedSize;1 TPC compressed size vs TPC HWCF Size
+    KEY: TH2F     fHistTPCHLTclusters_TPCCompressionRatio;1       Huffman compression ratio vs TPC HLT clusters
+    KEY: TH2F     fHistTPCHLTclusters_TPCFullCompressionRatio;1   Full compression ratio vs TPC HLT clusters
+    KEY: TH2F     fHistTPCHLTclusters_TPCSplitClusterRatioPad;1   TPC Split Cluster ratio pad vs TPC HLT clusters
+    KEY: TH2F     fHistTPCHLTclusters_TPCSplitClusterRatioTime;1  TPC Split Cluster ratio time vs TPC HLT clusters
+    KEY: TH2F     fHistTPCRawSize_TPCCompressedSize;1     TPC compressed size vs TPC Raw Size
+    KEY: TH1D     fHistTPCTrackPt;1             TPC Track Pt
+    KEY: TH2F     fHistTPCdEdxMaxIROC;1         TPC dE/dx v.s. P (qMax, IROC)
+    KEY: TH2F     fHistTPCdEdxMaxOROC1;1        TPC dE/dx v.s. P (qMax, OROC1)
+    KEY: TH2F     fHistTPCdEdxMaxOROC2;1        TPC dE/dx v.s. P (qMax, OROC2)
+    KEY: TH2F     fHistTPCdEdxMaxOROCAll;1      TPC dE/dx v.s. P (qMax, OROC all)
+    KEY: TH2F     fHistTPCdEdxMaxTPCAll;1       TPC dE/dx v.s. P (qMax, full TPC)
+    KEY: TH2F     fHistTPCdEdxTotIROC;1         TPC dE/dx v.s. P (qTot, IROC)
+    KEY: TH2F     fHistTPCdEdxTotOROC1;1        TPC dE/dx v.s. P (qTot, OROC1)
+    KEY: TH2F     fHistTPCdEdxTotOROC2;1        TPC dE/dx v.s. P (qTot, OROC2)
+    KEY: TH2F     fHistTPCdEdxTotOROCAll;1      TPC dE/dx v.s. P (qTot, OROC all)
+    KEY: TH2F     fHistTPCdEdxTotTPCAll;1       TPC dE/dx v.s. P (qTot, full TPC)
+    KEY: TH2F     fHistTPCtracks_TPCtracklets;1   TPC Tracks vs TPC Tracklets
+    KEY: TH2F     fHistTZERO_ITSSPDVertexZ;1      TZERO interaction time vs ITS vertex z
+    KEY: TH2F     fHistVZERO_SPDClusters;1        SPD Clusters vs VZERO Trigger Charge (A+C)
+    KEY: TH2F     fHistZNA_VZEROTrigChargeA;1     ZNA vs. VZERO Trigger Charge A
+    KEY: TH2F     fHistZNC_VZEROTrigChargeC;1     ZNC vs. VZERO Trigger Charge C
+    KEY: TH2F     fHistZNT_VZEROTrigChargeT;1     ZN (A+C) vs. VZERO Trigger Charge (A+C)
+    ```
+
+- TPC (less straightforward to extract):
+
+    ```
+    KEY: TH3D     TPCQA/h_tpc_track_all_recvertex_0_5_7;1   Number of clusters
+    KEY: TH3D     TPCQA/h_tpc_track_all_recvertex_2_5_7;1   Number of found/findable clusters
+    KEY: TH3D     TPCQA/h_tpc_track_all_recvertex_3_5_7;1   DCA vs r inclusive
+    KEY: TH3D     TPCQA/h_tpc_track_all_recvertex_4_5_7;1   DCA vs z inclusive
+    KEY: TH3D     TPCQA/h_tpc_track_pos_recvertex_3_5_6;1   DCA vs r for positive tracks
+    KEY: TH3D     TPCQA/h_tpc_track_neg_recvertex_3_5_6;1   DCA vs r for negative tracks
+    KEY: TH3D     TPCQA/h_tpc_track_neg_recvertex_4_5_6;1   DCA vs z for positive tracks
+    KEY: TH3D     TPCQA/h_tpc_track_neg_recvertex_4_5_6;1   DCA vs z for negative tracks
+    KEY: TH1D     TPCQA/h_tpc_event_recvertex_4;1           Postive track mutliplicity
+    KEY: TH1D     TPCQA/h_tpc_event_recvertex_5;1           Negative track multiplicity
+    KEY: TH1D     TPCQA/h_tpc_event_recvertex_0;1           vertex x position
+    KEY: TH1D     TPCQA/h_tpc_event_recvertex_1;1           vertex y position
+    KEY: TH1D     TPCQA/h_tpc_event_recvertex_2;1           vertex z position
+    ```
+
