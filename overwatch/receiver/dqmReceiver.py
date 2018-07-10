@@ -6,6 +6,7 @@
 
 # For python 3 support
 from __future__ import print_function
+from future.utils import iteritems
 
 # Python logging system
 import logging
@@ -103,7 +104,7 @@ def dqm():
     # Print received header information
     logger.info("Headers:")
     requestHeaders = dict()
-    for header, val in request.headers.iteritems():
+    for header, val in iteritems(request.headers):
         logger.debug("\"{0}\":, \"{1}\"".format(header, val))
         requestHeaders[header] = val
 

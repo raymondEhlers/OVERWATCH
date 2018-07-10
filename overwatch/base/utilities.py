@@ -7,6 +7,7 @@ Shared utility functions used for organizing file structure, merging histograms,
 """
 # Python 2/3 support
 from __future__ import print_function
+from future.utils import iteritems
 
 # General
 import os
@@ -15,6 +16,7 @@ import time
 from calendar import timegm
 from subprocess import call
 import shutil
+import numpy as np
 
 # ZODB
 import ZODB
@@ -373,27 +375,39 @@ def updateDBSensitiveParameters(db, overwriteSecretKey = True):
     (sensitiveParameters, filesRead) = config.readConfig(config.configurationType.webApp)
 
     # Ensure that the config exists
-    if not db.has_key("config"):
+    if "config" not in db:
         db["config"] = persistent.mapping.PersistentMapping()
         logger.warning("Needed to create the config!")
 
     # Users
     # Create mapping if not already there
-    if not db['config'].has_key("users"):
+    if "users" not in db['config']:
         db["config"]["users"] = persistent.mapping.PersistentMapping()
         logger.info("Created the users dict!")
 
     # Add each user, overriding an existing settings
     users = db["config"]["users"]
-    for user, pw in sensitiveParameters["_users"].iteritems():
+    for user, pw in iteritems(sensitiveParameters["_users"]):
         users[user] = pw
         logger.info("Adding user {0}".format(user))
 
     # Secret key
     # Set the secret key to that set in the server parameters
-    if overwriteSecretKey or not db["config"].has_key("secretKey"):
+    if overwriteSecretKey or "secretKey" not in db["config"]:
         db["config"]["secretKey"] = sensitiveParameters["_secretKey"]
         logger.info("Adding secret key to db!")
 
     # Ensure that any additional changes are committed
     transaction.commit()
+
+####################
+# Histogram array functions
+####################
+def removeOldestValueAndInsert(arr, value):
+    # Remove oldest value
+    np.delete(arr, 0, axis=0)
+    # Insert at the end
+    arr[-1] = value
+
+    return arr
+

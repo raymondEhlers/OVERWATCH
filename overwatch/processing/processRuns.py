@@ -9,6 +9,7 @@ then writes out histograms to webpage.
 
 """
 from __future__ import print_function
+from future.utils import iteritems
 
 # ROOT
 import ROOT
@@ -63,13 +64,8 @@ from . import qa
 from . import processingClasses
 
 ###################################################
-def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, processingOptions = None, forceRecreateSubsystem = False):
+def processRootFile(filename, outputFormatting, subsystem, processingOptions = None, forceRecreateSubsystem = False, trendingContainer = None):
     """ Process a given root file, printing out all histograms.
-
-    The function also applies QA as appropriate (either always applied or from a particular QA request) via
-    :func:`~processRuns.qa.checkHist()`. It is expected that the qaContainer is only passed when
-    processing a particular QA request (ie. it should *not* be passed when called by, for example,
-    :func:`processAllRuns()`).
 
     Args:
         filename (str): The full path to the file to be processed.
@@ -77,8 +73,6 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
             The string contains "%s" to print the filename contained in listOfHists. It also includes the file
             extension. Ex: "img/%s.png".
         subsystem (:class:`~subsystemProperties`): Contains information about the current subsystem.
-        qaContainer (Optional[:class:`~processRuns.processingClasses.qaFunctionContainer`]): Contains information
-            about the QA function and histograms, as well as the run being processed.
 
     Returns:
         list: Contains all of the names of the histograms that were printed.
@@ -95,10 +89,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
 
     if forceRecreateSubsystem:
         # Clear the stored hist information so we can recreate (reprocess) the subsystem
-        del subsystem.histGroups[:]
-        subsystem.histsInFile.clear()
-        subsystem.histsAvailable.clear()
-        subsystem.hists.clear()
+        subsystem.resetContainer()
 
     # Get histograms and sort them if they do not exist in the subsystem
     # Only need to do this the first time for each run
@@ -124,6 +115,13 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
                 if "events" in hist.histName.lower():
                     subsystem.nEvents = key.ReadObj().GetBinContent(1)
 
+        #logger.debug("pre  create additional histsAvailable: {}".format(", ".join(subsystem.histsAvailable.keys())))
+
+        # Create additional histograms
+        qa.createAdditionalHistograms(subsystem)
+
+        #logger.debug("post create additional histsAvailable: {}".format(", ".join(subsystem.histsAvailable.keys())))
+
         # Create the subsystem stacks
         qa.createHistogramStacks(subsystem)
 
@@ -145,6 +143,8 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
                 logger.info("selection: {0}".format(selection))
                 subsystem.histGroups.append(processingClasses.histogramGroupContainer(subsystem.subsystem + " Histograms", selection))
 
+        logger.debug("post groups histsAvailable: {}".format(", ".join(subsystem.histsAvailable.keys())))
+
         # Finally classify into the groups and determine which functions to apply
         for hist in subsystem.histsAvailable.values():
             # Add the histogram name to the proper group
@@ -162,6 +162,10 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
             if classifiedHist:
                 # Determine the functions (qa and monitoring) to apply
                 qa.findFunctionsForHist(subsystem, hist)
+                # Determine the trending functions to apply
+                if trendingContainer:
+                    trendingContainer.findTrendingFunctionsForHist(hist)
+                    print("trending container: {}, hist: {}, ")
                 # Add it to the subsystem
                 subsystem.hists[hist.histName] = hist
             else:
@@ -169,7 +173,7 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
 
     # Set the proper processing options
     # If it was passed in, it was from time slices
-    if processingOptions == None:
+    if processingOptions is None:
         processingOptions = subsystem.processingOptions
     logger.debug("processingOptions: {0}".format(processingOptions))
 
@@ -182,175 +186,125 @@ def processRootFile(filename, outputFormatting, subsystem, qaContainer = None, p
         for histName in histGroup.histList:
             # Retrieve histogram and canvas
             hist = subsystem.hists[histName]
-            hist.retrieveHistogram(fIn, ROOT = ROOT)
-            if hist.canvas is None:
-                # Reset canvas and make it accessible through the hist object
-                hist.canvas = canvas
-                canvas.Clear()
-                # Reset log status, since clear does not do this
-                canvas.SetLogx(False)
-                canvas.SetLogy(False)
-                canvas.SetLogz(False)
-
-            # Ensure we plot onto the right canvas
-            hist.canvas.cd()
-
-            # Setup and draw histogram
-            # Turn off title, but store the value
-            ROOT.gStyle.SetOptTitle(0)
-            hist.hist.Draw(hist.drawOptions)
-
-            # Call functions for each hist
-            #logger.debug("Functions to apply: {0}".format(hist.functionsToApply))
-            for func in hist.functionsToApply:
-                #logger.debug("Calling func: {0}".format(func))
-                func(subsystem, hist, processingOptions)
-
-            if qaContainer:
-                # Various checks and QA that are performed on hists
-                skipPrinting = qa.checkHist(hist.hist, qaContainer)
-
-                # Skips printing out the histogram
-                if skipPrinting == True:
-                    logger.debug("Skip printing histogram {0}".format(hist.GetName()))
-                    continue
-
-            # Filter here for hists in the subsystem if subsystem != fileLocationSubsystem
-            # Thus, we can filter the proper subsystems for subsystems that don't have their own data files
-            #if subsystem.subsystem != subsystem.fileLocationSubsystem and subsystem.subsystem not in hist.GetName():
-            #    continue
-
-            # Save
-            outputName = hist.histName
-            # Replace any slashes with underscores to ensure that it can be used safely as a filename
-            outputName = outputName.replace("/", "_")
-            outputFilename = outputFormatting % (os.path.join(processingParameters["dirPrefix"], subsystem.imgDir),
-                                                 outputName,
-                                                 processingParameters["fileExtension"])
-            hist.canvas.SaveAs(outputFilename)
-
-            # Write BufferJSON
-            jsonBufferFile = outputFormatting % (os.path.join(processingParameters["dirPrefix"], subsystem.jsonDir),
-                                                 outputName,
-                                                 "json")
-            #logger.debug("jsonBufferFile: {0}".format(jsonBufferFile))
-            # GZip is performed by the web server, not here!
-            with open(jsonBufferFile, "wb") as f:
-                f.write(ROOT.TBufferJSON.ConvertToJSON(canvas).Data())
-
-            # Clear hist and canvas so that we can successfully save
-            hist.hist = None
-            hist.canvas = None
-
+            retrievedHist = hist.retrieveHistogram(fIn = fIn, ROOT = ROOT)
+            if not retrievedHist:
+                logger.warning("Could not retrieve histogram for hist {}, histList: {}".format(hist.histName, hist.histList))
+                continue
+            processHist(subsystem = subsystem, hist = hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions)
 
 ###################################################
-def processQA(firstRun, lastRun, subsystemName, qaFunctionName):
-    """ Processes a particular QA function over a set of runs.
+def processTrending(outputFormatting, trending, processingOptions = None, forceRecreateSubsystem = False):
+    # Set the proper processing options
+    # If it was passed in, it was from time slices
+    if processingOptions == None:
+        processingOptions = trending.processingOptions
+    logger.debug("processingOptions: {0}".format(processingOptions))
 
-    Usually invoked via the web app.
+    # Cannot have same name as other canvases, otherwise the canvas will be replaced, leading to segfaults
+    canvas = ROOT.TCanvas("processTrendingCanvas", "processTrendingCanvas")
 
-    Args:
-        firstRun (str): The first (ie: lowest) run in the form "Run#". Ex: "Run123"
-        lastRun (str): The last (ie: highest) run in the form "Run#". Ex: "Run123"
-        subsystemName (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
-        qaFunction (str): Name of the QA function to be executed.
+    logger.debug("trending.trendingObjects: {}".format([key for key in trending.trendingObjects.keys()]))
+    logger.debug("trending.trendingObjects: {}".format(trending.trendingObjects["TPC"]))
+    for subsystemName, subsystem in iteritems(trending.trendingObjects):
+        logger.debug("{}: subsystem from trending: {}".format(subsystemName, subsystem))
+        for name, trendingObject in iteritems(subsystem):
+            hist = trendingObject.hist
+            hist.retrieveHistogram(trending = trending, ROOT = ROOT)
+            logger.debug("trendingObject: {}, hist: {}, hist.histName: {}, hist.hist: {}".format(trendingObject, hist, hist.histName, hist.hist))
+            #logger.debug("entries: {}".format(hist.hist.GetEntries()))
+            # TEMP - Check for entries!
+            if hist.hist.InheritsFrom(ROOT.TH1.Class()):
+                nonzeroBins = [index for index in range(0, hist.hist.GetXaxis().GetNbins()) if hist.hist.GetBinContent(index) > 0.]
+            else:
+                import ctypes
+                x = ctypes.c_double(0.)
+                y = ctypes.c_double(0.)
+                nonzeroBins = []
+                values = []
+                for index in range(0, hist.hist.GetN()):
+                    hist.hist.GetPoint(index, x, y)
+                    values.append(y.value)
+                    if y.value > 0:
+                        nonzeroBins.append(index)
+                logger.debug("nonzeroBins: {}".format(nonzeroBins))
+                logger.debug("values: {}".format(values))
+            # ENDTEMP
+            processHist(subsystem = trending, hist = hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions, subsystemName = subsystemName)
 
-    Returns:
-        dict: The dict values contain paths to the printed histograms generated by the QA function. 
-            The keys are from the labels in the qaContainer (usually the histogram names).
+###################################################
+def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, subsystemName = None):
+    # In the case of trending, we have to pass a separate subsystem name because the trending container
+    # holds hists from various subsystems
+    if subsystemName is None:
+        subsystemName = subsystem.subsystem
 
-    """
+    if hist.canvas is None:
+        # Reset canvas and make it accessible through the hist object
+        hist.canvas = canvas
+        canvas.Clear()
+        # Reset log status, since clear does not do this
+        canvas.SetLogx(False)
+        canvas.SetLogy(False)
+        canvas.SetLogz(False)
 
-    logger.critical("Not yet updated!")
-    return None
-    # Find all possible runs, and then select the runs between [firstRun, lastRun] (inclusive)
-    runDirs = utilities.findCurrentRunDirs(processingParameters["dirPrefix"])
-    tempDirs = []
-    for runDir in runDirs:
-        if int(runDir.replace("Run","")) >= int(firstRun.replace("Run","")) and int(runDir.replace("Run","")) <= int(lastRun.replace("Run","")):
-            tempDirs.append(runDir)
+    # Ensure we plot onto the right canvas
+    hist.canvas.cd()
 
-    # Reassign for clarity since that is the name used in other functions.
-    runDirs = tempDirs
+    # Apply projection functions
+    # Must be done before drawing!
+    for func in hist.projectionFunctionsToApply:
+        logger.debug("Calling projection func: {0}".format(func))
+        func(subsystem, hist, processingOptions)
 
-    # Find directories that exist for each subsystem
-    subsystemRunDirDict = {}
-    for subsystem in [subsystemName, "HLT"]:
-        subsystemRunDirDict[subsystem] = []
-        for runDir in runDirs:
-            if os.path.exists(os.path.join(processingParameters["dirPrefix"], runDir, subsystem)):
-                subsystemRunDirDict[subsystem].append(runDir)
+    # Setup and draw histogram
+    # Turn off title, but store the value
+    ROOT.gStyle.SetOptTitle(0)
+    logger.debug("hist: {}, hist.hist: {}".format(hist, hist.hist))
+    hist.hist.Draw(hist.drawOptions)
 
-    # Create subsystem object
-    subsystem = subsystemProperties(subsystem = subsystemName, runDirs = subsystemRunDirDict)
+    # Call functions for each hist
+    #logger.debug("Functions to apply: {0}".format(hist.functionsToApply))
+    for func in hist.functionsToApply:
+        logger.debug("Calling func: {0}".format(func))
+        func(subsystem, hist, processingOptions)
 
-    # Create necessary dirs
-    dataDir = os.path.join(processingParameters["dirPrefix"], qaFunctionName)
-    if not os.path.exists(dataDir):
-        os.makedirs(dataDir)
+    logger.debug("histName: {}, hist: {}".format(hist.histName, hist.hist))
+    #logger.debug("histName: {}, hist: {}, hist entries: {}".format(hist.histName, hist.hist, hist.hist.GetEntries()))
 
-    # Create objects to setup for processRootFile() call
-    # QA class
-    qaContainer = processingClasses.qaFunctionContainer(firstRun, lastRun, runDirs, qaFunctionName)
+    # Apply trending functions
+    print("hist {} trending objects: {}".format(hist.histName, hist.trendingObjects))
+    for trendingObject in hist.trendingObjects:
+        logger.debug("Filling trending object {}".format(trendingObject.name))
+        trendingObject.fill(hist)
+        #func(hist)
 
-    # Formatting
-    outputFormatting = os.path.join(dataDir, "%s.png")
+    # Filter here for hists in the subsystem if subsystem != fileLocationSubsystem
+    # Thus, we can filter the proper subsystems for subsystems that don't have their own data files
+    #if subsystem.subsystem != subsystem.fileLocationSubsystem and subsystem.subsystem not in hist.GetName():
+    #    continue
 
-    # Call processRootFile looping over all the runs found above
-    for runDir in subsystem.runDirs:
-        # Update the QA container
-        qaContainer.currentRun = runDir
-        qaContainer.filledValueInRun = False
+    # Save
+    outputName = hist.histName
+    # Replace any slashes with underscores to ensure that it can be used safely as a filename
+    outputName = outputName.replace("/", "_")
+    outputFilename = outputFormatting % (os.path.join(processingParameters["dirPrefix"], subsystem.imgDir % {"subsystem" : subsystemName}),
+                                         outputName,
+                                         processingParameters["fileExtension"])
+    logger.debug("Saving hist to {}".format(outputFilename))
+    hist.canvas.SaveAs(outputFilename)
 
-        # Get length of run and set the value
-        [mergeDict, runLength] = utilities.createFileDictionary(processingParameters["dirPrefix"], runDir, subsystem.fileLocationSubsystem)
-        qaContainer.runLength = runLength
-        
-        # Print current progress
-        logger.info("Processing run", qaContainer.currentRun)
+    # Write BufferJSON
+    jsonBufferFile = outputFormatting % (os.path.join(processingParameters["dirPrefix"], subsystem.jsonDir % {"subsystem" : subsystemName}),
+                                         outputName,
+                                         "json")
+    #logger.debug("jsonBufferFile: {0}".format(jsonBufferFile))
+    # GZip is performed by the web server, not here!
+    with open(jsonBufferFile, "wb") as f:
+        f.write(ROOT.TBufferJSON.ConvertToJSON(canvas).Data().encode())
 
-        # Determine the proper combined file for input
-        combinedFile = next(name for name in os.listdir(os.path.join(processingParameters["dirPrefix"], runDir, subsystem.fileLocationSubsystem)) if "combined" in name)
-        inputFilename = os.path.join(processingParameters["dirPrefix"], runDir, subsystem.fileLocationSubsystem, combinedFile)
-        logger.debug(inputFilename)
-
-        # Process the file
-        outputHistNames = processRootFile(inputFilename, outputFormatting, subsystem = subsystem, qaContainer = qaContainer)
-
-    # Need to remove the dirPrefix to get the proper URL
-    # pathToRemove must end with a slash to ensure that the img path set below is valid
-    pathToRemove = processingParameters["dirPrefix"]
-    if not pathToRemove.endswith("/"):
-        pathToRemove = pathToRemove + "/"
-
-    # Print histograms from QA and setup the return value
-    returnValues = {}
-    canvas = ROOT.TCanvas("canvas", "canvas")
-
-    # Create root file to save out
-    fOut = ROOT.TFile(os.path.join(dataDir, qaContainer.qaFunctionName + ".root"), "RECREATE")
-
-    for label, hist in qaContainer.getHistsDict().items():
-        # Print the histogram
-        hist.Draw()
-        canvas.SaveAs(outputFormatting % label)
-
-        # Write histogram to file
-        hist.Write()
-
-        # Set img path in the return value
-        # Need to remove the pathToRemove defined above to ensure that the url doesn't include the directory
-        # (ie. so it is /monitoring/protected, not /monitoring/protected/data)
-        logger.debug(outputFormatting)
-        logger.debug(pathToRemove)
-        returnValues[label] = outputFormatting.replace(pathToRemove, "") % label
-
-    # Write root file
-    fOut.Close()
-
-    logger.info("returnValues:", returnValues)
-
-    return returnValues
+    # Clear hist and canvas so that we can successfully save
+    hist.hist = None
+    hist.canvas = None
 
 ###################################################
 def compareProcessingOptionsDicts(inputProcessingOptions, processingOptions):
@@ -361,7 +315,7 @@ def compareProcessingOptionsDicts(inputProcessingOptions, processingOptions):
     
     """
     processingOptionsAreTheSame = True
-    for key,val in inputProcessingOptions.iteritems():
+    for key,val in iteritems(inputProcessingOptions):
         if key not in processingOptions:
             return (None, None, {"Processing option error": ["Key \"{0}\" in inputProcessingOptions ({1}) is not in subsystem processingOptions {2}!".format(key, inputProcessingOptions, processingOptions)]})
         if val != processingOptions[key]:
@@ -378,7 +332,7 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
 
     # If max filter time is greater than max file time, merge up to and including last file
     if maxTimeCutUnix > subsystem.endOfRun:
-        logger.warngin("Input max time exceeds data! It has been reset to the maximum allowed.")
+        logger.warning("Input max time exceeds data! It has been reset to the maximum allowed.")
         maxTimeMinutes = subsystem.runLength
         maxTimeCutUnix = subsystem.endOfRun
 
@@ -422,7 +376,7 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
 
     # Check if it already exists and return if that is the case
     #logger.info("subsystem.timeSlice: {0}".format(subsystem.timeSlices))
-    for key, timeSlice in subsystem.timeSlices.iteritems():
+    for key, timeSlice in iteritems(subsystem.timeSlices):
         #logger.info("minFilteredTimeStamp: {0}, maxFilteredTimeStamp: {1}, timeSlice.minTime: {2}, timeSlice.maxTime: {3}".format(minFilteredTimeStamp, maxFilteredTimeStamp, timeSlice.minTime, timeSlice.maxTime))
         processingOptionsAreTheSame = compareProcessingOptionsDicts(inputProcessingOptions, timeSlice.processingOptions)
         if timeSlice.minUnixTimeAvailable == minFilteredTimeStamp and timeSlice.maxUnixTimeAvailable == maxFilteredTimeStamp and processingOptionsAreTheSame:
@@ -431,7 +385,7 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
 
     # Hash processing options so that we can compare
     # The hash is needed to ensure that different options with the same times don't overwrite each other!
-    optionsHash = hashlib.sha1(str(inputProcessingOptions)).hexdigest()
+    optionsHash = hashlib.sha1(str(inputProcessingOptions).encode()).hexdigest()
     # Determine index by UUID to ensure that there is no clash
     timeSliceCont = processingClasses.timeSliceContainer(minUnixTimeRequested = minTimeCutUnix,
                                                           maxUnixTimeRequested = maxTimeCutUnix,
@@ -441,7 +395,7 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
                                                           filesToMerge = filesToMerge,
                                                           optionsHash = optionsHash)
     # Set the processing options in the time slice container
-    for key, val in inputProcessingOptions.iteritems():
+    for key, val in iteritems(inputProcessingOptions):
         timeSliceCont.processingOptions[key] = val
 
     uuidDictKey = str(uuid.uuid4())
@@ -527,7 +481,6 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
                                                    subsystem.baseDir,
                                                    timeSlice.filename.filename),
                                       outputFormattingSave, subsystem,
-                                      qaContainer = None,
                                       processingOptions = timeSlice.processingOptions)
 
     logger.info("Finished processing {0}!".format(run.prettyName))
@@ -640,7 +593,7 @@ def processAllRuns():
     (dbRoot, connection) = utilities.getDB(processingParameters["databaseLocation"])
 
     # Create runs list
-    if dbRoot.has_key("runs"):
+    if "runs" in dbRoot:
         # The objects exist, so just use the stored copy and update it.
         logger.info("Utilizing existing database!")
         runs = dbRoot["runs"]
@@ -649,7 +602,7 @@ def processAllRuns():
         # They are not anymore, so we mark them as processed
         for runDir,run in runs.items():
             for subsystemName, subsystem in run.subsystems.items():
-                if subsystem.newFile == True:
+                if subsystem.newFile:
                     subsystem.newFile = False
     else:
         # Create the runs tree to store the information
@@ -666,6 +619,10 @@ def processAllRuns():
         # Find files and create subsystems
         for runDir, run in runs.items():
             for subsystem in processingParameters["subsystemList"]:
+                # Skip trending subsystem here
+                #if subsystem == "TDG":
+                #    continue
+
                 # If subsystem exists, then create file containers 
                 subsystemPath = os.path.join(dirPrefix, runDir, subsystem)
                 if os.path.exists(subsystemPath):
@@ -707,14 +664,11 @@ def processAllRuns():
                 # Handle files and create file containers
                 subsystemFiles = run.subsystems[subsystem].files
 
+                # And add the files to the subsystem
                 for key in filenamesDict:
                     subsystemFiles[key] = processingClasses.fileContainer(filenamesDict[key], startOfRun)
 
                 logger.debug("Files length: {0}".format(len(subsystemFiles)))
-
-                # And add the files to the subsystem
-                # Since a run was just appended, accessing the last element should always be fine
-                #run.subsystems[subsystem].files = files
 
                 # Add combined
                 combinedFilename = [filename for filename in os.listdir(subsystemPath) if "combined" in filename and ".root" in filename]
@@ -729,8 +683,12 @@ def processAllRuns():
         # Commit any changes made to the database
         transaction.commit()
 
+    # Create trending if necessary
+    if "trending" not in dbRoot and processingParameters["trending"]:
+        dbRoot["trending"] = BTrees.OOBTree.BTree()
+
     # Create configuration list
-    if not dbRoot.has_key("config"):
+    if "config" not in dbRoot:
         dbRoot["config"] = persistent.mapping.PersistentMapping()
 
     logger.info("runs: {0}".format(list(runs.keys())))
@@ -744,30 +702,46 @@ def processAllRuns():
     # Now process the results from moving the files and add them into the runs list
     processMovedFilesIntoRuns(runs, runDict)
 
-    # DEBUG
-    logger.debug("DEBUG:")
-    for runDir in runs.keys():
-        for subsystem in runs[runDir].subsystems.keys():
-            logger.debug("{0}, {1} has nFiles: {2}".format(runDir, subsystem, len(runs[runDir].subsystems[subsystem].files)))
+    # Potentially helpful debug information
+    if processingParameters["debug"]:
+        for runDir in runs.keys():
+            for subsystem in runs[runDir].subsystems.keys():
+                logger.debug("{0}, {1} has nFiles: {2}".format(runDir, subsystem, len(runs[runDir].subsystems[subsystem].files)))
 
     # Merge histograms over all runs, all subsystems if needed. Results in one combined file per subdir.
     mergedRuns = mergeFiles.mergeRootFiles(runs, dirPrefix,
                                            processingParameters["forceNewMerge"],
                                            processingParameters["cumulativeMode"])
 
+    # Setup trending
+    if processingParameters["trending"]:
+        trendingContainer = processingClasses.trendingContainer(dbRoot["trending"])
+        # Subsystem specific trending histograms
+        # TDG corresponds to general trending histograms (perhaps between two subsystem)
+        for subsystem in processingParameters["subsystemList"] + ["TDG"]:
+            trendingObjects = qa.defineTrendingObjects(subsystem)
+            trendingContainer.addSubsystemTrendingObjects(subsystem, trendingObjects, forceRecreateSubsystem = processingParameters["forceRecreateSubsystem"])
+    else:
+        trendingContainer = None
+
     # Determine which runs to process
+    outputFormattingSave = os.path.join("%s", "%s.%s")
     for runDir, run in runs.items():
         #for subsystem in subsystems:
         for subsystem in run.subsystems.values():
             # Process if there is a new file or if forceReprocessing
-            if subsystem.newFile == True or processingParameters["forceReprocessing"] == True:
+            logger.debug("runDir: {}, reprocessRuns: {}".format(runDir.replace("Run", ""), processingParameters["forceReprocessRuns"]))
+            if subsystem.newFile or processingParameters["forceReprocessing"] or int(runDir.replace("Run","")) in processingParameters["forceReprocessRuns"]:
                 # Process combined root file: plot histos and save in imgDir
                 logger.info("About to process {0}, {1}".format(run.prettyName, subsystem.subsystem))
-                outputFormattingSave = os.path.join("%s", "%s.%s") 
                 processRootFile(os.path.join(processingParameters["dirPrefix"], subsystem.combinedFile.filename),
                                 outputFormattingSave,
                                 subsystem,
-                                forceRecreateSubsystem = processingParameters["forceRecreateSubsystem"])
+                                forceRecreateSubsystem = processingParameters["forceRecreateSubsystem"],
+                                trendingContainer = trendingContainer)
+                if trendingContainer and not trendingContainer.updateToDate:
+                    # Loop over process root file with various until it is up to date
+                    pass
             else:
                 # We often want to skip this point since most runs will not need to be processed most times
                 logger.debug("Don't need to process {0}. It has already been processed".format(run.prettyName))
@@ -777,8 +751,20 @@ def processAllRuns():
 
     logger.info("Finished processing!")
 
+    if trendingContainer:
+        # Run trending once we have gotten to the most recent run
+        logger.info("About to process trending")
+        processTrending(outputFormatting = outputFormattingSave,
+                        trending = trendingContainer,
+                        forceRecreateSubsystem = processingParameters["forceRecreateSubsystem"])
+
+        # Commit after we have successfully processed the trending
+        transaction.commit()
+
+    logger.info("Finishing trending")
+
     # Send data to pdsf via rsync
-    if processingParameters["sendData"] == True:
+    if processingParameters["sendData"]:
         logger.info("Preparing to send data")
         utilities.rsyncData(dirPrefix, processingParameters["remoteUsername"], processingParameters["remoteSystems"], processingParameters["remoteFileLocations"])
 

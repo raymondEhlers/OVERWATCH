@@ -2,6 +2,7 @@
 
 import logging
 import socket
+import os
 import pprint
 
 # Config
@@ -29,7 +30,7 @@ from overwatch.webApp.webApp import app
 if not serverParameters["debug"]:
     # Connect to database ourselves and grab the secret key
     (dbRoot, connection) = utilities.getDB(serverParameters["databaseLocation"])
-    if dbRoot["config"].has_key("secretKey") and dbRoot["config"]["secretKey"]:
+    if "secretKey" in dbRoot["config"] and dbRoot["config"]["secretKey"]:
         logger.info("Setting secret key from database!")
         secretKey = dbRoot["config"]["secretKey"]
     else:

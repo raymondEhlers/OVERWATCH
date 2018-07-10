@@ -17,31 +17,8 @@ subsystemList: &subsystemList
 #: Each of these subsystems will also get an individual page for access to their respective ROOT files.
 subsystemsWithRootFilesToShow: *subsystemList
 
-# These are the QA functions that should be displayed as options on the QA page.
-# 
-# The functions should be sorted by subsystem. They will only work on the defined subsystem.
-# If it is desired to use the same function on two subsystems, it is possible, but the function must
-# be imported into each module. See :mod:`~processRuns.qa` modules for examples on how to import the
-# function. It would then need to be added to the dict for each subsystem.
-# 
-# The dictionary should be formatted as
-# >>> qaFunctionsList = { "det": [ "functions" ], "det": [ "functions" ] }
-qaFunctionsList:
-    EMC:
-        - "determineMedianSlope"
-        - "checkForOutliers"
-    #HLT:
-    #    - "determineValue"
-    #TPC:
-    #    - "checkForOutliers"
-
-# These are functions that should always be applied when processing ROOT files.
-# 
-# These functions are often only automated QA functions, in that they can improve or help check the data quality,
-# but they do it on a histogram by histogram level, without extracting representative values. Examples
-# include checking particular histograms for outliers, or improving the quality of presenation of a
-# histogram by adding an axis or a grid.
-qaFunctionsToAlwaysApply: []
+#: Select whether to enable trending
+trending: true
 
 # Folders
 #: The name of the static folder on the disk.

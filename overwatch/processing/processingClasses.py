@@ -10,6 +10,7 @@ or read from file.
 
 from __future__ import print_function
 from __future__ import absolute_import
+from future.utils import iteritems
 
 # Database
 import BTrees.OOBTree
@@ -18,6 +19,9 @@ import persistent
 import os
 import time
 import ruamel.yaml as yaml
+import numpy as np
+import ROOT
+import ctypes
 import logging
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -36,8 +40,6 @@ class runContainer(persistent.Persistent):
         self.runDir = runDir
         self.runNumber = int(runDir.replace("Run", ""))
         self.prettyName = "Run {0}".format(self.runNumber)
-        # Need to rework the qa container 
-        #self.qaContainer = qa.qaFunctionContainer
         self.mode = fileMode
         self.subsystems = BTrees.OOBTree.BTree()
         self.hltMode = hltMode
@@ -154,7 +156,6 @@ class subsystemContainer(persistent.Persistent):
         # Depends on whether the subsystem actually contains the files!
         self.baseDir = os.path.join(runDir, self.fileLocationSubsystem)
         self.imgDir = os.path.join(self.baseDir, "img")
-        logger.info("imgDir: {0}".format(self.imgDir))
         self.jsonDir = os.path.join(self.baseDir, "json")
         # Ensure that they exist
         if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.imgDir)):
@@ -177,9 +178,6 @@ class subsystemContainer(persistent.Persistent):
         # Hists list that should be used
         self.hists = BTrees.OOBTree.BTree()
 
-        # Need to rework the qa container 
-        #self.qaContainer = qa.qaFunctionContainer
-
         # True if we received a new file, therefore leading to reprocessing
         # If the subsystem is being created, we likely need reprocessing, so defaults to true
         self.newFile = True
@@ -201,6 +199,84 @@ class subsystemContainer(persistent.Persistent):
         timeString = time.strftime("%A, %d %b %Y %H:%M:%S", timeStruct)
 
         return timeString
+
+    def resetContainer(self):
+        """  Clear the stored hist information so we can recreate (reprocess) the subsystem. """
+        del self.histGroups[:]
+        self.histsInFile.clear()
+        self.histsAvailable.clear()
+        self.hists.clear()
+
+class trendingContainer(persistent.Persistent):
+    """ Structure of the trending container (quite similar to that of the subsystem container):
+
+        """
+    def __init__(self, trendingDB):
+        self.subsystem = "TDG"
+
+        # Main container of the trendingObjects
+        self.trendingObjects = trendingDB
+
+        # True if the trending container trending objects are entirely filled and up to date
+        # Could be used to refill the trending container if it is empty
+        # TODO: Implement fully
+        self.updateToDate = False
+
+        # Directories for storage
+        # Should be of the form, for example, "tredning/SYS/json"
+        #self.baseDir = self.subsystem
+        self.baseDir = "trending"
+        # Need to define the names later because there are multiple subsystems inside of the trending container
+        self.imgDir = os.path.join(self.baseDir, "%(subsystem)s", "img")
+        self.jsonDir = os.path.join(self.baseDir, "%(subsystem)s", "json")
+        # Ensure that they exist for each subsystem
+        for subsystemName in processingParameters["subsystemList"] + ["TDG"]:
+            if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.imgDir % {"subsystem" : subsystemName})):
+                os.makedirs(os.path.join(processingParameters["dirPrefix"], self.imgDir % {"subsystem" : subsystemName}))
+            if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.jsonDir % {"subsystem" : subsystemName})):
+                os.makedirs(os.path.join(processingParameters["dirPrefix"], self.jsonDir % {"subsystem" : subsystemName}))
+
+        # Processing options
+        # Implemented by the detector to note how it was processed that may be changed during time slice processing
+        # This allows us return full processing when appropriate
+        self.processingOptions = persistent.mapping.PersistentMapping()
+
+    def addSubsystemTrendingObjects(self, subsystem, trendingObjects, forceRecreateSubsystem):
+        """ Add a given subsystem and set of associated trending objects to the trending container.
+
+        Args:
+            subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
+            trendingObjects (dict): dict of TrendingObject derived objects.
+        """
+        if not subsystem in self.trendingObjects.keys():
+            self.trendingObjects[subsystem] = BTrees.OOBTree.BTree()
+
+        logger.debug("self.trendingObjects[{}]: {}".format(subsystem, self.trendingObjects[subsystem]))
+
+        for name, obj in iteritems(trendingObjects):
+            if not name in self.trendingObjects[subsystem] or forceRecreateSubsystem:
+                logger.debug("Adding trending object {} from subsystem {} to the trending objects".format(name, subsystem))
+                self.trendingObjects[subsystem][name] = obj
+            else:
+                logger.debug("Trending object {} (name: {}) already exists in subsystem {}".format(self.trendingObjects[subsystem][name], name, subsystem))
+                logger.debug("Trending next entry: {}".format(self.trendingObjects[subsystem][name].nextEntry))
+
+    def resetContainer(self):
+        """ Reset the trending container """
+        self.trendingObjects.clear()
+
+    def findTrendingFunctionsForHist(self, hist):
+        """ Given a hist, determine the trending objects (and therefore functions) which should be applied. """
+        logger.debug("Looking for trending objects for hist {}".format(hist.histName))
+        for subsystemName, subsystem in iteritems(self.trendingObjects):
+            for trendingObjName, trendingObj in iteritems(subsystem):
+                if hist.histName in trendingObj.histNames:
+                    # Define the temporary function so it can be executed later.
+                    #def tempFunc():
+                    #    return self.trendingObjects[subsystemName][trendingObjName].Fill(hist)
+                    #hist.append(tempFunc)
+                    logger.debug("Found trending object match for hist {}, trendingObject: {}".format(hist.histName, self.trendingObjects[subsystemName][trendingObjName].name))
+                    hist.trendingObjects.append(self.trendingObjects[subsystemName][trendingObjName])
 
 ###################################################
 class timeSliceContainer(persistent.Persistent):
@@ -317,7 +393,7 @@ class histogramContainer(persistent.Persistent):
         #histName = histName.replace("/", "_")
         self.histName = histName
         # Only assign if meaningful
-        if prettyName != None:
+        if prettyName is not None:
             self.prettyName = prettyName
         else:
             self.prettyName = self.histName
@@ -329,151 +405,152 @@ class histogramContainer(persistent.Persistent):
         self.drawOptions = ""
         # Contains the canvas where the hist may be plotted, along with additional content
         self.canvas = None
+        # Functions which will be applied to project an available histogram to a new derived histogram
+        self.projectionFunctionsToApply = persistent.list.PersistentList()
+        # Functions which will be applied to the histogram each time it is processed
         self.functionsToApply = persistent.list.PersistentList()
+        # Trending objects which use this histogram
+        self.trendingObjects = persistent.list.PersistentList()
 
-    def retrieveHistogram(self, fIn, ROOT):
-        if self.histList is not None:
-            self.hist = ROOT.THStack(self.histName, self.histName)
-            for name in self.histList:
-                logger.debug("HistName in list: {0}".format(name))
-                self.hist.Add(fIn.GetKey(name).ReadObj())
-            self.drawOptions += "nostack"
-            # TODO: Allow for further configuration of THStack, like TLegend and such
+    def retrieveHistogram(self, ROOT, fIn = None, trending = None):
+        """
+
+        """
+        returnValue = True
+        if fIn:
+            if not self.histList is None:
+                if len(self.histList) > 1:
+                    self.hist = ROOT.THStack(self.histName, self.histName)
+                    for name in self.histList:
+                        logger.debug("HistName in list: {0}".format(name))
+                        self.hist.Add(fIn.GetKey(name).ReadObj())
+                    self.drawOptions += "nostack"
+                    # TODO: Allow for further configuration of THStack, like TLegend and such
+                elif len(self.histList) == 1:
+                    # Projective histogram
+                    histName = next(iter(self.histList))
+                    logger.debug("Retrieving histogram {} for projection!".format(histName))
+                    # Clone the histogram so restricted ranges don't propagate to other uses of this hist
+                    tempHist = fIn.GetKey(histName)
+                    if tempHist:
+                        self.hist = tempHist.ReadObj().Clone("{}_temp".format(histName))
+                    else:
+                        returnValue = False
+                else:
+                    logger.warning("histList for hist {} is defined, but is empty".format(histName))
+                    returnValue = False
+            else:
+                logger.debug("HistName: {0}".format(self.histName))
+                tempHist = fIn.GetKey(self.histName)
+                if tempHist:
+                    self.hist = tempHist.ReadObj()
+                else:
+                    returnValue = False
+
+        elif trending:
+            returnValue = False
+            # Not particularly efficient
+            for subsystemName, subsystem in iteritems(trending.trendingObjects):
+                for name, trendingObject in iteritems(subsystem):
+                    if self.histName in trendingObject.hist.histName:
+                        # Define the TH1 and make it available
+                        trendingObject.retrieveHist()
+                        returnValue = True
+                        #self.hist = trending.trendingObjects[subsystemName][self.histName].trendingHist
         else:
-            logger.debug("HistName: {0}".format(self.histName))
-            self.hist = fIn.GetKey(self.histName).ReadObj()
+            logger.warning("Unable to retrieve histogram {}".format(self.histName))
+            returnValue = False
+
+        return returnValue
 
 ###################################################
-class qaFunctionContainer(persistent.Persistent):
-    """ QA Container class
+class trendingObject(persistent.Persistent):
+    """ Base trending object """
+    def __init__(self, trendingName, prettyTrendingName, nEntries, trendingHist = None, histNames = None):
+        self.name = trendingName
+        self.prettyName = prettyTrendingName
+        self.nEntries = nEntries
+        # Store the trending values
+        # TODO: Should the unix time also be included?
+        # Tuple of (value, error)
+        self.values = np.zeros((nEntries, 2), dtype=np.float)
 
-    Args:
-        firstRun (str): The first (ie: lowest) run in the form "Run#". Ex: "Run123"
-        lastRun (str): The last (ie: highest) run in the form "Run#". Ex: "Run123"
-        runDirs (list): List of runs in the range [firstRun, lastRun], with entries in the form of "Run#" (str).
-        qaFunctionName (str): Name of the QA function to be executed.
+        self.hist = histogramContainer(trendingName)
+        self.hist.hist = trendingHist
 
-    Available attributes include:
+        # Set histograms to be included
+        if not histNames:
+            histNames = []
+        # Ensure that a copy is name by wrapping in list
+        self.histNames = list(histNames)
 
-    Attributes:
-        currentRun (str): The current run being processed in the form "Run#". Ex: "Run123"
-        hists (dict): Contains histograms with keys equal to the histogram label (often the hist name).
-            Initalized to an empty dict.
-        filledValueInRun (bool): Can be set when a value is filled in a run. It is the user's responsibility to
-            set the value to ``True`` when desired. The flag will be reset to ``False`` at the start of each run.
-            Initialized to ``False``.
-        runLength (int): Length of the current run in minutes.
+        # Where the next entry should go
+        self.nextEntry = 1
 
-    Note:
-        Arguments listed above are also available to be called as members. However, it is greatly preferred to access
-        hists through the methods listed below.
+        # Visualization of the trending object
+        self.canvas = None
 
-    Note:
-        You can draw on the histogram that you are processing by passing ``"same"`` as a parameter to the ``Draw()``.
+    # Handles requests to .hist in the processHist() function
+    #@property
+    #def hist(self):
+    #    return self.trendingHist
 
-    """
+    #@hist.setter
+    #def hist(self, val):
+    #    if val == None:
+    #        pass
+    #    else:
+    #        self.trendingHist = val
 
-    def __init__(self, firstRun, lastRun, runDirs, qaFunctionName):
-        """ Initializes the container with all of the requested information. """
-        self.firstRun = firstRun
-        self.lastRun = lastRun
-        self.runDirs = runDirs
-        self.qaFunctionName = qaFunctionName
-        self.hists = dict()
-        self.currentRun = firstRun
-        self.filledValueInRun = False
-        self.currentRunLength = 0
+    def fill(self, value, error):
+        """ 1D filling function. """
+        print("name: {}, self.nextEntry: {}, value: {}".format(self.name, self.nextEntry, value))
+        currentEntry = self.nextEntry - 1
+        if self.nextEntry > self.nEntries:
+            # Remove the oldest entry
+            utilities.removeOldestValueAndInsert(self.values, (value, error))
 
-    def addHist(self, hist, label):
-        """ Add a histogram at a given label.
+        self.values[currentEntry] = (value, error)
+        print("name: {}, values: {}".format(self.name, self.values))
 
-        Note:
-            This function calls ``SetDirectory(0)`` on the passed histogram to make sure that it is not
-            removed when it goes out of scope.
+        # Keep track to move to the next entry
+        self.nextEntry += 1
 
-        Args:
-            hist (TH1): The histogram to be added.
-            label (str): 
+    def retrieveHist(self):
+        """ Create a graph based on the np array """
 
-        Returns:
-            None
-        """
-        # Ensures that the created histogram does not get destroyed after going out of scope.
-        hist.SetDirectory(0)
-        if label in self.hists:
-            logger.warning("Replacing histogram {0} in QA Container!".format(label))
-        self.hists[label] = hist
+        # The creation of this hist can be overridden by creating the histogram before now
+        if not self.hist.hist:
+            # Define TGraph
+            # TH1's need to be defined more carefully, as they seem to possible cause memory corruption
+            # Multiply by 60.0 because it expects the times in seconds
+            self.hist.hist = ROOT.TGraphErrors(self.nEntries)
 
-    def addHists(self, hists):
-        """ Add histograms from a dict containing histograms with keys set as the labels.
+            # Set options
+            self.hist.hist.SetName(self.name)
+            self.hist.hist.SetTitle(self.prettyName)
+            # Ensure that the axis and points are drawn on the TGraph
+            self.hist.drawOptions = "AP"
 
-        Args: 
-            hists (dict): Dictionary with the hist labels as keys and the histograms as values.
+        # Handle histogram, which needs overflow and underflow
+        if self.hist.hist.InheritsFrom(ROOT.TH1.Class()):
+            logger.debug("GetNbins: {}, GetEntries: {}".format(self.hist.hist.GetXaxis().GetNbins(), self.hist.hist.GetEntries()))
 
-        Returns:
-            None
-        """
+            # Need to pass with zeros for the over and underflow bins values, errors
+            valuesWithOverAndUnderflow = np.concatenate([[(0,0)], self.values, [(0,0)]])
+            logger.debug("valuesWithOverAndUnderflow: {}".format(valuesWithOverAndUnderflow))
 
-        for hist, label in hists:
-            self.addHist(hist, label)
-
-    def getHist(self, histName):
-        """ Gets a histogram labeled by name.
-
-        Args:
-            histName (str): Label of the desired histogram. Often the hist name.
-
-        Returns:
-            TH1: The requested histogram or None if it doesn't exist.
-
-        """
-        return self.hists.get(histName, None)
-
-    def getHists(self):
-        """ Gets all histograms and returns them in a list.
-
-        Args:
-            None
-
-        Returns:
-            list: List of TH1s, generated by getting ``values()`` of the ``hists`` dict.
-
-        """
-        return self.hists.values()
-
-    def getHistLabels(self):
-        """ Gets all histogram labels and returns them in a list.
-
-        Args:
-            None
-
-        Returns:
-            list: List of strings, generated by getting ``keys()`` of the ``hists`` dict.
-
-        """
-        return self.hists.keys()
-
-    def getHistsDict(self):
-        """ Gets the dict stored by the class.
-
-        Args:
-            None
-
-        Returns:
-            dict: Contains histograms with keys equal to the histogram label (often the hist name).
-        """
-        return self.hists
-
-    def removeHist(self, histName):
-        """ Remove histogram from container.
-
-        Args:
-            histName (str): Label of the desired histogram. Often the hist name.
-
-        Returns:
-            None
-        """
-        if histName in self.hists:
-            del self.hists[histName]
+            # Access the ctypes via: https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.ndarray.ctypes.html
+            self.hist.hist.SetContent(valuesWithOverAndUnderflow[:, 0].ctypes.data_as(ctypes.POINTER(ctypes.c_long)))
+            self.hist.hist.SetError(valuesWithOverAndUnderflow[:, 1].ctypes.data_as(ctypes.POINTER(ctypes.c_long)))
         else:
-            logger.warning("histName {0} not in qa container, so it could not be removed!".format(histName))
+            # Handle points in a TGraph
+            #logger.debug("Filling TGraph with array values of {}".format(self.values))
+            for i in range(0, len(self.values)):
+                #logger.debug("Setting point {} to ({}, {}) with error {}".format(i, i, self.values[i, 0], self.values[i,1]))
+                self.hist.hist.SetPoint(i, i, self.values[i, 0])
+                self.hist.hist.SetPointError(i, i, self.values[i, 1])
+
+        # The hist is already availabe through the histogram container, but we return the hist
+        # incase the caller wants to do additional customization
+        return self.hist

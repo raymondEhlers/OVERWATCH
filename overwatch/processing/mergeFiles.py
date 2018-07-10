@@ -9,6 +9,7 @@ This module contains functions used to merge histograms, including the principal
 # Python 2/3 support
 from __future__ import print_function
 from __future__ import absolute_import
+from future.utils import iteritems
 
 # ROOT
 import ROOT
@@ -167,12 +168,12 @@ def subtractFiles(minFile, maxFile, outfile):
             if minHistName == maxHistName:
                 minHist = keyMin.ReadObj()
                 maxHist = keyMax.ReadObj()
-                
+
                 # Subtract the earlier hist from the later hist
-                maxHist.Add(minHist,-1)
+                maxHist.Add(minHist, -1)
                 fOut.cd()
                 maxHist.Write()
-                
+
     fMin.Close()
     fMax.Close()
     fOut.Close()
@@ -198,7 +199,7 @@ def mergeRootFiles(runs, dirPrefix, forceNewMerge = False, cumulativeMode = True
     currentDir = dirPrefix
 
     # Process runs
-    for runDir, run in runs.iteritems():
+    for runDir, run in iteritems(runs):
         for subsystem in run.subsystems:
             # Only merge if we there are new files to merge
             if run.subsystems[subsystem].newFile == True or forceNewMerge:

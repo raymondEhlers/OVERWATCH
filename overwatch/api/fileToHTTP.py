@@ -2,7 +2,7 @@
 
 import requests
 import json
-import StringIO # Should I use the io module instead?
+from io import StringIO
 import os
 import contextlib
 import tempfile
@@ -29,7 +29,7 @@ def getFile(filename, fileObject, stream = False):
         # Write in chunks to allow for streaming. See: https://stackoverflow.com/a/13137873
         # To stream a response, we need a generator. See: https://gist.github.com/gear11/8006132#file-main-py-L36
         for chunk in r:
-            fileObject.write(chunk)
+            fileObject.write(chunk.encode())
         # Return to start of file so the read is seamless
         fileObject.seek(0)
         return (r.ok, r.status_code, fileObject)
@@ -81,7 +81,7 @@ def FileWithLocalFilename(filename, writeFile = False):
                 if success:
                     print("Writing to temporary file")
                     print("success: {}, status: {}".format(success, status))
-                    f.write(fileInMemory.read())
+                    f.write(fileInMemory.read().encode())
                     f.flush()
                     #f.write("Hello")
                     # Return to start of file so the read is seamless
@@ -116,23 +116,28 @@ if __name__ == "__main__":
     # Get the file
     #(success, status, strIO) = getFile(filename = "246980/EMC/combined")
     writeFile = True
-    textFile = False
+    textFile = True
+    textFileTempFile = True
     rootFile = True
     if textFile:
         try:
             #with FileInMemory(filename = "246980/EMC/helloworld.txt", writeFile = True) as (success, status, fileInMemory):
             with FileInMemory(filename = "246980/EMC/EMChists.2015_12_13_5_8_22.root", writeFile = writeFile) as (success, status, fileInMemory):
-                # Just to find the length
-                fileInMemory.seek(0)
-                print("fileInMemory.read(): {}".format(fileInMemory.read()))
-                fileInMemory.seek(0, os.SEEK_END)
-                print("success: {}, status: {}, file length: {}".format(success, status, fileInMemory.tell()))
-                fileInMemory.write("Appended information in memory.\n")
-                fileInMemory.seek(0)
-                print("fileInMemory.read(): {}".format(fileInMemory.read()))
+                if success:
+                    # Just to find the length
+                    fileInMemory.seek(0)
+                    print("fileInMemory.read(): {}".format(fileInMemory.read()))
+                    fileInMemory.seek(0, os.SEEK_END)
+                    print("success: {}, status: {}, file length: {}".format(success, status, fileInMemory.tell()))
+                    fileInMemory.write("Appended information in memory.\n")
+                    fileInMemory.seek(0)
+                    print("fileInMemory.read(): {}".format(fileInMemory.read()))
+                else:
+                    print("Failed to retrieve file. status: {}".format(status))
         except ErrorInGettingFile as e:
             print(e)
 
+    if textFileTempFile:
         try:
             with FileWithLocalFilename(filename = "246980/EMC/EMChists.2015_12_13_5_8_22.root", writeFile = writeFile) as filename:
                 # Stricktly speaking, this only works on unix! But this should be fine for our purposes,

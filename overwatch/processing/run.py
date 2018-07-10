@@ -28,7 +28,6 @@ def run():
     # Process all of the run data
     processRuns.processAllRuns()
     # Function calls that be used for debugging
-    #processQA("Run246272", "Run246980", "EMC", "determineMedianSlope")
 
     ## Test processTimeSlices()
     ## TEMP

@@ -2,6 +2,8 @@
 
 # For python 3 support
 from __future__ import print_function
+from future.utils import iteritems
+from future.utils import itervalues
 
 import os
 # Python logging system
@@ -11,6 +13,7 @@ import logging
 from overwatch.base import config
 ## For configuring logger
 from overwatch.base import utilities
+from overwatch.base import storageWrapper
 (apiParameters, filesRead) = config.readConfig(config.configurationType.apiConfig)
 
 # Setup logger
@@ -19,9 +22,10 @@ logger = logging.getLogger(__name__)
 # Alternatively, we could set "overwatch.receiver" to get everything derived from that
 #logger = logging.getLogger("overwatch.receiver")
 
-from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, Markup, jsonify, session, make_response
+from flask import Flask, url_for, request, render_template, redirect, flash, send_file, send_from_directory, Markup, jsonify, session, make_response, stream_with_context, Response
 import flask_restful
 import flask_zodb
+from io import StringIO
 from werkzeug.utils import secure_filename
 
 app = Flask(__name__)
@@ -31,6 +35,9 @@ app.config["ZODB_STORAGE"] = apiParameters["databaseLocation"]
 #app.config["ZODB_STORAGE"] = "file://../../data/overwatch.fs"
 db = flask_zodb.ZODB(app)
 #dirPrefix = "dirPrefixPlaceholder"
+
+# Handle storage
+openFile = storageWrapper.defineFileAccess("data")
 
 class Runs(flask_restful.Resource):
     def get(self, run = None):
@@ -61,14 +68,18 @@ def responseForSendingFile(filename = None, response = None, additionalHeaders =
     # Open file and make response if requested
     if filename and not response:
         # TODO: Handle various file sources
-        response = make_response(send_from_directory(os.path.realpath(apiParameters["dirPrefix"]), filename))
+        # TODO: Use safe_join
+        #response = make_response(send_from_directory(os.path.realpath(apiParameters["dirPrefix"]), filename))
+        print("About to open file with new function")
+        with openFile(filename, "r") as f:
+            response = make_response(send_file(f, attachment_filename = filename, as_attachment = True))
 
     # Add requested filenames
     if "filenames" in additionalHeaders:
         additionalHeaders["filenames"] = ";".join(additionalHeaders["filenames"])
 
     # Add headers to response
-    for k, v in additionalHeaders.iteritems():
+    for k, v in iteritems(additionalHeaders):
         if k in response.headers.keys():
             print("WARNING: Header {} (value: {}) already exists in the response and will be overwritten".format(k, response.headers[k]))
         response.headers[k] = v
@@ -98,10 +109,10 @@ class FilesAccess(flask_restful.Resource):
             print("response: {}".format(response))
             return response
 
-        filename = secure_filename(filename)
+        #filename = secure_filename(filename)
 
         # Look for the file
-        print(subsystemContainer.files.itervalues().next().filename)
+        print(next(itervalues(subsystemContainer.files)).filename)
         try:
             requestedFile = next(fileContainer for fileContainer in subsystemContainer.files.values() if fileContainer.filename.split("/")[-1] == filename)
         except StopIteration as e:
@@ -113,9 +124,30 @@ class FilesAccess(flask_restful.Resource):
 
         print("filename for requested file: {}".format(os.path.join(apiParameters["dirPrefix"], requestedFile.filename)))
         responseHeaders["filenames"].append(os.path.join(apiParameters["dirPrefix"], requestedFile.filename))
-        return responseForSendingFile(filename = requestedFile.filename, additionalHeaders = responseHeaders)
+        #f = open(os.path.join(apiParameters["dirPrefix"], requestedFile.filename))
+        #return make_response(send_file(f, as_attachment = True, attachment_filename = filename))
+        #with open(os.path.join(apiParameters["dirPrefix"], requestedFile.filename)) as f:
+        with openFile(requestedFile.filename, "rb") as f:
+            # If StringIO is not used here then the file will go out of scope and be closed before the
+            # response is completed, which leads to "ValueError: I/O operation on closed file".
+            # I cannot seem to find a way around this. However, the file cannot just be opened, as otherwise
+            # it will leak memory.
+            # For more, see: https://stackoverflow.com/q/13344538 (no definitive solution)
+            #                https://stackoverflow.com/a/25150805 (gave me the idea to just create a new StringIO)
+            # StringIO was selected based on https://stackoverflow.com/a/37463095
+            return make_response(send_file(StringIO.StringIO(f.read()), as_attachment = True, attachment_filename = filename))
+
+        #with openFile(requestedFile.filename, "rb") as f:
+        #    f.seek(0)
+        #    def readFile(*args, **kwargs):
+        #        for chunk in iter(lambda: f.read(4096), b''):
+        #            yield chunk
+        #    return Response(stream_with_context(readFile()))
+            #return make_response(send_file(f, attachment_filename = filename, as_attachment = True))
+        #return responseForSendingFile(filename = requestedFile.filename, additionalHeaders = responseHeaders)
 
     def put(self, run, subsystem, filename):
+        # Decided on put based on https://stackoverflow.com/a/630475
         # TODO: Validate input!
 
         # Just to be safe!
@@ -138,8 +170,12 @@ class FilesAccess(flask_restful.Resource):
 
             # Save it out
             # TODO: Handle writing to the proper source
-            outputPath = os.path.join(apiParameters["dirPrefix"], "Run{0}".format(run), subsystem, filename)
-            payloadFile.save(outputPath)
+            outputPath = os.path.join("Run{0}".format(run), subsystem, filename)
+            #payloadFile.save(outputPath)
+
+            with openFile(outputPath, "w+") as f:
+                f.write(payloadFile.read().encode())
+
             savedFile = True
         else:
             savedFile = False
@@ -156,4 +192,5 @@ api.add_resource(Runs, "/rest/api/v1/runs",
 #api.add_resource(Run, "/rest/api/v1/runs/<int:run>")
 
 if __name__ == "__main__":
-    app.run(debug = True)
+    #app.run(debug = True)
+    app.run(use_reloader = True)

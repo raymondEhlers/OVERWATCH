@@ -1,0 +1,18 @@
+<paper-listbox>
+{% for subsystemName, subsystem in trendingContainer.trendingObjects.items() -%}
+    {%- if subsystem != {} -%}
+        {# groupSelectionPatten should always be a valid proxy for a valid link #}
+        {# The value "nonSubsystemEmptyString" is interpreted in the validation function for the hist group, so it shouldn't show up anywhere else! #}
+        <a href="#" data-histgroup="{{ subsystemName }}" tabindex=-1>
+            <paper-item><h3>{{ subsystemName }}</h3></paper-item>
+        </a>
+        {%- for name, trendingObject in subsystem.items() -%}
+            {# The value "nonSubsystemEmptyString" is interpreted in the validation function for the hist group, so it shouldn't show up anywhere else! #}
+            <a href="#" data-histname="{{ name }}" data-histgroup="{{ subsystemName }}" tabindex=-1>
+                <paper-item>{{ name }}</paper-item>
+            </a>
+        {%- endfor -%}
+    {%- endif -%}
+{% endfor %}
+</paper-listbox>
+
