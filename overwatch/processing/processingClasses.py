@@ -529,12 +529,13 @@ class trendingObject(persistent.Persistent):
     def fill(self, value, error):
         """ 1D filling function. """
         print("name: {}, self.nextEntry: {}, value: {}".format(self.name, self.nextEntry, value))
-        currentEntry = self.nextEntry - 1
+
         if self.nextEntry > self.nEntries:
             # Remove the oldest entry
             utilities.removeOldestValueAndInsert(self.values, (value, error))
-
-        self.values[currentEntry] = (value, error)
+        else:
+            currentEntry = self.nextEntry - 1
+            self.values[currentEntry] = (value, error)
         print("name: {}, values: {}".format(self.name, self.values))
 
         # Keep track to move to the next entry

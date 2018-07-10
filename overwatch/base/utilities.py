@@ -418,9 +418,6 @@ def updateDBSensitiveParameters(db, overwriteSecretKey=True, debug=False):
 # Histogram array functions
 ####################
 def removeOldestValueAndInsert(arr, value):
-    # Remove oldest value
-    np.delete(arr, 0, axis=0)
-    # Insert at the end
-    arr[-1] = value
-
+    arr = np.delete(arr, 0, axis=0)
+    arr = np.append(arr, [value], axis=0)
     return arr
