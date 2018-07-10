@@ -770,15 +770,16 @@ def processAllRuns():
 
     # Update receiver last modified time if the log exists
     receiverLogFileDir = os.path.join("deploy")
-    receiverLogFilePath = os.path.join(receiverLogFileDir,
-                                       next(( name for name in os.listdir(receiverLogFileDir) if "Receiver.log" in name), ""))
-    logger.debug("receiverLogFilePath: {0}".format(receiverLogFilePath))
+    if os.path.exists(receiverLogFileDir):
+        receiverLogFilePath = os.path.join(receiverLogFileDir,
+                                           next(( name for name in os.listdir(receiverLogFileDir) if "Receiver.log" in name), ""))
+        logger.debug("receiverLogFilePath: {0}".format(receiverLogFilePath))
 
-    # Add the receiver last modified time
-    if receiverLogFilePath and os.path.exists(receiverLogFilePath):
-        logger.debug("Updating receiver log last modified time!")
-        receiverLogLastModified = os.path.getmtime(receiverLogFilePath)
-        dbRoot["config"]["receiverLogLastModified"] = receiverLogLastModified
+        # Add the receiver last modified time
+        if receiverLogFilePath and os.path.exists(receiverLogFilePath):
+            logger.debug("Updating receiver log last modified time!")
+            receiverLogLastModified = os.path.getmtime(receiverLogFilePath)
+            dbRoot["config"]["receiverLogLastModified"] = receiverLogLastModified
 
     # Add users and secret key if debugging
     # This needs to be done manually if deploying, since this requires some care to ensure that everything is configured properly
