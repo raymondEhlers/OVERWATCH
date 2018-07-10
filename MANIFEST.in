@@ -1,4 +1,5 @@
 recursive-include overwatch config.yaml
+include overwatch/webApp/flaskAssets.yaml
 include overwatch/webApp/static/*
 recursive-include overwatch/webApp/static/icons *
 recursive-include overwatch/webApp/static/scripts *

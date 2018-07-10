@@ -32,3 +32,4 @@ notes.md
 
 # Python package generation
 alice_overwatch.egg-info/
+dist/
