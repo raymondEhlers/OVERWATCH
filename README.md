@@ -2,6 +2,8 @@
 
 # ALICE Overwatch
 
+[![DOI](https://zenodo.org/badge/50686415.svg)](https://zenodo.org/badge/latestdoi/50686415)
+
 Welcome to ALICE Overwatch[\*](#name-meaning), a project to provide real-time online data monitoring and
 quality assurance using timestamped data from the ALICE High Level Trigger (HLT) and Data Quality Monitoring (DQM).
 
@@ -247,6 +249,20 @@ The image can then be run with something like (using an external configuration f
 
 ```bash
 $ docker run -d -v data:/overwatch/data -e config="$(config.yaml)" rehlers/overwatch
+```
+
+# Citation
+
+Please cite Overwatch as:
+
+```
+@misc{overwatch,
+  author = {R.J. Ehlers, J. Mulligan},
+  title = {ALICE Overwatch},
+  howpublished = {\url{https://github.com/raymondEhlers/OVERWATCH}},
+  doi = {10.5281/zenodo.1309376},
+  note = {Accessed: 2018-07-11}
+}
 ```
 
 ## Name Meaning
