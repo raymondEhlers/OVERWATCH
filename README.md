@@ -119,6 +119,7 @@ configuration file.
     - [Data Receivers](#overwatch-receivers)
 2. [Overwatch Configuration](#overwatch-configuration)
 3. [Overwatch Deployment](#overwatch-deployment)
+4. [Citation](#citation)
 
 # Overwatch Architecture
 
