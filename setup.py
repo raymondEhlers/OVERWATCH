@@ -17,7 +17,7 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
 
 setup(
     name="aliceoverwatch",
-    version="0.9",
+    version="1.0",
 
     description="ALICE OVERWATCH: Online Monitoring via the HLT",
     long_description=long_description,
