@@ -256,12 +256,14 @@ $ docker run -d -v data:/overwatch/data -e config="$(config.yaml)" rehlers/overw
 Please cite Overwatch as:
 
 ```
-@misc{overwatch,
-  author = {R.J. Ehlers, J. Mulligan},
-  title = {ALICE Overwatch},
-  howpublished = {\url{https://github.com/raymondEhlers/OVERWATCH}},
-  doi = {10.5281/zenodo.1309376},
-  note = {Accessed: 2018-07-11}
+@misc{raymond_ehlers_2018_1309376,
+  author       = {Raymond Ehlers and
+                  James Mulligan},
+  title        = {raymondEhlers/OVERWATCH: Initial full release},
+  month        = jul,
+  year         = 2018,
+  doi          = {10.5281/zenodo.1309376},
+  url          = {https://doi.org/10.5281/zenodo.1309376}
 }
 ```
 
