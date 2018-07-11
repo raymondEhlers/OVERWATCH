@@ -260,7 +260,7 @@ Please cite Overwatch as:
 @misc{raymond_ehlers_2018_1309376,
   author       = {Raymond Ehlers and
                   James Mulligan},
-  title        = {raymondEhlers/OVERWATCH: Initial full release},
+  title        = {ALICE Overwatch v1.0},
   month        = jul,
   year         = 2018,
   doi          = {10.5281/zenodo.1309376},
