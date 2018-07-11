@@ -31,5 +31,5 @@ notes.md
 *.yaml
 
 # Python package generation
-alice_overwatch.egg-info/
+aliceoverwatch.egg-info/
 dist/
