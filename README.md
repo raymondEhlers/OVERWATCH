@@ -39,8 +39,8 @@ $ docker run -it --rm -v data:/overwatch/data rehlers/overwatch /bin/bash
 
 ### Installation only for running Overwatch
 
-For just running Overwatch (ie. performing no development at all), it is also available on PyPI to install via
-pip.
+For just running Overwatch (ie. performing no development at all), it is also available on
+[PyPI](https://pypi.org/project/aliceOverwatch/) to install via pip.
 
 ```bash
 # Required as a prerequisite since it is not available on PyPI.
