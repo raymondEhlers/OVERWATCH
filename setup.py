@@ -85,5 +85,12 @@ setup(
     ],
 
     # Include additional files
-    include_package_data=True
+    include_package_data=True,
+
+    # Test packages
+    tests_require = [
+        "pytest",
+        "pytest-cov",
+        "pytest-mock"
+    ]
   )
