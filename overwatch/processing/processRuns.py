@@ -254,7 +254,7 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, su
     # Must be done before drawing!
     for func in hist.projectionFunctionsToApply:
         logger.debug("Calling projection func: {0}".format(func))
-        func(subsystem, hist, processingOptions)
+        hist.hist = func(subsystem, hist, processingOptions)
 
     # Setup and draw histogram
     # Turn off title, but store the value

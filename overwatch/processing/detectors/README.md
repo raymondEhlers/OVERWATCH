@@ -133,10 +133,18 @@ As an example, consider the following implementation:
 
 ```python
 def createAdditionalSYSHistograms(subsystem):
+    """ New histogram containers for the given subsystem should be created here. The actual histograms
+    will be created later through projections. Be certain to assign the projection functions here!
+
+    Args:
+        subsystem (subsystemContainer): Subsystem for which additional histograms are to be created.
+    Returns:
+        None
+    """
     # Define additional histogram
     histName = "projectedHist"
     histToProjectFrom = ["histToProjectFrom"]
-    histCont = processingClasses.histogramContainer(histName, histToProjectFrom)
+    histCont = processingClasses.histogramContainer(histName = histName, histList = histToProjectFrom)
     # Add projection function
     histCont.projectionFunctionsToApply(projectionFunction)
 
@@ -144,12 +152,26 @@ def createAdditionalSYSHistograms(subsystem):
     subsystem.histsAvailable[histName] = histCont
 
 def projectionFunction(subsystem, hist, processingOptions, *args, **kwargs):
+    """ Perform the actual projection.
+
+    Args:
+        subsystem (subsystemContainer): Subsystem which contains the projected histogram.
+        hist (histogramContainer): Histogram container corresponding to the projected histogram.
+            When this function is called, it contains the histogram to project from, so the hist
+            to project from can be retrieved by hist.hist
+        processingOptions (dict): Dictionary of processing options for the given subsystem.
+        args (list): Additional possible future arguments.
+        kwargs (dict): Additional possible future arguments.
+    Returns:
+        ROOT.TH1: The projected histogram
+    """
+    # Example of restricting the range of the histogram projection.
     hist.hist.GetXaxis().SetRangeUser(0, 2)
+    # Assigns the project the expected histogram name from the histogram container.
     proj = hist.hist.ProjectionX(hist.histName)
 
-    # IMPORTANT!!
-    # Reassign the hist field of the histogram container to the new projection
-    hist.hist = proj
+    # Return the projected histogram to ensure that it is saved for later processing.
+    return proj
 ```
 
 Note that for an optimal workflow, a histogram group should be defined that will pick up any additional
