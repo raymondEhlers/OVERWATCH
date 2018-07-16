@@ -56,8 +56,6 @@ docsBuildFolder: !joinPaths
 #: Subsystems which have templates available (determined on startup).
 #: Since this is run from the root directory, we need to go into the "webApp" directory to find the templates!
 availableRunPageTemplates: !findRunPageTemplates
-    - ".."
-    - "webApp"
     - *templateFolder
 
 flaskAssetsDebug: null
