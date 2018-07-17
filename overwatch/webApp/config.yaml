@@ -1,12 +1,13 @@
-## Holds all of the server parameters
-##
-## Note:
-##    The folder structure for flask can get complicated. See the variables below for their
-##    purposes. One can generally set staticFolder without staticURLPath, but not the reverse.
-##    For more information of flask folder structure,
-##    see (for example): https://stackoverflow.com/a/18746493
-##
-## Author: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
+# Holds all of the server parameters
+#
+# Note:
+#    The folder structure for flask can get complicated. See the variables below for their
+#    purposes. One can generally set staticFolder without staticURLPath, but not the reverse.
+#    For more information of flask folder structure,
+#    see (for example): https://stackoverflow.com/a/18746493
+#
+# author: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
+# date: 16 July 2018
 
 #: Sets the ip address.
 ipAddress: "127.0.0.1"
@@ -14,8 +15,6 @@ ipAddress: "127.0.0.1"
 #: Sets the port.
 port: 8850
 
-#: Setup Bcrypt.
-bcryptLogRounds: &bcryptLogRounds 12
 
 #: Default user name. An empty string will disable it.
 #: Should only be used when behind CERN SSO!
@@ -58,6 +57,8 @@ docsBuildFolder: !joinPaths
 availableRunPageTemplates: !findRunPageTemplates
     - *templateFolder
 
+# Whether to perform debugging on the setting up of the flask assets. This is determined
+# separately from other debug options because it can be rather difficult to debug.
 flaskAssetsDebug: null
 
 #: Sites to check during the status request.
@@ -67,15 +68,18 @@ statusRequestSites:
 ######
 # Sensitive parameters
 ######
-#: Defines the users way may be added to the database depending on the configuration.
-#: This will currently not create any users
-#: Defined with an underscore since it is a private value.
-#: Each user sure should added of the form user: "password"
-#: If the password is not hashed, then the _users type should be
-#: "!bcrypt". It will then hash all passwords that are passed
-#: Also be certain to pass bcryptLogRounds for it to succeed
+# Defines the users way may be added to the database depending on the configuration.
+# Note that this will currently not create any users. The dict is defined with an
+# underscore since it is a private value. Each user sure should added of the form `username: "password"`
+# If the password is not hashed, then the _users type should be "!bcrypt". It will then automatically
+# hash all passwords that are passed.
+# NOTE: Bcrypt log rounds can be set here, but is not by default. For more on how to set it,
+#       see overwatch.base.config.bcrypt. This is not set via an alias on purpose. This is because,
+#       for example, the processing module doesn't define a _users field, but it still could be defined
+#       in the user config (ie. config.yaml). In that case, the alias would be undefined, since it would
+#       naturally be defined in the webApp config. So instead, we rely on the default defined
+#       in overwatch.base.config.bcrypt.
 _users: !bcrypt
-    bcryptLogRounds: *bcryptLogRounds
     null: null
 
 #: Secret key for signing cookies

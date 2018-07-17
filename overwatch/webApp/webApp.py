@@ -80,7 +80,7 @@ if serverParameters["debug"] == True:
     app.debug = True
 
 # Setup Bcrypt
-app.config["BCRYPT_LOG_ROUNDS"] = serverParameters["bcryptLogRounds"]
+app.config["BCRYPT_LOG_ROUNDS"] = config.bcryptLogRounds
 bcrypt = Bcrypt(app)
 
 # Setup flask assets

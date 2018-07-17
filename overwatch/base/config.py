@@ -4,6 +4,9 @@
 # in a hierarchy, with the base configuration providing the first layer,
 # and building up further until the specified module.
 #
+# yaml parsing plugins are also specified here. This breaks the abstraction
+# a little bit, but it makes things much simpler, so it's worth the trade-off.
+#
 # author: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
 # date: 16 July 2018
 
@@ -18,17 +21,23 @@ import warnings
 import logging
 logger = logging.getLogger(__name__)
 
-class configurationType(aenum.Enum):
+class configurationType(aenum.OrderedEnum):
     """ Specifies the module ordering for loading of configurations.
 
     It is also used to specify the maximum level for which a config should be loaded.
-    For example, if `webApp` is specified, it should load `processing` first, and
-    then `webApp` next. It will not go further than `webApp`.
+    For example, if `webApp` is specified, it should load all configurations, while
+    for processing, everything but processing should be loaded.
+
+    The numerical values of this enum basically specify the dependencies of the package.
+
+    Note:
+        The names of these values must match the names of their corresponding modules!
     """
-    processing = 0
-    webApp = 1
-    dqmReceiver = 2
-    apiConfig = 3
+    base = 0
+    receiver = 1
+    api = 2
+    processing = 3
+    webApp = 4
 
 def joinPaths(loader, node):
     """ Join elements of a list into a path using `os.path.join`.
@@ -74,18 +83,15 @@ def determineRunPageTemplates(loader, node):
     # We need the last part of the part to be separate for calling resource_listdir, so we join everything
     # up to that last value, and then past the last value separately.
     returnList = [name for name in pkg_resources.resource_listdir(".".join(path[:-1]), path[-1]) if "runPage" in name]
-
-    # Test code to compare against the previous method.
-    # TODO: This would be a good unit test!
-    #path = os.path.join(os.path.dirname(os.path.realpath(__file__)), "..", "webApp", *seq)
-    #returnList2 = [name for name in os.listdir(path) if "runPage" in name]
-    #print("returnList: {}, returnList2: {}".format(returnList, returnList2))
-    #assert returnList == returnList2
-
     #logger.debug("returnList: {0}".format(returnList))
     return returnList
 # Register the defined function
 yaml.SafeLoader.add_constructor('!findRunPageTemplates', determineRunPageTemplates)
+
+#: Number of rounds of hashing when using bcrypt.
+#: Define the default value here so it can be accessed outside of the module.
+#: This is a hack, but I think it is worth the simplification in everything else.
+bcryptLogRounds = 12
 
 def bcrypt(loader, node):
     """ Hash any given passwords according to the provided number of rounds.
@@ -96,13 +102,16 @@ def bcrypt(loader, node):
     ```{yaml}
     bcryptExampleBlock: !bcrypt
         # Could be defined elsewhere and referenced using an anchor here
-        bcryptLogRounds: 10
+        bcryptLogRounds: 12
         user1: "password1"
         user2: "password2"
     ```
 
     The block will result in two users, `user1` and `user2` being added to the database.
-    Their passwords will be the hash of the given strings using 10 bcrypt log rounds.
+    Their passwords will be the hash of the given strings using 12 bcrypt log rounds.
+
+    Note:
+        bcryptLogRounds can also be omitted. In that case, it will default to 12.
 
     Args:
         loader (yaml.SafeLoader): YAML loader which is parsing the configuration.
@@ -111,14 +120,15 @@ def bcrypt(loader, node):
         dict: Keys are usernames, while values are the corresponding hashed passwords.
     """
     n = loader.construct_mapping(node)
-    # Get number of rounds!
-    bcryptLogRounds = n.pop("bcryptLogRounds")
-    returnDict = dict()
+    # Get number of rounds to hash the password! Note that we default here to 12.
+    logRounds = n.pop("bcryptLogRounds", bcryptLogRounds)
+    returnDict = {}
+    # Now setup each username with a hashed password.
     for k, v in n.items():
         # Check if the key and value exists since they could be `None`.
         # Only proceed if they are valid - otherwise they are skipped.
         if k and v:
-            returnDict[k] = generate_password_hash(v, rounds = bcryptLogRounds)
+            returnDict[k] = generate_password_hash(v, rounds = logRounds)
     return returnDict
 # Register the defined function
 yaml.SafeLoader.add_constructor('!bcrypt', bcrypt)
@@ -138,7 +148,7 @@ def secretKey(loader, node):
         str: The secret key for signing cookies.
     """
     val = loader.construct_scalar(node)
-    if val:
+    if val != "null":
         return str(val)
     # Generate a new value using `unrandom(50)` (as suggested by the flask developers) if one is not passed.
     return str(os.urandom(50))
@@ -175,8 +185,8 @@ def readConfig(configType):
     """ Main function to read the Overwatch configuration. It looks for values in a set of configuration
     files according to the module that is specified.
 
-    The configuration file should be named `config.yaml`.  The files are read in such an order that values
-    specified in later packages will override earlier ones.  For example, `webApp` depends on `processing`,
+    The configuration file must be named `config.yaml`. The files are read in such an order that values
+    specified in later packages will override earlier ones. For example, `webApp` depends on `processing`,
     so if we specify different values for the same key in both module configurations, the value in the
     `webApp` config will be used.
 
@@ -198,60 +208,57 @@ def readConfig(configType):
     (this basically follows the dependency tree).
 
     Args:
-        configType (configurationType): Type of the module for which we are loading the configuration.
+        configType (configurationType or str): Type of the module for which we are loading the configuration.
     Returns:
         tuple: (Fully merged configuration, list of configuration filenames which were read)
     """
-    if configType in configurationType:
-        # The earliest config files are given the _most_ precedence.
-        # ie. A value in the config in the local directory will override the same variable
-        #     defined in the config in the package base directory.
-        # For more on pkg_resources, see: https://stackoverflow.com/a/5601839
-        fileList = [
-                # Config file in the local directory where it is run
-                "config.yaml",
-                # Config in the home directory
-                # Ensures that we have "WebApp" here.
-                os.path.expandvars("~/.overwatch{0}").format(configType.name[0].upper() + configType.name[1:]),
-                # Config type specific directory in the package (ex: "processing")
-                # TODO: There is a problem when loading the shared configuration with the processing configuration
-                #       because the shared configuration can have options which are defined in the web app config
-                #       and therefore undefined when the web app config is not loaded!
-                #       To resolve it temporarily, both configuration files will be included
-                pkg_resources.resource_filename("overwatch.webApp", "config.yaml"),
-                pkg_resources.resource_filename("overwatch.processing", "config.yaml"),
-                pkg_resources.resource_filename("overwatch.receiver", "config.yaml"),
-                pkg_resources.resource_filename("overwatch.api", "config.yaml"),
-                #       Below is the line that should be used when the above issue is resolved
-                #pkg_resources.resource_filename("overwatch.{0}".format(configType.name), "config.yaml"),
-                # Shared config in the package base
-                pkg_resources.resource_filename("overwatch.base", "config.yaml")
-            ]
-    else:
-        raise ValueError(configType, "Unrecognized configuration type")
+    # Validate arguments
+    if not isinstance(configType, configurationType):
+        # Perhaps we got a string, so let's try to construct it based on that.
+        # It's fine if this raises an exception, because it will tell us where we've gone wrong
+        configType = configurationType[configType]
+
+    # The earliest config files are given the _most_ precedence.
+    # ie. A value in the config in the local directory will override the same variable
+    #     defined in the config in the package base directory.
+    # For more on pkg_resources, see: https://stackoverflow.com/a/5601839
+    fileList = [
+            # Config file in the local directory where it is run
+            "config.yaml",
+            # Config in the home directory
+            # Ensures that we have "WebApp" here.
+            os.path.expandvars("~/.overwatch{0}").format(configType.name[0].upper() + configType.name[1:]),
+        ]
+    # Reversed so the modules are added in the proper order (ie. following the dependencies)
+    for val in reversed(configurationType):
+        # Retrieve and store the configuration of the requested object depends on that configuration
+        # (as determined by the order of the configurationType values)
+        if val <= configType:
+            fileList.append(pkg_resources.resource_filename("overwatch.{}".format(val.name), "config.yaml"))
 
     # Commented out to reduce number of startup messages
     #logger.debug("Config filenames: {0}".format(fileList))
 
     (configs, filesRead) = readConfigFiles(fileList)
     # Commented out to reduce number of startup messages
-    #logger.debug("Read config files: {0}".format(filesRead))
+    #logger.debug("Configuration type: {}, Read config files: {}".format(configType, filesRead))
 
     # Merge the configurations together
     # List is reversed so the earlier listed config will always override settings from lower listed files
     configs = "\n".join(reversed(configs))
-    #print("configs: {0}".format(configs))
+    # Commented out to reduce number of startup messages
+    #logger.debug("configs: {0}".format(pprint.pformat(configs)))
 
     # Handle warnings related to redefined anchors.
     # This is perhaps overly broad, but for our purposes, it should be fine.
     # See: https://stackoverflow.com/a/40376576
     with warnings.catch_warnings():
         warnings.simplefilter("ignore")
-        globalConfig = yaml.load(configs, Loader=yaml.SafeLoader)
+        globalConfig = yaml.load(configs, Loader = yaml.SafeLoader)
 
     return (globalConfig, filesRead)
 
-if __name__ == "__main__":
+if __name__ == "__main__": # pragma: no cover
     """ Load basic configuration for testing (although unit tests would be preferred in the future). """
     # Setup logging
     # Provides a warning if there are no handlers

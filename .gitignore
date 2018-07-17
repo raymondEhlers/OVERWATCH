@@ -33,3 +33,9 @@ notes.md
 # Python package generation
 aliceoverwatch.egg-info/
 dist/
+
+# Testing
+.pytest_cache/
+# Generate coverage reports from testing
+.coverage
+htmlcov/

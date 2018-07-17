@@ -14,7 +14,7 @@ from overwatch.base import config
 ## For configuring logger
 from overwatch.base import utilities
 from overwatch.base import storageWrapper
-(apiParameters, filesRead) = config.readConfig(config.configurationType.apiConfig)
+(apiParameters, filesRead) = config.readConfig(config.configurationType.api)
 
 # Setup logger
 # When imported, we just want it to take on it normal name

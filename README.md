@@ -94,8 +94,6 @@ For the webApp, add something similar to the following to your `config.yaml`:
 ```yaml
 # Define users for local usage
 _users: !bcrypt
-    bcryptLogRounds: *bcryptLogRounds
-    # You can change these values as desired
     # The key, (below is "username") is the the name of your user, while the value, (below is "password") is your password
     username: "password"
 # Continue to keep debug: true . It often helps with ZODB difficulties.
