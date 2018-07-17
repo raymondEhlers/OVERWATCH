@@ -1,4 +1,6 @@
-# Holds all of the server parameters
+# Contains all of the webApp parameters.
+# Note that this configuration file will be imported after the shared parameters config
+# For more, see overwatch.base.config
 #
 # Note:
 #    The folder structure for flask can get complicated. See the variables below for their
@@ -9,51 +11,50 @@
 # author: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 # date: 16 July 2018
 
-#: Sets the ip address.
+# Sets the ip address.
 ipAddress: "127.0.0.1"
 
-#: Sets the port.
+# Sets the port.
 port: 8850
 
-
-#: Default user name. An empty string will disable it.
-#: Should only be used when behind CERN SSO!
+# Default user name. An empty string will disable it.
+# Should only be used when behind CERN SSO!
 defaultUsername: ""
 
-#: basePath is just a useful value.
-#: It defines a base directory to reference if the static, template, etc folders are
-#: all in the same dir.
+# basePath is just a useful value.
+# It defines a base directory to reference if the static, template, etc folders are
+# all in the same dir.
 basePath: ""
 
-#: staticFolder is the disk location of the static folder.
-#: It is a flask defined variable.
-#: To check if the static files are from the front-end webserver, use:
-#: https://stackoverflow.com/questions/16595691/static-files-with-flask-in-production
-#:
-#: (ie. add + "CHANGE" to the staticFolder location specified here).
+# staticFolder is the disk location of the static folder.
+# It is a flask defined variable.
+# To check if the static files are from the front-end webserver, use:
+# https://stackoverflow.com/questions/16595691/static-files-with-flask-in-production
+#
+# (ie. add + "CHANGE" to the staticFolder location specified here).
 #staticFolder = os.path.join(sharedParameters.staticFolderName) 
 staticFolder: *staticFolder
 
-#: staticURLPath is the URL of the static folder.
-#: If you want to access "foo", it would be at $BASE_URL/staticURLPath/foo. "" is just the root.
-#: It is a flask defined variable.
+# staticURLPath is the URL of the static folder.
+# If you want to access "foo", it would be at $BASE_URL/staticURLPath/foo. "" is just the root.
+# It is a flask defined variable.
 staticURLPath: "/static"
 
-#: protectedFolder is the disk location of the protected folder.
-#: This folder holds the experimental data.
+# protectedFolder is the disk location of the protected folder.
+# This folder holds the experimental data.
 protectedFolder: *dataFolder
 
-#: docsFolder is the disk location of the docs folder.
+# docsFolder is the disk location of the docs folder.
 docsFolder: &docsFolder "doc"
 
-#: docsBuildFolder is the disk location of the docs html folder.
+# docsBuildFolder is the disk location of the docs html folder.
 docsBuildFolder: !joinPaths
     - *docsFolder
     - "build"
     - "html"
 
-#: Subsystems which have templates available (determined on startup).
-#: Since this is run from the root directory, we need to go into the "webApp" directory to find the templates!
+# Subsystems which have templates available (determined on startup).
+# Since this is run from the root directory, we need to go into the "webApp" directory to find the templates!
 availableRunPageTemplates: !findRunPageTemplates
     - *templateFolder
 
@@ -61,7 +62,7 @@ availableRunPageTemplates: !findRunPageTemplates
 # separately from other debug options because it can be rather difficult to debug.
 flaskAssetsDebug: null
 
-#: Sites to check during the status request.
+# Sites to check during the status request.
 statusRequestSites:
     null: null
 
@@ -82,9 +83,9 @@ statusRequestSites:
 _users: !bcrypt
     null: null
 
-#: Secret key for signing cookies
-#: Defined with an underscore since it is a private value.
-#: If "false" is passed, then the value will be generated automatically
-#: using urandom(50), as suggested by the flask developers.
+# Secret key for signing cookies
+# Defined with an underscore since it is a private value.
+# If "false" is passed, then the value will be generated automatically
+# using urandom(50), as suggested by the flask developers.
 _secretKey: !secretKey false
 

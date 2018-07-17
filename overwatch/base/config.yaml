@@ -1,43 +1,45 @@
-## Containers parameters shared between processing and webApp
-##
-## Author: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
+# Contains parameters shared between multiple modules
+# Note that this configuration file will be imported after the shared parameters config.
+# For more, see overwatch.base.config
+#
+# author: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
+# date: 16 July 2018
 
 # Set debug
 debug: false
 
-#: List of subsystems.
-#: Each subsystem listed here will have an individual page for their respective histograms.
-#: The HLT _MUST_ be included here!
-# By using set, we 
+# List of subsystems.
+# Each subsystem listed here will have an individual page for their respective histograms.
+# The HLT _MUST_ be included here!
 subsystemList: &subsystemList
     - "EMC"
     - "TPC"
     - "HLT"
 
-#: Each of these subsystems will also get an individual page for access to their respective ROOT files.
+# Each of these subsystems will also get an individual page for access to their respective ROOT files.
 subsystemsWithRootFilesToShow: *subsystemList
 
-#: Select whether to enable trending
+# Select whether to enable trending
 trending: true
 
 # Folders
-#: The name of the static folder on the disk.
+# The name of the static folder on the disk.
 staticFolder: &staticFolder "static"
 
-#: The name of the data folder on the disk.
+# The name of the data folder on the disk.
 dataFolder: &dataFolder "data"
 
-#: The name of the templates folder on the disk.
+# The name of the templates folder on the disk.
 templateFolder: &templateFolder "templates"
 
-#: The path to the database.
+# The path to the database.
 databaseLocation: !joinPaths
     - "file://"
     - *dataFolder
     - "overwatch.fs"
 
-#: The file extension to use when printing ROOT files.
+# The file extension to use when printing ROOT files.
 fileExtension: "png"
 
-#: Set the logging level
+# Set the logging level.
 loggingLevel: "INFO"
