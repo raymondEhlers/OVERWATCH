@@ -10,6 +10,7 @@ or read from file.
 
 from __future__ import print_function
 from __future__ import absolute_import
+from future.utils import iteritems
 
 # Database
 import BTrees.OOBTree
@@ -22,24 +23,20 @@ import numpy as np
 import ROOT
 import ctypes
 import logging
-
 # Setup logger
 logger = logging.getLogger(__name__)
 
 from ..base import utilities
 from ..base import config
-
-# from config.processingParams import processingParameters
+#from config.processingParams import processingParameters
 (processingParameters, filesRead) = config.readConfig(config.configurationType.processing)
-
 
 ###################################################
 class runContainer(persistent.Persistent):
     """ Contains an individual run
 
     """
-
-    def __init__(self, runDir, fileMode, hltMode=None):
+    def __init__(self, runDir, fileMode, hltMode = None):
         self.runDir = runDir
         self.runNumber = int(runDir.replace("Run", ""))
         self.prettyName = "Run {0}".format(self.runNumber)
@@ -63,8 +60,9 @@ class runContainer(persistent.Persistent):
         # Run Information
         # Since this is only information to save, only write it if the file doesn't exist
         if not os.path.exists(runInfoFilePath):
+            runInfo = {}
             # "U" for unknown
-            runInfo = {"hltMode": hltMode if hltMode else "U"}
+            runInfo["hltMode"] = hltMode if hltMode else "U"
 
             # Write information
             if not os.path.exists(os.path.dirname(runInfoFilePath)):
@@ -96,7 +94,6 @@ class runContainer(persistent.Persistent):
 
         return returnValue
 
-
 ###################################################
 class subsystemContainer(persistent.Persistent):
     """ Subsystem container class.
@@ -122,7 +119,7 @@ class subsystemContainer(persistent.Persistent):
 
     """
 
-    def __init__(self, subsystem, runDir, startOfRun, endOfRun, showRootFiles=False, fileLocationSubsystem=None):
+    def __init__(self, subsystem, runDir, startOfRun, endOfRun, showRootFiles = False, fileLocationSubsystem = None):
         """ Initializes subsystem properties.
 
         It does safety and sanity checks on a number of variables.
@@ -145,8 +142,7 @@ class subsystemContainer(persistent.Persistent):
             self.fileLocationSubsystem = fileLocationSubsystem
 
         if self.showRootFiles == True and self.subsystem != self.fileLocationSubsystem:
-            logger.warning(
-                "\tIt is requested to show ROOT files for subsystem %s, but the subsystem does not have specific data files. Using HLT data files!" % subsystem)
+            logger.warning("\tIt is requested to show ROOT files for subsystem %s, but the subsystem does not have specific data files. Using HLT data files!" % subsystem)
 
         # Files
         # Be certain to set these after the subsystem has been created!
@@ -171,7 +167,7 @@ class subsystemContainer(persistent.Persistent):
         self.startOfRun = startOfRun
         self.endOfRun = endOfRun
         # runLength is in minutes
-        self.runLength = (endOfRun - startOfRun) / 60
+        self.runLength = (endOfRun - startOfRun)/60
 
         # Histograms
         self.histGroups = persistent.list.PersistentList()
@@ -211,12 +207,10 @@ class subsystemContainer(persistent.Persistent):
         self.histsAvailable.clear()
         self.hists.clear()
 
-
 class trendingContainer(persistent.Persistent):
     """ Structure of the trending container (quite similar to that of the subsystem container):
 
         """
-
     def __init__(self, trendingDB):
         self.subsystem = "TDG"
 
@@ -230,20 +224,17 @@ class trendingContainer(persistent.Persistent):
 
         # Directories for storage
         # Should be of the form, for example, "tredning/SYS/json"
-        # self.baseDir = self.subsystem
+        #self.baseDir = self.subsystem
         self.baseDir = "trending"
         # Need to define the names later because there are multiple subsystems inside of the trending container
         self.imgDir = os.path.join(self.baseDir, "%(subsystem)s", "img")
         self.jsonDir = os.path.join(self.baseDir, "%(subsystem)s", "json")
         # Ensure that they exist for each subsystem
         for subsystemName in processingParameters["subsystemList"] + ["TDG"]:
-            if not os.path.exists(
-                    os.path.join(processingParameters["dirPrefix"], self.imgDir % {"subsystem": subsystemName})):
-                os.makedirs(os.path.join(processingParameters["dirPrefix"], self.imgDir % {"subsystem": subsystemName}))
-            if not os.path.exists(
-                    os.path.join(processingParameters["dirPrefix"], self.jsonDir % {"subsystem": subsystemName})):
-                os.makedirs(
-                    os.path.join(processingParameters["dirPrefix"], self.jsonDir % {"subsystem": subsystemName}))
+            if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.imgDir % {"subsystem" : subsystemName})):
+                os.makedirs(os.path.join(processingParameters["dirPrefix"], self.imgDir % {"subsystem" : subsystemName}))
+            if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.jsonDir % {"subsystem" : subsystemName})):
+                os.makedirs(os.path.join(processingParameters["dirPrefix"], self.jsonDir % {"subsystem" : subsystemName}))
 
         # Processing options
         # Implemented by the detector to note how it was processed that may be changed during time slice processing
@@ -255,22 +246,20 @@ class trendingContainer(persistent.Persistent):
 
         Args:
             subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
-            trendingObjects (dict): List of TrendingObject derived objects.
+            trendingObjects (dict): dict of TrendingObject derived objects.
         """
         if not subsystem in self.trendingObjects.keys():
             self.trendingObjects[subsystem] = BTrees.OOBTree.BTree()
 
         logger.debug("self.trendingObjects[{}]: {}".format(subsystem, self.trendingObjects[subsystem]))
 
-        for name, obj in trendingObjects.items():
-            if name not in self.trendingObjects[subsystem] or forceRecreateSubsystem:
-                logger.debug(
-                    "Adding trending object {} from subsystem {} to the trending objects".format(name, subsystem))
+        for name, obj in iteritems(trendingObjects):
+            if not name in self.trendingObjects[subsystem] or forceRecreateSubsystem:
+                logger.debug("Adding trending object {} from subsystem {} to the trending objects".format(name, subsystem))
                 self.trendingObjects[subsystem][name] = obj
             else:
-                logger.debug("Trending object {} (name: {}) already exists in subsystem {}".format(
-                    self.trendingObjects[subsystem][name], name, subsystem))
-                # logger.debug("Trending next entry: {}".format(self.trendingObjects[subsystem][name].nextEntry))
+                logger.debug("Trending object {} (name: {}) already exists in subsystem {}".format(self.trendingObjects[subsystem][name], name, subsystem))
+                logger.debug("Trending next entry: {}".format(self.trendingObjects[subsystem][name].nextEntry))
 
     def resetContainer(self):
         """ Reset the trending container """
@@ -279,28 +268,22 @@ class trendingContainer(persistent.Persistent):
     def findTrendingFunctionsForHist(self, hist):
         """ Given a hist, determine the trending objects (and therefore functions) which should be applied. """
         logger.debug("Looking for trending objects for hist {}".format(hist.histName))
-        for subsystemName, subsystem in self.trendingObjects.items():
-            for trendingObjName, trendingObj in subsystem.items():
+        for subsystemName, subsystem in iteritems(self.trendingObjects):
+            for trendingObjName, trendingObj in iteritems(subsystem):
                 if hist.histName in trendingObj.histNames:
                     # Define the temporary function so it can be executed later.
-                    # def tempFunc():
+                    #def tempFunc():
                     #    return self.trendingObjects[subsystemName][trendingObjName].Fill(hist)
-                    # hist.append(tempFunc)
-                    logger.debug("Found trending object match for hist {}, trendingObject: {}".format(hist.histName,
-                                                                                                      self.trendingObjects[
-                                                                                                          subsystemName][
-                                                                                                          trendingObjName].name))
+                    #hist.append(tempFunc)
+                    logger.debug("Found trending object match for hist {}, trendingObject: {}".format(hist.histName, self.trendingObjects[subsystemName][trendingObjName].name))
                     hist.trendingObjects.append(self.trendingObjects[subsystemName][trendingObjName])
-
 
 ###################################################
 class timeSliceContainer(persistent.Persistent):
     """ Time slice information container
 
     """
-
-    def __init__(self, minUnixTimeRequested, maxUnixTimeRequested, minUnixTimeAvailable, maxUnixTimeAvailable,
-                 startOfRun, filesToMerge, optionsHash):
+    def __init__(self, minUnixTimeRequested, maxUnixTimeRequested, minUnixTimeAvailable, maxUnixTimeAvailable, startOfRun, filesToMerge, optionsHash):
         # Requested times
         self.minUnixTimeRequested = minUnixTimeRequested
         self.maxUnixTimeRequested = maxUnixTimeRequested
@@ -315,8 +298,7 @@ class timeSliceContainer(persistent.Persistent):
         self.filesToMerge = filesToMerge
 
         # Filename prefix for saving out files
-        self.filenamePrefix = "timeSlice.{0}.{1}.{2}".format(self.minUnixTimeAvailable, self.maxUnixTimeAvailable,
-                                                             self.optionsHash)
+        self.filenamePrefix = "timeSlice.{0}.{1}.{2}".format(self.minUnixTimeAvailable, self.maxUnixTimeAvailable, self.optionsHash)
 
         # Create filename
         self.filename = fileContainer(self.filenamePrefix + ".root")
@@ -328,20 +310,18 @@ class timeSliceContainer(persistent.Persistent):
         self.processingOptions = persistent.mapping.PersistentMapping()
 
     def timeInMinutes(self, inputTime):
-        # logger.debug("inputTime: {0}, startOfRun: {1}".format(inputTime, self.startOfRun))
-        return (inputTime - self.startOfRun) // 60
+        #logger.debug("inputTime: {0}, startOfRun: {1}".format(inputTime, self.startOfRun))
+        return (inputTime - self.startOfRun)//60
 
     def timeInMinutesRounded(self, inputTime):
         return round(self.timeInMinutes(inputTime))
-
 
 ###################################################
 class fileContainer(persistent.Persistent):
     """ File information container
     
     """
-
-    def __init__(self, filename, startOfRun=None):
+    def __init__(self, filename, startOfRun = None):
         self.filename = filename
 
         # Determine types of file
@@ -360,7 +340,6 @@ class fileContainer(persistent.Persistent):
         else:
             # Show a clearly invalid time, since timeIntoRun doesn't make much sense for a time slice
             self.timeIntoRun = -1
-
 
 ###################################################
 class histogramGroupContainer(persistent.Persistent):
@@ -390,7 +369,7 @@ class histogramGroupContainer(persistent.Persistent):
     
     """
 
-    def __init__(self, prettyName, groupSelectionPattern, plotInGridSelectionPattern="DO NOT PLOT IN GRID"):
+    def __init__(self, prettyName, groupSelectionPattern, plotInGridSelectionPattern = "DO NOT PLOT IN GRID"):
         """ Initializes the hist group """
         self.prettyName = prettyName
         self.selectionPattern = groupSelectionPattern
@@ -409,10 +388,9 @@ class histogramContainer(persistent.Persistent):
     """ Histogram information container
     
     """
-
-    def __init__(self, histName, histList=None, prettyName=None):
+    def __init__(self, histName, histList = None, prettyName = None):
         # Replace any slashes with underscores to ensure that it can be used safely as a filename
-        # histName = histName.replace("/", "_")
+        #histName = histName.replace("/", "_")
         self.histName = histName
         # Only assign if meaningful
         if prettyName is not None:
@@ -434,7 +412,7 @@ class histogramContainer(persistent.Persistent):
         # Trending objects which use this histogram
         self.trendingObjects = persistent.list.PersistentList()
 
-    def retrieveHistogram(self, ROOT, fIn=None, trending=None):
+    def retrieveHistogram(self, ROOT, fIn = None, trending = None):
         """
 
         """
@@ -472,25 +450,23 @@ class histogramContainer(persistent.Persistent):
         elif trending:
             returnValue = False
             # Not particularly efficient
-            for subsystemName, subsystem in trending.trendingObjects.items():
-                for name, trendingObject in subsystem.items():
+            for subsystemName, subsystem in iteritems(trending.trendingObjects):
+                for name, trendingObject in iteritems(subsystem):
                     if self.histName in trendingObject.hist.histName:
                         # Define the TH1 and make it available
                         trendingObject.retrieveHist()
                         returnValue = True
-                        # self.hist = trending.trendingObjects[subsystemName][self.histName].trendingHist
+                        #self.hist = trending.trendingObjects[subsystemName][self.histName].trendingHist
         else:
             logger.warning("Unable to retrieve histogram {}".format(self.histName))
             returnValue = False
 
         return returnValue
 
-
 ###################################################
 class trendingObject(persistent.Persistent):
     """ Base trending object """
-
-    def __init__(self, trendingName, prettyTrendingName, nEntries, trendingHist=None, histNames=None):
+    def __init__(self, trendingName, prettyTrendingName, nEntries, trendingHist = None, histNames = None):
         self.name = trendingName
         self.prettyName = prettyTrendingName
         self.nEntries = nEntries
@@ -515,12 +491,12 @@ class trendingObject(persistent.Persistent):
         self.canvas = None
 
     # Handles requests to .hist in the processHist() function
-    # @property
-    # def hist(self):
+    #@property
+    #def hist(self):
     #    return self.trendingHist
 
-    # @hist.setter
-    # def hist(self, val):
+    #@hist.setter
+    #def hist(self, val):
     #    if val == None:
     #        pass
     #    else:
@@ -559,11 +535,10 @@ class trendingObject(persistent.Persistent):
 
         # Handle histogram, which needs overflow and underflow
         if self.hist.hist.InheritsFrom(ROOT.TH1.Class()):
-            logger.debug("GetNbins: {}, GetEntries: {}".format(self.hist.hist.GetXaxis().GetNbins(),
-                                                               self.hist.hist.GetEntries()))
+            logger.debug("GetNbins: {}, GetEntries: {}".format(self.hist.hist.GetXaxis().GetNbins(), self.hist.hist.GetEntries()))
 
             # Need to pass with zeros for the over and underflow bins values, errors
-            valuesWithOverAndUnderflow = np.concatenate([[(0, 0)], self.values, [(0, 0)]])
+            valuesWithOverAndUnderflow = np.concatenate([[(0,0)], self.values, [(0,0)]])
             logger.debug("valuesWithOverAndUnderflow: {}".format(valuesWithOverAndUnderflow))
 
             # Access the ctypes via: https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.ndarray.ctypes.html
@@ -571,9 +546,9 @@ class trendingObject(persistent.Persistent):
             self.hist.hist.SetError(valuesWithOverAndUnderflow[:, 1].ctypes.data_as(ctypes.POINTER(ctypes.c_long)))
         else:
             # Handle points in a TGraph
-            # logger.debug("Filling TGraph with array values of {}".format(self.values))
+            #logger.debug("Filling TGraph with array values of {}".format(self.values))
             for i in range(0, len(self.values)):
-                # logger.debug("Setting point {} to ({}, {}) with error {}".format(i, i, self.values[i, 0], self.values[i,1]))
+                #logger.debug("Setting point {} to ({}, {}) with error {}".format(i, i, self.values[i, 0], self.values[i,1]))
                 self.hist.hist.SetPoint(i, i, self.values[i, 0])
                 self.hist.hist.SetPointError(i, i, self.values[i, 1])
 

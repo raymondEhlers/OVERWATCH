@@ -6,6 +6,7 @@
 # For python 3 support
 from __future__ import print_function
 from builtins import range
+from future.utils import iteritems
 
 # General includes
 import os
@@ -16,24 +17,23 @@ import subprocess
 import signal
 import jinja2
 import json
-import collections
+import collections 
 # For server status
 import requests
 # Python logging system
 import logging
-
 # Setup logger
 if __name__ == "__main__":
     # By not setting a name, we get everything!
-    # logger = logging.getLogger("")
+    #logger = logging.getLogger("")
     # Alternatively, we could set "webApp" to get everything derived from that
-    # logger = logging.getLogger("webApp")
+    #logger = logging.getLogger("webApp")
     pass
 else:
     # When imported, we just want it to take on it normal name
     logger = logging.getLogger(__name__)
     # Alternatively, we could set "webApp" to get everything derived from that
-    # logger = logging.getLogger("webApp")
+    #logger = logging.getLogger("webApp")
 
 # Flask
 from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, jsonify, session
@@ -44,7 +44,6 @@ from flask_assets import Environment
 
 # Server configuration
 from ..base import config
-
 (serverParameters, filesRead) = config.readConfig(config.configurationType.webApp)
 # Utilities
 from ..base import utilities as baseUtilities
@@ -61,8 +60,7 @@ from ..processing import qa
 from ..processing import processingClasses
 
 # Flask setup
-app = Flask(__name__, static_url_path=serverParameters["staticURLPath"], static_folder=serverParameters["staticFolder"],
-            template_folder=serverParameters["templateFolder"])
+app = Flask(__name__, static_url_path=serverParameters["staticURLPath"], static_folder=serverParameters["staticFolder"], template_folder=serverParameters["templateFolder"])
 
 # Setup database
 app.config["ZODB_STORAGE"] = serverParameters["databaseLocation"]
@@ -77,7 +75,7 @@ else:
     app.secret_key = str(os.urandom(50))
 
 # Enable debugging if set in configuration
-if serverParameters["debug"]:
+if serverParameters["debug"] == True:
     app.debug = True
 
 # Setup Bcrypt
@@ -89,9 +87,7 @@ assets = Environment(app)
 # Set the Flask Assets debug mode
 # Note that the bundling is _only_ performed when flask assets is _not_ in debug mode.
 # Thus, we want it to follow the global debug setting unless we explicit set it otherwise.
-app.config["ASSETS_DEBUG"] = serverParameters["flaskAssetsDebug"] if not serverParameters[
-                                                                             "flaskAssetsDebug"] is None else \
-serverParameters["debug"]
+app.config["ASSETS_DEBUG"] = serverParameters["flaskAssetsDebug"] if not serverParameters["flaskAssetsDebug"] is None else serverParameters["debug"]
 """
 Some notes on webassets:
  - Most filters, including this one, won't build in debug mode!
@@ -120,13 +116,11 @@ loginManager.init_app(app)
 # Tells the manager where to redirect when login is required.
 loginManager.login_view = "login"
 
-
 ###################################################
 @loginManager.user_loader
 def load_user(user):
     """ Used to remember the user so that they don't need to login again each time they visit the site. """
     return auth.User.getUser(user, db)
-
 
 ######################################################################################################
 # Unauthenticated Routes
@@ -182,8 +176,7 @@ def login():
         logger.debug("Equal!")
     logger.debug("serverParameters[defaultUsername]: {0}".format(serverParameters["defaultUsername"]))
     # If we are not authenticated and we have a default username set and the previous username is 
-    if not current_user.is_authenticated and serverParameters["defaultUsername"] and previousUsername != \
-            serverParameters["defaultUsername"]:
+    if not current_user.is_authenticated and serverParameters["defaultUsername"] and previousUsername != serverParameters["defaultUsername"]:
         # Clear previous flashes which will be confusing to the user
         # See: https://stackoverflow.com/a/19525521
         session.pop('_flashes', None)
@@ -198,15 +191,14 @@ def login():
     # If we visit the login page, but we are already authenticated, then send to the index page.
     if current_user.is_authenticated:
         logger.info("Redirecting logged in user \"{0}\" to index...".format(current_user.id))
-        return redirect(url_for("index", ajaxRequest=json.dumps(ajaxRequest)))
+        return redirect(url_for("index", ajaxRequest = json.dumps(ajaxRequest)))
 
-    if not ajaxRequest:
+    if ajaxRequest == False:
         return render_template("login.html", error=errorValue, nextValue=nextValue)
     else:
         drawerContent = ""
         mainContent = render_template("loginMainContent.html", error=errorValue, nextValue=nextValue)
-        return jsonify(drawerContent=drawerContent, mainContent=mainContent)
-
+        return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
 ###################################################
 @app.route("/logout")
@@ -223,8 +215,7 @@ def logout():
     logout_user()
 
     flash("User logged out!")
-    return redirect(url_for("login", previousUsername=previousUsername))
-
+    return redirect(url_for("login", previousUsername = previousUsername))
 
 ###################################################
 @app.route("/contact")
@@ -232,13 +223,12 @@ def contact():
     """ Simple contact page so we can provide support in the future."""
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
-    if not ajaxRequest:
+    if ajaxRequest == False:
         return render_template("contact.html")
     else:
         drawerContent = ""
         mainContent = render_template("contactMainContent.html")
-        return jsonify(drawerContent=drawerContent, mainContent=mainContent)
-
+        return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
 ###################################################
 @app.route("/favicon.ico")
@@ -249,7 +239,6 @@ def favicon():
     """
     return redirect(url_for("static", filename="icons/favicon.ico"))
 
-
 ###################################################
 @app.route("/statusQuery", methods=["POST"])
 def statusQuery():
@@ -257,7 +246,6 @@ def statusQuery():
 
     # Responds to requests from other OVERWATCH servers to display the status of the site
     return "Alive"
-
 
 ###################################################
 @app.route("/health")
@@ -270,7 +258,6 @@ def health():
         returnCode = 200
 
     return "", returnCode
-
 
 ######################################################################################################
 # Authenticated Routes
@@ -301,25 +288,24 @@ def index():
     numberOfRuns = len(runs.keys())
     # We want approximately 15 anchors
     # NOTE: We need to round it to an int to ensure that mod works.
-    anchorFrequency = int(math.ceil(numberOfRuns / 15.0))
+    anchorFrequency = int(math.ceil(numberOfRuns/15.0))
 
-    if not ajaxRequest:
-        return render_template("runList.html", drawerRuns=reversed(runs.values()),
-                               mainContentRuns=reversed(runs.values()),
-                               runOngoing=runOngoing,
-                               runOngoingNumber=runOngoingNumber,
-                               subsystemsWithRootFilesToShow=serverParameters["subsystemsWithRootFilesToShow"],
-                               anchorFrequency=anchorFrequency)
+    if ajaxRequest != True:
+        return render_template("runList.html", drawerRuns = reversed(runs.values()),
+                                mainContentRuns = reversed(runs.values()),
+                                runOngoing = runOngoing,
+                                runOngoingNumber = runOngoingNumber,
+                                subsystemsWithRootFilesToShow = serverParameters["subsystemsWithRootFilesToShow"],
+                                anchorFrequency = anchorFrequency)
     else:
-        drawerContent = render_template("runListDrawer.html", runs=reversed(runs.values()), runOngoing=runOngoing,
-                                        runOngoingNumber=runOngoingNumber, anchorFrequency=anchorFrequency)
-        mainContent = render_template("runListMainContent.html", runs=reversed(runs.values()), runOngoing=runOngoing,
-                                      runOngoingNumber=runOngoingNumber,
-                                      subsystemsWithRootFilesToShow=serverParameters["subsystemsWithRootFilesToShow"],
-                                      anchorFrequency=anchorFrequency)
+        drawerContent = render_template("runListDrawer.html", runs = reversed(runs.values()), runOngoing = runOngoing,
+                                         runOngoingNumber = runOngoingNumber, anchorFrequency = anchorFrequency)
+        mainContent = render_template("runListMainContent.html", runs = reversed(runs.values()), runOngoing = runOngoing,
+                                       runOngoingNumber = runOngoingNumber,
+                                       subsystemsWithRootFilesToShow = serverParameters["subsystemsWithRootFilesToShow"],
+                                       anchorFrequency = anchorFrequency)
 
-        return jsonify(drawerContent=drawerContent, mainContent=mainContent)
-
+        return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
 ###################################################
 @app.route("/Run<int:runNumber>/<string:subsystemName>/<string:requestedFileType>", methods=["GET"])
@@ -334,8 +320,7 @@ def runPage(runNumber, subsystemName, requestedFileType):
     # Setup db information
     runs = db["runs"]
 
-    (error, run, subsystem, requestedFileType, jsRoot, ajaxRequest, requestedHistGroup, requestedHist, timeSliceKey,
-     timeSlice) = validation.validateRunPage(runDir, subsystemName, requestedFileType, runs)
+    (error, run, subsystem, requestedFileType, jsRoot, ajaxRequest, requestedHistGroup, requestedHist, timeSliceKey, timeSlice) = validation.validateRunPage(runDir, subsystemName, requestedFileType, runs)
 
     # This will only work if all of the values are properly defined.
     # Otherwise, we just skip to the end to return the error to the user.
@@ -350,10 +335,9 @@ def runPage(runNumber, subsystemName, requestedFileType):
         # Print request status
         logger.debug("request: {0}".format(request.args))
         logger.debug("runDir: {0}, subsytsem: {1}, requestedFileType: {2}, "
-                     "ajaxRequest: {3}, jsRoot: {4}, requestedHistGroup: {5}, requestedHist: {6}, "
-                     "timeSliceKey: {7}, timeSlice: {8}".format(runDir, subsystemName, requestedFileType,
-                                                                ajaxRequest, jsRoot, requestedHistGroup, requestedHist,
-                                                                timeSliceKey, timeSlice))
+              "ajaxRequest: {3}, jsRoot: {4}, requestedHistGroup: {5}, requestedHist: {6}, "
+              "timeSliceKey: {7}, timeSlice: {8}".format(runDir, subsystemName, requestedFileType,
+               ajaxRequest, jsRoot, requestedHistGroup, requestedHist, timeSliceKey, timeSlice))
 
         # TEMP
         logger.debug("subsystem.timeSlices: {0}".format(subsystem.timeSlices))
@@ -361,7 +345,7 @@ def runPage(runNumber, subsystemName, requestedFileType):
     else:
         logger.warning("Error: {0}".format(error))
 
-    if not ajaxRequest:
+    if ajaxRequest != True:
         if error == {}:
             if requestedFileType == "runPage":
                 # Attempt to use a subsystem specific run page if available
@@ -370,31 +354,29 @@ def runPage(runNumber, subsystemName, requestedFileType):
                     runPageName = runPageName.replace(subsystemName, "")
 
                 try:
-                    returnValue = render_template(runPageName, run=run, subsystem=subsystem,
-                                                  selectedHistGroup=requestedHistGroup, selectedHist=requestedHist,
-                                                  jsonFilenameTemplate=jsonFilenameTemplate,
-                                                  imgFilenameTemplate=imgFilenameTemplate,
-                                                  jsRoot=jsRoot, timeSlice=timeSlice)
+                    returnValue = render_template(runPageName, run = run, subsystem = subsystem,
+                                                  selectedHistGroup = requestedHistGroup, selectedHist = requestedHist,
+                                                  jsonFilenameTemplate = jsonFilenameTemplate,
+                                                  imgFilenameTemplate = imgFilenameTemplate,
+                                                  jsRoot = jsRoot, timeSlice = timeSlice)
                 except jinja2.exceptions.TemplateNotFound as e:
-                    error.setdefault("Template Error", []).append(
-                        "Request template: \"{0}\", but it was not found!".format(e.name))
+                    error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
             elif requestedFileType == "rootFiles":
                 # Subsystem specific run pages are not available since they don't seem to be necessary
-                returnValue = render_template("rootfiles.html", run=run, subsystem=subsystemName)
+                returnValue = render_template("rootfiles.html", run = run, subsystem = subsystemName)
             else:
                 # Redundant, but good to be careful
-                error.setdefault("Template Error", []).append(
-                    "Request page: \"{0}\", but it was not found!".format(requestedFileType))
+                error.setdefault("Template Error", []).append("Request page: \"{0}\", but it was not found!".format(requestedFileType))
 
         if error != {}:
             logger.warning("error: {0}".format(error))
-            returnValue = render_template("error.html", errors=error)
+            returnValue = render_template("error.html", errors = error)
 
         return returnValue
     else:
         if error == {}:
             if requestedFileType == "runPage":
-                # Drawer
+               # Drawer
                 runPageDrawerName = subsystemName + "runPageDrawer.html"
                 if runPageDrawerName not in serverParameters["availableRunPageTemplates"]:
                     runPageDrawerName = runPageDrawerName.replace(subsystemName, "")
@@ -404,39 +386,36 @@ def runPage(runNumber, subsystemName, requestedFileType):
                     runPageMainContentName = runPageMainContentName.replace(subsystemName, "")
 
                 try:
-                    drawerContent = render_template(runPageDrawerName, run=run, subsystem=subsystem,
-                                                    selectedHistGroup=requestedHistGroup, selectedHist=requestedHist,
-                                                    jsonFilenameTemplate=jsonFilenameTemplate,
-                                                    imgFilenameTemplate=imgFilenameTemplate,
-                                                    jsRoot=jsRoot, timeSlice=timeSlice)
-                    mainContent = render_template(runPageMainContentName, run=run, subsystem=subsystem,
-                                                  selectedHistGroup=requestedHistGroup, selectedHist=requestedHist,
-                                                  jsonFilenameTemplate=jsonFilenameTemplate,
-                                                  imgFilenameTemplate=imgFilenameTemplate,
-                                                  jsRoot=jsRoot, timeSlice=timeSlice)
+                    drawerContent = render_template(runPageDrawerName, run = run, subsystem = subsystem,
+                                                    selectedHistGroup = requestedHistGroup, selectedHist = requestedHist,
+                                                    jsonFilenameTemplate = jsonFilenameTemplate,
+                                                    imgFilenameTemplate = imgFilenameTemplate,
+                                                    jsRoot = jsRoot, timeSlice = timeSlice)
+                    mainContent = render_template(runPageMainContentName, run = run, subsystem = subsystem,
+                                                  selectedHistGroup = requestedHistGroup, selectedHist = requestedHist,
+                                                  jsonFilenameTemplate = jsonFilenameTemplate,
+                                                  imgFilenameTemplate = imgFilenameTemplate,
+                                                  jsRoot = jsRoot, timeSlice = timeSlice)
                 except jinja2.exceptions.TemplateNotFound as e:
-                    error.setdefault("Template Error", []).append(
-                        "Request template: \"{0}\", but it was not found!".format(e.name))
+                    error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
             elif requestedFileType == "rootFiles":
                 drawerContent = ""
-                mainContent = render_template("rootfilesMainContent.html", run=run, subsystem=subsystemName)
+                mainContent = render_template("rootfilesMainContent.html", run = run, subsystem = subsystemName)
             else:
                 # Redundant, but good to be careful
-                error.setdefault("Template Error", []).append(
-                    "Request page: \"{0}\", but it was not found!".format(requestedFileType))
+                error.setdefault("Template Error", []).append("Request page: \"{0}\", but it was not found!".format(requestedFileType))
 
         if error != {}:
             logger.warning("error: {0}".format(error))
             drawerContent = ""
-            mainContent = render_template("errorMainContent.html", errors=error)
+            mainContent =  render_template("errorMainContent.html", errors = error)
 
         # Includes hist group and hist name for time slices since it is easier to pass it here than parse the get requests. Otherwise, they are ignored.
-        return jsonify(drawerContent=drawerContent,
-                       mainContent=mainContent,
-                       timeSliceKey=json.dumps(timeSliceKey),
-                       histName=requestedHist,
-                       histGroup=requestedHistGroup)
-
+        return jsonify(drawerContent = drawerContent,
+                       mainContent = mainContent,
+                       timeSliceKey = json.dumps(timeSliceKey),
+                       histName = requestedHist,
+                       histGroup = requestedHistGroup)
 
 ###################################################
 @app.route("/monitoring/protected/<path:filename>")
@@ -455,10 +434,9 @@ def protected(filename):
     logger.debug("filename: {0}".format(filename))
     logger.debug("request.args: {0}".format(request.args))
     # Ignore the time GET parameter that is sometimes passed- just to avoid the cache when required
-    # if request.args.get("time"):
+    #if request.args.get("time"):
     #    print "timeParameter:", request.args.get("time")
     return send_from_directory(os.path.realpath(serverParameters["protectedFolder"]), filename)
-
 
 ###################################################
 @app.route("/docs/<path:filename>")
@@ -475,7 +453,6 @@ def docs(filename):
         flash(filename + " not available! Docs are probably not built. Contact the admins!")
         return redirect(url_for("contact"))
 
-
 ###################################################
 @app.route("/doc/rebuild")
 @login_required
@@ -487,9 +464,9 @@ def rebuildDocs():
     if current_user.id == "emcalAdmin":
         # Cannot get the actual output, as it seems to often crash the process
         # I think this is related to the auto-reload in debug mode
-        # buildResult = subprocess.check_output(["make", "-C", serverParameters["docsFolder"], "html"])
-        # print buildResult
-        # flash("Doc build output: " + buildResult)
+        #buildResult = subprocess.check_output(["make", "-C", serverParameters["docsFolder"], "html"])
+        #print buildResult
+        #flash("Doc build output: " + buildResult)
 
         # Run the build command 
         subprocess.call(["make", "-C", serverParameters["docsFolder"], "html"])
@@ -504,7 +481,6 @@ def rebuildDocs():
     # Return to where the build command was called
     return redirect(url_for("contact"))
 
-
 ###################################################
 @app.route("/timeSlice", methods=["GET", "POST"])
 @login_required
@@ -516,7 +492,7 @@ def timeSlice():
     rendering the result template and returning the user to the same spot as in the previous page.
 
     """
-    # logger.debug("request.args: {0}".format(request.args))
+    #logger.debug("request.args: {0}".format(request.args))
     logger.debug("request.form: {0}".format(request.form))
     # We don't get ajaxRequest because this request should always be made via ajax
     jsRoot = validation.convertRequestToPythonBool("jsRoot", request.form)
@@ -526,8 +502,7 @@ def timeSlice():
         runs = db["runs"]
 
         # Validates the request
-        (error, minTime, maxTime, runDir, subsystem, histGroup, histName,
-         inputProcessingOptions) = validation.validateTimeSlicePostRequest(request, runs)
+        (error, minTime, maxTime, runDir, subsystem, histGroup, histName, inputProcessingOptions) = validation.validateTimeSlicePostRequest(request, runs)
 
         if error == {}:
             # Print input values
@@ -539,27 +514,25 @@ def timeSlice():
             logger.debug("histName: {0}".format(histName))
 
             # Process the time slice
-            returnValue = processRuns.processTimeSlices(runs, runDir, minTime, maxTime, subsystem,
-                                                        inputProcessingOptions)
+            returnValue = processRuns.processTimeSlices(runs, runDir, minTime, maxTime, subsystem, inputProcessingOptions)
 
             logger.info("returnValue: {0}".format(returnValue))
-            logger.debug("runs[runDir].subsystems[subsystem].timeSlices: {0}".format(
-                runs[runDir].subsystems[subsystem].timeSlices))
+            logger.debug("runs[runDir].subsystems[subsystem].timeSlices: {0}".format(runs[runDir].subsystems[subsystem].timeSlices))
 
             if not isinstance(returnValue, collections.Mapping):
                 timeSliceKey = returnValue
-                # if timeSliceKey == "fullProcessing":
+                #if timeSliceKey == "fullProcessing":
                 #    timeSliceKey = None
                 # We always want to use ajax here
                 return redirect(url_for("runPage",
-                                        runNumber=runs[runDir].runNumber,
-                                        subsystemName=subsystem,
-                                        requestedFileType="runPage",
-                                        ajaxRequest=json.dumps(True),
-                                        jsRoot=json.dumps(jsRoot),
-                                        histGroup=histGroup,
-                                        histName=histName,
-                                        timeSliceKey=json.dumps(timeSliceKey)))
+                                        runNumber = runs[runDir].runNumber,
+                                        subsystemName = subsystem,
+                                        requestedFileType = "runPage",
+                                        ajaxRequest = json.dumps(True),
+                                        jsRoot = json.dumps(jsRoot),
+                                        histGroup = histGroup,
+                                        histName = histName,
+                                        timeSliceKey = json.dumps(timeSliceKey)))
             else:
                 # Fall through to return an error
                 error = returnValue
@@ -569,14 +542,13 @@ def timeSlice():
         mainContent = render_template("errorMainContent.html", errors=error)
 
         # We always want to use ajax here
-        return jsonify(mainContent=mainContent, drawerContent="")
+        return jsonify(mainContent = mainContent, drawerContent = "")
 
     else:
         return render_template("error.html", errors={"error": ["Need to access through a run page!"]})
 
-
 ###################################################
-# @app.route("/trending/<string:subsystemName>", methods=["GET", "POST"])
+#@app.route("/trending/<string:subsystemName>", methods=["GET", "POST"])
 @app.route("/trending", methods=["GET", "POST"])
 @login_required
 def trending():
@@ -594,61 +566,57 @@ def trending():
 
     # Determine the subsytemName
     if not subsystemName:
-        for subsystemName, subsystem in trendingContainer.trendingObjects.items():
+        for subsystemName, subsystem in iteritems(trendingContainer.trendingObjects):
             if len(subsystem) > 0:
                 subsystemName = subsystemName
                 break
 
     # Template paths to the individual files
-    imgFilenameTemplate = os.path.join(trendingContainer.imgDir % {"subsystem": subsystemName},
-                                       "{0}." + serverParameters["fileExtension"])
-    jsonFilenameTemplate = os.path.join(trendingContainer.jsonDir % {"subsystem": subsystemName}, "{0}.json")
+    imgFilenameTemplate = os.path.join(trendingContainer.imgDir % {"subsystem" : subsystemName}, "{0}." + serverParameters["fileExtension"])
+    jsonFilenameTemplate = os.path.join(trendingContainer.jsonDir % {"subsystem" : subsystemName}, "{0}.json")
 
-    if not ajaxRequest:
+    if ajaxRequest != True:
         if error == {}:
             try:
-                returnValue = render_template("trending.html", trendingContainer=trendingContainer,
-                                              selectedHistGroup=subsystemName, selectedHist=requestedHist,
-                                              jsonFilenameTemplate=jsonFilenameTemplate,
-                                              imgFilenameTemplate=imgFilenameTemplate,
-                                              jsRoot=jsRoot)
+                returnValue = render_template("trending.html", trendingContainer = trendingContainer,
+                                              selectedHistGroup = subsystemName, selectedHist = requestedHist,
+                                              jsonFilenameTemplate = jsonFilenameTemplate,
+                                              imgFilenameTemplate = imgFilenameTemplate,
+                                              jsRoot = jsRoot)
             except jinja2.exceptions.TemplateNotFound as e:
-                error.setdefault("Template Error", []).append(
-                    "Request template: \"{0}\", but it was not found!".format(e.name))
+                error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
 
         if error != {}:
             logger.warning("error: {0}".format(error))
-            returnValue = render_template("error.html", errors=error)
+            returnValue = render_template("error.html", errors = error)
 
         return returnValue
     else:
         if error == {}:
             try:
-                drawerContent = render_template("trendingDrawer.html", trendingContainer=trendingContainer,
-                                                selectedHistGroup=subsystemName, selectedHist=requestedHist,
-                                                jsonFilenameTemplate=jsonFilenameTemplate,
-                                                imgFilenameTemplate=imgFilenameTemplate,
-                                                jsRoot=jsRoot)
-                mainContent = render_template("trendingMainContent.html", trendingContainer=trendingContainer,
-                                              selectedHistGroup=subsystemName, selectedHist=requestedHist,
-                                              jsonFilenameTemplate=jsonFilenameTemplate,
-                                              imgFilenameTemplate=imgFilenameTemplate,
-                                              jsRoot=jsRoot)
+                drawerContent = render_template("trendingDrawer.html", trendingContainer = trendingContainer,
+                                                selectedHistGroup = subsystemName, selectedHist = requestedHist,
+                                                jsonFilenameTemplate = jsonFilenameTemplate,
+                                                imgFilenameTemplate = imgFilenameTemplate,
+                                                jsRoot = jsRoot)
+                mainContent = render_template("trendingMainContent.html", trendingContainer = trendingContainer,
+                                              selectedHistGroup = subsystemName, selectedHist = requestedHist,
+                                              jsonFilenameTemplate = jsonFilenameTemplate,
+                                              imgFilenameTemplate = imgFilenameTemplate,
+                                              jsRoot = jsRoot)
             except jinja2.exceptions.TemplateNotFound as e:
-                error.setdefault("Template Error", []).append(
-                    "Request template: \"{0}\", but it was not found!".format(e.name))
+                error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
 
         if error != {}:
             logger.warning("error: {0}".format(error))
             drawerContent = ""
-            mainContent = render_template("errorMainContent.html", errors=error)
+            mainContent =  render_template("errorMainContent.html", errors = error)
 
         # Includes hist group and hist name for time slices since it is easier to pass it here than parse the get requests. Otherwise, they are ignored.
-        return jsonify(drawerContent=drawerContent,
-                       mainContent=mainContent,
-                       histName=requestedHist,
-                       histGroup=subsystemName)
-
+        return jsonify(drawerContent = drawerContent,
+                       mainContent = mainContent,
+                       histName = requestedHist,
+                       histGroup = subsystemName)
 
 ###################################################
 @app.route("/testingDataArchive")
@@ -684,22 +652,20 @@ def testingDataArchive():
 
     # Add files to the zip file
     runKeys = runs.keys()
-    for i in range(1, numberOfFilesToDownload + 1):
-        run = runs[runKeys[-1 * i]]
+    for i in range(1, numberOfFilesToDownload+1):
+        run = runs[runKeys[-1*i]]
         for subsystem in run.subsystems.values():
             # Write files to the zip file
             # Combined file
             zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.combinedFile.filename))
             # Uncombined file
-            zipFile.write(
-                os.path.join(serverParameters["protectedFolder"], subsystem.files[subsystem.files.keys()[-1]].filename))
+            zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.files[subsystem.files.keys()[-1]].filename))
 
     # Finish with the zip file
     zipFile.close()
 
     # Return with a download link
     return redirect(url_for("protected", filename=zipFilename))
-
 
 ###################################################
 @app.route("/status")
@@ -731,7 +697,7 @@ def status():
         receiverLogLastModified = db["config"]["receiverLogLastModified"]
         lastModified = time.time() - receiverLogLastModified
         # Display in minutes
-        lastModified = int(lastModified // 60)
+        lastModified = int(lastModified//60)
         lastModifiedMessage = "{0} minutes ago".format(lastModified)
     else:
         lastModified = -1
@@ -742,26 +708,21 @@ def status():
     # Determine server statuses
     # TODO: Consider reducing the max number of retries
     sites = serverParameters["statusRequestSites"]
-    for site, url in sites.items():
+    for site, url in iteritems(sites):
         serverError = {}
         statusResult = ""
         try:
-            serverRequest = requests.post(url + "/status", timeout=0.5)
+            serverRequest = requests.post(url + "/status", timeout = 0.5)
             if serverRequest.status_code != 200:
-                serverError.setdefault("Request error", []).append(
-                    "Request to \"{0}\" at \"{1}\" returned error response {2}!".format(site, url,
-                                                                                        serverRequest.status_code))
+                serverError.setdefault("Request error", []).append("Request to \"{0}\" at \"{1}\" returned error response {2}!".format(site, url, serverRequest.status_code))
             else:
                 statusResult = "Site is up!"
         except requests.exceptions.Timeout as e:
-            serverError.setdefault("Timeout error", []).append(
-                "Request to \"{0}\" at \"{1}\" timed out with error {2}!".format(site, url, e))
+            serverError.setdefault("Timeout error", []).append("Request to \"{0}\" at \"{1}\" timed out with error {2}!".format(site, url, e))
         except requests.exceptions.ConnectionError as e:
-            serverError.setdefault("Connection error", []).append(
-                "Request to \"{0}\" at \"{1}\" had a connection error with message {2}!".format(site, url, e))
+            serverError.setdefault("Connection error", []).append("Request to \"{0}\" at \"{1}\" had a connection error with message {2}!".format(site, url, e))
         except requests.exceptions.RequestException as e:
-            serverError.setdefault("General Requests error", []).append(
-                "Request to \"{0}\" at \"{1}\" had a general requests error with message {2}!".format(site, url, e))
+            serverError.setdefault("General Requests error", []).append("Request to \"{0}\" at \"{1}\" had a general requests error with message {2}!".format(site, url, e))
 
         # Return error if one occurred
         if serverError != {}:
@@ -770,14 +731,13 @@ def status():
         # Add to status
         statuses[site] = statusResult
 
-    if not ajaxRequest:
-        return render_template("status.html", statuses=statuses)
+    if ajaxRequest == False:
+        return render_template("status.html", statuses = statuses)
     else:
         drawerContent = ""
-        mainContent = render_template("statusMainContent.html", statuses=statuses)
+        mainContent = render_template("statusMainContent.html", statuses = statuses)
 
-        return jsonify(drawerContent=drawerContent, mainContent=mainContent)
-
+        return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
 ###################################################
 @app.route("/upgradeDocker")
@@ -814,20 +774,18 @@ def upgradeDocker():
 
         # Give a note if nothing happened....
         if error == {}:
-            error.setdefault("No response", []).append(
-                "Should have some response by now, but there is none. It seems that the supervisord process cannot be found!")
+            error.setdefault("No response", []).append("Should have some response by now, but there is none. It seems that the supervisord process cannot be found!")
 
     # Co-opt error output here since it is probably not worth a new page yet...
-    if ajaxRequest:
+    if ajaxRequest == True:
         logger.warning("error: {0}".format(error))
         drawerContent = ""
-        mainContent = render_template("errorMainContent.html", errors=error)
+        mainContent =  render_template("errorMainContent.html", errors = error)
 
         # We always want to use ajax here
-        return jsonify(mainContent=mainContent, drawerContent="")
+        return jsonify(mainContent = mainContent, drawerContent = "")
     else:
-        return render_template("error.html", errors=error)
-
+        return render_template("error.html", errors = error)
 
 if __name__ == "__main__":
     pass

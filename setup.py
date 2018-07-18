@@ -68,14 +68,16 @@ setup(
     # Packages should be installed via pip -r requirements.txt !
     install_requires=[
         "future",
+        "aenum",
+        "numpy",
+        "ruamel.yaml",
+        "werkzeug",
         "flask",
         "Flask-Login",
         "Flask-Assets",
         "Flask-RESTful",
         "ZODB",
-        "Flask-Bcrypt",
-        "pyyaml",
-        "ruamel.yaml"
+        "Flask-Bcrypt"
     ],
 
     # Include additional files

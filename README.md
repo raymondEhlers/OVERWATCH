@@ -1,4 +1,6 @@
-# OVERWATCH
+<img src="doc/logo/overwatchLogo.v1.png" width="75%" />
+
+# ALICE Overwatch
 
 Welcome to ALICE Overwatch[\*](#name-meaning), a project to provide real-time online data monitoring and
 quality assurance using timestamped data from the ALICE High Level Trigger (HLT) and Data Quality Monitoring (DQM).

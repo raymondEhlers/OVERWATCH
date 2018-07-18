@@ -2,7 +2,7 @@
 # Required
 
 # General
-enum34
+aenum
 
 # For Python 2/3 support
 future
@@ -43,5 +43,4 @@ recommonmark
 pprint
 
 # Configuration
-pyyaml
 ruamel.yaml<=0.15

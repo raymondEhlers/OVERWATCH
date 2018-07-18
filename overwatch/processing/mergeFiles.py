@@ -9,6 +9,7 @@ This module contains functions used to merge histograms, including the principal
 # Python 2/3 support
 from __future__ import print_function
 from __future__ import absolute_import
+from future.utils import iteritems
 
 # ROOT
 import ROOT
@@ -17,15 +18,13 @@ import ROOT
 import os
 import shutil
 import logging
-
 # Setup logger
 logger = logging.getLogger(__name__)
 
 from . import processingClasses
 
-
 ###################################################
-def merge(currentDir, run, subsystem, cumulativeMode=True, timeSlice=None):
+def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlice = None):
     """ Merge function: for a given run and subsystem, merges files appropriately into a combined file.  
 
     Merge is only performed if we have received new files in the specificed run.
@@ -62,7 +61,7 @@ def merge(currentDir, run, subsystem, cumulativeMode=True, timeSlice=None):
         filesToMerge = []
         for fileCont in subsystem.files.values():
             # This is not necessary since combined files are not stored in files anymore
-            # if fileCont.combinedFile == False:
+            #if fileCont.combinedFile == False:
             filesToMerge.append(fileCont)
 
     # Sort files by time
@@ -80,8 +79,7 @@ def merge(currentDir, run, subsystem, cumulativeMode=True, timeSlice=None):
         subtractFiles(os.path.join(currentDir, earliestFile),
                       os.path.join(currentDir, latestFile),
                       timeSlicesFilename)
-        logger.info("Completed time slicing via subtraction with result stored in {0}!\nMerging complete!".format(
-            timeSlicesFilename))
+        logger.info("Completed time slicing via subtraction with result stored in {0}!\nMerging complete!".format(timeSlicesFilename))
         return None
 
     if cumulativeMode:
@@ -100,9 +98,7 @@ def merge(currentDir, run, subsystem, cumulativeMode=True, timeSlice=None):
         numberOfFiles = merger.GetMergeList().GetEntries()
         if numberOfFiles != len(filesToMerge):
             logger.error("Problems encountered when adding files to merger!")
-            return {"Merge Error": [
-                "Problems encountered when adding files to merger! Number of input files ({0}) do not match number in merger ({1})!".format(
-                    len(filesToMerge), numberOfFiles)]}
+            return {"Merge Error": ["Problems encountered when adding files to merger! Number of input files ({0}) do not match number in merger ({1})!".format(len(filesToMerge), numberOfFiles)]}
 
     if timeSlice:
         filePath = os.path.join(subsystem.baseDir, timeSlice.filename.filename)
@@ -126,9 +122,8 @@ def merge(currentDir, run, subsystem, cumulativeMode=True, timeSlice=None):
 
     # Add combined file to the subsystem
     if not timeSlice:
-        subsystem.combinedFile = processingClasses.fileContainer(filePath, startOfRun=subsystem.startOfRun)
+        subsystem.combinedFile = processingClasses.fileContainer(filePath, startOfRun = subsystem.startOfRun)
     return None
-
 
 ###################################################
 def subtractFiles(minFile, maxFile, outfile):
@@ -183,9 +178,8 @@ def subtractFiles(minFile, maxFile, outfile):
     fMax.Close()
     fOut.Close()
 
-
 ###################################################
-def mergeRootFiles(runs, dirPrefix, forceNewMerge=False, cumulativeMode=True):
+def mergeRootFiles(runs, dirPrefix, forceNewMerge = False, cumulativeMode = True):
     """ Iterates over all runs, all subsystems as specified, and merges histograms according to the merge() function. Results in one combined file per subdirectory.
 
     Args:
@@ -205,7 +199,7 @@ def mergeRootFiles(runs, dirPrefix, forceNewMerge=False, cumulativeMode=True):
     currentDir = dirPrefix
 
     # Process runs
-    for runDir, run in runs.items():
+    for runDir, run in iteritems(runs):
         for subsystem in run.subsystems:
             # Only merge if we there are new files to merge
             if run.subsystems[subsystem].newFile == True or forceNewMerge:
@@ -234,4 +228,5 @@ def mergeRootFiles(runs, dirPrefix, forceNewMerge=False, cumulativeMode=True):
 
                 # We have successfully merged
                 # Still considered a newFile until we have processed, so don't change state here
-                # run.subsystems[subsystem].newFile = False
+                #run.subsystems[subsystem].newFile = False
+

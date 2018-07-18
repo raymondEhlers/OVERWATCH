@@ -7,6 +7,7 @@ Shared utility functions used for organizing file structure, merging histograms,
 """
 # Python 2/3 support
 from __future__ import print_function
+from future.utils import iteritems
 
 # General
 import os
@@ -27,13 +28,11 @@ import zodburi
 # Logging
 import logging
 import logging.handlers
-
 # Setup logger
 logger = logging.getLogger(__name__)
 
 # Configuration
 from . import config
-
 
 # This only works for non combined runs, since they contain a range of times
 ###################################################
@@ -59,7 +58,6 @@ def extractTimeStampFromFilename(filename):
         timeString = filename.split(".")[1]
         timeStamp = time.strptime(timeString, "%Y_%m_%d_%H_%M_%S")
         return timegm(timeStamp)
-
 
 ###################################################
 def createFileDictionary(currentDir, runDir, subsystem):
@@ -87,20 +85,19 @@ def createFileDictionary(currentDir, runDir, subsystem):
     # Add uncombined .root files to mergeDict, then sort by timestamp
     for name in os.listdir(os.path.join(currentDir, runDir, subsystem)):
         if ".root" in name and "combined" not in name and "timeSlice" not in name:
-            filename = os.path.join(filenamePrefix, name)
-            mergeDict[extractTimeStampFromFilename(filename)] = filename
+            filename  = os.path.join(filenamePrefix, name)
+            mergeDict[extractTimeStampFromFilename(filename)] = filename 
 
     # Max time range in minutes (60s added to make sure we don't undershoot)
     keys = sorted(mergeDict.keys())
     # // is integer division
-    maxTimeMinutes = (keys[-1] - keys[0] + 60) // 60
+    maxTimeMinutes = (keys[-1] - keys[0] + 60)//60 
 
     return [mergeDict, maxTimeMinutes]
 
-
 # Finds all of the dirs in the current working dir with "Run" in the name
 ###################################################
-def findCurrentRunDirs(dirPrefix=""):
+def findCurrentRunDirs(dirPrefix = ""):
     """ Finds list of currently existing runs that we have data for. 
 
     Args:
@@ -123,7 +120,6 @@ def findCurrentRunDirs(dirPrefix=""):
 
     runDirs.sort()
     return runDirs
-
 
 ###################################################
 def rsyncData(dirPrefix, username, remoteSystems, remoteFileLocations):
@@ -153,15 +149,13 @@ def rsyncData(dirPrefix, username, remoteSystems, remoteFileLocations):
         sendDirectory = sendDirectory + "/"
 
     if len(remoteSystems) != len(remoteFileLocations[fileDestinationLabel]):
-        logger.error(
-            "Number of remote systems is not equal to number of remote file locations. Skipping rsync operations!")
+        logger.error("Number of remote systems is not equal to number of remote file locations. Skipping rsync operations!")
     else:
         for remoteSystem, remoteFileLocation in zip(remoteSystems, remoteFileLocations[fileDestinationLabel]):
             if not remoteFileLocation.endswith("/"):
                 remoteFileLocation = remoteFileLocation + "/"
 
-            logger.info("Utilizing user %s to send %s files to %s on %s " % (
-            username, fileDestinationLabel, remoteFileLocation, remoteSystem))
+            logger.info("Utilizing user %s to send %s files to %s on %s " % (username, fileDestinationLabel, remoteFileLocation, remoteSystem))
 
             # The chmod argument is explained here: https://unix.stackexchange.com/a/218165
             # The omit-dir-times does not update the timestamps on dirs (but still does on files in those dirs),
@@ -173,13 +167,10 @@ def rsyncData(dirPrefix, username, remoteSystems, remoteFileLocations):
             # NOTE: The argument order matters! The first one always applies, and then subsequent includes or excludes only work with what is still available!
             # NOTE: When we pass the arguments via call(), they are sent directly to rsync. Thus, quotes around
             # each glob are not necessary and do not work correctly. See: https://stackoverflow.com/a/12497246
-            # rsync -rvlth --chmod=ugo=rwX --omit-dir-times --exclude="Run*/*/timeSlices" --include="Run*/***" --include="ReplayData/***" --include="runList.html" --exclude="*" --delete data/ rehlers@pdsf.nersc.gov:/project/projectdirs/alice/www/emcalMonitoring/data/2016/
-            rsyncCall = ["rsync", "-rvlth", "--chmod=ugo=rwX", "--omit-dir-times", "--exclude=Run*/*/timeSlices",
-                         "--include=Run*/***", "--include=ReplayData/***", "--include=runList.html", "--exclude=*",
-                         "--delete", sendDirectory, username + "@" + remoteSystem + ":" + remoteFileLocation]
+            #rsync -rvlth --chmod=ugo=rwX --omit-dir-times --exclude="Run*/*/timeSlices" --include="Run*/***" --include="ReplayData/***" --include="runList.html" --exclude="*" --delete data/ rehlers@pdsf.nersc.gov:/project/projectdirs/alice/www/emcalMonitoring/data/2016/
+            rsyncCall = ["rsync", "-rvlth", "--chmod=ugo=rwX", "--omit-dir-times", "--exclude=Run*/*/timeSlices", "--include=Run*/***", "--include=ReplayData/***", "--include=runList.html", "--exclude=*", "--delete", sendDirectory, username + "@" + remoteSystem + ":" + remoteFileLocation]
             logger.info(rsyncCall)
             call(rsyncCall)
-
 
 ###################################################
 def setupLogging(logger, logLevel, debug, runType):
@@ -194,7 +185,7 @@ def setupLogging(logger, logLevel, debug, runType):
     # Logging level for root logger
     logger.setLevel(logLevel)
     # Format
-    # logFormatStr = "%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"
+    #logFormatStr = "%(asctime)s %(levelname)s: %(message)s [in %(pathname)s:%(lineno)d]"
     logFormatStr = "%(asctime)s %(levelname)s: %(message)s [in %(module)s:%(lineno)d]"
     logFormat = logging.Formatter(logFormatStr)
 
@@ -209,8 +200,8 @@ def setupLogging(logger, logLevel, debug, runType):
     else:
         # Log to file
         handler = logging.handlers.RotatingFileHandler(os.path.join("deploy", "{0}.log".format(runType)),
-                                                       maxBytes=5000000,
-                                                       backupCount=10)
+                                                       maxBytes = 5000000,
+                                                       backupCount = 10)
         handler.setLevel(logLevel)
         handler.setFormatter(logFormat)
         logger.addHandler(handler)
@@ -220,8 +211,8 @@ def setupLogging(logger, logLevel, debug, runType):
         # See: http://flask.pocoo.org/docs/0.10/errorhandling/
         notifyAddresses = []
         handler = logging.handlers.SMTPHandler("smtp.cern.ch",
-                                               "error@aliceoverwatch.cern.ch",
-                                               notifyAddresses, "OVERWATCH Failed")
+                                                "error@aliceoverwatch.cern.ch",
+                                                notifyAddresses, "OVERWATCH Failed")
         handler.setLevel(logging.WARNING)
         logFormatStr = """
         Message type:       %(levelname)s
@@ -237,14 +228,13 @@ def setupLogging(logger, logLevel, debug, runType):
         logFormat = logging.Formatter(logFormatStr)
         handler.setFormatter(logFormat)
         # TODO: Properly configure so that it can be added as a handler!
-        # logger.addHandler(handler)
+        #logger.addHandler(handler)
         logger.debug("Added mailer handler to logging!")
 
     # Be sure to propagate messages from modules
-    # processRunsLogger = logging.getLogger("processRuns")
-    # processRunsLogger.setLevel(logLevel)
-    # processRunsLogger.propagate = True
-
+    #processRunsLogger = logging.getLogger("processRuns")
+    #processRunsLogger.setLevel(logLevel)
+    #processRunsLogger.propagate = True
 
 ###################################################
 # File moving utilities
@@ -270,10 +260,9 @@ def enumerateFiles(dirPrefix, subsystem):
     for name in os.listdir(currentDir):
         if subsystem in name and ".root" in name:
             filesToMove.append(name)
-            # logger.debug("name: %s" % name)
-
+            #logger.debug("name: %s" % name)
+        
     return sorted(filesToMove)
-
 
 ###################################################
 def moveFiles(subsystemDict, dirPrefix):
@@ -300,16 +289,16 @@ def moveFiles(subsystemDict, dirPrefix):
         for filename in filesToMove:
             # Extract time stamp and run number
             tempFilename = filename
-            splitFilename = tempFilename.replace(".root", "").split("_")
-            # logger.debug("tempFilename: %s" % tempFilename)
-            # logger.debug("splitFilename: ", splitFilename)
+            splitFilename = tempFilename.replace(".root","").split("_")
+            #logger.debug("tempFilename: %s" % tempFilename)
+            #logger.debug("splitFilename: ", splitFilename)
             if len(splitFilename) < 3:
                 continue
             timeString = "_".join(splitFilename[3:])
-            # logger.debug("timeString: ", timeString)
+            #logger.debug("timeString: ", timeString)
 
             # How to parse the timeString if desired
-            # timeStamp = time.strptime(timeString, "%Y_%m_%d_%H_%M_%S")
+            #timeStamp = time.strptime(timeString, "%Y_%m_%d_%H_%M_%S")
             runString = splitFilename[1]
             runNumber = int(runString)
             hltMode = splitFilename[2]
@@ -322,10 +311,10 @@ def moveFiles(subsystemDict, dirPrefix):
 
             # Create Run directory and subsystem directories as needed
             if not os.path.exists(os.path.join(dirPrefix, runDirectoryPath)):
-                os.makedirs(os.path.join(dirPrefix, runDirectoryPath))
+                os.makedirs( os.path.join(dirPrefix, runDirectoryPath) )
             if len(filesToMove) != 0 and not os.path.exists(os.path.join(dirPrefix, runDirectoryPath, key)):
                 os.makedirs(os.path.join(dirPrefix, runDirectoryPath, key))
-
+            
             newFilename = key + "hists." + timeString + ".root"
 
             oldPath = os.path.join(dirPrefix, tempFilename)
@@ -343,7 +332,6 @@ def moveFiles(subsystemDict, dirPrefix):
                 runsDict[runString]["hltMode"] = hltMode
 
     return runsDict
-
 
 ###################################################
 def moveRootFiles(dirPrefix, subsystemList):
@@ -363,7 +351,7 @@ def moveRootFiles(dirPrefix, subsystemList):
     subsystemDict = {}
     for subsystem in subsystemList:
         subsystemDict[subsystem] = enumerateFiles(dirPrefix, subsystem)
-
+    
     return moveFiles(subsystemDict, dirPrefix)
 
 
@@ -373,7 +361,7 @@ def moveRootFiles(dirPrefix, subsystemList):
 def getDB(databaseLocation):
     # Get the database
     # See: http://docs.pylonsproject.org/projects/zodburi/en/latest/
-    # storage = ZODB.FileStorage.FileStorage(os.path.join(dirPrefix,"overwatch.fs"))
+    #storage = ZODB.FileStorage.FileStorage(os.path.join(dirPrefix,"overwatch.fs"))
     storage_factory, dbArgs = zodburi.resolve_uri(databaseLocation)
     storage = storage_factory()
     db = ZODB.DB(storage, **dbArgs)
@@ -382,9 +370,8 @@ def getDB(databaseLocation):
 
     return (dbRoot, connection)
 
-
 ###################################################
-def updateDBSensitiveParameters(db, overwriteSecretKey=True, debug=False):
+def updateDBSensitiveParameters(db, overwriteSecretKey = True):
     (sensitiveParameters, filesRead) = config.readConfig(config.configurationType.webApp)
 
     # Ensure that the config exists
@@ -400,7 +387,7 @@ def updateDBSensitiveParameters(db, overwriteSecretKey=True, debug=False):
 
     # Add each user, overriding an existing settings
     users = db["config"]["users"]
-    for user, pw in sensitiveParameters["_users"].items():
+    for user, pw in iteritems(sensitiveParameters["_users"]):
         users[user] = pw
         logger.info("Adding user {0}".format(user))
 
@@ -413,7 +400,6 @@ def updateDBSensitiveParameters(db, overwriteSecretKey=True, debug=False):
     # Ensure that any additional changes are committed
     transaction.commit()
 
-
 ####################
 # Histogram array functions
 ####################
@@ -421,3 +407,4 @@ def removeOldestValueAndInsert(arr, value):
     arr = np.delete(arr, 0, axis=0)
     arr = np.append(arr, [value], axis=0)
     return arr
+

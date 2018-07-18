@@ -1,8 +1,9 @@
 {# Display histograms here #}
 <h1 id="mainContentTitle">{{ run.prettyName }}</h1>
 <p>
-{{ run.prettyName }} started at approximately {{ subsystem.prettyPrintUnixTime(subsystem.startOfRun) }} (CERN time zone){%- if run.hltMode and run.hltMode != "U" %} and received via HLT Mode {{ run.hltMode }}{%- endif -%}.<br>
-   <a target="_blank" href="https://alice-logbook.cern.ch/logbook/date_online.php?p_cont=rund&p_run={{ run.runNumber }}">Logbook entry</a>
+{{ run.prettyName }} started at approximately {{ subsystem.prettyPrintUnixTime(subsystem.startOfRun) }} (CERN time zone){%- if run.hltMode and run.hltMode != "U" %} and received via HLT Mode {{ run.hltMode }}{%- endif -%}.</br>
+   <a target="_blank" href="https://alice-logbook.cern.ch/logbook/date_online.php?p_cont=rund&p_run={{ run.runNumber }}">Logbook entry</a>,
+   <a target="_blank" href="https://alimonitor.cern.ch/runview/?run={{ run.runNumber }}">RCT</a>
 </p>
 {%- if timeSlice != None -%}
 <p>
@@ -59,9 +60,9 @@
                     {# See: The example on this page: https://stackoverflow.com/a/31484427 -- https://codepen.io/StijnDeWitt/pen/EyPyyL #}
                     <p>Grid!</p>
                 {% endif %}
-                <div id="{{ hist.histName }}" class="histogramContainer {% if jsRoot == True %}{{ histogramContainerClasses }}{% endif %}" data-filename="{{ jsonFilenameTemplate.format(hist.histName.replace('/', '_')) }}">
+                <div id="{{ hist.histName }}" class="histogramContainer {% if jsRoot == True %}{{ histogramContainerClasses }}{% endif %}" data-filename="{{ jsonFilenameTemplate.format(hist.histName.replace("/", "_")) }}">
                 {% if jsRoot != True %}
-                    <img src="{{url_for("protected", filename=imgFilenameTemplate.format(hist.histName.replace("/", "_"))) }}" alt="{{ hist.histName }}">
+                    <img src="{{ url_for("protected", filename=imgFilenameTemplate.format(hist.histName.replace("/", "_"))) }}" alt="{{ hist.histName }}">
                 {% else %}
                     {# Provide indication that we are loading jsroot content #}
                     {# It will disappear once jsroot loads the histogram #}
