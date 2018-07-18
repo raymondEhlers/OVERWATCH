@@ -1,8 +1,9 @@
 {# Display histograms here #}
 <h1 id="mainContentTitle">{{ run.prettyName }}</h1>
 <p>
-{{ run.prettyName }} started at approximately {{ subsystem.prettyPrintUnixTime(subsystem.startOfRun) }} (CERN time zone){%- if run.hltMode %} and received via HLT Mode {{ run.hltMode }}{%- endif -%}.</br>
-   <a target="_blank" href="https://alice-logbook.cern.ch/logbook/date_online.php?p_cont=rund&p_run={{ run.runNumber }}">Logbook entry</a>
+{{ run.prettyName }} started at approximately {{ subsystem.prettyPrintUnixTime(subsystem.startOfRun) }} (CERN time zone){%- if run.hltMode and run.hltMode != "U" %} and received via HLT Mode {{ run.hltMode }}{%- endif -%}.</br>
+   <a target="_blank" href="https://alice-logbook.cern.ch/logbook/date_online.php?p_cont=rund&p_run={{ run.runNumber }}">Logbook entry</a>,
+   <a target="_blank" href="https://alimonitor.cern.ch/runview/?run={{ run.runNumber }}">RCT</a>
 </p>
 {%- if timeSlice != None -%}
 <p>
@@ -11,7 +12,7 @@
     Time slice requested {{ timeSlice.timeInMinutesRounded(timeSlice.minUnixTimeRequested) | int }} to {{ timeSlice.timeInMinutesRounded(timeSlice.maxUnixTimeRequested) | int }} minutes and returned {{ timeSlice.timeInMinutesRounded(timeSlice.minUnixTimeAvailable) | int }} to {{ timeSlice.timeInMinutesRounded(timeSlice.maxUnixTimeAvailable) | int }} due to data constraints.
 </p>
 <p>
-    Processed with {% for key, val in timeSlice.processingOptions.iteritems() -%}{{ key }} = {{ val }}{% if not loop.last%}, {% endif %}{% endfor -%}
+    Processed with {% for key, val in timeSlice.processingOptions.items() -%}{{ key }} = {{ val }}{% if not loop.last%}, {% endif %}{% endfor -%}
 </p>
 {%- endif -%}
 <hr />
@@ -35,7 +36,7 @@
                         <h2>{{ hist.prettyName }}</h2>
                     {%- endif %}
                     {% if hist.information != dict() %}
-                        {% for label, info in hist.information.iteritems() %}
+                        {% for label, info in hist.information.items() %}
                         {# Get threshold value if it exists #}
                         {%- if label == "Threshold" -%}
                             {% if threshold.append(info) %}{% endif %}

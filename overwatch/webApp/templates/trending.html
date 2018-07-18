@@ -1,14 +1,14 @@
 {% extends "layout.html" %}
 
-{% block title %}OVERWATCH Basic QA{% endblock %}
+{% block title %}OVERWATCH Trending{% endblock %}
 
 {% block drawer %}
     <!-- This is the drawer menu -->
-    {% include "qaDrawer.html" %}
+    {% include "trendingDrawer.html" %}
 {% endblock %}
 
 {% block mainContent %}
     {% with title=self.title() %}
-        {% include "qaMainContent.html" %}
+        {% include "trendingMainContent.html" %}
     {% endwith %}
 {% endblock %}

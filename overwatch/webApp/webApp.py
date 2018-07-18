@@ -6,6 +6,7 @@
 # For python 3 support
 from __future__ import print_function
 from builtins import range
+from future.utils import iteritems
 
 # General includes
 import os
@@ -17,6 +18,7 @@ import signal
 import jinja2
 import json
 import collections 
+import pkg_resources
 # For server status
 import requests
 # Python logging system
@@ -56,6 +58,7 @@ from . import utilities
 # Processing module includes
 from ..processing import processRuns
 from ..processing import qa
+from ..processing import processingClasses
 
 # Flask setup
 app = Flask(__name__, static_url_path=serverParameters["staticURLPath"], static_folder=serverParameters["staticFolder"], template_folder=serverParameters["templateFolder"])
@@ -77,7 +80,7 @@ if serverParameters["debug"] == True:
     app.debug = True
 
 # Setup Bcrypt
-app.config["BCRYPT_LOG_ROUNDS"] = serverParameters["bcryptLogRounds"]
+app.config["BCRYPT_LOG_ROUNDS"] = config.bcryptLogRounds
 bcrypt = Bcrypt(app)
 
 # Setup flask assets
@@ -105,7 +108,7 @@ Some notes on webassets:
 >>> print(assets["polymerBundle"].urls())
 """
 # Load bunldes from configuration file
-assets.from_yaml(os.path.join(os.path.dirname(__file__), "flaskAssets.yaml"))
+assets.from_yaml(pkg_resources.resource_filename("overwatch.webApp", "flaskAssets.yaml"))
 
 # Setup login manager
 loginManager = LoginManager()
@@ -146,7 +149,7 @@ def login():
             # It should be extremely unlikely for this condition to be met!
             logger.warning("Since we are debugging, adding users to the database automatically!")
             # Transactions saved in the function
-            baseUtilities.updateDBSensitiveParameters(db, debug = serverParameters["debug"])
+            baseUtilities.updateDBSensitiveParameters(db)
 
     # A post request Attempt to login the user in
     if request.method == "POST":
@@ -154,7 +157,7 @@ def login():
         (errorValue, username, password) = validation.validateLoginPostRequest(request)
 
         # If there is an error, just drop through to return an error on the login page
-        if errorValue == None:
+        if errorValue is None:
             # Validate user
             validUser = auth.authenticateUser(username, password, db)
 
@@ -364,7 +367,7 @@ def runPage(runNumber, subsystemName, requestedFileType):
                 returnValue = render_template("rootfiles.html", run = run, subsystem = subsystemName)
             else:
                 # Redundant, but good to be careful
-                error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
+                error.setdefault("Template Error", []).append("Request page: \"{0}\", but it was not found!".format(requestedFileType))
 
         if error != {}:
             logger.warning("error: {0}".format(error))
@@ -401,7 +404,7 @@ def runPage(runNumber, subsystemName, requestedFileType):
                 mainContent = render_template("rootfilesMainContent.html", run = run, subsystem = subsystemName)
             else:
                 # Redundant, but good to be careful
-                error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
+                error.setdefault("Template Error", []).append("Request page: \"{0}\", but it was not found!".format(requestedFileType))
 
         if error != {}:
             logger.warning("error: {0}".format(error))
@@ -546,74 +549,75 @@ def timeSlice():
         return render_template("error.html", errors={"error": ["Need to access through a run page!"]})
 
 ###################################################
-@app.route("/processQA", methods=["GET", "POST"])
+#@app.route("/trending/<string:subsystemName>", methods=["GET", "POST"])
+@app.route("/trending", methods=["GET", "POST"])
 @login_required
-def processQA():
-    """ Handles QA functions.
-
-    In the case of a GET request, it serves a page showing the possible QA options. In the case of a
-    POST request, it handles, validates and executes the QA task, rendering the result template.
-
-    It also supports the ability to add GET parameters to the returned values for the result template
-    to ensure that the browser doesn't cache things that have actually changed. Such parameters will
-    be ignored without any other intervention.
+def trending():
+    """ Trending visualization.
 
     """
+    error = {}
+
     logger.debug("request: {0}".format(request.args))
-    ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
+    # Validate request
+    (error, subsystemName, requestedHist, jsRoot, ajaxRequest) = validation.validateTrending()
 
-    runs = db["runs"]
-    runList = runs.keys()
-    logger.debug("runList: {0}".format(list(runList)))
+    # Create trending container from stored trending information
+    trendingContainer = processingClasses.trendingContainer(db["trending"])
 
-    if request.method == "POST":
-        # Validate post request
-        (error, firstRun, lastRun, subsystem, qaFunction) = validation.validateQAPostRequest(request, runList)
+    # Determine the subsytemName
+    if not subsystemName:
+        for subsystemName, subsystem in iteritems(trendingContainer.trendingObjects):
+            if len(subsystem) > 0:
+                subsystemName = subsystemName
+                break
 
-        # Process
+    # Template paths to the individual files
+    imgFilenameTemplate = os.path.join(trendingContainer.imgDir % {"subsystem" : subsystemName}, "{0}." + serverParameters["fileExtension"])
+    jsonFilenameTemplate = os.path.join(trendingContainer.jsonDir % {"subsystem" : subsystemName}, "{0}.json")
+
+    if ajaxRequest != True:
         if error == {}:
-            # Print input values
-            logger.debug("firstRun:", firstRun)
-            logger.debug("lastRun:", lastRun)
-            logger.debug("subsystem:", subsystem)
-            logger.debug("qaFunction:", qaFunction)
+            try:
+                returnValue = render_template("trending.html", trendingContainer = trendingContainer,
+                                              selectedHistGroup = subsystemName, selectedHist = requestedHist,
+                                              jsonFilenameTemplate = jsonFilenameTemplate,
+                                              imgFilenameTemplate = imgFilenameTemplate,
+                                              jsRoot = jsRoot)
+            except jinja2.exceptions.TemplateNotFound as e:
+                error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
 
-            # Process the QA
-            returnValues = processRuns.processQA(firstRun, lastRun, subsystem, qaFunction)
+        if error != {}:
+            logger.warning("error: {0}".format(error))
+            returnValue = render_template("error.html", errors = error)
 
-            # Ensures that the image is not cached by adding a meaningless but unique argument.
-            histPaths = {}
-            for name, histPath in returnValues.items():
-                # Can add an argument with "&arg=value" if desired
-                histPaths[name] = histPath + "?time=" + str(time.time())
-                logger.debug("histPaths[{0}]: {1}".format(name, histPaths[name]))
-
-            # Ensures that the root file is not cached by adding a meaningless but unique argument.
-            rootFilePath = os.path.join(qaFunction, qaFunction + ".root")
-            rootFilePath += "?time=" + str(time.time())
-
-            return render_template("qaResult.html", firstRun=firstRun, lastRun=lastRun, qaFunctionName=qaFunction, subsystem=subsystem, hists=histPaths, rootFilePath=rootFilePath)
-        else:
-            return render_template("error.html", errors=error)
-
+        return returnValue
     else:
-        # We need to combine the available subsystems. subsystemList is not sufficient because we may want QA functions
-        # but now to split out the hists on the web page.
-        # Need to call list so that subsystemList is not modified.
-        # See: https://stackoverflow.com/a/2612815
-        subsystems = list(serverParameters["subsystemList"])
-        for subsystem in serverParameters["qaFunctionsList"]:
-            subsystems.append(subsystem)
+        if error == {}:
+            try:
+                drawerContent = render_template("trendingDrawer.html", trendingContainer = trendingContainer,
+                                                selectedHistGroup = subsystemName, selectedHist = requestedHist,
+                                                jsonFilenameTemplate = jsonFilenameTemplate,
+                                                imgFilenameTemplate = imgFilenameTemplate,
+                                                jsRoot = jsRoot)
+                mainContent = render_template("trendingMainContent.html", trendingContainer = trendingContainer,
+                                              selectedHistGroup = subsystemName, selectedHist = requestedHist,
+                                              jsonFilenameTemplate = jsonFilenameTemplate,
+                                              imgFilenameTemplate = imgFilenameTemplate,
+                                              jsRoot = jsRoot)
+            except jinja2.exceptions.TemplateNotFound as e:
+                error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
 
-        # Make sure that we have a unique list of subsystems.
-        subsystems = sorted(set(subsystems))
+        if error != {}:
+            logger.warning("error: {0}".format(error))
+            drawerContent = ""
+            mainContent =  render_template("errorMainContent.html", errors = error)
 
-        if ajaxRequest == False:
-            return render_template("qa.html", runList=runList, qaFunctionsList=serverParameters["qaFunctionsList"], subsystemList=subsystems, docStrings=qa.qaFunctionDocstrings)
-        else:
-            drawerContent = render_template("qaDrawer.html", subsystemList=subsystems, qaFunctionsList=serverParameters["qaFunctionsList"])
-            mainContent = render_template("qaMainContent.html", runList=runList, qaFunctionsList=serverParameters["qaFunctionsList"], subsystemList=subsystems, docStrings=qa.qaFunctionDocstrings)
-            return jsonify(drawerContent = drawerContent, mainContent = mainContent)
+        # Includes hist group and hist name for time slices since it is easier to pass it here than parse the get requests. Otherwise, they are ignored.
+        return jsonify(drawerContent = drawerContent,
+                       mainContent = mainContent,
+                       histName = requestedHist,
+                       histGroup = subsystemName)
 
 ###################################################
 @app.route("/testingDataArchive")
@@ -705,7 +709,7 @@ def status():
     # Determine server statuses
     # TODO: Consider reducing the max number of retries
     sites = serverParameters["statusRequestSites"]
-    for site, url in sites.iteritems():
+    for site, url in iteritems(sites):
         serverError = {}
         statusResult = ""
         try:

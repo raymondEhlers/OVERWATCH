@@ -31,4 +31,11 @@ notes.md
 *.yaml
 
 # Python package generation
-alice_overwatch.egg-info/
+aliceoverwatch.egg-info/
+dist/
+
+# Testing
+.pytest_cache/
+# Generate coverage reports from testing
+.coverage
+htmlcov/

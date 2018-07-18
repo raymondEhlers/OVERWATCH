@@ -7,7 +7,7 @@ import pprint
 from overwatch.base import config
 # For configuring logger
 from overwatch.base import utilities
-(receiverParameters, filesRead) = config.readConfig(config.configurationType.dqmReceiver)
+(receiverParameters, filesRead) = config.readConfig(config.configurationType.receiver)
 print("Configuration files read: {0}".format(filesRead))
 print("receiverParameters: {0}".format(pprint.pformat(receiverParameters)))
 
@@ -17,7 +17,7 @@ logger = logging.getLogger("")
 #logger = logging.getLogger("reciever")
 
 # Setup logger
-utilities.setupLogging(logger, receiverParameters["loggingLevel"], receiverParameters["debug"], "webApp")
+utilities.setupLogging(logger, receiverParameters["loggingLevel"], receiverParameters["debug"], "dqmReceiver")
 
 # Imports are below here so that they can be logged
 from overwatch.receiver.dqmReceiver import app

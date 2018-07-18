@@ -7,6 +7,7 @@ Shared utility functions used for organizing file structure, merging histograms,
 """
 # Python 2/3 support
 from __future__ import print_function
+from future.utils import iteritems
 
 # General
 import os
@@ -15,6 +16,7 @@ import time
 from calendar import timegm
 from subprocess import call
 import shutil
+import numpy as np
 
 # ZODB
 import ZODB
@@ -385,7 +387,7 @@ def updateDBSensitiveParameters(db, overwriteSecretKey = True):
 
     # Add each user, overriding an existing settings
     users = db["config"]["users"]
-    for user, pw in sensitiveParameters["_users"].items():
+    for user, pw in iteritems(sensitiveParameters["_users"]):
         users[user] = pw
         logger.info("Adding user {0}".format(user))
 
@@ -397,3 +399,15 @@ def updateDBSensitiveParameters(db, overwriteSecretKey = True):
 
     # Ensure that any additional changes are committed
     transaction.commit()
+
+####################
+# Histogram array functions
+####################
+def removeOldestValueAndInsert(arr, value):
+    # Remove oldest value
+    np.delete(arr, 0, axis=0)
+    # Insert at the end
+    arr[-1] = value
+
+    return arr
+

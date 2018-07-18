@@ -1,6 +1,8 @@
-## Holds all of the DQM receiver parameters
-## Note that this configuration file will be imported after the shared parameters config
-##
-## Author: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
+# Contains all of the API parameters
+# Note that this configuration file will be imported after the shared parameters config
+# For more, see overwatch.base.config
+#
+# author: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
+# date: 16 July 2018
 
 

@@ -193,63 +193,35 @@ def validateRunPage(runDir, subsystemName, requestedFileType, runs):
         return (error, None, None, None, None, None, None, None, None, None)
 
 ###################################################
-def validateQAPostRequest(request, runList):
-    """ Validates the QA POST request.
-
-    Args:
-        request (Flask.request): The request object from Flask.
-        runList (list): List of all available runs, with entries in the form of "Run#" (str).
-
-    Returns:
-        tuple: Tuple containing:
-
-            error (dict): Dict containing errors. Allows appending so that now errors are lost.
-                Ex: ``errors = {'hello2': ['world', 'world2', 'world3'], 'hello': ['world', 'world2']}``
-
-            firstRun (str): The first (ie: lowest) run in the form "Run#". Ex: "Run123"
-            
-            lastRun (str): The last (ie: highest) run in the form "Run#". Ex: "Run123"
-            
-            subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
-
-            qaFunction (str): Name of the QA function to be executed.
-
+def validateTrending():
+    """
+    Validate requests to the trending page.
     """
     error = {}
     try:
-        firstRun = request.form["firstRun"]
-        lastRun = request.form["lastRun"]
-        subsystem = request.form["subsystem"]
-        qaFunction = request.form["qaFunction"]
-    # See: https://stackoverflow.com/a/23139085
+        # Determine request parameters
+        jsRoot = convertRequestToPythonBool("jsRoot", request.args)
+        ajaxRequest = convertRequestToPythonBool("ajaxRequest", request.args)
+        # Reuse the hist group infrastructure for retrieving the subsystem
+        requestedHistGroup = convertRequestToStringWhichMayBeEmpty("histGroup", request.args)
+        subsystemName = requestedHistGroup
+        requestedHist = convertRequestToStringWhichMayBeEmpty("histName", request.args)
+
+        # subsystemName could be None, so we only check if it exists
+        if subsystemName and not subsystemName in serverParameters["subsystemList"] + ["TDG"]:
+            error.setdefault("Subsystem", []).append("{} is not a valid subsystem!".format(subsystemName))
     except KeyError as e:
         # Format is:
         # errors = {'hello2': ['world', 'world2'], 'hello': ['world', 'world2']}
         # See: https://stackoverflow.com/a/2052206
         error.setdefault("keyError", []).append("Key error in " + e.args[0])
-
-    # Validate values
-    try:
-        if firstRun not in runList:
-            error.setdefault("firstRun", []).append(firstRun + " not in run list!")
-        if lastRun not in runList:
-            error.setdefault("lastRun", []).append(lastRun + " not in run list!")
-        if int(firstRun.replace("Run","")) > int(lastRun.replace("Run", "")):
-            error.setdefault("runNumberOrder", []).append(firstRun + " is greater than " + lastRun)
-        #if subsystem not in serverParameters["subsystemList"]:
-        #    error.setdefault("subsystem", []).append("subsystem " + subsystem + " is not valid")
-        #if any(qaFunction not in funcNames for funcNames in serverParameters["qaFunctionsList"].values()):
-        #    error.setdefault("qaFunction:", []).append(qaFunction + " is not a QA function defined for subsystem %s!" % subsystem)
-        if subsystem not in serverParameters["qaFunctionsList"]:
-            error.setdefault("qaFunction:", []).append("Subsystem " + subsystem + " not available in the QA function list!")
-        else:
-            if qaFunction not in serverParameters["qaFunctionsList"][subsystem]:
-                error.setdefault("qaFunction:", []).append(qaFunction + " not usable with subsystem " + subsystem)
-    # Handle an unexpected exception
     except Exception as e:
         error.setdefault("generalError", []).append("Unknown exception! " + str(e))
 
-    return (error, firstRun, lastRun, subsystem, qaFunction)
+    if error == {}:
+        return (error, subsystemName, requestedHist, jsRoot, ajaxRequest)
+    else:
+        return (error, None, None, None, None)
 
 # Validate individual values
 
@@ -389,7 +361,7 @@ def extractValueFromNextOrRequest(paramName):
                 # Has a one entry list
                 paramValue = params.get(paramName, "")[0]
             except (KeyError, IndexError) as e:
-                logger.warn("Error in getting {0}: {1}".format(paramName, e.args[0]))
+                logger.warning("Error in getting {0}: {1}".format(paramName, e.args[0]))
                 paramValue = ""
 
     # Just try to extract directly if it isn't in the next parameter

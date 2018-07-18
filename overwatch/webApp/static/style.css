@@ -321,45 +321,6 @@ a.anchor {
     text-decoration: none;
 }
 
-/* Form for basic QA controls */
-#qaSelector {
-    /* Ensures that it is a non-zero size - perhaps not needed */
-    overflow: auto;
-    /* Center items */
-    text-align: center;
-}
-/* Groups of basic QA controls to ensure that the page responds properly to resizing. */
-.qaControlsGroup {
-    /* Display the elements in one line */
-    display: inline-block;
-    /* Center items */
-    text-align: center;
-}
-/* Each element in the basic QA controls */
-.qaControlsElement {
-    /* Display all the elements inside in a line */
-    display: inline-block;
-    /* Separation between each element.
-     * NOTE: Cannot be a percentage! */
-    padding: 0px 10px;
-}
-/* Table to display the QA controls on the basic QA page */
-.processQATable {
-    /* Ensures that the overall table is centered */
-    margin: 0px auto;
-}
-.centerTableElement {
-    /* Centers the elements */
-    text-align: center;
-}
-
-/* Applies to the doc string on the processQA page corresponding to the currently selected function.
- * In doing so, it shows the description of the function. */
-.showFunctionDocstring {
-    /* Ensures that the description doesn't go over the edge of the page */
-    word-wrap: break-word;
-}
-
 /* Media queries to handle different screen sizes.
  * 600px is selected arbitrarily */
 @media screen and (max-width: 600px) {

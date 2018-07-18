@@ -16,11 +16,12 @@ with open(path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
-    name="alice_overwatch",
-    version="0.9",
+    name="aliceoverwatch",
+    version="1.0",
 
     description="ALICE OVERWATCH: Online Monitoring via the HLT",
     long_description=long_description,
+    long_description_content_type="text/markdown",
 
     author="Raymond Ehlers",
     author_email="raymond.ehlers@cern.ch",
@@ -36,11 +37,12 @@ setup(
         'Development Status :: 4 - Beta',
 
         # Indicate who your project is intended for
-        'Intended Audience :: Developers',
+        'Intended Audience :: Science/Research',
 
         # Specify the Python versions you support here. In particular, ensure
         # that you indicate whether you support Python 2, Python 3 or both.
-        'Programming Language :: Python :: 2.7'
+        'Programming Language :: Python :: 2.7',
+        'Programming Language :: Python :: 3.6'
     ],
 
     # What does your project relate to?
@@ -68,16 +70,27 @@ setup(
     # Packages should be installed via pip -r requirements.txt !
     install_requires=[
         "future",
+        "aenum",
+        "numpy",
+        "ruamel.yaml",
+        "werkzeug",
         "flask",
         "Flask-Login",
         "Flask-Assets",
         "Flask-RESTful",
         "ZODB",
+        "zodburi",
         "Flask-Bcrypt",
-        "pyyaml",
-        "ruamel.yaml"
+        "requests"
     ],
 
     # Include additional files
-    include_package_data=True
+    include_package_data=True,
+
+    # Test packages
+    tests_require = [
+        "pytest",
+        "pytest-cov",
+        "pytest-mock"
+    ]
   )
