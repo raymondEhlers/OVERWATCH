@@ -55,11 +55,11 @@ def extractTimeStampFromFilename(filename):
       the time stamp and convert it to unix time. The time stamp is assumed to be in the CERN time zone.
 
     Args:
-        filename (str): Filename that we want the timestamp of. The precise format of the timestamp depends on the type
-            filename passed into the function.
+        filename (str): Filename which contains the desired timestamp. The precise format of the timestamp
+            depends on the type filename passed into the function.
     Returns:
-        int: Timestamp extracted from the filename in number of seconds (unix time, except for time slices, where it is the length
-            of the time stamp).
+        int: Timestamp extracted from the filename in number of seconds (unix time, except for time slices,
+            where it is the length of the time stamp).
     """
     if "combined" in filename:
         # This will be the length of the run
@@ -85,7 +85,7 @@ def createFileDictionary(currentDir, runDir, subsystem):
         runDir (str): Run directory to be considered.
         subsystem (str): Subsystem to be considered. 
     Returns:
-        list: (Dictionary from time stamp to filename, time in minutes spanned by the run)
+        list: [Dictionary from time stamp to filename, time in minutes spanned by the run]
     """
     filenamePrefix = os.path.join(runDir, subsystem)
 
@@ -134,24 +134,25 @@ def rsyncData(dirPrefix, username, remoteSystems, remoteFileLocations):
 
     The overall command is:
 
-    ```bash
-    rsync -rvlth --chmod=ugo=rwX --omit-dir-times --exclude="Run*/*/timeSlices" --include="Run*/***" --include="ReplayData/***" --include="runList.html" --exclude="*" --delete data/ rehlers@pdsf.nersc.gov:/project/projectdirs/alice/www/emcalMonitoring/data/2016/
-    ```
+    .. code-block:: bash
+
+       rsync -rvlth --chmod=ugo=rwX --omit-dir-times --exclude="Run*/*/timeSlices" --include="Run*/***" --include="ReplayData/***" --include="runList.html" --exclude="*" --delete data/ rehlers@pdsf.nersc.gov:/project/projectdirs/alice/www/emcalMonitoring/data/2016/
 
     (assuming that we are transferring to PDSF)
 
     Some notes on the arguments include:
-    - The `chmod` option is explained [here](https://unix.stackexchange.com/a/218165).
+
+    - The `chmod` option is explained `here <https://unix.stackexchange.com/a/218165>`__.
     - `omit-dir-times` does not update the timestamps on dirs (but still does on files in those directories),
       which fixes a number of errors thrown when transferring to PDSF
-    - Information on determining the right globbing is explained [here](https://unix.stackexchange.com/a/2503)
+    - Information on determining the right globbing is explained `here <https://unix.stackexchange.com/a/2503>`__.
     - Files in directories `Run*` and `ReplayData/*` are transferred, and all other files in those directories
       are deleted! The exception to this is the timeSlice directory. Otherwise, all files in the root of the
       data directory are not transferred.
     - The argument order for specifying directories to include and exclude matters! The first one sets an
       overall pattern, and then subsequent includes or excludes only work with what is still available!
     - When we pass the arguments via call(), they are sent directly to `rsync`. Thus, quotes around each glob
-      are not necessary and do not work correctly. See [here](https://stackoverflow.com/a/12497246) for more.
+      are not necessary and do not work correctly. See `here <https://stackoverflow.com/a/12497246>`__ for more.
 
     Note:
         Filenames of the form `*histos_*.root` are excluded from transfer! These are
@@ -197,7 +198,7 @@ def setupLogging(logger, logLevel, debug, logFilename):
         logger (logging.Logger): Logger to be configured. This should be the logger of the executable.
         logLevel (int): Logging level. Select from any of the options defined in the logging module.
         debug (bool): Overall debug mode for the executable. True logs to the console while False logs
-            to a rotating file handler and sets up the possibility of sending logs via email.
+            to a rotating file handler and sets up the possibility of sending logs via email. Default: True
         logFilename (str): Specifies the filename of the log file (when it is created).
     Returns:
         None. The logger is fully configured.
@@ -299,28 +300,28 @@ def moveFiles(dirPrefix, subsystemDict):
     In particular, files from the HLT have the general form of `SYShists_runNumber_hltMode_%Y_%m_%d_%H_%M_%S.root`.
     For a particular example, files start like this:
 
-    ```
-    EMChistos_300005_B_2015_11_24_18_05_10.root
-    EMChistos_300005_B_2015_11_24_18_09_12.root
-    ...
-    ```
+    .. code-block:: bash
+
+       EMChistos_300005_B_2015_11_24_18_05_10.root
+       EMChistos_300005_B_2015_11_24_18_09_12.root
+       ...
 
     and are then moved to
 
-    ```
-    Run300005/
-        EMC/
-            EMChists.2015_11_24_18_05_10.root
-            EMChists.2015_11_24_18_09_12.root
-    ```
+    .. code-block:: bash
+
+       Run300005/
+           EMC/
+               EMChists.2015_11_24_18_05_10.root
+               EMChists.2015_11_24_18_09_12.root
 
     The new filenames are then returned in a nested dictionary of lists which has the following structure (assuming
     the example specified above):
 
-    ```
-    runsDict["Run300005"]["EMC"] == ["EMChists.2015_11_24_18_05_10.root", "EMChists.2015_11_24_18_09_12.root"]
-    runsDict["Run300005"]["hltMode"] == "B"
-    ```
+    >>> runsDict["Run300005"]["EMC"]
+    ["EMChists.2015_11_24_18_05_10.root", "EMChists.2015_11_24_18_09_12.root"]
+    >>> runsDict["Run300005"]["hltMode"]
+    "B"
 
     The run and subsystem directories are created as needed. The particular filenames are determined by convention
     to make it possible to extract the timestamps later.
