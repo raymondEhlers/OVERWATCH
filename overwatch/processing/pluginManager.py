@@ -32,9 +32,11 @@ currentModule = sys.modules[__name__]
 def createHistGroups(subsystem):
     """ Properly route histogram group function for each subsystem.
 
-    Histogram groups are groups of histograms which should be displayed together
-    for visualization. Functions names should be of the form
-    ``create(SUBSYSTEM)HistogramGroups``.
+    Histogram groups are groups of histograms which should be displayed together for
+    visualization. Functions names should be of the form
+    ``create(SUBSYSTEM)HistogramGroups(subsystemName, *args, **kwargs)``. where
+    subsystemName (str) is the name of the subsystem, and the other args are reserved for
+    future use.
 
     Args:
         subsystem (subsystemContainer): Current subsystem container.
@@ -56,7 +58,10 @@ def createAdditionalHistograms(subsystem):
     """ Properly routes additional histogram creation functions for each subsystem.
 
     Additional histograms can be created for a particular subsystem via these plugins.
-    Functions should be of the form ``createAdditional(SUBSYSTEM)Histograms``.
+    Functions should be of the
+    form ``createAdditional(SUBSYSTEM)Histograms(subsystemName, *args, **kwargs)``, where
+    subsystemName (str) is the name of the subsystem, and the other args are reserved for
+    future use.
 
     Args:
         subsystem (subsystemContainer): Current subsystem container
@@ -78,7 +83,9 @@ def createHistogramStacks(subsystem):
     together. For example, one may want to plot similar spectra, such as
     those in the EMCal and DCal, on the same plot. These are treated simiilarly
     to a histogramContainer. Functions should be of the
-    form ``create(SUBSYSTEM)HistogramStacks``.
+    form ``create(SUBSYSTEM)HistogramStacks(subsystem, *args, **kwargs)``, where
+    subsystem (subsystemContainer) is the current subsystem container, and the
+    other args are reserved for future use.
 
     Args:
         subsystem (subsystemContainer): Current subsystem container
@@ -105,7 +112,9 @@ def setHistogramOptions(subsystem):
     It cannot be set now because the canvas doesn't yet exist and we would
     need to call functions to on that object (we prefer not to use function
     pointers here). Functions should be of the
-    form ``set(SUBSYSTEM)HistogramOptions``.
+    form ``set(SUBSYSTEM)HistogramOptions(subsystem, *args, **kwargs)``,
+    where subsystem (subsystemContainer) is the current subsystem container, and
+    the other args are reserved for future use.
     
     Args:
         subsystem (subsystemContainer): Current subsystem container
@@ -127,7 +136,11 @@ def findFunctionsForHist(subsystem, hist):
     are executed when the histogram is processed. The functions should be
     stored as function pointers so the lookup doesn't need to occur every
     time the histogram container is processed. The plugin functions for each
-    subsystem should be of the form ``findFunctionsFor(SUBSYSTEM)Histogram``.
+    subsystem should be of the
+    form ``findFunctionsFor(SUBSYSTEM)Histogram(subsystem, hist, *args, **kwargs)``,
+    where subsystem (subsystemContainer) is the current subsystem and
+    hist (histogramContainer) is the current histogram being processed, and
+    the other args are reserved for future use.
 
     Note:
         This function must handle all possible histograms for a subsystem,
@@ -154,7 +167,9 @@ def defineTrendingObjects(subsystem):
     Defines trending objects related to a subsystem. These objects implement the
     trending function, as well as specifying the histograms that provide the values
     for the trending.  The plugin function for each subsystem should be of the
-    form ``define(SUBSYSTEM)TrendingObjects``.
+    form ``define(SUBSYSTEM)TrendingObjects(trending, *args, **kwargs)``, where
+    trending is a dict where the new trending objects should be stored, and
+    the other args are reserved for future use.
 
     Args:
         subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).

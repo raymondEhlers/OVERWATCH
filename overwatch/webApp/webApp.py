@@ -57,7 +57,6 @@ from . import utilities
 
 # Processing module includes
 from ..processing import processRuns
-from ..processing import qa
 from ..processing import processingClasses
 
 # Flask setup

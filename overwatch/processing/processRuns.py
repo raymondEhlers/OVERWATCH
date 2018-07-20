@@ -60,7 +60,7 @@ from ..base import config
 # Module includes
 from ..base import utilities
 from . import mergeFiles
-from . import qa
+from . import pluginManager
 from . import processingClasses
 
 ###################################################
@@ -118,19 +118,19 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
         #logger.debug("pre  create additional histsAvailable: {}".format(", ".join(subsystem.histsAvailable.keys())))
 
         # Create additional histograms
-        qa.createAdditionalHistograms(subsystem)
+        pluginManager.createAdditionalHistograms(subsystem)
 
         #logger.debug("post create additional histsAvailable: {}".format(", ".join(subsystem.histsAvailable.keys())))
 
         # Create the subsystem stacks
-        qa.createHistogramStacks(subsystem)
+        pluginManager.createHistogramStacks(subsystem)
 
         # Customize histogram traits
-        qa.setHistogramOptions(subsystem)
+        pluginManager.setHistogramOptions(subsystem)
 
         # Create histogram sorting groups
         if not subsystem.histGroups:
-            sortingSuccess = qa.createHistGroups(subsystem)
+            sortingSuccess = pluginManager.createHistGroups(subsystem)
             if sortingSuccess is False:
                 logger.debug("Subsystem {0} does not have a sorting function. Adding all histograms into one group!".format(subsystem.subsystem))
 
@@ -161,7 +161,7 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
 
             if classifiedHist:
                 # Determine the functions (qa and monitoring) to apply
-                qa.findFunctionsForHist(subsystem, hist)
+                pluginManager.findFunctionsForHist(subsystem, hist)
                 # Determine the trending functions to apply
                 if trendingContainer:
                     trendingContainer.findTrendingFunctionsForHist(hist)
@@ -719,7 +719,7 @@ def processAllRuns():
         # Subsystem specific trending histograms
         # TDG corresponds to general trending histograms (perhaps between two subsystem)
         for subsystem in processingParameters["subsystemList"] + ["TDG"]:
-            trendingObjects = qa.defineTrendingObjects(subsystem)
+            trendingObjects = pluginManager.defineTrendingObjects(subsystem)
             trendingContainer.addSubsystemTrendingObjects(subsystem, trendingObjects, forceRecreateSubsystem = processingParameters["forceRecreateSubsystem"])
     else:
         trendingContainer = None

@@ -25,10 +25,10 @@ overwatch.processing.processingClasses module
     :undoc-members:
     :show-inheritance:
 
-overwatch.processing.qa module
-------------------------------
+overwatch.processing.pluginManager module
+-----------------------------------------
 
-.. automodule:: overwatch.processing.qa
+.. automodule:: overwatch.processing.pluginManager
     :members:
     :undoc-members:
     :show-inheritance:

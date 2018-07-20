@@ -12,5 +12,5 @@ __all__ = [
            "mergeFiles",
            "processRuns",
            "processingClasses",
-           "qa"
+           "pluginManager"
           ]
