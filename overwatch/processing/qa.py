@@ -1,4 +1,7 @@
-""" Contains all of the machinery to allow for basic QA.
+""" Contains all of the machinery for the plugin system.
+
+It loads the plugin functions from the detector specific files, allowing
+for them to be called by the processing functions.
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
@@ -26,15 +29,15 @@ from ..base import config
 # Used to load functions from other moudles and then look them up.
 currentModule = sys.modules[__name__]
 
-###################################################
 def createHistGroups(subsystem):
     """ Properly route histogram group function for each subsystem.
 
-    Functions should be of the form `create(SUBSYSTEM)HistogramGroups`
+    Histogram groups are groups of histograms which should be displayed together
+    for visualization. Functions names should be of the form
+    ``create(SUBSYSTEM)HistogramGroups``.
 
     Args:
-        subsystem (subsystemContainer): Current subsystem container
-
+        subsystem (subsystemContainer): Current subsystem container.
     Returns:
         bool: True if the function was called
     """
@@ -49,14 +52,16 @@ def createHistGroups(subsystem):
     logger.info("Could not find histogram group creation function for subsystem {0}".format(subsystem.subsystem))
     return False
 
-###################################################
 def createAdditionalHistograms(subsystem):
-    """ Properly routes additional histogram creation functions for each subsystem
+    """ Properly routes additional histogram creation functions for each subsystem.
 
-    Functions should be of the form `createAdditional(SUBSYSTEM)Histograms`
+    Additional histograms can be created for a particular subsystem via these plugins.
+    Functions should be of the form ``createAdditional(SUBSYSTEM)Histograms``.
 
     Args:
         subsystem (subsystemContainer): Current subsystem container
+    Returns:
+        None.
     """
     functionName = "createAdditional{}Histograms".format(subsystem.subsystem)
     histogramCreationFunction = getattr(currentModule, functionName, None)
@@ -66,14 +71,19 @@ def createAdditionalHistograms(subsystem):
     else:
         logger.info("Could not find additional histogram creation function for subsystem {}.".format(subsystem.subsystem))
 
-###################################################
 def createHistogramStacks(subsystem):
-    """ Properly routes histogram stack function for each subsystem
+    """ Properly routes histogram stack function for each subsystem.
 
-    Functions should be of the form `create(SUBSYSTEM)HistogramStacks`
+    Histogram stacks are collections of histograms which should be plotted
+    together. For example, one may want to plot similar spectra, such as
+    those in the EMCal and DCal, on the same plot. These are treated simiilarly
+    to a histogramContainer. Functions should be of the
+    form ``create(SUBSYSTEM)HistogramStacks``.
 
     Args:
         subsystem (subsystemContainer): Current subsystem container
+    Returns:
+        None.
     """
     functionName = "create{}HistogramStacks".format(subsystem.subsystem)
     histogramStackFunction = getattr(currentModule, functionName, None)
@@ -86,14 +96,21 @@ def createHistogramStacks(subsystem):
         for k in subsystem.histsInFile.iterkeys():
             subsystem.histsAvailable[k] = subsystem.histsInFile[k]
 
-###################################################
 def setHistogramOptions(subsystem):
-    """ Properly routes histogram options function for each subsystem
+    """ Properly routes histogram options function for each subsystem.
 
-    Functions should be of the form set(SUBSYSTEM)HistogramOptions
+    Histogram options include options such as renaming histograms,
+    setting draw options, setting histogram scaling, and/or thresholds, etc.
+    Canvas options are set elsewhere when actually drawing on the canvas.
+    It cannot be set now because the canvas doesn't yet exist and we would
+    need to call functions to on that object (we prefer not to use function
+    pointers here). Functions should be of the
+    form ``set(SUBSYSTEM)HistogramOptions``.
     
     Args:
         subsystem (subsystemContainer): Current subsystem container
+    Returns:
+        None.
     """
     functionName = "set{}HistogramOptions".format(subsystem.subsystem)
     histogramOptionsFunction = getattr(currentModule, functionName, None)
@@ -102,15 +119,26 @@ def setHistogramOptions(subsystem):
     else:
         logger.info("Could not find histogram options function for subsystem {0}.".format(subsystem.subsystem))
 
-###################################################
 def findFunctionsForHist(subsystem, hist):
-    """ Determines which functions should be applied to a histogram
+    """ Determines which functions should be applied to a histogram.
 
-    Functions should be of the form findFunctionsFor(SUBSYSTEM)Histogram
-    
+    Histogram functions apply additional processing, from extracting values
+    to change ranges to drawing on top of the histogram. These functions
+    are executed when the histogram is processed. The functions should be
+    stored as function pointers so the lookup doesn't need to occur every
+    time the histogram container is processed. The plugin functions for each
+    subsystem should be of the form ``findFunctionsFor(SUBSYSTEM)Histogram``.
+
+    Note:
+        This function must handle all possible histograms for a subsystem,
+        so it is strongly recommended to select them via hist name or another
+        property.
+
     Args:
-        subsystem (subsystemContainer): Current subsystem container
-        hist (histogramContainer): The current histogram to be processed
+        subsystem (subsystemContainer): Current subsystem container.
+        hist (histogramContainer): Current histogram to be processed.
+    Returns:
+        None.
     """
     functionName = "findFunctionsFor{}Histogram".format(subsystem.subsystem)
     findFunction = getattr(currentModule, functionName, None)
@@ -119,13 +147,19 @@ def findFunctionsForHist(subsystem, hist):
     else:
         logger.info("Could not find histogram function for subsystem {0}".format(subsystem.subsystem))
 
-###################################################
 def defineTrendingObjects(subsystem):
-    """ Defines trending histograms and the histograms from which they should be extracted.
+    """ Defines trending objects and the histograms from which they should
+    be extracted.
+
+    Defines trending objects related to a subsystem. These objects implement the
+    trending function, as well as specifying the histograms that provide the values
+    for the trending.  The plugin function for each subsystem should be of the
+    form ``define(SUBSYSTEM)TrendingObjects``.
 
     Args:
-        subsystem (subsystemContainer): Current subsystem container
         subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
+    Returns:
+        dict: Keys are the name of the trending objects, while values are the trending objects themselves.
     """
     functionName = "define{}TrendingObjects".format(subsystem)
     findFunction = getattr(currentModule, functionName, None)
@@ -139,6 +173,12 @@ def defineTrendingObjects(subsystem):
 
 ###################################################
 # Load detector functions from other modules
+#
+# These detector plugin functions are dynamically loaded
+# so they don't need to be specified at execution time.
+# NOTE: These functions are susceptible to name collisions.
+#       This could be resolved by appending subsystem names
+#       to the particular functions.
 ###################################################
 #print dir(currentModule)
 # For more details on how this is possible, see: https://stackoverflow.com/a/3664396
@@ -149,10 +189,10 @@ subsystems = list(set(processingParameters["subsystemList"]))
 
 # Load functions
 for subsystem in subsystems:
-    logger.info("Subsystem {0} Functions loaded:".format(subsystem))
+    logger.info("Subsystem {} functions loaded:".format(subsystem))
 
     # Ensure that the module exists before trying to load it
-    if os.path.exists(os.path.join(os.path.dirname(__file__), "detectors", "{0}.py".format(subsystem))):
+    if os.path.exists(os.path.join(os.path.dirname(__file__), "detectors", "{}.py".format(subsystem))):
         #print("file exists, qa __name__: {0}".format(__name__))
         # Import module dynamically
         # Using absolute import
