@@ -14,7 +14,7 @@ import logging
 from overwatch.base import config
 # For configuring logger
 from overwatch.base import utilities
-(receiverParameters, filesRead) = config.readConfig(config.configurationType.dqmReceiver)
+(receiverParameters, filesRead) = config.readConfig(config.configurationType.receiver)
 
 # Setup logger
 # When imported, we just want it to take on it normal name

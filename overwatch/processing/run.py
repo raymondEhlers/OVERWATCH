@@ -17,7 +17,10 @@ logger = logging.getLogger("")
 #logger = logging.getLogger("processRuns")
 
 # Setup logging
-utilities.setupLogging(logger, processingParameters["loggingLevel"], processingParameters["debug"], "processRuns")
+utilities.setupLogging(logger = logger,
+        logLevel = processingParameters["loggingLevel"],
+        debug = processingParameters["debug"],
+        logFilename = "processRuns")
 # Log settings
 logger.info(processingParameters)
 

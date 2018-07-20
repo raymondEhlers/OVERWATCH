@@ -26,13 +26,16 @@ logger = logging.getLogger("")
 #logger = logging.getLogger("processRuns")
 
 # Setup logging
-utilities.setupLogging(logger, serverParameters["loggingLevel"], serverParameters["debug"], "updateDBUsers")
+utilities.setupLogging(logger = logger,
+        logLevel = serverParameters["loggingLevel"],
+        debug = serverParameters["debug"],
+        logFilename = "updateDBUsers")
 # Log settings
 logger.info("Settings: {0}"pprint.pformat(serverParameters))
 
 if __name__ == "__main__":
     (db, connection) = utilities.getDB(serverParameters["databaseLocation"])
-    utilities.updateDBSensitiveParameters(db = db, debug = serverParameters["debug"])
+    utilities.updateDBSensitiveParameters(db = db)
 
     # Close the database connection
     connection.close()

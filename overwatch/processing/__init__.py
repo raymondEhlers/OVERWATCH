@@ -10,7 +10,7 @@ Everything is configured by the settings in config.yaml
 
 __all__ = [
            "mergeFiles",
-           "processRus",
+           "processRuns",
            "processingClasses",
            "qa"
           ]

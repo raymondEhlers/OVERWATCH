@@ -8,6 +8,7 @@ Everything is configured by config.yaml files in the corresponding folders.
 
 __all__ = [
            "base",
+           "receiver",
            "processing",
            "webApp"
           ]
