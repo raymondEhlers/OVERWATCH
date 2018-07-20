@@ -439,49 +439,6 @@ def protected(filename):
     return send_from_directory(os.path.realpath(serverParameters["protectedFolder"]), filename)
 
 ###################################################
-@app.route("/docs/<path:filename>")
-@login_required
-def docs(filename):
-    """ Serve the documentation.
-
-    """
-    if os.path.isfile(os.path.join(serverParameters["docsBuildFolder"], filename)):
-        # Serve the docs
-        return send_from_directory(os.path.realpath(serverParameters["docsBuildFolder"]), filename)
-    else:
-        # If it isn't built for some reason, tell the user what happened
-        flash(filename + " not available! Docs are probably not built. Contact the admins!")
-        return redirect(url_for("contact"))
-
-###################################################
-@app.route("/doc/rebuild")
-@login_required
-def rebuildDocs():
-    """ Rebuild the docs based on the most recent source files.
-
-    The link is only available to the admin user.
-    """
-    if current_user.id == "emcalAdmin":
-        # Cannot get the actual output, as it seems to often crash the process
-        # I think this is related to the auto-reload in debug mode
-        #buildResult = subprocess.check_output(["make", "-C", serverParameters["docsFolder"], "html"])
-        #print buildResult
-        #flash("Doc build output: " + buildResult)
-
-        # Run the build command 
-        subprocess.call(["make", "-C", serverParameters["docsFolder"], "html"])
-
-        # Flash the result
-        flash("Docs rebuilt")
-
-    else:
-        # Flash to inform the user
-        flash("Regular users are not allowed to rebuild the docs.")
-
-    # Return to where the build command was called
-    return redirect(url_for("contact"))
-
-###################################################
 @app.route("/timeSlice", methods=["GET", "POST"])
 @login_required
 def timeSlice():

@@ -3,6 +3,7 @@
 # ALICE Overwatch
 
 [![DOI](https://zenodo.org/badge/50686415.svg)](https://zenodo.org/badge/latestdoi/50686415)
+[![](https://media.readthedocs.org/static/projects/badges/passing-flat.svg)](https://overwatch.readthedocs.io/en/latest/?badge=latest)
 
 Welcome to ALICE Overwatch[\*](#name-meaning), a project to provide real-time online data monitoring and
 quality assurance using timestamped data from the ALICE High Level Trigger (HLT) and Data Quality Monitoring (DQM).
