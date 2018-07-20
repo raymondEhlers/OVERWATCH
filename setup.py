@@ -72,7 +72,7 @@ setup(
         "future",
         "aenum",
         "numpy",
-        "rootpy",
+        #"rootpy",
         "ruamel.yaml",
         "werkzeug",
         "flask",
