@@ -130,17 +130,14 @@ def createAdditionalTPCHistograms(subsystem):
              ("hist3", "TPCQA/h_tpc_track_pos_recvertex_4_5_6"),
              ("hist4", "TPCQA/h_tpc_track_neg_recvertex_4_5_6")]
 
-    #if hist.histName in (inputHistName for _, inputHistName in names):
     for histName, inputHistName in names:
-        # Look for the hist name in our list above
-        if hist.histName in inputHistName:
-            # Assign the projection functions (and label for convenience)
-            for label, projFunction in ("aSide", aSideProjectToXZ, "cSide", cSideProjectToXZ):
-                # For example, "hist1_aSide"
-                histName = "{histName}_{label}",format(histName = histName, label = label)
-                histCont = processingClasses.histogramContainer(histName = histName, histList = [inputHistName])
-                histCont.projectionFunctionsToApply.append(projFunction)
-                subsystem.histsAvailable[histName] = histCont
+        # Assign the projection functions (and label for convenience)
+        for label, projFunction in [("aSide", aSideProjectToXZ), ("cSide", cSideProjectToXZ)]:
+            # For example, "hist1_aSide"
+            histName = "{histName}_{label}".format(histName = histName, label = label)
+            histCont = processingClasses.histogramContainer(histName = histName, histList = [inputHistName])
+            histCont.projectionFunctionsToApply.append(projFunction)
+            subsystem.histsAvailable[histName] = histCont
 
     # DCA vs Phi
     # NOTE: This is just an example and may not be the right histogram!
@@ -159,7 +156,8 @@ def restrictRangeAndProjectTo1D(subsystem, hist, processingOptions):
     logger.debug("Projecting hist {}".format(hist.hist.GetName()))
     tempHist = hist.hist.ProjectionX("{}_{}".format(hist.hist.GetName(), "restrictedPtEta"))
     logger.debug("Projection entries: {}".format(tempHist.GetEntries()))
-    hist.hist = tempHist
+
+    return tempHist
 
 # Helper for projectToXZ
 def aSideProjectToXZ(subsystem, hist, processingOptions):
@@ -179,4 +177,4 @@ def projectToXZ(subsystem, hist, processingOptions, aSide):
     tempHist = hist.hist.Project3D("xz")
     tempHist.SetName("{0}_xz".format(hist.hist.GetName()))
 
-    return temphist
+    return tempHist
