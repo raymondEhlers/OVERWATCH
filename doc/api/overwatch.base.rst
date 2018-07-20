@@ -1,9 +1,6 @@
 overwatch.base package
 ======================
 
-Submodules
-----------
-
 overwatch.base.config module
 ----------------------------
 

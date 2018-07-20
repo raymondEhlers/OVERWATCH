@@ -1,9 +1,6 @@
 overwatch.webApp package
 ========================
 
-Submodules
-----------
-
 overwatch.webApp.auth module
 ----------------------------
 

@@ -75,7 +75,8 @@ language = None
 exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store',
         "CHEP",
         "planning",
-        "logo"
+        "logo",
+        "README.md" # This is a README for the docs generation, so it shouldn't be included in the generated docs
     ]
 
 # The name of the Pygments (syntax highlighting) style to use.
@@ -114,9 +115,10 @@ html_static_path = ['_static']
 # defined by theme itself.  Builtin themes are using these templates by
 # default: ``['localtoc.html', 'relations.html', 'sourcelink.html',
 # 'searchbox.html']``.
-#
 html_sidebars = {
-        "*" : [
+        # Two starts is extremely important! Otherwise, it won't apply the navigation bar
+        # to pages further down in the docs, like in the api folder.
+        "**" : [
             "about.html",
             "navigation.html",
             "relations.html",

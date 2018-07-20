@@ -1,9 +1,6 @@
 overwatch.receiver package
 ==========================
 
-Submodules
-----------
-
 overwatch.receiver.dqmReceiver module
 -------------------------------------
 

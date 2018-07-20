@@ -38,8 +38,6 @@ rootpy
 
 # Documentation
 sphinx
-# Allow google and numpy style docstrings
-sphinxcontrib-napoleon
 # Allow markdown
 recommonmark
 pprint

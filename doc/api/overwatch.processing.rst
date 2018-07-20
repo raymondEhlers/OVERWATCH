@@ -1,9 +1,6 @@
 overwatch.processing package
 ============================
 
-Submodules
-----------
-
 overwatch.processing.mergeFiles module
 --------------------------------------
 

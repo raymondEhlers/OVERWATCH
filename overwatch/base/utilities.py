@@ -323,8 +323,10 @@ def moveFiles(dirPrefix, subsystemDict):
     >>> runsDict["Run300005"]["hltMode"]
     "B"
 
-    The run and subsystem directories are created as needed. The particular filenames are determined by convention
-    to make it possible to extract the timestamps later.
+    The run and subsystem directories are created as needed. The filenames are determined by convention to make
+    it possible to extract the timestamps later. The HLT mode is also stored, moving the information from the
+    input filename to the output dict. Some care is required here - otherwise the HLT information will be lost
+    (although it can always be reconstructed via the logbook).
 
     Note:
         HLT mode "E" corresponds to be replayed data which can be disregarded. Here, it is moved

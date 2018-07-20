@@ -1,0 +1,7 @@
+{#
+  Jinja2 template file that extends the default Sphinx theme to include our
+  JavaScript file.
+  Copied from scikit-hep.
+#}
+{% extends "!layout.html" %}
+{% set css_files = css_files + ["_static/overwatch.css"] %}
