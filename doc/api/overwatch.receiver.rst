@@ -17,11 +17,3 @@ overwatch.receiver.run module
     :undoc-members:
     :show-inheritance:
 
-
-Module contents
----------------
-
-.. automodule:: overwatch.receiver
-    :members:
-    :undoc-members:
-    :show-inheritance:

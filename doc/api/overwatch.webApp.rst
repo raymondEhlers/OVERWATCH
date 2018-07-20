@@ -49,11 +49,3 @@ overwatch.webApp.webApp module
     :undoc-members:
     :show-inheritance:
 
-
-Module contents
----------------
-
-.. automodule:: overwatch.webApp
-    :members:
-    :undoc-members:
-    :show-inheritance:

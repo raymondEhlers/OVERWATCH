@@ -25,11 +25,3 @@ overwatch.base.utilities module
     :undoc-members:
     :show-inheritance:
 
-
-Module contents
----------------
-
-.. automodule:: overwatch.base
-    :members:
-    :undoc-members:
-    :show-inheritance:
