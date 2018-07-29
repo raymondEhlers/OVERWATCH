@@ -40,7 +40,6 @@ rootpy
 sphinx
 # Allow markdown
 recommonmark
-pprint
 
 # Configuration
 ruamel.yaml<=0.15
