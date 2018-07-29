@@ -1,5 +1,5 @@
 """
-This module contains functions used to merge histograms, including the principal merge function. 
+This module contains functions used to merge histograms and ROOT files.
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 .. codeauthor:: James Mulligan <james.mulligan@yale.edu>, Yale University
@@ -23,33 +23,47 @@ logger = logging.getLogger(__name__)
 
 from . import processingClasses
 
-###################################################
 def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlice = None):
-    """ Merge function: for a given run and subsystem, merges files appropriately into a combined file.  
+    """ For a given run and subsystem, handles merging of files into a "combined file" which
+    is suitable for processing.
 
-    Merge is only performed if we have received new files in the specificed run.
-    Merges according to "cumulativeMode": See below.
-    If minTimeMinutes and maxTimeMinutes are specified, merges only a fixed time range. Otherwise, merges all acquired ROOT files.
+    For a standard subsystem, the "combined file" is the file which stores the most recent data
+    for a particular run and subsystem. The merge is only performed if we have received new files
+    in the specified run. The details of the merge are determined by the ``cumuluativeMode`` setting.
+    This setting, which is determined by the options sent in the data request sent to the HLT by
+    the ZMQ receiver, denotes whether the data that we received are reset each time the data is sent.
+    If the data is being reset, then the files are not cumulative, and therefore ``cumulativeMode`` should be
+    set to ``False``. Note that although this function supports both modes, we tend to operate
+    in cumulative mode because resetting the objects would interfere with other subscribes to the HLT
+    data. For example, if both Overwatch and another subscriber were set to request data with resets
+    every minute and were offset by 30 seconds, they would both only receive approximately half the
+    data! Thus, it's preferred to operate in cumulative mode.
+
+    For cumulative mode, the combined objects are created in two different ways: 1) For a standard
+    combined file, by simply copying the most recent file (because it contains data covering the entire
+    run); 2) For time slices, by subtracting the objects in two corresponding ROOT files. For reset
+    mode, ``TFileMerger`` is used to merge all files within the available timestamps together.
+
+    This function also handles merging files for time slices. The relevant parameters should be specified
+    in a ``timeSliceContainer``. The min and max requested times are extracted, and this function only
+    merges files within the fixed time range corresponding to those values. The output format of this
+    file is identical to any other combined file.
+
+    Note:
+        As side effects of this function, if it executes successfully for a combined file, the combined
+        filename will be updated in ``subsystemContainer``.
 
     Args:
-        currentDir (str): Directory prefix necessary to get to all of the folders. 
-        runDir (str): Run directory of current run. 
+        dirPrefix (str): Path to the root directory where the data is stored.
+        runDir (str): Run directory of current run. Of the form ``Run######``.
         subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
-        cumulativeMode (Optional[bool]): Specifies whether the histograms we receive are cumulative or if they 
+        cumulativeMode (bool): Specifies whether the histograms we receive are cumulative or if they 
             have been reset between each acquired ROOT file, i.e. whether we merge in "subscribe mode" or 
             "request/reset mode". Default: True.
-        minTimeMinutes (Optional[int]): Min time to merge from, in minutes, starting from 0. Default: -1. Return
-            0 if time range unacceptable. 
-        maxTimeMinutes (Optional[int]): Max time range to merge to, in minutes. Default: -1. If max filter time 
-            is greater than max file time, merge up to and including last file. Return 0 if time range unacceptable.
-    
+        timeSlice (processingClasses.timeSliceContainer): Stores the properties of the requested time slice. If not specified,
+            it will be ignored and it will create a standard "combined file". Default: None
     Returns:
-        tuple: Tuple containing:
-
-            actualFilterTimeMin (int): length of time (in minutes) spanned by merged file
-
-            outfile (str): location of merged file 
-
+        None: On success, ``None`` is returned. Otherwise, an exception is raise.
     """
     # Merging using root
     merger = ROOT.TFileMerger()
@@ -79,7 +93,7 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlice = None):
         subtractFiles(os.path.join(currentDir, earliestFile),
                       os.path.join(currentDir, latestFile),
                       timeSlicesFilename)
-        logger.info("Completed time slicing via subtraction with result stored in {0}!\nMerging complete!".format(timeSlicesFilename))
+        logger.info("Completed time slicing via subtraction with result stored in {}!\nMerging complete!".format(timeSlicesFilename))
         return None
 
     if cumulativeMode:
@@ -92,23 +106,24 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlice = None):
     else:
         # If more than one file (almost assuredly reset mode), merge everything
         for fileCont in filesToMerge:
-            logger.info("Added file {0} to merger".format(fileCont.filename))
+            logger.info("Added file {} to merger".format(fileCont.filename))
             merger.AddFile(fileCont.filename)
 
         numberOfFiles = merger.GetMergeList().GetEntries()
         if numberOfFiles != len(filesToMerge):
-            logger.error("Problems encountered when adding files to merger!")
-            return {"Merge Error": ["Problems encountered when adding files to merger! Number of input files ({0}) do not match number in merger ({1})!".format(len(filesToMerge), numberOfFiles)]}
+            errorMessage = "Problems encountered when adding files to merger! Number of input files ({}) do not match number in merger ({})!".format(len(filesToMerge), numberOfFiles)
+            logger.error(errorMessage)
+            raise ValueError(errorMessage)
 
     if timeSlice:
         filePath = os.path.join(subsystem.baseDir, timeSlice.filename.filename)
     else:
         # Define convenient variable
         maxFilteredTimeStamp = filesToMerge[-1].fileTime
-        filePath = os.path.join(subsystem.baseDir, "hists.combined.%i.%i.root" % (numberOfFiles, maxFilteredTimeStamp))
+        filePath = os.path.join(subsystem.baseDir, "hists.combined.{}.{}.root".format(numberOfFiles, maxFilteredTimeStamp))
     outFile = os.path.join(currentDir, filePath)
-    logger.info("Number of files to be merged: {0}".format(numberOfFiles))
-    logger.info("Output file: {0}".format(outFile))
+    logger.info("Number of files to be merged: {}".format(numberOfFiles))
+    logger.info("Output file: {}".format(outFile))
 
     # Set the output and perform the actual merge
     if numberOfFiles == 1:
@@ -125,20 +140,29 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlice = None):
         subsystem.combinedFile = processingClasses.fileContainer(filePath, startOfRun = subsystem.startOfRun)
     return None
 
-###################################################
 def subtractFiles(minFile, maxFile, outfile):
     """ Subtract histograms in one file from matching histograms in another. 
 
-    Used for time-dependent merge in cumulative mode. 
+    This function is used for creating time slices in cumulative mode. Since each file is cumulative,
+    the later time stamped file needs to be subtracted from the earlier time stamped file. The
+    remaining data corresponds to the data stored during the time window ``early-late``.
+
+    This function is **not** used for creating a standard combined file because the cumulative information
+    is already stored in the most recent file.
+
+    Note:
+        The names of the histograms in each file must match exactly for them to be subtracted.
+
+    Note:
+        The output file is opened with "RECREATE", so it will always overwrite an existing
+        file with the given filename!
 
     Args:
-        minFile (str): File to subtract.
-        maxFile (str): File to subtract from. 
-        outfile (str): Output file with subtracted histograms. 
-
+        minFile (str): Filename of the ROOT file containing data to be subtracted.
+        maxFile (str): Filename of the ROOT file containing data to to subtracted from. 
+        outfile (str): Filename of the output file which will contain the subtracted histograms. 
     Returns:
         None.
-
     """
 
     fMin = ROOT.TFile(minFile, "READ")
@@ -149,7 +173,7 @@ def subtractFiles(minFile, maxFile, outfile):
     keysMinFile = fMin.GetListOfKeys();
     keysMaxFile = fMax.GetListOfKeys();
 
-    # Loop through both files, and subtract matching pairs of histos
+    # Loop through both files, and subtract matching pairs of hists
     for keyMin in keysMinFile:
         # Ensure that we only take histograms (we would expect such, but better to check for safety)
         classOfObject = ROOT.gROOT.GetClass(keyMin.GetClassName())
@@ -178,24 +202,27 @@ def subtractFiles(minFile, maxFile, outfile):
     fMax.Close()
     fOut.Close()
 
-###################################################
 def mergeRootFiles(runs, dirPrefix, forceNewMerge = False, cumulativeMode = True):
-    """ Iterates over all runs, all subsystems as specified, and merges histograms according to the merge() function. Results in one combined file per subdirectory.
+    """ Driver function for creating combined files for each subsystem within a given set of runs.
+
+    For a given list of runs, this function will iterate over all available subsystems, merging or
+    moving files as appropriate. To speed up this function, operations will only be performed if
+    a new file is available for a particular subsystem (ie. ``subsystemContainer.newFile == True``).
+    This function will result in a combined file per subsystem per run. For further information on
+    the format of this file, see ``merge()``.
 
     Args:
-        runDirs (list): List of run directories to perform merge over.
-        dirPrefix (str): Directory prefix necessary to get to all of the folders. 
-        forceNewMerge (Optional[bool]): Flag to force new merge, regardless of whether it has already been merged.
-            Default: False. 
-        cumulativeMode (Optional[bool]): Specifies whether the histograms we receive are cumulative or if they 
+        runs (dict): Dict of ``runContainers`` to perform the merge over. The keys are the runDirs,
+            in the from of ``Run######``.
+        dirPrefix (str): Path to the root directory where the data is stored.
+        forceNewMerge (bool): Flag to force merging for all runs, regardless of whether it is supposed
+            to be merged.  Default: False. 
+        cumulativeMode (bool): Specifies whether the histograms we receive are cumulative or if they 
             have been reset between each acquired ROOT file, i.e. whether we merge in "subscribe mode" or 
-            "request/reset mode". Default: True.
-    
+            "request/reset mode". See ``merge()`` for further information on this mode. Default: True.
     Returns:
-        list: List containing names of all runs that have been merged.
-
+        None
     """
-
     currentDir = dirPrefix
 
     # Process runs
@@ -216,9 +243,9 @@ def mergeRootFiles(runs, dirPrefix, forceNewMerge = False, cumulativeMode = True
                 #   In SUB mode, compare combined file timestamp with latest timestamp of uncombined file
                 #   In REQ mode, compare combined file merge count with number of uncombined files
 
-                logger.info("Need to merge {0}, {1} again".format(runDir, subsystem))
+                logger.info("Need to merge {}, {} again".format(runDir, subsystem))
                 if combinedFile:
-                    logger.info("Removing previous merged file %s" % combinedFile.filename)
+                    logger.info("Removing previous merged file {}".format(combinedFile.filename))
                     os.remove(os.path.join(currentDir, combinedFile.filename))
                     # Remove from the file list
                     run.subsystems[subsystem].combinedFile = None

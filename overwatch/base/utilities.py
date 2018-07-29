@@ -109,7 +109,7 @@ def findCurrentRunDirs(dirPrefix = ""):
     """ Finds all of the dirs in the specified directory dir with "Run" in the name.
 
     Args:
-        dirPrefix (Optional[str]): Path to where all of the run directories are stored. Default: current working directory.
+        dirPrefix (str): Path to where all of the run directories are stored. Default: current working directory.
     Returns:
         list: List of runs.
     """

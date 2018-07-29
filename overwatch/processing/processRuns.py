@@ -460,11 +460,14 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
 
     # Merge only the partial run.
     # Return if there were errors in merging
-    errors = mergeFiles.merge(dirPrefix, run, subsystem,
-                              cumulativeMode = processingParameters["cumulativeMode"],
-                              timeSlice = timeSlice)
-    if errors:
-        return errors
+    try:
+        errors = mergeFiles.merge(dirPrefix, run, subsystem,
+                                  cumulativeMode = processingParameters["cumulativeMode"],
+                                  timeSlice = timeSlice)
+    except ValueError as e:
+        # Return the merge error to the user.
+        # We want to return a list, so we just return all of the args.
+        return {"Merge Error" : e.args}
 
     # Print variables for log
     logger.debug("minTimeRequested: {0}, maxTimeRequested: {1}".format(minTimeRequested, maxTimeRequested))
