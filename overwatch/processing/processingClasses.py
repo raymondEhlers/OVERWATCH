@@ -282,6 +282,17 @@ class trendingContainer(persistent.Persistent):
 class timeSliceContainer(persistent.Persistent):
     """ Time slice information container
 
+    Args:
+        minUnixTimeRequested (int): Minimum requested unix time. This is the first time stamp to be included
+            in the time slice.
+        maxUnixTimeRequested (int): Maximum requested unix time. This is the last time stamp to be included
+            in the time slice.
+        minUnixTimeAvailable (int): Minimum unix time in the run.
+        maxUnixTimeAvailable (int): Maximum unix time in the run.
+        startOfRun (int): Unix time of the start of the run.
+        filesToMerge ():
+        optionsHash ():
+
     """
     def __init__(self, minUnixTimeRequested, maxUnixTimeRequested, minUnixTimeAvailable, maxUnixTimeAvailable, startOfRun, filesToMerge, optionsHash):
         # Requested times
@@ -298,7 +309,7 @@ class timeSliceContainer(persistent.Persistent):
         self.filesToMerge = filesToMerge
 
         # Filename prefix for saving out files
-        self.filenamePrefix = "timeSlice.{0}.{1}.{2}".format(self.minUnixTimeAvailable, self.maxUnixTimeAvailable, self.optionsHash)
+        self.filenamePrefix = "timeSlice.{}.{}.{}".format(self.minUnixTimeAvailable, self.maxUnixTimeAvailable, self.optionsHash)
 
         # Create filename
         self.filename = fileContainer(self.filenamePrefix + ".root")
@@ -319,7 +330,10 @@ class timeSliceContainer(persistent.Persistent):
 ###################################################
 class fileContainer(persistent.Persistent):
     """ File information container
-    
+
+    Args:
+        filename (str):
+        startOfRun (int?):
     """
     def __init__(self, filename, startOfRun = None):
         self.filename = filename
