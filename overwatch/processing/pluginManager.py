@@ -213,6 +213,7 @@ for subsystem in subsystems:
         # Using absolute import
         #subsystemModule = importlib.import_module("%s.%s.%s.%s" % ("overwatch", "processing", "detectors", subsystem))
         # Using relative import
+        # Relative import is preferred here because it's used elsewhere in the project.
         subsystemModule = importlib.import_module(".detectors.{0}".format(subsystem), package = "overwatch.processing")
         #logger.info(dir(subsystemModule))
 
