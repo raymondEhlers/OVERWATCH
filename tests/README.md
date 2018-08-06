@@ -7,7 +7,9 @@ against reference values!
 
 To execute the testing, I tend to use something like:
 
-`pytest -l --cov=overwatch.base --cov-report html . --durations=5`
+```bash
+$ pytest -l --cov=overwatch.base --cov-report html . --durations=5
+```
 
 This assumes you are running from the `tests` folder (as suggested above) and will be report on which tests
 are the slowest as well as provide a coverage report for (in this case) the `overwatch.base` module. This can

@@ -14,6 +14,7 @@ Welcome to the ALICE Overwatch documentation
    Detailed documentation <documentation.rst>
    about.md
    detectorPluginsReadme.md
+   tests.md
 
 The ALICE Overwatch project aims to provide online monitoring and basic quality assurance using data from the
 ALICE High Level Trigger.

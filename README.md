@@ -21,10 +21,10 @@ To setup for local development is fairly straightforward.
 ```bash
 $ git clone https://github.com/raymondEhlers/OVERWATCH.git overwatch
 $ cd overwatch
-# Probably best to do this in a virtualenv
-$ pip install -r requirements.txt
 # Install webApp static data (Google Polymer and jsRoot)
 $ cd overwatch/webApp/static && bower install && git clone https://github.com/root-project/jsroot.git jsRoot && cd -
+# Probably best to do this in a virtualenv. The overwatch setup.py can't install this automatically.
+$ pip install git+https://github.com/SpotlightKid/flask-zodb.git
 # Install for local development
 $ pip install -e .
 ```

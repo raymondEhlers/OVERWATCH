@@ -50,7 +50,7 @@ setup(
     # What does your project relate to?
     keywords='HEP ALICE',
 
-    packages=find_packages(exclude=("deploy", ".git")),
+    packages=find_packages(exclude=("deploy", ".git", "tests")),
 
     # Rename scripts to the desired executable names
     # See: https://stackoverflow.com/a/8506532
@@ -68,32 +68,46 @@ setup(
             ],
         },
 
-    # This is usually the minimal set of the required packages.
-    # Packages should be installed via pip -r requirements.txt !
-    install_requires=[
-        "future",
+    # Required packages.
+    # Optional dependencies are defined below
+    install_requires = [
         "aenum",
-        "numpy",
-        #"rootpy",
+        "future",
         "ruamel.yaml",
+        "numpy",
+        # rootpy is only used peripherally and it's installation process is sometimes difficult,
+        # so although it's a strictly speaking a requirement, we leave it out here.
+        # Plus, this allows us to build the docs.
+        #"rootpy",
         "werkzeug",
         "flask",
         "Flask-Login",
         "Flask-Assets",
         "Flask-RESTful",
         "ZODB",
+        # Install `Flask-ZODB` from git repo to support the newer hook and py 3
+        # git+https://github.com/SpotlightKid/flask-zodb.git
+        # Unfortunately, we can't install this directly from git, so it has to be handled directly.
         "zodburi",
+        "bcrypt",
         "Flask-Bcrypt",
-        "requests"
+        "requests",
+        "uwsgi",
     ],
 
     # Include additional files
     include_package_data=True,
 
-    # Test packages
-    tests_require = [
-        "pytest",
-        "pytest-cov",
-        "pytest-mock"
-    ]
+    extras_require = {
+        "tests" : [
+            "pytest",
+            "pytest-cov",
+            "pytest-mock",
+        ],
+        "docs" : [
+            "sphinx",
+            # Allow markdown files to be used
+            "recommonmark",
+        ]
+    }
   )
