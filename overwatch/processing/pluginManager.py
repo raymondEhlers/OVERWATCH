@@ -1,7 +1,19 @@
 """ Contains all of the machinery for the plugin system.
 
-It loads the plugin functions from the detector specific files, allowing
-for them to be called by the processing functions.
+This modules manages the plugins functions defined by each detector.
+This is achieved by dynamically loading each subsystem module on import
+of this module. A pointer to each function is added to the plugin manager,
+allowing for any detector subsystem function to be called through this module.
+The processing functions use this functionality to allow subsystems to plug
+into all stages of the processing and trending.
+
+Note that only the main routing plugin functions defined below (for example, as
+defined in ``findFunctionsForHist``) are actually called through this module.
+All other functions (for example, functions that will actually perform processing
+on a hist) will be called directly through their own subsystem modules. However,
+they are also loaded by the plugin manager for convenience.
+
+The subsystems to actually load are specified in the configuration file.
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
@@ -26,17 +38,38 @@ from ..base import config
 (processingParameters, filesRead) = config.readConfig(config.configurationType.processing)
 
 # Get the current module
-# Used to load functions from other moudles and then look them up.
+# Used to load functions from other modules and then look them up.
 currentModule = sys.modules[__name__]
+
+def subsystemNamespace(functionName, subsystemName):
+    """ Prepend the subsystem name to a function to act as a namespace.
+
+    This avoids the possibility of different subsystems with the same function names overwriting
+    each other. Returned function names are of the form ``SYS_functionName``.
+
+    Note:
+        Since ``.`` indicates an attribute or element of a module, we use an ``_`` instead.
+        Although it might be nice visually, and is suggestive of the relationship between
+        these functions and the subsystem modules, it causes problems when generating the docs
+        since the generation treats the ``.`` as if it legitimate python (which it isn't, since
+        we don't have the full path).
+
+    Args:
+        functionName (str): Name of the function.
+        subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
+    Returns:
+        str: Properly formatted function name with the subsystem prepended as a namespace.
+    """
+    return "{subsystemName}_{functionName}".format(subsystemName = subsystemName, functionName = functionName)
 
 def createHistGroups(subsystem):
     """ Properly route histogram group function for each subsystem.
 
     Histogram groups are groups of histograms which should be displayed together for
     visualization. Functions names should be of the form
-    ``create(SUBSYSTEM)HistogramGroups(subsystemName, *args, **kwargs)``. where
-    subsystemName (str) is the name of the subsystem, and the other args are reserved for
-    future use.
+    ``create(SYS)HistogramGroups(subsystemName, *args, **kwargs)``, where ``(SYS)`` is
+    the subsystem three letter name, subsystemName (str) is the name of the subsystem, and
+    the other args are reserved for future use.
 
     Args:
         subsystem (subsystemContainer): Current subsystem container.
@@ -44,13 +77,14 @@ def createHistGroups(subsystem):
         bool: True if the function was called
     """
     functionName = "create{}HistogramGroups".format(subsystem.subsystem)
+    functionName = subsystemNamespace(functionName = functionName, subsystemName = subsystem.subsystem)
     # Get the function
     sortFunction = getattr(currentModule, functionName, None)
     if sortFunction is not None:
         sortFunction(subsystem)
         return True
 
-    # If it doens't work for any reason, return false so that we can create a default
+    # If it doesn't work for any reason, return false so that we can create a default
     logger.info("Could not find histogram group creation function for subsystem {0}".format(subsystem.subsystem))
     return False
 
@@ -59,9 +93,9 @@ def createAdditionalHistograms(subsystem):
 
     Additional histograms can be created for a particular subsystem via these plugins.
     Functions should be of the
-    form ``createAdditional(SUBSYSTEM)Histograms(subsystemName, *args, **kwargs)``, where
-    subsystemName (str) is the name of the subsystem, and the other args are reserved for
-    future use.
+    form ``createAdditional(SYS)Histograms(subsystemName, *args, **kwargs)``, where ``(SYS)``
+    is the subsystem three letter name, subsystemName (str) is the name of the subsystem, and
+    the other args are reserved for future use.
 
     Args:
         subsystem (subsystemContainer): Current subsystem container
@@ -69,6 +103,7 @@ def createAdditionalHistograms(subsystem):
         None.
     """
     functionName = "createAdditional{}Histograms".format(subsystem.subsystem)
+    functionName = subsystemNamespace(functionName = functionName, subsystemName = subsystem.subsystem)
     histogramCreationFunction = getattr(currentModule, functionName, None)
     if histogramCreationFunction is not None:
         logger.info("Found additional histogram creation function for subsystem {}".format(subsystem.subsystem))
@@ -83,9 +118,9 @@ def createHistogramStacks(subsystem):
     together. For example, one may want to plot similar spectra, such as
     those in the EMCal and DCal, on the same plot. These are treated simiilarly
     to a histogramContainer. Functions should be of the
-    form ``create(SUBSYSTEM)HistogramStacks(subsystem, *args, **kwargs)``, where
-    subsystem (subsystemContainer) is the current subsystem container, and the
-    other args are reserved for future use.
+    form ``create(SYS)HistogramStacks(subsystem, *args, **kwargs)``, where
+    ``(SYS)`` is the subsystem three letter name, subsystem (subsystemContainer) is the
+    current subsystem container, and the other args are reserved for future use.
 
     Args:
         subsystem (subsystemContainer): Current subsystem container
@@ -93,6 +128,7 @@ def createHistogramStacks(subsystem):
         None.
     """
     functionName = "create{}HistogramStacks".format(subsystem.subsystem)
+    functionName = subsystemNamespace(functionName = functionName, subsystemName = subsystem.subsystem)
     histogramStackFunction = getattr(currentModule, functionName, None)
     if histogramStackFunction is not None:
         histogramStackFunction(subsystem)
@@ -112,9 +148,10 @@ def setHistogramOptions(subsystem):
     It cannot be set now because the canvas doesn't yet exist and we would
     need to call functions to on that object (we prefer not to use function
     pointers here). Functions should be of the
-    form ``set(SUBSYSTEM)HistogramOptions(subsystem, *args, **kwargs)``,
-    where subsystem (subsystemContainer) is the current subsystem container, and
-    the other args are reserved for future use.
+    form ``set(SYS)HistogramOptions(subsystem, *args, **kwargs)``, where
+    ``(SYS)`` is the subsystem three letter name, subsystem (subsystemContainer)
+    is the current subsystem container, and the other args are reserved for
+    future use.
     
     Args:
         subsystem (subsystemContainer): Current subsystem container
@@ -122,6 +159,7 @@ def setHistogramOptions(subsystem):
         None.
     """
     functionName = "set{}HistogramOptions".format(subsystem.subsystem)
+    functionName = subsystemNamespace(functionName = functionName, subsystemName = subsystem.subsystem)
     histogramOptionsFunction = getattr(currentModule, functionName, None)
     if histogramOptionsFunction is not None:
         histogramOptionsFunction(subsystem)
@@ -137,8 +175,9 @@ def findFunctionsForHist(subsystem, hist):
     stored as function pointers so the lookup doesn't need to occur every
     time the histogram container is processed. The plugin functions for each
     subsystem should be of the
-    form ``findFunctionsFor(SUBSYSTEM)Histogram(subsystem, hist, *args, **kwargs)``,
-    where subsystem (subsystemContainer) is the current subsystem and
+    form ``findFunctionsFor(SYS)Histogram(subsystem, hist, *args, **kwargs)``,
+    where ``(SYS)`` is the subsystem three letter name,
+    subsystem (subsystemContainer) is the current subsystem and
     hist (histogramContainer) is the current histogram being processed, and
     the other args are reserved for future use.
 
@@ -154,6 +193,7 @@ def findFunctionsForHist(subsystem, hist):
         None.
     """
     functionName = "findFunctionsFor{}Histogram".format(subsystem.subsystem)
+    functionName = subsystemNamespace(functionName = functionName, subsystemName = subsystem.subsystem)
     findFunction = getattr(currentModule, functionName, None)
     if findFunction is not None:
         findFunction(subsystem, hist)
@@ -167,9 +207,9 @@ def defineTrendingObjects(subsystem):
     Defines trending objects related to a subsystem. These objects implement the
     trending function, as well as specifying the histograms that provide the values
     for the trending.  The plugin function for each subsystem should be of the
-    form ``define(SUBSYSTEM)TrendingObjects(trending, *args, **kwargs)``, where
-    trending is a dict where the new trending objects should be stored, and
-    the other args are reserved for future use.
+    form ``define(SYS)TrendingObjects(trending, *args, **kwargs)``, where
+    ``(SYS)`` is the subsystem three letter name, trending is a dict where the new
+    trending objects should be stored, and the other args are reserved for future use.
 
     Args:
         subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
@@ -177,10 +217,11 @@ def defineTrendingObjects(subsystem):
         dict: Keys are the name of the trending objects, while values are the trending objects themselves.
     """
     functionName = "define{}TrendingObjects".format(subsystem)
-    findFunction = getattr(currentModule, functionName, None)
+    functionName = subsystemNamespace(functionName = functionName, subsystemName = subsystem)
+    defineTrendingFunction = getattr(currentModule, functionName, None)
     trending = {}
-    if findFunction is not None:
-        trending = findFunction(trending)
+    if defineTrendingFunction is not None:
+        trending = defineTrendingFunction(trending)
     else:
         logger.info("Could not find histogram trending function for subsystem {0}".format(subsystem))
 
@@ -189,13 +230,10 @@ def defineTrendingObjects(subsystem):
 ###################################################
 # Load detector functions from other modules
 #
-# These detector plugin functions are dynamically loaded
-# so they don't need to be specified at execution time.
-# NOTE: These functions are susceptible to name collisions.
-#       This could be resolved by appending subsystem names
-#       to the particular functions.
+# These detector plugin functions are dynamically loaded so this
+# module doesn't need to be modified when adding a new subsystem.
 ###################################################
-#print dir(currentModule)
+#logger.debug("Plugin manager dir: {}".format(dir(currentModule)))
 # For more details on how this is possible, see: https://stackoverflow.com/a/3664396
 logger.info("\nLoading modules for detectors:")
 
@@ -225,6 +263,10 @@ for subsystem in subsystems:
             # so we take the first element
             funcName = funcName[0]
             func = getattr(subsystemModule, funcName)
+
+            # Append the subsystem name to the function name for safety. This effectively creates
+            # a namespace which ensures that subsystems don't overwrite other subsystems' modules.
+            funcName = subsystemNamespace(functionName = funcName, subsystemName = subsystem)
 
             # Add the function to the current module
             setattr(currentModule, funcName, func)
