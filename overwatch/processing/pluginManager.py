@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """ Contains all of the machinery for the plugin system.
 
 This modules manages the plugins functions defined by each detector.

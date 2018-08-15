@@ -1,11 +1,11 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
-"""
+""" Classes that define the processing structure of Overwatch.
+
 Classes that define the structure of processing. This information can be created and processed,
 or read from file.
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
-
 """
 
 from __future__ import print_function

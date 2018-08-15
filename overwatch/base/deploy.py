@@ -1,5 +1,25 @@
 #!/usr/bin/env python
 
+""" Handles deployment and starting of Overwatch and related processes.
+
+It can handle the configuration and execution of:
+
+- ``Overwatch ZMQ receiver``
+- ``Overwatch DQM receiver``
+    - ``Nginx``
+- ``Overwatch processing``
+- ``Overwatch web app``
+    - ``Nginx``
+
+It can also handle receiving SSH Keys and grid certificates passed in via
+environment variables.
+
+Usually, this module is executed directly in docker containers. All options
+are configured via a YAML file.
+
+.. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
+"""
+
 from __future__ import print_function
 from future.utils import iteritems
 

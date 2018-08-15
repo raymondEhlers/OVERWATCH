@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
-# Handles configuration of overwatch via yaml. Configurations are built
-# in a hierarchy, with the base configuration providing the first layer,
-# and building up further until the specified module.
-#
-# yaml parsing plugins are also specified here. This breaks the abstraction
-# a little bit, but it makes things much simpler, so it's worth the trade-off.
-#
-# author: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
-# date: 16 July 2018
+""" Handles configuration of overwatch via yaml.
+
+Configurations are built in a hierarchy, with the base configuration providing
+the first layer, and building up further until the specified module.
+
+YAML parsing plugins are also specified here. This breaks the abstraction
+a little bit, but it makes things much simpler, so it's worth the trade-off.
+
+.. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
+"""
 
 import aenum
 import ruamel.yaml as yaml

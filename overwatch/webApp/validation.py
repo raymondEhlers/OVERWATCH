@@ -1,9 +1,10 @@
+#!/usr/bin/env python
+
 """ Contains validation functions.
 
 These functions are important to ensure that only valid values are passed to the processing functions.
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University 
-
 """
 
 # General

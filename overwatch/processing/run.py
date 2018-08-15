@@ -1,5 +1,14 @@
 #!/usr/bin/env python
 
+""" Minimal executable to launch processing.
+
+``__main__`` is implemented to allow for this function to be executed directly,
+while ``run()`` is defined to allow for execution via ``entry_points`` defined
+in the python package setup.
+
+.. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
+"""
+
 import logging
 import pprint
 

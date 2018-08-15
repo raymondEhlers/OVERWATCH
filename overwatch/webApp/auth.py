@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """ Contains auth functions.
 
 For user authentication, https://exploreflask.com/users.html was extensively used as a guide.

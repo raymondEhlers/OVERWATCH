@@ -1,3 +1,5 @@
+#!/usr/bin/env python
+
 """ Contains routing functions.
 
 Contains functions to ensure safe routing and redirection of the next URL. These functions are from

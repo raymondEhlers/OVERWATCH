@@ -1,13 +1,14 @@
-#!/usr/bin/python
+#!/usr/bin/env python
 
-"""
+""" Steers and executes Overwatch histogram processing.
+
 Takes root files from the HLT viewer and organizes them into run directory and subsystem structure, 
 then writes out histograms to webpage.  
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 .. codeauthor:: James Mulligan <james.mulligan@yale.edu>, Yale University
-
 """
+
 from __future__ import print_function
 from future.utils import iteritems
 

@@ -1,9 +1,11 @@
-"""
-This module contains functions used to merge histograms and ROOT files.
+#!/usr/bin/env python
+
+""" This module contains functions used to merge histograms and ROOT files.
+
+For further information on functionality and options, see the function docstrings.
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 .. codeauthor:: James Mulligan <james.mulligan@yale.edu>, Yale University
-
 """
 
 # Python 2/3 support

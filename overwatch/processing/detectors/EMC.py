@@ -1,3 +1,5 @@
+#/usr/bin/env python
+
 """ EMC detector specific sorting for monitoring, and QA.
 
 The EMCal has substantial sorting for online monitoring. It also has automated QA monitoring functions that apply
@@ -5,8 +7,8 @@ every run and true QA functions that only run at selected times.
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 .. codeauthor:: James Mulligan <james.mulligan@yale.edu>, Yale University
-
 """
+
 # Python 2/3 support
 from __future__ import print_function
 from builtins import range
@@ -29,7 +31,6 @@ logger = logging.getLogger(__name__)
 from .. import processingClasses
 
 # For retrieving debug configuration
-print("EMC name: {0}".format(__name__))
 from ...base import config
 (processingParameters, filesRead) = config.readConfig(config.configurationType.processing)
 

@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
-"""
-Shared utility functions used for organizing file structure, merging histograms, and transferring data.
+""" Shared utility functions used for organizing file structure, merging histograms, and transferring data.
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 .. codeauthor:: James Mulligan <james.mulligan@yale.edu>, Yale University

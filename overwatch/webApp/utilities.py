@@ -1,5 +1,10 @@
 #!/usr/bin/env python
 
+""" Web app specific utilities.
+
+.. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
+"""
+
 import os
 import subprocess
 import logging
@@ -13,6 +18,10 @@ from ..base import config
 (serverParameters, filesRead) = config.readConfig(config.configurationType.webApp)
 
 class PolymerBundler(webassets.filter.ExternalTool):
+    # TODO: Document
+    """
+
+    """
     name = "PolymerBundler"
 
     def input(self, _in, out, **kwargs):
