@@ -228,7 +228,7 @@ class subsystemContainer(persistent.Persistent):
         self.startOfRun = startOfRun
         self.endOfRun = endOfRun
         # runLength is in minutes
-        self.runLength = (endOfRun - startOfRun)/60
+        self.runLength = (endOfRun - startOfRun)//60
 
         # Histograms
         self.histGroups = persistent.list.PersistentList()
