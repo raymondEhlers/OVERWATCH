@@ -481,11 +481,11 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
                                                subsystem.baseDir,
                                                timeSlice.filename.filename) ))
     logger.debug("timeSlice.processingOptions: {0}".format(timeSlice.processingOptions))
-    outputHistNames = processRootFile(os.path.join(processingParameters["dirPrefix"],
-                                                   subsystem.baseDir,
-                                                   timeSlice.filename.filename),
-                                      outputFormattingSave, subsystem,
-                                      processingOptions = timeSlice.processingOptions)
+    processRootFile(os.path.join(processingParameters["dirPrefix"],
+                                 subsystem.baseDir,
+                                 timeSlice.filename.filename),
+                    outputFormattingSave, subsystem,
+                    processingOptions = timeSlice.processingOptions)
 
     logger.info("Finished processing {0}!".format(run.prettyName))
 
@@ -713,9 +713,9 @@ def processAllRuns():
                 logger.debug("{0}, {1} has nFiles: {2}".format(runDir, subsystem, len(runs[runDir].subsystems[subsystem].files)))
 
     # Merge histograms over all runs, all subsystems if needed. Results in one combined file per subdir.
-    mergedRuns = mergeFiles.mergeRootFiles(runs, dirPrefix,
-                                           processingParameters["forceNewMerge"],
-                                           processingParameters["cumulativeMode"])
+    mergeFiles.mergeRootFiles(runs, dirPrefix,
+                              processingParameters["forceNewMerge"],
+                              processingParameters["cumulativeMode"])
 
     # Setup trending
     if processingParameters["trending"]:

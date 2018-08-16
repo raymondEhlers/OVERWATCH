@@ -55,7 +55,7 @@ def checkForProcessPID(processIdentifier):
         processIdentifier(str): String passed to pgrep to identify the process.
     Returns:
         list: PID(s) from pgrep
-        """
+    """
     try:
         res = subprocess.check_output(["pgrep", "-f", "{0}".format(processIdentifier)])
     except subprocess.CalledProcessError as e:
@@ -138,7 +138,7 @@ startsecs=0
 def tunnel(config, receiver, receiverConfig, supervisord):
     """ Start tunnel """
     processIdentifier = "autossh -L {0}".format(receiverConfig["localPort"])
-    processExists = checkForProcessPID(processIdentifier)
+    processPIDs = checkForProcessPID(processIdentifier)
 
     if config.get("forceRestart", False) or receiverConfig.get("forceRestartTunnel", False):
         processPIDs = killExistingProcess(processPIDs,
@@ -162,9 +162,10 @@ def tunnel(config, receiver, receiverConfig, supervisord):
                 ]
         with open(knownHostsPath, "wb") as logFile:
             logger.debug("Starting \"{0}\" with args: {1}".format("SSH Keyscan", args))
-            process = subprocess.Popen(args, stdout=logFile)
+            # This should execute rapidly, so we don't need to check for the process ID.
+            subprocess.Popen(args, stdout=logFile)
 
-    if processExists is None:
+    if processPIDs is None:
         # Create ssh tunnel
         args = [
                 "autossh",
@@ -180,7 +181,7 @@ def tunnel(config, receiver, receiverConfig, supervisord):
                 "-N"
                 ]
         # Official: autossh -o ServerAliveInterval 30 -o ServerAliveCountMax 3 -p ${sshPorts[n]} -f -N -l zmq-tunnel  -L ${internalReceiverPorts[n]}:localhost:${externalReceiverPorts[n]} ${sshServerAddress}
-        process = startProcessWithLog(args = args, name = "{0} SSH Tunnel".format(receiver), logFilename = "{}sshTunnel".format(receiver), supervisord = supervisord, shortExecutionTime = True)
+        startProcessWithLog(args = args, name = "{0} SSH Tunnel".format(receiver), logFilename = "{}sshTunnel".format(receiver), supervisord = supervisord, shortExecutionTime = True)
         # We don't want to check the process status, since autossh will go to the background immediately
 
 def writeSensitiveVariableToFile(config, name, prettyName, defaultWriteLocation):
@@ -456,17 +457,17 @@ def database(config):
         f.write(zeoConfigFile)
 
     # Start zeo with the config file
-    processPIDs = checkForProcessPID("runzeo -C zeoGenerated.conf".format(receiver))
+    args = [
+            "runzeo",
+            "-C zeoGenerated.conf"
+            ]
+    processIdentifier = " ".join(args)
+    processPIDs = checkForProcessPID(processIdentifier)
     logger.debug("processPIDs: {0}".format(processPIDs))
 
     # Only start if not already running
     if processPIDs is None:
         # Start database
-        args = [
-                "runzeo",
-                "-C zeoGenerated.conf"
-                ]
-
         if not config["avoidNohup"]:
             # Only append "nohup" if it is _NOT_ called from systemd or supervisord
             args = ["nohup"] + args
@@ -505,6 +506,7 @@ def processing(config):
     args = [
             "overwatchProcessing"
             ]
+    processIdentifier = " ".join(args)
 
     if not config["avoidNohup"]:
         # Only append "nohup" if it is _NOT_ called from systemd or supervisord
@@ -570,7 +572,7 @@ def webApp(config):
     processPIDs = checkForProcessPID(processIdentifier)
 
     # NOTE: This won't work properly with uwsgi!
-    if not processPIDs is None and (config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None)):
+    if not processPIDs is None and config["webApp"].get("forceRestart", None):
         logger.debug("Found processPIDs: {0}".format(processPIDs))
         processPIDs = killExistingProcess(processPIDs,
                                           processType = "{0} Receiver".format(receiver),
@@ -790,7 +792,7 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
     # Start supervisord
     if "supervisord" in config and config["supervisord"]:
         # Reload supervisor config
-        process = subprocess.Popen(["supervisorctl", "update"])
+        subprocess.Popen(["supervisorctl", "update"])
 
 def run():
     # Setup command line parser
