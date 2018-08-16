@@ -131,7 +131,7 @@ class runContainer(persistent.Persistent):
 
         return returnValue
 
-    def timeStamp(self):
+    def startOfRunTimeStamp(self):
         """ Provides the start of the run time stamp in a format suitable for display.
 
         This timestamp is determined by looking at the timestamp of the last subsystem
