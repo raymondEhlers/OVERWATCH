@@ -652,7 +652,7 @@ def processAllRuns():
                 startOfRun = utilities.extractTimeStampFromFilename(filenamesDict[sortedKeys[0]])
                 endOfRun = utilities.extractTimeStampFromFilename(filenamesDict[sortedKeys[-1]])
                 #logger.info("filenamesDict.values(): {0}".format(filenamesDict.values()))
-                logger.info("startOfRun: {0}, endOfRun: {1}, runLength: {2}".format(startOfRun, endOfRun, (endOfRun - startOfRun)/60))
+                logger.info("startOfRun: {0}, endOfRun: {1}, runLength: {2}".format(startOfRun, endOfRun, (endOfRun - startOfRun)//60))
 
                 # Now create the subsystem
                 showRootFiles = False
