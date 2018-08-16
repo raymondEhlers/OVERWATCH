@@ -31,10 +31,44 @@ from ..base import config
 #from config.processingParams import processingParameters
 (processingParameters, filesRead) = config.readConfig(config.configurationType.processing)
 
-###################################################
 class runContainer(persistent.Persistent):
-    """ Contains an individual run
+    """ Object to represent a particular run.
 
+    It stores run level information, as well the subsystems which then containing the corresponding
+    event information.
+
+    Note that files are *not* considered event level information because the files correspond to individual
+    subsystem. Furthermore, in rare cases, there may be numbers of files for different subsystems
+    that are included in an individual run. Consequently, it is cleaner for each subsystem to track it's
+    own files.
+
+    To allow the object to be reconstructed from scratch, the HLT mode is stored by writing a YAML file
+    in the corresponding run directory. This file is referred to as the "run info" file. Additional
+    properties could also be written to this file to avoid the loss of transient information.
+
+    Note:
+        The run info file is read and written on object construction. It will only be checked if the
+        HLT mode is not set.
+
+    Args:
+        runDir (str): String containing the run number. For an example run 123456, it should be
+            formatted as ``Run123456``
+        fileMode (bool): If true, the run data was collected in cumulative mode. See the module README
+            for further information.
+        hltMode (str): String containing the HLT mode used for the run.
+
+    Arrtibutes:
+        runDir (str): String containing the run number. For an example run 123456, it should be
+            formatted as ``Run123456``
+        runNumber (int): Run number extracted from the ``runDir``.
+        prettyName (str): Reformatting of the ``runDir`` for improved readability.
+        mode (bool): If true, the run data was collected in cumulative mode. See the module README
+            for further information. Set via ``fileMode``.
+        subsystems (BTree): Dict-like object which will contain all of the subsystem containers in
+            an event. The key is the corresponding subsystem three letter name.
+        hltMode (str): Mode the HLT operated in for this run. Valid HLT modes are "B", "C", "E", and "U".
+            Further information on the various modes is in the module ``README.md``. Default: ``None`` (which
+            will be converted to "U", for "unknown").
     """
     def __init__(self, runDir, fileMode, hltMode = None):
         self.runDir = runDir
@@ -44,9 +78,12 @@ class runContainer(persistent.Persistent):
         self.subsystems = BTrees.OOBTree.BTree()
         self.hltMode = hltMode
 
+        # TODO: Also include the fileMode in the run info file?
+
         # Try to retrieve the HLT mode if it was not passed
         runInfoFilePath = os.path.join(processingParameters["dirPrefix"], self.runDir, "runInfo.yaml")
         if not hltMode:
+            # Use the mode from the file if it exists, or otherwise note it as undefined = "U".
             try:
                 with open(runInfoFilePath, "rb") as f:
                     runInfo = yaml.load(f.read())
@@ -58,7 +95,8 @@ class runContainer(persistent.Persistent):
                 self.hltMode = "U"
 
         # Run Information
-        # Since this is only information to save, only write it if the file doesn't exist
+        # Since this is only information to save (ie it doesn't update each time the object is constructed),
+        # only write it if the file doesn't exist
         if not os.path.exists(runInfoFilePath):
             runInfo = {}
             # "U" for unknown
@@ -71,7 +109,18 @@ class runContainer(persistent.Persistent):
                 yaml.dump(runInfo, f)
 
     def isRunOngoing(self):
-        """ Checks if one of the subsystems has a new file, indicating that the run is ongoing. """
+        """ Checks if a run is ongoing.
+
+        The ongoing run check is performed by looking checking for a new file in
+        any of the subsystems. If they have just received a new file, then the run
+        is ongoing.
+
+        Args:
+            None
+
+        Returns:
+            bool: True if the run is ongoing.
+        """
         returnValue = False
         try:
             # We just take the last subsystem in a given run. Any will do
@@ -83,7 +132,19 @@ class runContainer(persistent.Persistent):
         return returnValue
 
     def timeStamp(self):
-        """ Returns a pretty time stamp from the last subsystem. """
+        """ Provides the start of the run time stamp in a format suitable for display.
+
+        This timestamp is determined by looking at the timestamp of the last subsystem
+        (arbitrarily selected) that is available in the run. No time zone conversion is
+        performed, so it simply displays the time zone where the data was stored (CERN
+        time in production systems).
+
+        Args:
+            None
+
+        Returns:
+            str: Start of run time stamp formatted in an appropriate manner for display.
+        """
         returnValue = False
         try:
             # We just take the last subsystem in a given run. Any will do

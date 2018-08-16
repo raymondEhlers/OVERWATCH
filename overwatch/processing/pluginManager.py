@@ -58,7 +58,7 @@ def subsystemNamespace(functionName, subsystemName):
 
     Args:
         functionName (str): Name of the function.
-        subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
+        subsystem (str): The current subsystem in the form of a three letter, all capital name (ex. ``EMC``).
     Returns:
         str: Properly formatted function name with the subsystem prepended as a namespace.
     """
@@ -214,7 +214,7 @@ def defineTrendingObjects(subsystem):
     trending objects should be stored, and the other args are reserved for future use.
 
     Args:
-        subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
+        subsystem (str): The current subsystem in the form of a three letter, all capital name (ex. ``EMC``).
     Returns:
         dict: Keys are the name of the trending objects, while values are the trending objects themselves.
     """
