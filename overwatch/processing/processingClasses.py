@@ -747,7 +747,7 @@ class histogramContainer(persistent.Persistent):
                 for name, trendingObject in iteritems(subsystem):
                     if self.histName in trendingObject.hist.histName:
                         # Retrieve the graph and make it available in the trending histogram container
-                        trendingObject.retrieveHist()
+                        trendingObject.retrieveHistogram()
                         returnValue = True
                         #self.hist = trending.trendingObjects[subsystemName][self.histName].trendingHist
         else:
@@ -761,7 +761,8 @@ class trendingObject(persistent.Persistent):
 
     Implements storing trending values using a ``TGraphErrors`` based fill method. Each trending object
     should inherit from this class, implementing value extraction in an overridden ``fill()`` method,
-    and then call the base class to perform the value storage.
+    and then call the base class to perform the value storage. Note that this object is designed only
+    for trending 1D objects.
 
     For more information on the trending subsystem, see the detector subsystem and trending README.
 
@@ -837,10 +838,12 @@ class trendingObject(persistent.Persistent):
         # Keep track to move to the next entry
         self.nextEntry += 1
 
-    def retrieveHist(self):
-        """ Create a graph based on the stored numpy array.
+    def retrieveHistogram(self):
+        """ Retrieve or create a graph based on the stored numpy array.
 
-        The retrieved histogram is stored in the object's histogram container.
+        This method will create a new graph if it doesn't exist. Otherwise, it will
+        set the bin contents of an existing ``TH1``. The retrieved histogram is
+        stored in the object's histogram container.
 
         Note:
             We refer to a histogram in this method name, but it doesn't actually need to be a histogram.
