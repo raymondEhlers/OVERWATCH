@@ -2,8 +2,9 @@
 
 """ Steers and executes Overwatch histogram processing.
 
-Takes root files from the HLT viewer and organizes them into run directory and subsystem structure, 
-then writes out histograms to webpage.  
+Takes files received from the HLT, organizes the information within a directory structure,
+and processes the histograms within. It provides plugin opportunities throughout the all
+processing and trending steps.
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 .. codeauthor:: James Mulligan <james.mulligan@yale.edu>, Yale University
@@ -33,21 +34,8 @@ ROOT.gROOT.ProcessLine("gErrorIgnoreLevel = kWarning;")
 import os
 import hashlib
 import uuid
-# Python logging system
-# See: https://stackoverflow.com/a/346501
 import logging
-# Setup logger
-if __name__ == "__main__":
-    # By not setting a name, we get everything!
-    #logger = logging.getLogger("")
-    # Alternatively, we could set processRuns to get everything derived from that
-    #logger = logging.getLogger("processRuns")
-    pass
-else:
-    # When imported, we just want it to take on it normal name
-    logger = logging.getLogger(__name__)
-    # Alternatively, we could set processRuns to get everything derived from that
-    #logger = logging.getLogger("processRuns")
+logger = logging.getLogger(__name__)
 
 # ZODB
 import BTrees.OOBTree
@@ -64,21 +52,21 @@ from . import mergeFiles
 from . import pluginManager
 from . import processingClasses
 
-###################################################
 def processRootFile(filename, outputFormatting, subsystem, processingOptions = None, forceRecreateSubsystem = False, trendingContainer = None):
     """ Process a given root file, printing out all histograms.
 
     Args:
         filename (str): The full path to the file to be processed.
-        outputFormatting (str): Specially formatted string which contains a generic path to the printed histograms.
-            The string contains "%s" to print the filename contained in listOfHists. It also includes the file
-            extension. Ex: "img/%s.png".
+        outputFormatting (str): Specially formatted string which contains a generic path to be used when printing histograms.
+            It is generally of the from ``%s/%s.%s``, where the initial value is the base path, the second is the filename
+            and the third is the extension. This format is used instead of formatting the string to allow for additional
+            flexibility in formatting.
         subsystem (:class:`~subsystemProperties`): Contains information about the current subsystem.
-
     Returns:
         list: Contains all of the names of the histograms that were printed.
-
     """
+    # TODO: Check the arguments above.
+
     # The file with the new histograms
     fIn = ROOT.TFile(filename, "READ")
 
@@ -192,8 +180,21 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
                 continue
             processHist(subsystem = subsystem, hist = hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions)
 
-###################################################
 def processTrending(outputFormatting, trending, processingOptions = None, forceRecreateSubsystem = False):
+    """
+    
+    Args:
+        outputFormatting (str): Specially formatted string which contains a generic path to the printed histograms.
+            The string contains "%s" to print the filename contained in listOfHists. It also includes the file
+            extension. Ex: "img/%s.png".
+        trending (trendingContainer): Trending object which contains all of the trending objects and additional
+            information.
+        processingOptions (dict): Implemented by the subsystem to note options used during standard processing. Keys
+            are names of options, while values are the corresponding option values. Default: ``None``. In this case,
+            it will use the default trending processing options.
+    Returns:
+        None, but with side effects ...
+    """
     # Set the proper processing options
     # If it was passed in, it was from time slices
     if processingOptions == None:
@@ -231,8 +232,19 @@ def processTrending(outputFormatting, trending, processingOptions = None, forceR
             # ENDTEMP
             processHist(subsystem = trending, hist = hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions, subsystemName = subsystemName)
 
-###################################################
 def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, subsystemName = None):
+    """
+    
+    Args:
+        subsystem (): ...
+        hist (): ...
+        canvas (): ...
+        outputFormatting (): ...
+        processingOptions (): ...
+        subsystemName (): ... . Default: ``None``.
+    Returns:
+        None. Side effects of written files, changed objects, etc ...
+    """
     # In the case of trending, we have to pass a separate subsystem name because the trending container
     # holds hists from various subsystems
     if subsystemName is None:
@@ -306,13 +318,17 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, su
     hist.hist = None
     hist.canvas = None
 
-###################################################
 def compareProcessingOptionsDicts(inputProcessingOptions, processingOptions):
     """ Compare an input and existing processing options dicts and return True if all input options are the same values as in the existing options.
 
-    NOTE:
+    Note:
         The existing processing options can have more than entries than the input. Only the values in the input are checked.
     
+    Args:
+        inputProcessingOptions (): ...
+        processingOptions (): ...
+    Returns:
+        bool: ...
     """
     processingOptionsAreTheSame = True
     for key,val in iteritems(inputProcessingOptions):
@@ -324,8 +340,18 @@ def compareProcessingOptionsDicts(inputProcessingOptions, processingOptions):
 
     return processingOptionsAreTheSame
 
-###################################################
 def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes, inputProcessingOptions):
+    """
+
+    Args:
+        run (): ...
+        subsystem (): ...
+        minTimeMinutes (): ...
+        maxTimeMinutes (): ...
+        inputProcessingOptions (): ...
+    Returns:
+        tuple: ?? - See webApp
+    """
     # User filter time, in unix time. This makes it possible to compare to the startOfRun and endOfRun times
     minTimeCutUnix = minTimeMinutes*60 + subsystem.startOfRun
     maxTimeCutUnix = maxTimeMinutes*60 + subsystem.startOfRun
@@ -403,7 +429,6 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
 
     return (uuidDictKey, True, None)
 
-###################################################
 def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequested, subsystemName, inputProcessingOptions):
     """ Processes a given run using only data in a given time range (ie time slices).
 
@@ -414,11 +439,11 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
         minTimeRequested (int): The requested start time of the merge in minutes.
         maxTimeRequested (int): The requested end time of the merge in minutes.
         subsystemName (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
-
     Returns:
         str: Path to the run page that was generated.
-
     """
+    # TODO: Check if the docs above are valid!
+
     # Setup start runDir string of the form "Run#"
     #runDir = "Run" + str(timeSliceRunNumber)
     runDir = timeSliceRunNumber
@@ -491,9 +516,15 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
     # No errors, so return the key
     return timeSliceKey
 
-###################################################
 def createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir):
-    """ Creates a new subsystem based on the information from the merge. """
+    """ Creates a new subsystem based on the information from the merge.
+
+    Args:
+        runs ():
+        subsystem ():
+        runDict ():
+        runDir (str?):
+    """
     if subsystem in runDict.subsystems:
         fileLocationSubsystem = subsystem
     else:
@@ -528,8 +559,15 @@ def createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir):
     # Flag that there are new files
     runs[runDir].subsystems[subsystem].newFile = True
 
-###################################################
 def processMovedFilesIntoRuns(runs, runDict):
+    """
+
+    Args:
+        runs ():
+        runDict (dict):
+    Returns:
+        None ...
+    """
     for runDir in runDict:
         if runDir in runs:
             run = runs[runDir]
@@ -561,7 +599,6 @@ def processMovedFilesIntoRuns(runs, runDict):
             for subsystem in processingParameters["subsystemList"]:
                 createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir)
 
-###################################################
 def processAllRuns():
     """ Process all available data and write out individual run pages and a run list.
 
@@ -585,10 +622,8 @@ def processAllRuns():
 
     Args:
         None: See the note above.
-
     Returns:
         None
-
     """
     dirPrefix = processingParameters["dirPrefix"]
 
@@ -720,7 +755,7 @@ def processAllRuns():
     if processingParameters["trending"]:
         trendingContainer = processingClasses.trendingContainer(dbRoot["trending"])
         # Subsystem specific trending histograms
-        # TDG corresponds to general trending histograms (perhaps between two subsystem)
+        # "TDG" corresponds to general trending histograms (perhaps between two subsystem)
         for subsystem in processingParameters["subsystemList"] + ["TDG"]:
             trendingObjects = pluginManager.defineTrendingObjects(subsystem)
             trendingContainer.addSubsystemTrendingObjects(subsystem, trendingObjects, forceRecreateSubsystem = processingParameters["forceRecreateSubsystem"])
@@ -793,6 +828,3 @@ def processAllRuns():
     transaction.commit()
     connection.close()
 
-# Allows the function to be invoked automatically when run with python while not invoked when loaded as a module
-if __name__ == "__main__":
-    pass
