@@ -53,7 +53,25 @@ from . import pluginManager
 from . import processingClasses
 
 def processRootFile(filename, outputFormatting, subsystem, processingOptions = None, forceRecreateSubsystem = False, trendingContainer = None):
-    """ Process a given root file, printing out all histograms.
+    """ Given a root file, process all histograms for a given subsystem.
+
+    Processing includes assigning the contained histograms to a subsystem, allowing for customization via
+    the plugin system. For a new subsystem, the processing proceeds in the following order:
+
+    - Create histogram containers for histograms in the file.
+    - Create new histograms (in addition to those already in the file).
+    - Create histogram stacks.
+    - Specify histogram options.
+    - Create histogram groups.
+    - Sort histograms into histogram groups.
+    - For each sorted histogram:
+        - Determine which processing functions to apply to which histograms.
+        - Determine which trending functions require which histograms.
+
+    Processing then proceeds to apply those functions to all sorted histograms. The final histograms are then
+    stored as images and as ``json``. In the case that the subsystem already exists, we can skip all of those
+    steps and simply apply the processing functions. If a histogram was not sorted then it belongs to another
+    subsystem and could be processed by it later (depending on the configured subsystems).
 
     Args:
         filename (str): The full path to the file to be processed.
@@ -83,6 +101,7 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
 
     # Get histograms and sort them if they do not exist in the subsystem
     # Only need to do this the first time for each run
+    # We know it is the first run if there are no histograms for this subsystem.
     if not subsystem.hists:
         for key in keysInFile:
             classOfObject = ROOT.gROOT.GetClass(key.GetClassName())
@@ -90,6 +109,7 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
             if classOfObject.InheritsFrom(ROOT.TH1.Class()):
                 # Create histogram object
                 hist = processingClasses.histogramContainer(key.GetName())
+                # Wait to read the object until we are actually going to process it.
                 hist.hist = None
                 hist.canvas = None
                 hist.histType = classOfObject
@@ -132,6 +152,7 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
                 logger.info("selection: {0}".format(selection))
                 subsystem.histGroups.append(processingClasses.histogramGroupContainer(subsystem.subsystem + " Histograms", selection))
 
+        # See how we've done.
         logger.debug("post groups histsAvailable: {}".format(", ".join(subsystem.histsAvailable.keys())))
 
         # Finally classify into the groups and determine which functions to apply
@@ -149,7 +170,7 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
             logger.info("{2} hist: {0} - classified: {1}".format(hist.histName, classifiedHist, subsystem.subsystem))
 
             if classifiedHist:
-                # Determine the functions (qa and monitoring) to apply
+                # Determine the processing functions to apply
                 pluginManager.findFunctionsForHist(subsystem, hist)
                 # Determine the trending functions to apply
                 if trendingContainer:
@@ -158,28 +179,31 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
                 # Add it to the subsystem
                 subsystem.hists[hist.histName] = hist
             else:
+                # We don't want to process histograms which haven't been defined.
                 logger.debug("Skipping histogram {0} since it is not classifiable for subsystem {1}".format(hist.histName, subsystem.subsystem))
 
     # Set the proper processing options
-    # If it was passed in, it was from time slices
+    # If it was passed in, it was probably from time slices
     if processingOptions is None:
         processingOptions = subsystem.processingOptions
     logger.debug("processingOptions: {0}".format(processingOptions))
 
-    # Cannot have same name as other canvases, otherwise the canvas will be replaced, leading to segfaults
+    # Canvases must have unique names - otherwise they will be replaced, leading to segfaults.
     # Start of run should unique to each run!
     canvas = ROOT.TCanvas("{0}Canvas{1}{2}".format("processRuns", subsystem.subsystem, subsystem.startOfRun),
                           "{0}Canvas{1}{2}".format("processRuns", subsystem.subsystem, subsystem.startOfRun))
     # Loop over histograms and draw
     for histGroup in subsystem.histGroups:
         for histName in histGroup.histList:
-            # Retrieve histogram and canvas
+            # Retrieve histogram container and underlying histogram
             hist = subsystem.hists[histName]
             retrievedHist = hist.retrieveHistogram(fIn = fIn, ROOT = ROOT)
             if not retrievedHist:
                 logger.warning("Could not retrieve histogram for hist {}, histList: {}".format(hist.histName, hist.histList))
                 continue
             processHist(subsystem = subsystem, hist = hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions)
+
+    #fIn.Close()
 
 def processTrending(outputFormatting, trending, processingOptions = None):
     """

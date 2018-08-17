@@ -691,8 +691,21 @@ class histogramContainer(persistent.Persistent):
         self.trendingObjects = persistent.list.PersistentList()
 
     def retrieveHistogram(self, ROOT, fIn = None, trending = None):
-        """
+        """ Retrieve the histogram from the given file or trending container.
 
+        This function can retrieve a single histogram from a file, multiple hists from a file
+        to create a stack (based on the hist names in ``histList``), or a single trending
+        histogram stored in the collection of trending objects.
+
+        Args:
+            ROOT (ROOT): ROOT module. Passed into this object so this module doesn't need
+                to directly depend on importing ROOT.
+            fIn (ROOT.TFile): File in which the histogram(s) is stored. Default: ``None``.
+            trending (trendingContainer): Contains the trending objects, including the trending
+                histogram which is represented in this histogram container. It is the source
+                of the histogram, and therefore similar to the input ROOT file. Default: ``None``.
+        Returns:
+            bool: True if the histogram was successfully retrieved.
         """
         returnValue = True
         if fIn:
@@ -724,14 +737,14 @@ class histogramContainer(persistent.Persistent):
                     self.hist = tempHist.ReadObj()
                 else:
                     returnValue = False
-
         elif trending:
+            # Retrieve the trending histogram from the collection of trending objects.
             returnValue = False
-            # Not particularly efficient
+            # Not particularly efficient, but it's straightforward.
             for subsystemName, subsystem in iteritems(trending.trendingObjects):
                 for name, trendingObject in iteritems(subsystem):
                     if self.histName in trendingObject.hist.histName:
-                        # Define the TH1 and make it available
+                        # Retrieve the graph and make it available in the trending histogram container
                         trendingObject.retrieveHist()
                         returnValue = True
                         #self.hist = trending.trendingObjects[subsystemName][self.histName].trendingHist
@@ -825,6 +838,8 @@ class trendingObject(persistent.Persistent):
     def retrieveHist(self):
         """ Create a graph based on the stored numpy array.
 
+        The retrieved histogram is stored in the object's histogram container.
+
         Note:
             We refer to a histogram in this method name, but it doesn't actually need to be a histogram.
             A ``TGraphErrors`` or other objects that supports storing values and errors is a fine options.
@@ -834,7 +849,7 @@ class trendingObject(persistent.Persistent):
             None
         Returns:
             histogramContainer: Container which holds the created graph. It is returned to allow for
-                further customization.
+                further customization. This histogram container is already stored in the object.
         """
         # The creation of this hist can be overridden by creating the histogram before now
         if not self.hist.hist:
@@ -869,5 +884,5 @@ class trendingObject(persistent.Persistent):
                 self.hist.hist.SetPointError(i, i, self.values[i, 1])
 
         # The hist is already available through the histogram container, but we return the hist
-        # in case the caller wants to do additional customization
+        # container in case the caller wants to do additional customization
         return self.hist
