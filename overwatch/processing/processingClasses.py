@@ -654,7 +654,9 @@ class histogramContainer(persistent.Persistent):
             the key shown as a clickable button, and the value information stored behind it.
         hist (ROOT.TH1): The histogram which this container wraps.
         histType (ROOT.TClass): Class of the histogram. For example, ``ROOT.TH1F``. Can be used for functions
-            that only apply to 2D hists, etc.
+            that only apply to 2D hists, etc. It is stored separately from the histogram to allow for it to
+            be available even when the underlying histogram is not (as occurs while setting up but not yet
+            processing a histogram).
         drawOptions (str): Draw options to be passed to ``TH1.Draw()`` when drawing the histogram.
         canvas (ROOT.TCanvas): Canvas onto which the histogram will be plotted. Available after the histogram
             has been classified (ie in processing functions).

@@ -104,27 +104,25 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
     # We know it is the first run if there are no histograms for this subsystem.
     if not subsystem.hists:
         for key in keysInFile:
-            classOfObject = ROOT.gROOT.GetClass(key.GetClassName())
-            #if classOfObject.InheritsFrom("TH1"):
+            classOfObject = ROOT.TClass.GetClass(key.GetClassName())
             if classOfObject.InheritsFrom(ROOT.TH1.Class()):
                 # Create histogram object
                 hist = processingClasses.histogramContainer(key.GetName())
                 # Wait to read the object until we are actually going to process it.
                 hist.hist = None
                 hist.canvas = None
+                # However, store the object type so we know how to configure it without the underlying
+                # hist being available.
                 hist.histType = classOfObject
-                #hist.hist = key.ReadObj()
-                #hist.canvas = ROOT.TCanvas("{0}Canvas{1}{2}".format(hist.histName, subsystem.subsystem, subsystem.startOfRun),
-                #                           "{0}Canvas{1}{2}".format(hist.histName, subsystem.subsystem, subsystem.startOfRun))
-                # Shouldn't be needed, because I keep a reference to it
-                #ROOT.SetOwnership(hist.canvas, False)
+
+                # Store the histogram container so we can continue processing.
                 subsystem.histsInFile[hist.histName] = hist
 
-                # Set nEvents
-                #if subsystem.nEvents is None and "events" in hist.histName.lower():
+                # Extract the number of events if the proper histogram is available.
+                # NOTE: This requires other histograms not to have "events" in their name,
+                #       but so far (Aug 2018), this seems to be a reasonable assumption.
                 if "events" in hist.histName.lower():
                     subsystem.nEvents = key.ReadObj().GetBinContent(1)
-
 
         # Create additional histograms
         #logger.debug("pre  create additional histsAvailable: {}".format(", ".join(subsystem.histsAvailable.keys())))
@@ -166,7 +164,7 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
                     # Break so that we don't have multiple copies of hists!
                     break
 
-            # TEMP
+            # See if we've classified successfully.
             logger.info("{2} hist: {0} - classified: {1}".format(hist.histName, classifiedHist, subsystem.subsystem))
 
             if classifiedHist:
@@ -203,7 +201,8 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
                 continue
             processHist(subsystem = subsystem, hist = hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions)
 
-    #fIn.Close()
+    # Since we are done, we can cleanup by closing the file.
+    fIn.Close()
 
 def processTrending(outputFormatting, trending, processingOptions = None):
     """
