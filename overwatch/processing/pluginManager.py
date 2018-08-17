@@ -146,6 +146,7 @@ def setHistogramOptions(subsystem):
 
     Histogram options include options such as renaming histograms,
     setting draw options, setting histogram scaling, and/or thresholds, etc.
+    These options much be specific to the histogram object.
     Canvas options are set elsewhere when actually drawing on the canvas.
     It cannot be set now because the canvas doesn't yet exist and we would
     need to call functions to on that object (we prefer not to use function

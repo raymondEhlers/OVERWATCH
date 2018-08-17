@@ -1,7 +1,5 @@
 # Subsystem (Detector) Plug-ins
 
-NOTE: Please ignore the information in `__init__.py` until it is updated further.
-
 The Overwatch processing module provides a number of opportunities to plug-in subsystem (detector) specific
 functionality. These functions will automatically be called if the subsystem is enabled. Note that it is fine
 if a function does not exist - execution will proceed without that part of the functionality.
