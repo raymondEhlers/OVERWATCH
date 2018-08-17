@@ -758,10 +758,9 @@ class trendingObject(persistent.Persistent):
         trendingName (str): Name of the trending object.
         prettyTrendingName (str): Name of the trending object that is appropriate for display.
         nEntries (int): Number of entries the trending object should contain.
+        histNames (list): List of the names of histograms which are needed to perform the trending.
         trendingHist (ROOT.TH1 or ROOT.TGraphErrors): Hist or graph where the trending values will be stored.
             Default: ``None``, which will cause a ``TGraphErrors`` to be automatically created.
-        histNames (list): List of the names of histograms which are needed to perform the trending.
-            Default: ``None``.
 
     Attributes:
         name (str): Name of the trending object.
@@ -773,9 +772,8 @@ class trendingObject(persistent.Persistent):
         nextEntry (int): Location where the next trending entry should go.
         canvas (ROOT.TCanvas): Canvas onto which the hist will be plotted.
     """
-    # TODO: Make histnames required!
 
-    def __init__(self, trendingName, prettyTrendingName, nEntries, trendingHist = None, histNames = None):
+    def __init__(self, trendingName, prettyTrendingName, nEntries, histNames, trendingHist = None):
         self.name = trendingName
         self.prettyName = prettyTrendingName
         self.nEntries = nEntries
@@ -812,14 +810,14 @@ class trendingObject(persistent.Persistent):
         Returns:
             None
         """
-        print("name: {}, self.nextEntry: {}, value: {}".format(self.name, self.nextEntry, value))
+        logger.debug("name: {}, self.nextEntry: {}, value: {}".format(self.name, self.nextEntry, value))
         currentEntry = self.nextEntry - 1
         if self.nextEntry > self.nEntries:
             # Remove the oldest entry
             utilities.removeOldestValueAndInsert(self.values, (value, error))
 
         self.values[currentEntry] = (value, error)
-        print("name: {}, values: {}".format(self.name, self.values))
+        logger.debug("name: {}, values: {}".format(self.name, self.values))
 
         # Keep track to move to the next entry
         self.nextEntry += 1
