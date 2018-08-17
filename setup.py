@@ -64,7 +64,9 @@ setup(
             # points to a different type of function
             "overwatchProcessing = overwatch.processing.run:run",
             # Deployment script
-            "overwatchDeploy = overwatch.base.deploy:run"
+            "overwatchDeploy = overwatch.base.deploy:run",
+            # Utility script to update the database users
+            "overwatchUpdateUsers = overwatch.base.updateDBUsers:updateDBUsers",
             ],
         },
 

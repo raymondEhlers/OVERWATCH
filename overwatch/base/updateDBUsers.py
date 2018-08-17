@@ -1,20 +1,17 @@
 #!/usr/bin/env python
 
-import os
-import sys
+""" Minimal executable wrapper to update users in the ZODB database.
 
-# Make it execute like it is the parent directory instead of in /deploy
-# See: https://stackoverflow.com/a/1432949 and https://stackoverflow.com/a/6098238
-parentFolder = os.path.realpath("../")
-print("parentFolder: ", parentFolder)
-# Adds to the import path
-sys.path.insert(0, parentFolder)
-# Sets the execution folder
-os.chdir(parentFolder)
+``__main__`` is implemented to allow for this function to be executed directly,
+while ``updateDBUsers()`` is defined to allow for execution via ``entry_points``
+defined in the python package setup.
+
+.. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
+"""
 
 # Server configuration
 from overwatch.base import config
-(serverParameters, filesRead) = config.readConfig(config.configurationType.processing)
+(serverParameters, filesRead) = config.readConfig(config.configurationType.webApp)
 
 # Get the most useful fucntions
 from overwatch.base import utilities
@@ -24,6 +21,7 @@ import logging
 logger = logging.getLogger("")
 # Alternatively, we could set processRuns to get everything derived from that
 #logger = logging.getLogger("processRuns")
+import pprint
 
 # Setup logging
 utilities.setupLogging(logger = logger,
@@ -31,11 +29,21 @@ utilities.setupLogging(logger = logger,
         debug = serverParameters["debug"],
         logFilename = "updateDBUsers")
 # Log settings
-logger.info("Settings: {0}"pprint.pformat(serverParameters))
+logger.info("Settings: {0}".format(pprint.pformat(serverParameters)))
 
-if __name__ == "__main__":
+def updateDBUsers():
+    """ Updates users in the database based on the current configuration.
+
+    Args:
+        None
+    Returns:
+        None
+    """
     (db, connection) = utilities.getDB(serverParameters["databaseLocation"])
     utilities.updateDBSensitiveParameters(db = db)
 
     # Close the database connection
     connection.close()
+
+if __name__ == "__main__":
+    updateDBUsers()

@@ -251,6 +251,11 @@ The image can then be run with something like (using an external configuration f
 $ docker run -d -v data:/overwatch/data -e config="$(config.yaml)" rehlers/overwatch
 ```
 
+## Update Users in the Database
+
+This is a simple utility to update the users in the ZODB database. It can be called via `overwatchUpdateUsers`
+(it takes no arguments). It will use the username/password values stored in the `config.yaml`.
+
 # Citation
 
 Please cite Overwatch as:

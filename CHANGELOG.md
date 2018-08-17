@@ -13,6 +13,8 @@ Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
 
 - Moved `overwatch.processing.qa` -> `overwatch.processing.pluginManager` to better represent how it's purpose
   how evolved.
+- Moved update users script to the base package, allowing for it to be installed via `setup.py`. It is
+  available via `overwatchUpdateUsers`.
 
 ### Fixed
 
