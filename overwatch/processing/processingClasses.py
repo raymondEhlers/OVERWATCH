@@ -35,7 +35,7 @@ class runContainer(persistent.Persistent):
     """ Object to represent a particular run.
 
     It stores run level information, as well the subsystems which then containing the corresponding
-    event information.
+    event information (histogram groups, histograms, etc).
 
     Note that files are *not* considered event level information because the files correspond to individual
     subsystem. Furthermore, in rare cases, there may be numbers of files for different subsystems
@@ -57,7 +57,7 @@ class runContainer(persistent.Persistent):
             for further information.
         hltMode (str): String containing the HLT mode used for the run.
 
-    Arrtibutes:
+    Attributes:
         runDir (str): String containing the run number. For an example run 123456, it should be
             formatted as ``Run123456``
         runNumber (int): Run number extracted from the ``runDir``.
@@ -117,7 +117,6 @@ class runContainer(persistent.Persistent):
 
         Args:
             None
-
         Returns:
             bool: True if the run is ongoing.
         """
@@ -141,7 +140,6 @@ class runContainer(persistent.Persistent):
 
         Args:
             None
-
         Returns:
             str: Start of run time stamp formatted in an appropriate manner for display.
         """
@@ -155,46 +153,86 @@ class runContainer(persistent.Persistent):
 
         return returnValue
 
-###################################################
 class subsystemContainer(persistent.Persistent):
-    """ Subsystem container class.
+    """ Object to represent a particular subsystem (detector).
 
-    Defines properties of each subsystem in a consistent place.
+    It stores subsystem level information, including the histograms, groups, and file information.
+    It is the main container for much of the information that is relevant for processing.
+
+    Information on the file storage layout implemented through this class is available in the
+    module ``README.md``.
+
+    Note:
+        This object checks for and creates a number of directories on initialization.
 
     Args:
-        subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
-        runDirs (dict): Contains list of valid runDirs for each subsystem, indexed by subsystem.
-        mergeDirs (Optional[dict]): Contains list of valid mergeDirs for each subsystem, indexed by subsystem.
-            Defaults to ``None``.
-        showRootFiles (Optional[bool]): Determines whether to create a page to make the ROOT files available.
-            Defaults to ``False``.
-
-    Available attributes include:
+        subsystem (str): The current subsystem in the form of a three letter, all capital name (ex. ``EMC``).
+        runDir (str): String containing the run number. For an example run 123456, it should be
+            formatted as ``Run123456``
+        startOfRun (int): Start of the run in unix time.
+        endOfRun (int): End of the run in unix time.
+        showRootFiles (bool): True if the ROOT files should be made accessible through the run list.
+            Default: ``False``.
+        fileLocationSubsystem (str): Subsystem name of where the files are actually located. If a subsystem
+            has specific data files then this is just equal to the `subsystem`. However, if it relies on
+            files inside of another subsystem (such as those from the HLT subsystem receiver), then this
+            variable is equal to that subsystem name. Default: ``None``, which corresponds to the subsystem
+            storing it's own data.
 
     Attributes:
+        subsystem (str): The current subsystem in the form of a three letter, all capital name (ex. ``EMC``).
+        showRootFiles (bool): True if the ROOT files should be made accessible through the run list.
         fileLocationSubsystem (str): Subsystem name of where the files are actually located. If a subsystem has
             specific data files then this is just equal to the `subsystem`. However, if it relies on files inside
             of another subsystem, then this variable is equal to that subsystem name.
-        runDirs (list): List of runs with entries in the form of "Run#" (str).
-        mergeDirs (list): List of merged runs with entries in the form of "Run#" (str).
-
+        files (BTree): Dict-like object which describes subsystem ROOT files. Unix time of a given file is the key
+            and a file container for that file is the value.
+        timeSlices (BTree): Dict-like object which describes subsystem time slices. A UUID is the dict key (so they
+            can be uniquely identified), while a time slice container with the corresponding time slice properties
+            is the value.
+        combinedFile (fileContainer): File container corresponding to the combined file.
+        baseDir (str): Path to the base storage directory for the subsystem. Of the form ``Run123456/SYS``.
+        imgDir (str): Path to the image storage directory for the subsystem. Of the form ``Run123456/SYS/img``.
+        jsonDir (str): Path to the json storage directory for the subsystem. Of the form ``Run123456/SYS/json``.
+        startOfRun (int): Start of the run in unix time.
+        endOfRun (int): End of the run in unix time.
+        runLength (int): Length of the run in minutes.
+        histGroups (PersistentList): List-like object of histogram groups, which are used to classify similar histograms.
+        histsInFile (BTree): Dict-like object of all histograms that are in a particular file. Keys are the histogram name,
+            while the values are ``histogramContainer`` objects which contain the histogram. Hists should be usually be accessed
+            through the hist groups, but list this provides direct access when necessary early in processing.
+        histsAvailable (BTree): Dict-like object containing all histograms that are available, including those in a particular
+            file and those that are created during processing. Newly created hists should be stored in this dict. Keys are
+            histogram names, while values are ``histogramContainer`` objects which contain the histogram.
+        hists (BTree): Dict-like object which contains all histograms that should be processed by a histogram.
+            After initial creation, this should be the definitive source of histograms for processing and display.
+            Keys are histogram names, while values are ``histogramContainer`` objects which contain the histogram.
+        newFile (bool): True if we received a new file, while will trigger reprocessing. This flag should only be
+            changed when beginning processing the next time. To be explicit, if a subsystem just received a new file
+            and it was processed, this flag should only be changed to ``False`` after the next processing iteration
+            begins. This allows the status of the run (determined through the subsystem) to be displayed in the web app.
+            Default: True because if the subsystem is being created, we likely need reprocessing. 
+        nEvents (int): Number of events in the subsystem. Processing will look for a histogram that contains ``events``
+            in the name and attempt to extract the number of events based on the number of entries. Should not be used
+            unless the subsystem explicitly includes a histogram with the number of events. Default: 1. 
+        processingOptions (PersistentMapping): Implemented by the subsystem to note options used during
+            standard processing. The subsystem processing options can vary when processing a time slice,
+            so storing the options allow us to return to the standard options when performing a full processing.
+            Keys are the option names as string, while values are their corresponding values.
     """
-
     def __init__(self, subsystem, runDir, startOfRun, endOfRun, showRootFiles = False, fileLocationSubsystem = None):
         """ Initializes subsystem properties.
 
         It does safety and sanity checks on a number of variables.
         """
-        # Subsystem name
         self.subsystem = subsystem
-        # Bool to control whether to show root files for this subsystem for this run
         self.showRootFiles = showRootFiles
 
         # If data does not exist for this subsystem then it is dependent on HLT data
         # Detect it if not passed to the constructor
         if fileLocationSubsystem is None:
-            # Use the subsystem directory as proxy for whether it exists
-            # TODO: Improve this detection. It should work, but may not be so flexible
+            # Use the subsystem directory as proxy for whether it exists.
+            # NOTE: This detection works, but it isn't so flexible.
             if os.path.exists(os.path.join(processingParameters["dirPrefix"], runDir, subsystem)):
                 self.fileLocationSubsystem = self.subsystem
             else:
@@ -227,7 +265,7 @@ class subsystemContainer(persistent.Persistent):
         # Times
         self.startOfRun = startOfRun
         self.endOfRun = endOfRun
-        # runLength is in minutes
+        # The run length is in minutes
         self.runLength = (endOfRun - startOfRun)//60
 
         # Histograms
@@ -243,18 +281,23 @@ class subsystemContainer(persistent.Persistent):
         # If the subsystem is being created, we likely need reprocessing, so defaults to true
         self.newFile = True
 
-        # nEvents
+        # Number of events in the subsystem. The processing will attempt to determine the number of events,
+        # but it is a subsystem dependent quantity. It needs explicit support.
         self.nEvents = 1
 
         # Processing options
-        # Implemented by the detector to note how it was processed that may be changed during time slice processing
-        # This allows us return full processing when appropriate
         self.processingOptions = persistent.mapping.PersistentMapping()
 
     @staticmethod
     def prettyPrintUnixTime(unixTime):
-        """ Pretty print the unix time. Needed mostly in templates were arbitrary functions are not allowed.
+        """ Converts the given time stamp into an appropriate manner ("pretty") for display.
 
+        Needed mostly in Jinja templates were arbitrary functions are not allowed.
+
+        Args:
+            unixTime (int): Unix time to be converted.
+        Returns:
+            str: The time stamp converted into an appropriate manner for display.
         """
         timeStruct = time.gmtime(unixTime)
         timeString = time.strftime("%A, %d %b %Y %H:%M:%S", timeStruct)
@@ -262,23 +305,63 @@ class subsystemContainer(persistent.Persistent):
         return timeString
 
     def resetContainer(self):
-        """  Clear the stored hist information so we can recreate (reprocess) the subsystem. """
+        """ Clear the stored hist information so we can recreate (reprocess) the subsystem.
+
+        Without resetting the container, reprocessing doesn't fully test the processing functions,
+        which are skipped if these list- and dict-like hist objects have entries.
+
+        Args:
+            None
+        Returns:
+            None
+        """
         del self.histGroups[:]
         self.histsInFile.clear()
         self.histsAvailable.clear()
         self.hists.clear()
 
 class trendingContainer(persistent.Persistent):
-    """ Structure of the trending container (quite similar to that of the subsystem container):
+    """ Object to represent the trending system.
 
-        """
+    The trending system is given it's own "subsystem" to handle the storage and configuration
+    of trending objects. It also can be used to handle cross subsystem trending which doesn't
+    naturally fit into a single subsystem.
+
+    The structure of this container is quite similar to that of the subsystem container.
+    This allows for the same functions to operate on both standard subsystem containers
+    as well as trending containers (with some minimal wrappers).
+
+    Args:
+        trendingDB (BTree): Dict-like object stored in the main ZODB database which is used for storing
+            trending objects persistently. Keys are the names of subsystems used for trending and values are 
+            ``BTree`` objects which are used to store the trending objects for that histogram. See the
+            ``trendingObjects`` attribute description for further details.
+
+    Attributes:
+        subsystem (str): Name of trending subsystem, "TDG".
+        trendingObjects (BTree): Dict-like object stored in the main ZODB database which is used for storing
+            trending objects persistently. Keys are the names of subsystems used for trending and values are 
+            ``BTree`` objects which are used to store the trending objects for that histogram. Inside of these
+            ``BTree`` objects, keys are the name of the individual trending objects and values are the trending
+            objects themselves. As an example, ``trendingObjects["TDG"]["testObj"]`` will be a trending object
+            stored within the trending "TDG" subsystem which is called "testObj".
+        updateToDate (bool): True if the trending container trending objects are entirely filled and up to date.
+            It could be used to refill the trending container if it is empty. Default: ``False``.
+        baseDir (str): Path to the base storage directory for the trending. Of the form ``trending``.
+        imgDir (str): Path to the image storage directory for the trending. Of the form ``trending/SYS/img``.
+        jsonDir (str): Path to the json storage directory for the trending. Of the form ``trending/SYS/json``.
+        processingOptions (PersistentMapping): Implemented by the trending system to note options used during
+            standard processing. The subsystem processing options can vary when processing a time slice,
+            so storing the options allow us to return to the standard options when performing a full processing.
+            Keys are the option names as string, while values are their corresponding values.
+    """
     def __init__(self, trendingDB):
         self.subsystem = "TDG"
 
         # Main container of the trendingObjects
         self.trendingObjects = trendingDB
 
-        # True if the trending container trending objects are entirely filled and up to date
+        # True if the trending container trending objects are entirely filled and up to date.
         # Could be used to refill the trending container if it is empty
         # TODO: Implement fully
         self.updateToDate = False
@@ -307,27 +390,57 @@ class trendingContainer(persistent.Persistent):
 
         Args:
             subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
-            trendingObjects (dict): dict of TrendingObject derived objects.
+            trendingObjects (dict): Dict of TrendingObject derived objects. Keys are names of the
+                trending objects, while the values should be already created and setup trending objects.
+            forceRecreateSubsystem (bool): True indicates that the subsystem is being recreated.
+                Consequently, the trending objects must also be recreated.
+        Returns:
+            None
         """
+        # The storage for a particular subsystem may not always be initialized, so set it up if necessary.
         if not subsystem in self.trendingObjects.keys():
             self.trendingObjects[subsystem] = BTrees.OOBTree.BTree()
 
         logger.debug("self.trendingObjects[{}]: {}".format(subsystem, self.trendingObjects[subsystem]))
 
+        # Assign the trending objects created by the subsystem to the trending object storage.
+        # There shouldn't be an namespace conflicts because each subsystem has it's own entry
+        # in the storage dict.
         for name, obj in iteritems(trendingObjects):
             if not name in self.trendingObjects[subsystem] or forceRecreateSubsystem:
                 logger.debug("Adding trending object {} from subsystem {} to the trending objects".format(name, subsystem))
                 self.trendingObjects[subsystem][name] = obj
             else:
                 logger.debug("Trending object {} (name: {}) already exists in subsystem {}".format(self.trendingObjects[subsystem][name], name, subsystem))
-                logger.debug("Trending next entry: {}".format(self.trendingObjects[subsystem][name].nextEntry))
+                logger.debug("Trending next entry value: {}".format(self.trendingObjects[subsystem][name].nextEntry))
 
     def resetContainer(self):
-        """ Reset the trending container """
+        """ Clear the stored trending objects so we can recreate (reprocess) the trending container.
+
+        Without resetting the container, reprocessing doesn't fully test the processing functions,
+        which are skipped if these list- and dict-like trending objects have entries.
+
+        Args:
+            None
+        Returns:
+            None
+        """
         self.trendingObjects.clear()
 
     def findTrendingFunctionsForHist(self, hist):
-        """ Given a hist, determine the trending objects (and therefore functions) which should be applied. """
+        """ Given a hist, determine the trending objects (and therefore functions) which should be applied.
+
+        Each trending object select the histograms that are needed for trending by name. This function
+        loops over those names and checks if the given histogram is included in the list for any trending
+        object. We cannot optimize this loop much because multiple trending objects may use a particular
+        histogram, and the histograms requested by the trending object may not necessarily exist for a
+        given run.
+
+        Args:
+            hist (histogramContainer): Histogram to be checked for trending objects.
+        Returns:
+            None
+        """
         logger.debug("Looking for trending objects for hist {}".format(hist.histName))
         for subsystemName, subsystem in iteritems(self.trendingObjects):
             for trendingObjName, trendingObj in iteritems(subsystem):
@@ -339,21 +452,40 @@ class trendingContainer(persistent.Persistent):
                     logger.debug("Found trending object match for hist {}, trendingObject: {}".format(hist.histName, self.trendingObjects[subsystemName][trendingObjName].name))
                     hist.trendingObjects.append(self.trendingObjects[subsystemName][trendingObjName])
 
-###################################################
 class timeSliceContainer(persistent.Persistent):
-    """ Time slice information container
+    """ Time slice information container.
+
+    Contains information about a time slice request, including the time ranges and the files involved.
+    These values are required to uniquely describe a time slice.
 
     Args:
         minUnixTimeRequested (int): Minimum requested unix time. This is the first time stamp to be included
             in the time slice.
         maxUnixTimeRequested (int): Maximum requested unix time. This is the last time stamp to be included
             in the time slice.
-        minUnixTimeAvailable (int): Minimum unix time in the run.
-        maxUnixTimeAvailable (int): Maximum unix time in the run.
+        minUnixTimeAvailable (int): Minimum unix time of the run.
+        maxUnixTimeAvailable (int): Maximum unix time of the run.
         startOfRun (int): Unix time of the start of the run.
-        filesToMerge ():
-        optionsHash ():
+        filesToMerge (list): List of fileContainer objects which need to be merged to create the time slice.
+        optionsHash (str): SHA1 hash of the processing options used to construct the time slice.
 
+    Attributes:
+        minUnixTimeRequested (int): Minimum requested unix time. This is the first time stamp to be included
+            in the time slice.
+        maxUnixTimeRequested (int): Maximum requested unix time. This is the last time stamp to be included
+            in the time slice.
+        minUnixTimeAvailable (int): Minimum unix time of the run.
+        maxUnixTimeAvailable (int): Maximum unix time of the run.
+        startOfRun (int): Unix time of the start of the run.
+        filesToMerge (list): List of fileContainer objects which need to be merged to create the time slice.
+        optionsHash (str): SHA1 hash of the processing options used to construct the time slice. This hash
+            is used for caching by comparing the processing options for a new time slice request with those
+            already processed. If the hashes are the same, we can directly return the already processed result.
+        filenamePrefix (str): Filename for the timeSlice file, based on the given start and end times.
+        filename (fileContainer): File container for the timeSlice file.
+        processingOptions (PersistentMapping): Implemented by the time slice container to note options used
+            during standard processing. The time slice processing options can vary when compared to standard
+            subsystem processing, so storing the options allow us to apply the custom time slice options.
     """
     def __init__(self, minUnixTimeRequested, maxUnixTimeRequested, minUnixTimeAvailable, maxUnixTimeAvailable, startOfRun, filesToMerge, optionsHash):
         # Requested times
@@ -382,19 +514,55 @@ class timeSliceContainer(persistent.Persistent):
         self.processingOptions = persistent.mapping.PersistentMapping()
 
     def timeInMinutes(self, inputTime):
+        """ Return the time from the input unix time to the start of the run in minutes.
+
+        Args:
+            inputTime (int): Unix time to be compared to the start of run time.
+        Returns:
+            int: Minutes from the start of run to the given time.
+        """
         #logger.debug("inputTime: {0}, startOfRun: {1}".format(inputTime, self.startOfRun))
         return (inputTime - self.startOfRun)//60
 
     def timeInMinutesRounded(self, inputTime):
+        """ Return the time from the input unix time to start of the run in minutes, rounded to
+        the nearest minute.
+
+        Note:
+            I believe this was created due to some float vs int issues in the Jinja templating
+            system. Although the purpose of this function isn't entirely clear, it is kept for
+            compatibility purposes.
+
+        Args:
+            inputTime (int): Unix time to be compared to the start of run time.
+        Returns:
+            int: Minutes from the start of run to the given time.
+        """
         return round(self.timeInMinutes(inputTime))
 
-###################################################
 class fileContainer(persistent.Persistent):
-    """ File information container
+    """ File information container.
+
+    This object wraps a ROOT filename, providing convenient access to relevant properties, such
+    as the type of file (combined, timeSlice, standard), and the time stamp. This information
+    is often stored in the filename itself, but extraction procedures vary for each file type.
+    Note that it *does not* open the file itself - this is still the responsibility of the user.
 
     Args:
-        filename (str):
-        startOfRun (int?):
+        filenae (str): Filename of the corresponding file.
+        startOfRun (int): Start of the run in unix time. Default: ``None``. The default will lead
+            to timeIntoRun being set to ``-1``. The default is most commonly used for time slices,
+            where the start of run isn't so meaningful.
+
+    Attributes:
+        filenae (str): Filename of the corresponding file.
+        combinedFile (bool): True if this file corresponds to a combined file. It is set to ``True``
+            if "combined" is in the filename.
+        timeSlice (bool): True if this file corresponds to a time slice. It is set to ``True`` if
+            "timeSlice" in in the filename.
+        fileTime (int): Unix time stamp of the file, extracted from the filename.
+        timeIntoRun (int): Time in seconds from the start of the run to the file time. Depends on
+            startOfRun being a valid time when the object was created.
     """
     def __init__(self, filename, startOfRun = None):
         self.filename = filename
@@ -416,36 +584,33 @@ class fileContainer(persistent.Persistent):
             # Show a clearly invalid time, since timeIntoRun doesn't make much sense for a time slice
             self.timeIntoRun = -1
 
-###################################################
 class histogramGroupContainer(persistent.Persistent):
-    """ Class to handle sorting of objects.
+    """ Organizes similar histograms into groups for processing and display.
 
-    This class can select a group of histograms and store their names in a list. It also stores a more
-    readable version of the group name, as well as whether the histograms should be plotted in a grid.
+    Histograms groups are created by providing name substrings of histogram which should be included.
+    The name substring is referred to as a ``groupSelectionPattern``. For example, if the pattern was
+    "hello", all histograms containing "hello" would be selected. Additional properties related to 
+    groups, such as display information, are also stroed.
 
     Args:
-        groupName (str): Readable name of the group.
+        prettyName (str): Readable name of the group.
         groupSelectionPattern (str): Pattern of the histogram names that will be selected. For example, if
             wanted to select histograms related to EMCal patch amplitude, we would make the pattern something
-            like "PatchAmp". The name depends on the name of the histogram sent from the HLT.
+            like "PatchAmp". The pattern depends on the name of the histograms sent from the HLT.
         plotInGridSelectionPattern (str): Pattern which denotes whether the histograms should be plotted in
             a grid. ``plotInGrid`` is set based on whether this value is in ``groupSelectionPattern``. For
-            example, in the EMCal, the ``plotInGridSelectionPattern`` is "_SM". 
-
-    Available attributes include:
+            example, in the EMCal, the ``plotInGridSelectionPattern`` is ``_SM``, since "SM" denotes a
+            supermodule.
 
     Attributes:
-        name (str): Readable name of the group. Set via the ``groupName`` in the constructor.
+        prettyName (str): Readable name of the group. Set via the ``groupName`` in the constructor.
         selectionPattern (str): Pattern of the histogram names that will be selected.
-        plotInGridSelectionPattern (str): Pattern which denotes whether the histograms should be plotted in
-            a grid.
+        plotInGridSelectionPattern (str): Pattern (substring) which denotes whether the histograms should be
+            plotted in a grid.
         plotInGrid (bool): True when the histograms should be plotted in a grid.
-        histList (list): List of the histograms that should be filled when the ``selectionPattern`` is matched.
-    
+        histList (PersistentList): List of histogram names that should be filled when the ``selectionPattern`` is matched.
     """
-
     def __init__(self, prettyName, groupSelectionPattern, plotInGridSelectionPattern = "DO NOT PLOT IN GRID"):
-        """ Initializes the hist group """
         self.prettyName = prettyName
         self.selectionPattern = groupSelectionPattern
         self.plotInGridSelectionPattern = plotInGridSelectionPattern
@@ -457,11 +622,49 @@ class histogramGroupContainer(persistent.Persistent):
         else:
             self.plotInGrid = False
 
-
-###################################################
 class histogramContainer(persistent.Persistent):
-    """ Histogram information container
-    
+    """ Histogram information container.
+
+    Organizes information about a particular histogram (or set of histograms). Manages functions that
+    process and otherwise modify the histogram, which are specified through the plugin system. The
+    container also manages plotting details.
+
+    Note:
+        The histogram container doesn't always have access to the underlying histogram. When constructing
+        the container, it is useful to have the histogram available to provide some information, but then
+        the histogram should not be needed until final processing is performed and the hist is plotted.
+        When this final step is reached, the histogram can be retrieved by ``retrieveHistogram()`` helper
+        function.
+
+    Args:
+        histName (str): Name of the histogram. Doesn't necessarily need to be the same as `TH1.GetName()`.
+        histList (list): List of histogram names that should contribute to this container. Used for stacking
+            multiple histograms on onto one canvas. Default: None
+        prettyName (str): Name of the histogram that is appropriate for display. Default: ``None``, which
+            will lead to be it being set to ``histName``.
+
+    Attributes:
+        histName (str): Name of the histogram. Doesn't necessarily need to be the same as `TH1.GetName()`.
+        prettyName (str): Name of the histogram that is appropriate for display.
+        histList (list): List of histogram names that should contribute to this container. Used for stacking
+            multiple histograms on onto one canvas. Default: None. See ``retrieveHistogram()`` for more
+            information on how this functionality is utilized.
+        information (PersistentMapping): Information that is extracted from the histogram that should be
+            stored persistently and displayed. This information will be displayed with the web app, with
+            the key shown as a clickable button, and the value information stored behind it.
+        hist (ROOT.TH1): The histogram which this container wraps.
+        histType (ROOT.TClass): Class of the histogram. For example, ``ROOT.TH1F``. Can be used for functions
+            that only apply to 2D hists, etc.
+        drawOptions (str): Draw options to be passed to ``TH1.Draw()`` when drawing the histogram.
+        canvas (ROOT.TCanvas): Canvas onto which the histogram will be plotted. Available after the histogram
+            has been classified (ie in processing functions).
+        projectionFunctionsToApply (PersistentList): List-like object of functions that perform projections
+            to the histogram that is represented by this container. See the detector system README for more
+            information.
+        functionsToApply (PersistentList): List-like object of functions that are applied to the histogram
+            during the processing step. See the detector subsystem README for more information.
+        trendingObjects (PersistentList): List-like object of trending objects which operate on this
+            histogram. See the detector system and trending README for more information.
     """
     def __init__(self, histName, histList = None, prettyName = None):
         # Replace any slashes with underscores to ensure that it can be used safely as a filename
@@ -538,9 +741,40 @@ class histogramContainer(persistent.Persistent):
 
         return returnValue
 
-###################################################
 class trendingObject(persistent.Persistent):
-    """ Base trending object """
+    """ Base class for trending object.
+
+    Implements storing trending values using a ``TGraphErrors`` based fill method. Each trending object
+    should inherit from this class, implementing value extraction in an overridden ``fill()`` method,
+    and then call the base class to perform the value storage.
+
+    For more information on the trending subsystem, see the detector subsystem and trending README.
+
+    Note:
+        We refer to a histogram in this object, but it doesn't actually need to be a histogram.
+        A ``TGraph``, ``TGraphErrors``, or other objects are all fine options.
+
+    Args:
+        trendingName (str): Name of the trending object.
+        prettyTrendingName (str): Name of the trending object that is appropriate for display.
+        nEntries (int): Number of entries the trending object should contain.
+        trendingHist (ROOT.TH1 or ROOT.TGraphErrors): Hist or graph where the trending values will be stored.
+            Default: ``None``, which will cause a ``TGraphErrors`` to be automatically created.
+        histNames (list): List of the names of histograms which are needed to perform the trending.
+            Default: ``None``.
+
+    Attributes:
+        name (str): Name of the trending object.
+        prettyTrendingName (str): Name of the trending object that is appropriate for display.
+        nEntries (int): Number of entries the trending object should contain.
+        values (np.array): (nEntries, 2) array which contains the value and error.
+        hist (histogramContainer): Container for the trending histogram.
+        histNames (list): List of the names of histograms which are needed to perform the trending.
+        nextEntry (int): Location where the next trending entry should go.
+        canvas (ROOT.TCanvas): Canvas onto which the hist will be plotted.
+    """
+    # TODO: Make histnames required!
+
     def __init__(self, trendingName, prettyTrendingName, nEntries, trendingHist = None, histNames = None):
         self.name = trendingName
         self.prettyName = prettyTrendingName
@@ -565,20 +799,19 @@ class trendingObject(persistent.Persistent):
         # Visualization of the trending object
         self.canvas = None
 
-    # Handles requests to .hist in the processHist() function
-    #@property
-    #def hist(self):
-    #    return self.trendingHist
-
-    #@hist.setter
-    #def hist(self, val):
-    #    if val == None:
-    #        pass
-    #    else:
-    #        self.trendingHist = val
-
     def fill(self, value, error):
-        """ 1D filling function. """
+        """ Base method to store a trended value and its error.
+
+        The name of this method is selected due to the similarity between storing the
+        trended value and filling a histogram. Note that it is up to the derived class
+        to determine how to actually extract this trended value.
+
+        Args:
+            value (float): Trending value to be filled.
+            error (float): Trending error value to be filled.
+        Returns:
+            None
+        """
         print("name: {}, self.nextEntry: {}, value: {}".format(self.name, self.nextEntry, value))
         currentEntry = self.nextEntry - 1
         if self.nextEntry > self.nEntries:
@@ -592,8 +825,19 @@ class trendingObject(persistent.Persistent):
         self.nextEntry += 1
 
     def retrieveHist(self):
-        """ Create a graph based on the np array """
+        """ Create a graph based on the stored numpy array.
 
+        Note:
+            We refer to a histogram in this method name, but it doesn't actually need to be a histogram.
+            A ``TGraphErrors`` or other objects that supports storing values and errors is a fine options.
+            For this function, we return a ``TGraphErrors`` if a histogram was not already passed.
+
+        Args:
+            None
+        Returns:
+            histogramContainer: Container which holds the created graph. It is returned to allow for
+                further customization.
+        """
         # The creation of this hist can be overridden by creating the histogram before now
         if not self.hist.hist:
             # Define TGraph
@@ -626,6 +870,6 @@ class trendingObject(persistent.Persistent):
                 self.hist.hist.SetPoint(i, i, self.values[i, 0])
                 self.hist.hist.SetPointError(i, i, self.values[i, 1])
 
-        # The hist is already availabe through the histogram container, but we return the hist
-        # incase the caller wants to do additional customization
+        # The hist is already available through the histogram container, but we return the hist
+        # in case the caller wants to do additional customization
         return self.hist
