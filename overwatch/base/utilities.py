@@ -38,11 +38,12 @@ from . import config
 # General utilities
 ###################################################
 def extractTimeStampFromFilename(filename):
-    """ Extracts unix time stamp from a given filename. This works for combined, time slice, and
-    files received from the HLT filenames.
+    """ Extracts unix time stamp from a given filename.
 
-    The type of the filename will be automatically detected based on substrings of the filename.
-    This will determine the format of the timestamp to be extracted.
+    This works for combined, time slice, and files received from the HLT filenames, although
+    the meaning varies depending on the type of filename passed. The type of the filename will
+    be automatically detected based on substrings of the filename. This will determine the
+    format of the timestamp to be extracted.
 
     For possibles filenames are as follows:
 
@@ -61,7 +62,7 @@ def extractTimeStampFromFilename(filename):
             where it is the length of the time stamp).
     """
     if "combined" in filename:
-        # This will be the length of the run
+        # This will be the time stamp of the latest file to contribute to the combined file.
         timeString = filename.split(".")[3]
         return int(timeString)
     elif "timeSlice" in filename:

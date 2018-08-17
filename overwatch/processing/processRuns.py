@@ -116,11 +116,10 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
                 if "events" in hist.histName.lower():
                     subsystem.nEvents = key.ReadObj().GetBinContent(1)
 
-        #logger.debug("pre  create additional histsAvailable: {}".format(", ".join(subsystem.histsAvailable.keys())))
 
         # Create additional histograms
+        #logger.debug("pre  create additional histsAvailable: {}".format(", ".join(subsystem.histsAvailable.keys())))
         pluginManager.createAdditionalHistograms(subsystem)
-
         #logger.debug("post create additional histsAvailable: {}".format(", ".join(subsystem.histsAvailable.keys())))
 
         # Create the subsystem stacks
