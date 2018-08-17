@@ -58,15 +58,16 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
     Args:
         filename (str): The full path to the file to be processed.
         outputFormatting (str): Specially formatted string which contains a generic path to be used when printing histograms.
-            It is generally of the from ``%s/%s.%s``, where the initial value is the base path, the second is the filename
-            and the third is the extension. This format is used instead of formatting the string to allow for additional
-            flexibility in formatting.
-        subsystem (:class:`~subsystemProperties`): Contains information about the current subsystem.
+            It must contain ``base``, ``name``, and ``ext``, where ``base`` is the base path, ``name`` is the filename
+            and ``ext`` is the extension. Ex: ``{base}/{name}.{ext}``.
+        subsystem (subsystemContainer): Contains information about the current subsystem.
+        processingOptions (): ... Default: ``None``.
+        forceRecreateSubsystem (bool): True if subsystems will be recreated, even if they already exist.
+        trendingContainer (trendingContainer): Contains trending objects which will be used when determining which histograms
+            need to be used for trending.
     Returns:
-        list: Contains all of the names of the histograms that were printed.
+        None
     """
-    # TODO: Check the arguments above.
-
     # The file with the new histograms
     fIn = ROOT.TFile(filename, "READ")
 
@@ -180,13 +181,13 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
                 continue
             processHist(subsystem = subsystem, hist = hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions)
 
-def processTrending(outputFormatting, trending, processingOptions = None, forceRecreateSubsystem = False):
+def processTrending(outputFormatting, trending, processingOptions = None):
     """
     
     Args:
-        outputFormatting (str): Specially formatted string which contains a generic path to the printed histograms.
-            The string contains "%s" to print the filename contained in listOfHists. It also includes the file
-            extension. Ex: "img/%s.png".
+        outputFormatting (str): Specially formatted string which contains a generic path to be used when printing histograms.
+            It must contain ``base``, ``name``, and ``ext``, where ``base`` is the base path, ``name`` is the filename
+            and ``ext`` is the extension. Ex: ``{base}/{name}.{ext}``.
         trending (trendingContainer): Trending object which contains all of the trending objects and additional
             information.
         processingOptions (dict): Implemented by the subsystem to note options used during standard processing. Keys
@@ -299,16 +300,16 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, su
     outputName = hist.histName
     # Replace any slashes with underscores to ensure that it can be used safely as a filename
     outputName = outputName.replace("/", "_")
-    outputFilename = outputFormatting % (os.path.join(processingParameters["dirPrefix"], subsystem.imgDir % {"subsystem" : subsystemName}),
-                                         outputName,
-                                         processingParameters["fileExtension"])
-    logger.debug("Saving hist to {}".format(outputFilename))
+    outputFilename = outputFormatting.format(base = os.path.join(processingParameters["dirPrefix"], subsystem.imgDir % {"subsystem" : subsystemName}),
+                                         name = outputName,
+                                         ext = processingParameters["fileExtension"])
+    logger.debug("Saving hist to {outputFilename}".format(outputFilename = outputFilename))
     hist.canvas.SaveAs(outputFilename)
 
     # Write BufferJSON
-    jsonBufferFile = outputFormatting % (os.path.join(processingParameters["dirPrefix"], subsystem.jsonDir % {"subsystem" : subsystemName}),
-                                         outputName,
-                                         "json")
+    jsonBufferFile = outputFormatting.format(base = os.path.join(processingParameters["dirPrefix"], subsystem.jsonDir % {"subsystem" : subsystemName}),
+                                         name = outputName,
+                                         ext = "json")
     #logger.debug("jsonBufferFile: {0}".format(jsonBufferFile))
     # GZip is performed by the web server, not here!
     with open(jsonBufferFile, "wb") as f:
@@ -499,12 +500,12 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
     logger.debug("subsystem.subsystem: {0}, subsystem.fileLocationSubsystem: {1}".format(subsystem.subsystem, subsystem.fileLocationSubsystem))
 
     # Generate the histograms
-    outputFormattingSave = os.path.join("%s", "{0}.%s.%s".format(timeSlice.filenamePrefix))
-    logger.debug("outputFormattingSave: {0}".format(outputFormattingSave))
-    logger.debug("path: {0}".format(os.path.join(processingParameters["dirPrefix"],
-                                               subsystem.baseDir,
-                                               timeSlice.filename.filename) ))
-    logger.debug("timeSlice.processingOptions: {0}".format(timeSlice.processingOptions))
+    outputFormattingSave = os.path.join("{base}", "%(prefix)s.{name}.{ext}" % {"prefix" : timeSlice.filenamePrefix})
+    logger.debug("outputFormattingSave: {}".format(outputFormattingSave))
+    logger.debug("path: {}".format(os.path.join(processingParameters["dirPrefix"],
+                                                subsystem.baseDir,
+                                                timeSlice.filename.filename) ))
+    logger.debug("timeSlice.processingOptions: {}".format(timeSlice.processingOptions))
     processRootFile(os.path.join(processingParameters["dirPrefix"],
                                  subsystem.baseDir,
                                  timeSlice.filename.filename),
@@ -763,7 +764,7 @@ def processAllRuns():
         trendingContainer = None
 
     # Determine which runs to process
-    outputFormattingSave = os.path.join("%s", "%s.%s")
+    outputFormattingSave = os.path.join("{base}", "{name}.{ext}")
     for runDir, run in runs.items():
         #for subsystem in subsystems:
         for subsystem in run.subsystems.values():
@@ -793,8 +794,7 @@ def processAllRuns():
         # Run trending once we have gotten to the most recent run
         logger.info("About to process trending")
         processTrending(outputFormatting = outputFormattingSave,
-                        trending = trendingContainer,
-                        forceRecreateSubsystem = processingParameters["forceRecreateSubsystem"])
+                        trending = trendingContainer)
 
         # Commit after we have successfully processed the trending
         transaction.commit()
