@@ -218,16 +218,6 @@ a.anchor {
     word-wrap: break-word;
 }
 
-/* Styles the QA Link on the main run page of the desktop. */
-.basicQALink {
-    /* Remove the underline to make the display more similar to the run list header */
-    text-decoration: none;
-}
-.basicQALink:hover {
-    /* Show the underline when hovering to make clear that it is a link */
-    text-decoration: underline;
-}
-
 /* Sets the styling on the tables containing the run information shown on the main run page */
 .rootPageRunListTable {
     /* Makes it easier to view */
@@ -390,11 +380,6 @@ a.anchor {
     .timeSliceResults {
         /* Adds a divider between the controls and the information in the menu */
         border-top: 3px solid #4588ba;
-    }
-    .basicQALink {
-        /* Remove the basic QA link from the run list header.
-         * It is instead shown in the menu (using a different element). */
-        display: none;
     }
     /* Replaces the bottom border of the header that is provided by responsiveTimeDependentMerge in
      * the desktop version. This is necessary since responsiveTimeDependentMerge is in the menu on mobile */
