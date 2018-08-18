@@ -400,9 +400,8 @@ def protected(filename):
 
     Note:
         This ignores GET parameters. However, they can be useful to pass here to prevent something
-        from being cached, such as a QA image which has the same name, but has changed since last
-        being served.
-
+        from being cached, such as a time slice image which could have the same name, but has changed
+        since last being served.
     """
     logger.debug("filename: {0}".format(filename))
     logger.debug("request.args: {0}".format(request.args))
@@ -549,11 +548,11 @@ def trending():
 @app.route("/testingDataArchive")
 @login_required
 def testingDataArchive():
-    """ Creates a zip archive to download data for QA function testing.
+    """ Creates a zip archive to download data for Overwatch development.
 
     It will return at most the 5 most recent runs. The archive contains the combined file for all subsystems.
 
-    NOTE:
+    Note:
         Careful in changing the routing, as this is hard coded in :func:`~webApp.routing.redirectBack()`!
 
     Args:

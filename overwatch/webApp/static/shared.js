@@ -77,9 +77,6 @@ function initPage(jsRootState) {
 
     // Sets the max limits of the form
     setTimeSlicesFormValues();
-
-    // Fired click event on qa page if the elements exist
-    initQADocStrings();
 }
 
 function removeFlashes() {
@@ -335,49 +332,43 @@ function routeLinks() {
         var currentTarget = event.currentTarget;
         console.log("current target: " + $(currentTarget).text());
 
-        // Handles qa function descriptions
-        if ($(currentTarget).hasClass("qaFunctionSelector")) {
-            handleQADocStrings(currentTarget);
+        // Handles general requests
+        console.log("this: " + $(this).text());
+
+        // Get the current page
+        var currentPage = window.location.pathname;
+        console.log("currentPage: " + currentPage);
+
+        // Determine where the request should be routed
+        var pageToRequest = $(this).attr("href");
+        console.log("pageToRequest: " + pageToRequest);
+        if (pageToRequest === "#") {
+            // Request the current page again with the proper GET request instead of with a #
+            console.log("Routing the requesting to the address of the current page.");
+            pageToRequest = currentPage;
         }
-        else {
-            // Handles general requests
-            console.log("this: " + $(this).text());
 
-            // Get the current page
-            var currentPage = window.location.pathname;
-            console.log("currentPage: " + currentPage);
+        // Determine parameters for the request
+        // Get hist group name
+        var histGroupName = $(this).data("histgroup");
+        // Get histogram name
+        var histName = $(this).data("histname");
+        /*console.log("histGroupName: " + histGroupName);
+        console.log("histName: " + histName);*/
 
-            // Determine where the request should be routed
-            var pageToRequest = $(this).attr("href");
-            console.log("pageToRequest: " + pageToRequest);
-            if (pageToRequest === "#") {
-                // Request the current page again with the proper GET request instead of with a #
-                console.log("Routing the requesting to the address of the current page.");
-                pageToRequest = currentPage;
-            }
+        // jsRoot and ajax will be added when handling the general request
+        var params = {
+            histGroup: histGroupName,
+            histName: histName
+        };
 
-            // Determine parameters for the request
-            // Get hist group name
-            var histGroupName = $(this).data("histgroup");
-            // Get histogram name
-            var histName = $(this).data("histname");
-            /*console.log("histGroupName: " + histGroupName);
-            console.log("histName: " + histName);*/
+        // Handle the general request
+        handleGeneralRequest(params, pageToRequest);
 
-            // jsRoot and ajax will be added when handling the general request
-            var params = {
-                histGroup: histGroupName,
-                histName: histName
-            };
+        updateHistory(params, pageToRequest);
 
-            // Handle the general request
-            handleGeneralRequest(params, pageToRequest);
-
-            updateHistory(params, pageToRequest);
-
-            // Prevent further action
-            return false;
-        }
+        // Prevent further action
+        return false;
     });
 }
 
@@ -524,38 +515,6 @@ function jsRootRequest() {
         // Actually send the request
         req.send();
     });
-}
-
-function initQADocStrings() {
-    // Fire click event if the qa function docstrings exists so that it will show one on page load
-    var qaFunctionSelector = Polymer.dom(this.root).querySelector(".qaFunctionSelector");
-    if (qaFunctionSelector !== null)
-    {
-        // Fire event
-        $(qaFunctionSelector).trigger("click");
-    }
-}
-
-function handleQADocStrings(currentTarget) {
-    // Hide previous docstring
-    var hideDocstring = Polymer.dom(this.root).querySelector(".showDocstring");
-    if (hideDocstring !== null) {
-        $(hideDocstring).removeClass("showDocstring");
-        $(hideDocstring).addClass("hideElement");
-    }
-
-    // Show new docstring
-    var funcName = $(currentTarget).data("funcname");
-    var subsystem = $(currentTarget).data("subsystem");
-    var targetDocstring = Polymer.dom(this.root).querySelector("#" + subsystem + funcName);
-    if (targetDocstring !== null) {
-        //console.log("targetDocstring: " + $(targetDocstring).text());
-        $(targetDocstring).removeClass("hideElement");
-        $(targetDocstring).addClass("showDocstring");
-    }
-    else {
-        console.log("Target docstring #" + subsystem + funcName + "is null! Cannot set docstring!");
-    }
 }
 
 // This function is only called when navigating within the site

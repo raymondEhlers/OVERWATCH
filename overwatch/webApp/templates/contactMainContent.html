@@ -3,29 +3,29 @@
 <p style="text-align:center">ALICE <b>OVERWATCH</b>: <br> <b>O</b>nline <b>V</b>isualization of <b>E</b>merging t<b>R</b>ends and <b>W</b>eb <b>A</b>ccessible de<b>T</b>ector <b>C</b>onditions using the <b>H</b>LT</p>
 <p>Comments, suggestions, and ideas are appreciated. Problems or bugs reports are also helpful. Contact: <a href="mailto:raymond.ehlers@yale.edu">Raymond Ehlers</a> and <a href="mailto:james.mulligan@yale.edu">James Mulligan</a>.</p>
 {% if current_user.is_authenticated %}
-    <p>QA function testing data is available <a href="{{ url_for("testingDataArchive") }}">here</a></p>
+    <p>Overwatch development and function testing data is available <a href="{{ url_for("testingDataArchive") }}">here</a></p>
     <p>See the documentation <a target="_blank" href="https://overwatch.readthedocs.io/en/latest/">here</a></p>
 {% endif %}
 {% if current_user.id == "emcalAdmin" %}
     <p>View the <a href={{ url_for("status") }}>OVERWATCH Status</a></p>
     <p>Upgrade the <a href={{ url_for("upgradeDocker") }}>Docker Image</a></p>
 {% endif %}
-<p>QA and Website created by:</p>
+<p>Overwatch, as well as HLT components, are created by:</p>
 <table>
-    <tr>
-        <td class="contactTableData">Salvatore Aiola</td>
-        <td class="contactTableData">Yale University</td>
-    </tr>
     <tr>
         <td class="contactTableData">Raymond Ehlers</td>
         <td class="contactTableData">Yale University</td>
     </tr>
     <tr>
-        <td class="contactTableData">Markus Fasel</td>
-        <td class="contactTableData">LBNL</td>
+        <td class="contactTableData">James Mulligan</td>
+        <td class="contactTableData">Yale University</td>
     </tr>
     <tr>
-        <td class="contactTableData">James Mulligan</td>
+        <td class="contactTableData">Markus Fasel</td>
+        <td class="contactTableData">ORNL</td>
+    </tr>
+    <tr>
+        <td class="contactTableData">Salvatore Aiola</td>
         <td class="contactTableData">Yale University</td>
     </tr>
 </table>
