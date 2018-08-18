@@ -38,7 +38,7 @@ logger.info(serverParameters)
 # Imports are below here so that they can be logged
 from overwatch.webApp.webApp import app
 
-# Set the secret key here
+# Get the secret key for the web app
 if not serverParameters["debug"]:
     # Connect to database ourselves and grab the secret key
     (dbRoot, connection) = utilities.getDB(serverParameters["databaseLocation"])
@@ -57,7 +57,7 @@ if not serverParameters["debug"]:
     app.config.update(SECRET_KEY = secretKey)
     logger.debug("     After setting: {0}".format(app.config["SECRET_KEY"]))
 
-    # Don't close the db connection here!
+    # Usually we close the db connection here!
     # Even though we just created a new db connection, if we close it here, then it will interfere with the web app
     # Instead, we just leave it up to flask_zodb to manage everything
     #connection.close()
