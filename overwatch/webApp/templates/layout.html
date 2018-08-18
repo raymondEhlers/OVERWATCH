@@ -172,16 +172,16 @@
             <!-- Ensures that we can scroll in the header! -->
             <div class="scrollableContainer">
                 <div class="mainContentContainer">
-                    {# Flashes from: http://flask.pocoo.org/docs/0.10/patterns/flashing/ #}
-                    {% with messages = get_flashed_messages() %}
-                        {% if messages %}
+                    {#- Flashes from: http://flask.pocoo.org/docs/0.10/patterns/flashing/ -#}
+                    {% with messages = get_flashed_messages() -%}
+                        {%- if messages -%}
                             <div class=flashes id="flashes">
-                                {% for message in messages %}
+                                {% for message in messages -%}
                                 <p>{{ message.replace("\n", "<br />") | safe }}</p>
-                                {% endfor %}
+                                {%- endfor %}
                             </div>
-                        {% endif %}
-                    {% endwith %}
+                        {%- endif -%}
+                    {%- endwith %}
                     <a class="anchor" name="topOfPage"></a>
                     <div id="mainContent" class="linksToIntercept">
                         {% block mainContent %}{% endblock %}
@@ -222,9 +222,9 @@
 {# Defines direct access to the body block #}
 {% block body %}{% endblock %}
 
-{# Previously loaded scripts on DOM ready (which will fire before onLoad()) #}
-{# See (answer and comments): https://stackoverflow.com/a/2414766 #}
-{# Hoewver, with Polymer, we should instead wait for WebComponentsReady! #}
+{#- Previously loaded scripts on DOM ready (which will fire before onLoad()) #}
+{#- See (answer and comments): https://stackoverflow.com/a/2414766 #}
+{#- Hoewver, with Polymer, we should instead wait for WebComponentsReady! -#}
 <script type="text/javascript">
     document.addEventListener("WebComponentsReady", function() {
         {% block pageReadyForJS %}{% endblock %}

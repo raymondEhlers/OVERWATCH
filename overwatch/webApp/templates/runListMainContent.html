@@ -1,31 +1,31 @@
 <h1 id="mainContentTitle">OVERWATCH Run List</h1>
 <hr />
 
-{% for run in runs %}
+{%- for run in runs %}
     {# Create anchors to link to #}
     {%- if loop.index % anchorFrequency == 0 -%}
         <a name="{{ run.runDir }}"></a>
-    {%- endif -%}
+    {% endif -%}
     <table class="rootPageRunListTable">
-    {% for subsystem in run.subsystems.values() %}
+    {%- for subsystem in run.subsystems.values() %}
         <tr>
-            {% if loop.first == True %}
+            {% if loop.first == True -%}
             <td>{{ run.prettyName }}</td>
-            {% else %}
+            {%- else -%}
             <td></td>
-            {% endif %}
+            {%- endif %}
             <td>
                 <a href="{{ url_for("runPage", runNumber = run.runNumber, subsystemName = subsystem.subsystem, requestedFileType="runPage") }}">{{ subsystem.subsystem }} Histograms</a>
             </td>
         </tr>
-        {% if subsystem.subsystem in subsystemsWithRootFilesToShow %}
+        {% if subsystem.subsystem in subsystemsWithRootFilesToShow -%}
         <tr>
             <td></td>
             <td>
                 <a href="{{ url_for("runPage", runNumber = run.runNumber, subsystemName = subsystem.subsystem, requestedFileType="rootFiles") }}">{{ subsystem.subsystem }} ROOT Files</a>
             </td>
         </tr>
-        {% endif %}
+        {%- endif -%}
     {% endfor %}
     </table>
-{% endfor %}
+{%- endfor %}

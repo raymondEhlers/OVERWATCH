@@ -1,5 +1,5 @@
 <paper-listbox>
-{% for histGroup in subsystem.histGroups -%}
+{%- for histGroup in subsystem.histGroups -%}
     {%- if histGroup.histList != [] -%}
         {# groupSelectionPatten should always be a valid proxy for a valid link #}
         {# The value "nonSubsystemEmptyString" is interpreted in the validation function for the hist group, so it shouldn't show up anywhere else! #}
@@ -8,7 +8,7 @@
         </a>
         {%- if histGroup.plotInGrid == False -%}
             {%- for histName in histGroup.histList -%}
-                {% set hist = subsystem.hists[histName] %}
+                {%- set hist = subsystem.hists[histName] -%}
                 {# The value "nonSubsystemEmptyString" is interpreted in the validation function for the hist group, so it shouldn't show up anywhere else! #}
                 <a href="#" data-histname="{{ hist.histName }}" data-histgroup="{%- if histGroup.selectionPattern != "" -%}{{ histGroup.selectionPattern }}{%- else -%}nonSubsystemEmptyString{%- endif -%}" tabindex=-1>
                     <paper-item>{{ hist.prettyName }}</paper-item>
@@ -16,6 +16,5 @@
             {%- endfor -%}
         {%- endif -%}
     {%- endif -%}
-{% endfor %}
+{%- endfor %}
 </paper-listbox>
-{# <div id="drawerWidth" class="hideElement" data-width=256></div> #}
