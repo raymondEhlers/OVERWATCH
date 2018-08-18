@@ -21,56 +21,56 @@ except ImportError:
 
 # Logging
 import logging
-# Setup logger
 logger = logging.getLogger(__name__)
 
-###################################################
 def isSafeUrl(target):
     """ Checks URL for safety to ensure that it does not redirect unexpectedly.
 
+    Note:
+        Relies on the flask.request object.
+
     Args:
         target (str): URL for the target to test.
-
     Returns:
         bool: True if the URL is safe.
-    
     """
     ref_url = urlparse(request.host_url)
     test_url = urlparse(urljoin(request.host_url, target))
     return test_url.scheme in ('http', 'https') and ref_url.netloc == test_url.netloc
 
-###################################################
 def getRedirectTarget():
     """ Extracts the Next target and checks its safety.
 
     Note:
-        Extracts the input from flask.request
-    
+        Relies on the flask.request object.
+
+    Args:
+        None
     Returns:
         str: URL if the target is safe.
-    
     """
-    for target in request.values.get('next'), request.referrer:
+    for target in [request.values.get('next'), request.referrer]:
         if not target:
             continue
         if isSafeUrl(target):
             return target
 
-###################################################
 def redirectBack(endpoint, **values):
     """ Handles safe redirection.
     
     It extracts the value of Next from flask.request. If the target is not safe, then redirect back
     to ``endpoint`` instead.
 
+    Note:
+        Relies on the flask.request object.
+
     Args:
         endpoint (str): Where to redirect in case the Next url is not safe
-        values (list): Arguments to pass to url_for() in case of needing to redirect to endpoint instead.
-
+        **values (dict): Arguments to pass to url_for() in case of needing to redirect to
+            endpoint instead.
     Returns:
         redirect to NextUrl: Redirect is called on the next URL if it is safe. Redirects to the
-        given endpoint if the URL is not safe.
-
+            given endpoint if the URL is not safe.
     """
     target = request.form['next']
     # If an unauthentictaed user attempted to access /logout, then after logging in, it would redirect
@@ -82,5 +82,4 @@ def redirectBack(endpoint, **values):
         target = url_for(endpoint, **values)
     #logger.debug("target for redirectBack: {0}".format(target))
     return redirect(target)
-
 
