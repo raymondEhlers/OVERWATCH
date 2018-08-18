@@ -23,20 +23,8 @@ import collections
 import pkg_resources
 # For server status
 import requests
-# Python logging system
 import logging
-# Setup logger
-if __name__ == "__main__":
-    # By not setting a name, we get everything!
-    #logger = logging.getLogger("")
-    # Alternatively, we could set "webApp" to get everything derived from that
-    #logger = logging.getLogger("webApp")
-    pass
-else:
-    # When imported, we just want it to take on it normal name
-    logger = logging.getLogger(__name__)
-    # Alternatively, we could set "webApp" to get everything derived from that
-    #logger = logging.getLogger("webApp")
+logger = logging.getLogger(__name__)
 
 # Flask
 from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, jsonify, session
@@ -118,7 +106,6 @@ loginManager.init_app(app)
 # Tells the manager where to redirect when login is required.
 loginManager.login_view = "login"
 
-###################################################
 @loginManager.user_loader
 def load_user(user):
     """ Used to remember the user so that they don't need to login again each time they visit the site. """
@@ -128,10 +115,10 @@ def load_user(user):
 # Unauthenticated Routes
 ######################################################################################################
 
-###################################################
 @app.route("/", methods=["GET", "POST"])
 def login():
     """ Login function. This is is the first page the user sees.
+
     Unauthenticated users are also redirected here if they try to access something restricted.
     After logging in, it should then forward them to resource they requested.
     """
@@ -202,16 +189,15 @@ def login():
         mainContent = render_template("loginMainContent.html", error=errorValue, nextValue=nextValue)
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
-###################################################
 @app.route("/logout")
 @login_required
 def logout():
     """ Logout function.
 
-    NOTE:
+    Note:
         Careful in changing the routing, as this is hard coded in :func:`~webApp.routing.redirectBack()`!
 
-    Redirects back to :func:`.login`, which willl redirect back to index if the user is logged in.
+    Redirects back to ``login()``, which willl redirect back to index if the user is logged in.
     """
     previousUsername = current_user.id
     logout_user()
@@ -219,10 +205,9 @@ def logout():
     flash("User logged out!")
     return redirect(url_for("login", previousUsername = previousUsername))
 
-###################################################
 @app.route("/contact")
 def contact():
-    """ Simple contact page so we can provide support in the future."""
+    """ Simple contact page so we can provide support in the future. """
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
     if ajaxRequest == False:
@@ -232,16 +217,6 @@ def contact():
         mainContent = render_template("contactMainContent.html")
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
-###################################################
-@app.route("/favicon.ico")
-def favicon():
-    """ Browsers always try to load the Favicon, so this suppresses the errors about not finding one.
-
-    However, the real way that this is generally loaded is via code in layout template!
-    """
-    return redirect(url_for("static", filename="icons/favicon.ico"))
-
-###################################################
 @app.route("/statusQuery", methods=["POST"])
 def statusQuery():
     """ Respond to a status query (separated so that it doesn't require a login!) """
@@ -249,7 +224,6 @@ def statusQuery():
     # Responds to requests from other OVERWATCH servers to display the status of the site
     return "Alive"
 
-###################################################
 @app.route("/health")
 def health():
     """ Respond to health request to note that the web app is still alive. """
@@ -265,7 +239,6 @@ def health():
 # Authenticated Routes
 ######################################################################################################
 
-###################################################
 @app.route("/monitoring", methods=["GET"])
 @login_required
 def index():
@@ -309,7 +282,6 @@ def index():
 
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
-###################################################
 @app.route("/Run<int:runNumber>/<string:subsystemName>/<string:requestedFileType>", methods=["GET"])
 @login_required
 def runPage(runNumber, subsystemName, requestedFileType):
@@ -419,7 +391,6 @@ def runPage(runNumber, subsystemName, requestedFileType):
                        histName = requestedHist,
                        histGroup = requestedHistGroup)
 
-###################################################
 @app.route("/monitoring/protected/<path:filename>")
 @login_required
 def protected(filename):
@@ -440,7 +411,6 @@ def protected(filename):
     #    print "timeParameter:", request.args.get("time")
     return send_from_directory(os.path.realpath(serverParameters["protectedFolder"]), filename)
 
-###################################################
 @app.route("/timeSlice", methods=["GET", "POST"])
 @login_required
 def timeSlice():
@@ -506,7 +476,6 @@ def timeSlice():
     else:
         return render_template("error.html", errors={"error": ["Need to access through a run page!"]})
 
-###################################################
 #@app.route("/trending/<string:subsystemName>", methods=["GET", "POST"])
 @app.route("/trending", methods=["GET", "POST"])
 @login_required
@@ -577,7 +546,6 @@ def trending():
                        histName = requestedHist,
                        histGroup = subsystemName)
 
-###################################################
 @app.route("/testingDataArchive")
 @login_required
 def testingDataArchive():
@@ -626,7 +594,6 @@ def testingDataArchive():
     # Return with a download link
     return redirect(url_for("protected", filename=zipFilename))
 
-###################################################
 @app.route("/status")
 @login_required
 def status():
@@ -698,7 +665,6 @@ def status():
 
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
-###################################################
 @app.route("/upgradeDocker")
 @login_required
 def upgradeDocker():
