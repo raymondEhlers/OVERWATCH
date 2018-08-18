@@ -78,8 +78,6 @@ class runContainer(persistent.Persistent):
         self.subsystems = BTrees.OOBTree.BTree()
         self.hltMode = hltMode
 
-        # TODO: Also include the fileMode in the run info file?
-
         # Try to retrieve the HLT mode if it was not passed
         runInfoFilePath = os.path.join(processingParameters["dirPrefix"], self.runDir, "runInfo.yaml")
         if not hltMode:
