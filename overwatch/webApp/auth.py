@@ -11,25 +11,22 @@ For user authentication, https://exploreflask.com/users.html was extensively use
 from flask_login import UserMixin
 from flask_bcrypt import check_password_hash
 
-# Config
-from ..base import config
-#(serverParameters, filesRead) = config.readConfig(config.configurationType.webApp)
-
 # Logging
 import logging
-# Setup logger
 logger = logging.getLogger(__name__)
 
-###################################################
 class User(UserMixin):
     """ A basic user class to manage authentication.
 
-    Inherits from UserMixin, which implements a basic class for use with login_manger().
+    Inherits from ``UserMixin``, which implements a basic class for use with ``login_manger()``.
 
     New users should be added into the external config file. This class provides no ability to store new users dynamically
     and assumes that passwords passed to it are already hashed by ``bcrypt.generate_password_hash(password, BCRYPT_LOG_ROUNDS)``.
 
-    The login_manager stores this class to manage users.
+    The ``login_manager`` stores this class to manage users.
+
+    Note:
+        There are also a few attributes inherited from UserMixin
 
     Args:
         username (str): Username of new user
@@ -41,16 +38,9 @@ class User(UserMixin):
         id (str): The username of the instance of the object
         password (str): The password of the instance of the object. Note: This must be hashed by the user before
             passing to this object!
-
-    Note:
-        There are also a few attributes inherited from UserMixin
-
     """
 
     def __init__(self, username, password):
-        """ Initialize a new user, assuming that their password is hashed.
-        
-        Does not store the new user in a central database! It will disappear when the object goes out of scope."""
         self.id = username
         self.password = password
 
@@ -59,17 +49,10 @@ class User(UserMixin):
         
         Args:
             plainTextPassword (str): The plain text password to test.
-
         Returns:
             bool: True if the password matches the instance of the user.
-            
         """
         return check_password_hash(self.password, plainTextPassword)
-
-    # Static objects and methods
-    #: List of valid users, loaded from an external file.
-    #users = serverParameters._users
-    #users = db["config"]["users"]
 
     @staticmethod
     def getUser(username, db):
@@ -79,10 +62,9 @@ class User(UserMixin):
 
         Args:
             username (str): Username to retrieve
-
         Returns:
-            :class:`.User`: Returns an instance of the :class:`.User` class if the user exists. Otherwise, it
-            returns None.
+            ``User``: Returns an instance of the ``User`` class if the user exists. Otherwise, it
+                returns ``None``.
         """
         try:
             userPasswordHash = db.get("config").get("users").get(username)
@@ -94,18 +76,15 @@ class User(UserMixin):
         else:
             return None
 
-###################################################
 def authenticateUser(username, password, db):
     """ Checks whether the user credentials are correct.
 
     Args:
         username (str): username of the attempted user.
         password (str): plain text password of the attempted user.
-
     Returns:
-        :class:`.User`: If the credentials were valid, an instance of the :class:`.User` class is returned so that the login_manager can store that object and track which user is logged in.
-            Otherwise, it returns None.
-
+        ``User``: If the credentials were valid, an instance of the ``User`` class is returned so that the login_manager
+            can store that object and track which user is logged in. Otherwise, it returns ``None``.
     """
     attemptedUser = User.getUser(username, db)
     if attemptedUser:
