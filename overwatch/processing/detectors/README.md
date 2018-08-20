@@ -149,7 +149,7 @@ def createAdditionalSYSHistograms(subsystem):
     # Store the additional histogram
     subsystem.histsAvailable[histName] = histCont
 
-def projectionFunction(subsystem, hist, processingOptions, *args, **kwargs):
+def projectionFunction(subsystem, hist, processingOptions, **kwargs):
     """ Perform the actual projection.
 
     Args:
@@ -255,11 +255,11 @@ by appending it to the `histogramContainer.functionsToApply` list. Note that the
 in the order which they are added.
 
 Each function will all be called with the signature `(subsystemContainer, histogramContainer,
-processingOptions, *args, **kwargs)`, where the `subsystemContainer` corresponds to the current subsystem, the
+processingOptions, **kwargs)`, where the `subsystemContainer` corresponds to the current subsystem, the
 `histogramContainer` corresponds to the current histogram being processed, and the `processingOptions`
 correspond to the processing options you set in the [general options](#general-histogram-processing-options),
-or in the special case of reprocessing, a set of customized options. Note that including the `*args` and
-`**kwargs` in the function signature is important for forward compatibility.
+or in the special case of reprocessing, a set of customized options. Note that including `**kwargs` in
+the function signature is important for forward compatibility.
 
 For an example of how to determine the functions to apply to particular histograms, see
 `overwatch.processing.detectors.EMC.findFunctionsForEMCHistogram`. For an example of a processing function,
@@ -297,7 +297,7 @@ For an example, see `proccessing.detectors.TPC.TPCTrendingObjectMean`.
 
 #### Define trending objects
 
-Trending objects are defined via the function `defineSYSTrendingObjects(trending, *args, **kwargs)`, where the
+Trending objects are defined via the function `defineSYSTrendingObjects(trending, **kwargs)`, where the
 argument `trending` can be treated as a dictionary. The purpose of this function is to name and define
 [trending objects](#trending-objects), as well as specify the objects (histograms) that the trending object is
 supposed to be used with. For example, a trending object could extract the mean from a histogram, and then

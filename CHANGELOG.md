@@ -15,6 +15,8 @@ Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
   how evolved.
 - Moved update users script to the base package, allowing for it to be installed via `setup.py`. It is
   available via `overwatchUpdateUsers`.
+- Modified plugin future arguments to only use `**kwargs`. Using `*args` seems like a dangerous standard.
+  Anything that will be added should be added explicitly as a keyword argument.
 
 ### Fixed
 
@@ -24,6 +26,7 @@ Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
 
 - Removed `bcryptLogRounds` alias from the YAML config. The default is now drawn for `overwatch.base.config`.
   The value can still by set via YAML, but one should not depend on the alias.
+- Removed obsolete code in the webApp related to the former QA system. Mainly removed obsolete `js` and `css`.
 
 ## [v1.0] - 11 July 2018
 

@@ -14,7 +14,7 @@ beyond basic modification of the presentation.
 
 import ROOT
 
-def generalHLTOptions(subsystem, hist, processingOptions, *args, **kwargs):
+def generalHLTOptions(subsystem, hist, processingOptions, **kwargs):
     """ Specify general HLT histogram options.
 
     Args:
@@ -22,7 +22,6 @@ def generalHLTOptions(subsystem, hist, processingOptions, *args, **kwargs):
         hist (histogramContainer): The histogram being processed.
         processingOptions (dict): Implemented by the subsystem to note options used during standard processing. Keys
             are names of options, while values are the corresponding option values.
-        *args (list): Reserved for future arguments.
         **kwargs (dict): Reserved for future arguments.
     Returns:
         None
@@ -32,7 +31,7 @@ def generalHLTOptions(subsystem, hist, processingOptions, *args, **kwargs):
     #       So this option is only relevant for png images.
     ROOT.gStyle.SetOptTitle(1)
 
-def findFunctionsForHLTHistogram(subsystem, hist, *args, **kwargs):
+def findFunctionsForHLTHistogram(subsystem, hist, **kwargs):
     """ Determine which processing functions to apply to which HLT histograms.
 
     Functions should be added to the ``histogramContainer.functionsToApply`` list. This allows
@@ -42,7 +41,6 @@ def findFunctionsForHLTHistogram(subsystem, hist, *args, **kwargs):
     Args:
         subsystem (subsystemContainer): The subsystem being processed.
         hist (histogramContainer): The histogram being processed.
-        *args (list): Reserved for future arguments.
         **kwargs (dict): Reserved for future arguments.
     Returns:
         None

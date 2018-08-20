@@ -54,7 +54,7 @@ class TPCTrendingObjectMean(processingClasses.trendingObject):
         print("Filling value: {}, error: {}".format(fillVal, fillValError))
         super(TPCTrendingObjectMean, self).fill(fillVal, fillValError)
 
-def defineTPCTrendingObjects(trending, *args, **kwargs):
+def defineTPCTrendingObjects(trending, **kwargs):
     # Being a bit clever so we don't have to repeat too much code
     names = [["TPCClusterTrending", "<TPC clusters>: (p_{T} > 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_0_5_7_restrictedPtEta"]],
              ["TPCFoundClusters", "<Found/Findable TPC clusters>: (p_{T} > 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_2_5_7_restrictedPtEta"]],
