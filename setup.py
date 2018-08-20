@@ -110,6 +110,8 @@ setup(
             "sphinx",
             # Allow markdown files to be used
             "recommonmark",
+            # Allow markdown tables to be used
+            "sphinx_markdown_tables",
         ]
     }
   )
