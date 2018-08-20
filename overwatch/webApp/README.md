@@ -1,6 +1,6 @@
-# Web App details
+# Web App package details
 
-## Notes on `webassets` and `webassets` filters
+## Notes on `webassets`, `webassets` filters, and debugging
 
 Overwatch depends on `webassets` to deploy compiled and minimized files. In particular, the `js` is minimized,
 and `polymer-bundler` is employed to compile all of the polymer components into one minimized file to reduce
@@ -12,7 +12,7 @@ A few number of important notes on usage are below:
 - Disable caching with the below lines. Put these lines in `overwatch.webApp.webApp` or `overewatch.webApp.run`.
   It is useful for debugging: 
 
-    ``` 
+    ```python
     >>> assets.cache = False
     >>> assets.manifest = False
     ```
@@ -30,6 +30,6 @@ A few number of important notes on usage are below:
   asset to force it to built immediately (will still only be built if needed or forced by following the 
   debug procedure above).
 
-    ```
+    ```python
     >>> logger.debug(assets["polymerBundle"].urls())
     ```

@@ -1,5 +1,5 @@
-overwatch.base package
-======================
+Overwatch Base Package (``overwatch.base``)
+===========================================
 
 overwatch.base.config module
 ----------------------------

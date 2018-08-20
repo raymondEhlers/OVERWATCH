@@ -1,5 +1,5 @@
-overwatch.receiver package
-==========================
+Overwatch Receiver Package (``overwatch.receiver package``)
+===========================================================
 
 overwatch.receiver.dqmReceiver module
 -------------------------------------

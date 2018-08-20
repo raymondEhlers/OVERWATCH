@@ -1,5 +1,7 @@
-overwatch.processing.detectors package 
-=======================================
+Overwatch Subsystem (Detector) Package (``overwatch.processing.detectors``)
+===========================================================================
+
+See also the :doc:`full reference on the plugin and trending systems <../detectorPluginsReadme>`.
 
 overwatch.processing.detectors.EMC
 ----------------------------------

@@ -1,8 +1,21 @@
-overwatch.processing package
-============================
+Overwatch Processing Package (``overwatch.processing``)
+=======================================================
+
+General information from the README is available immediately below. Further module specific documentation is
+available further below in the :ref:`package reference <processing-package-reference>`.
+
+.. toctree::
+   :maxdepth: 2
+
+   ../processingReadme.md
+
+.. _processing-package-reference:
+
+Package reference
+-----------------
 
 overwatch.processing.mergeFiles module
---------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: overwatch.processing.mergeFiles
     :members:
@@ -10,7 +23,7 @@ overwatch.processing.mergeFiles module
     :show-inheritance:
 
 overwatch.processing.processRuns module
----------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: overwatch.processing.processRuns
     :members:
@@ -18,7 +31,7 @@ overwatch.processing.processRuns module
     :show-inheritance:
 
 overwatch.processing.processingClasses module
----------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: overwatch.processing.processingClasses
     :members:
@@ -26,7 +39,7 @@ overwatch.processing.processingClasses module
     :show-inheritance:
 
 overwatch.processing.pluginManager module
------------------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: overwatch.processing.pluginManager
     :members:
@@ -34,7 +47,7 @@ overwatch.processing.pluginManager module
     :show-inheritance:
 
 overwatch.processing.run module
--------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: overwatch.processing.run
     :members:
