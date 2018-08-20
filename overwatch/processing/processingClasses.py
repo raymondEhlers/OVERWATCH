@@ -635,14 +635,14 @@ class histogramContainer(persistent.Persistent):
         function.
 
     Args:
-        histName (str): Name of the histogram. Doesn't necessarily need to be the same as `TH1.GetName()`.
+        histName (str): Name of the histogram. Doesn't necessarily need to be the same as ``TH1.GetName()``.
         histList (list): List of histogram names that should contribute to this container. Used for stacking
             multiple histograms on onto one canvas. Default: None
         prettyName (str): Name of the histogram that is appropriate for display. Default: ``None``, which
             will lead to be it being set to ``histName``.
 
     Attributes:
-        histName (str): Name of the histogram. Doesn't necessarily need to be the same as `TH1.GetName()`.
+        histName (str): Name of the histogram. Doesn't necessarily need to be the same as ``TH1.GetName()``.
         prettyName (str): Name of the histogram that is appropriate for display.
         histList (list): List of histogram names that should contribute to this container. Used for stacking
             multiple histograms on onto one canvas. Default: None. See ``retrieveHistogram()`` for more

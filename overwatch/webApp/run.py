@@ -6,6 +6,10 @@
 while ``run()`` is defined to allow for execution via ``entry_points`` defined
 in the python package setup.
 
+Note:
+    This should only be used for the development server!! Actualy deployments
+    should be performed using `uwsgi`.
+
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
 
