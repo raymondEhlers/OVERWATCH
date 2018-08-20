@@ -2,13 +2,15 @@
 
 """ Web app specific utilities.
 
+In particular, it handles tasks related to deployment and minimization which are not relevant
+to other Overwatch packages.
+
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
 
 import os
 import subprocess
 import logging
-# Setup logger
 logger = logging.getLogger(__name__)
 # Webassets
 import webassets.filter
@@ -18,28 +20,59 @@ from ..base import config
 (serverParameters, filesRead) = config.readConfig(config.configurationType.webApp)
 
 class PolymerBundler(webassets.filter.ExternalTool):
-    # TODO: Document
-    """
+    """ Filter to bundle Polymer html imports into a single file for deployment.
 
+    Best practices dictate that the Polymer html imports should be combined into a single file
+    to reduce the number of individual http requests. Polymer provides a tool to do so, called
+    ``polymer-bundler``. By taking advantage of ``webassets``, we can automatically combine and
+    minimize these files when starting a web app deployment.
+
+    To successfully define the filter, the following details must be addressed:
+
+    - polymer-bundler must only be executed with relative paths, so we cannot use
+      ``ExternalTool.subprocess``, since that gives absolute paths.
+    - To ensure that the polymer components also work when not bundled, the filter must be
+      executed in a directory above the static dir.
+
+    These issues causes quite some complications! See the ``input(...)`` function for how to deal
+    with these issues.
+
+    When ``webassets`` is run in debug mode, this filter will not be run! Instead, the standard
+    (un-minified) version will be included. For information on forcing this filter to be run,
+    see the :doc:`web app README </webAppReadme>`.
     """
+    # Define the name of the bundle so it can be referenced.
     name = "PolymerBundler"
 
     def input(self, _in, out, **kwargs):
-        print("input. _in: {0}, out: {1}, kwargs: {2}".format(_in, out, kwargs))
-        """ polymer-bundler must only be executed with relative paths, so we cannot use
-        ExternalTool.subprocess, since that gives absolute paths. Further, to ensure that the polymer
-        components also work when not bundled, it must be executed a directory above the static dir. This
-        causes quite some complications.
+        """ Plugin function for adding an external filter to ``webassets``.
 
-        In addition, polymer-bundler parses arguments a bit strangely - values such as paths still need
-        to be in a separate argument. Thus, the arguments looks more split than would usually be expected.
+        As of August 2018, the ``kwargs`` options available include:
 
-        For future reference, the kwargs available in input() include:
-            kwargs: {'output': 'gen/polymerBundle.html',
+        .. code-block:: python
+
+           kwargs = {'output': 'gen/polymerBundle.html',
                      'output_path': '/pathToOverwatch/overwatch/webApp/static/gen/polymerBundle.html',
                      'source_path': '/pathToOverwatch/overwatch/webApp/static/polymerComponents.html',
                      'source': 'polymerComponents.html'}
+
+        Note:
+            ``polymer-bundler`` parses arguments a bit strangely - values such as paths still need
+            to be in a separate argument. Thus, the arguments looks more split than would usually
+            be expected.
+
+        Args:
+            _in (StringIO): Input for the filter. Not used here.
+            out (StringIO): Output for the filter. The output for ``polymer-bundler`` is written here.
+                This will eventually be written out to a file.
+            **kwargs (dict): Additional options required to run the filter properly. See the function
+                description for the available options.
+        Returns:
+            None
         """
+        # Printed because otherwise we won't be able to see the output.
+        logger.debug("polymer-bundler filter arguments. _in: {}, out: {}, kwargs: {}".format(_in, out, kwargs))
+
         # Cannot just use the naive current path since this could be executed from anywhere. Instead,
         # look for the static folder - it must be included somewhere.
         output_path = "{output_path}".format(**kwargs)
@@ -56,13 +89,13 @@ class PolymerBundler(webassets.filter.ExternalTool):
                 os.path.join(serverParameters["staticFolder"], "{source}".format(**kwargs))
                 ]
 
-        logger.debug("Executing polymer filter with execution path \"{0}\" and args {1}".format(executionPath, args))
+        logger.debug("Executing polymer filter with execution path \"{exeuctionPath}\" and args {args}".format(executionPath = executionPath, args = args))
         output = subprocess.check_output(args, cwd = executionPath)
         if len(output) > 0:
-            logger.debug("Received non-zero output string! This means it likely worked!")
+            logger.debug("Received non-zero output string! This means the polymer-bundler filter likely worked!")
         # Write the output to the out string, which will then eventually automatically be written to file
-        # With explicit decoding, it will fail
+        # Without explicit decoding here, it will fail
         out.write(output.decode('utf-8'))
 
-# Register filter
+# Register filter so it can be run in the web app
 webassets.filter.register_filter(PolymerBundler)

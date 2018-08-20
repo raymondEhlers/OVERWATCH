@@ -77,26 +77,10 @@ assets = Environment(app)
 # Set the Flask Assets debug mode
 # Note that the bundling is _only_ performed when flask assets is _not_ in debug mode.
 # Thus, we want it to follow the global debug setting unless we explicit set it otherwise.
+# For more information, particularly on debugging, see the web app `README.md`. Further details
+# are included in the web app utilities module where the filter is defined.
 app.config["ASSETS_DEBUG"] = serverParameters["flaskAssetsDebug"] if not serverParameters["flaskAssetsDebug"] is None else serverParameters["debug"]
-"""
-Some notes on webassets:
- - Most filters, including this one, won't build in debug mode!
- - Disable caching with the below lines. It is useful for debugging: 
-
->>> assets.cache = False
->>> assets.manifest = False
-
- - To debug, you still need to delete and touch the relevant files in between each change. Usually, that means:
-   - Deleting the file in the gen/ folder
-   - Removing the static/.webassets folder if it exists
-   - Update or otherwise touch the file of interest
- - Each Asset won't be built until first access of the particular file. Access the associated urls of the
-   asset to force it to built immediately (will still only be built if needed or forced by following the 
-   debug procedure above).
-
->>> print(assets["polymerBundle"].urls())
-"""
-# Load bunldes from configuration file
+# Load bundles from configuration file
 assets.from_yaml(pkg_resources.resource_filename("overwatch.webApp", "flaskAssets.yaml"))
 
 # Setup login manager
