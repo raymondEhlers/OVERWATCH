@@ -52,7 +52,7 @@ class runContainer(persistent.Persistent):
 
     Args:
         runDir (str): String containing the run number. For an example run 123456, it should be
-            formatted as ``Run123456``
+            formatted as ``Run123456``.
         fileMode (bool): If true, the run data was collected in cumulative mode. See the module README
             for further information.
         hltMode (str): String containing the HLT mode used for the run.
@@ -186,7 +186,7 @@ class subsystemContainer(persistent.Persistent):
         files (BTree): Dict-like object which describes subsystem ROOT files. Unix time of a given file is the key
             and a file container for that file is the value.
         timeSlices (BTree): Dict-like object which describes subsystem time slices. A UUID is the dict key (so they
-            can be uniquely identified), while a time slice container with the corresponding time slice properties
+            can be uniquely identified), while a timeSliceContainer with the corresponding time slice properties
             is the value.
         combinedFile (fileContainer): File container corresponding to the combined file.
         baseDir (str): Path to the base storage directory for the subsystem. Of the form ``Run123456/SYS``.
