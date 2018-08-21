@@ -32,6 +32,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from flask_bcrypt import Bcrypt
 from flask_zodb import ZODB
 from flask_assets import Environment
+from flask_wtf.csrf import CSRFProtect
 
 # Server configuration
 from ..base import config
@@ -82,6 +83,9 @@ assets = Environment(app)
 app.config["ASSETS_DEBUG"] = serverParameters["flaskAssetsDebug"] if not serverParameters["flaskAssetsDebug"] is None else serverParameters["debug"]
 # Load bundles from configuration file
 assets.from_yaml(pkg_resources.resource_filename("overwatch.webApp", "flaskAssets.yaml"))
+
+# Setup CSRF protection via flask-wtf
+csrf = CSRFProtect(app)
 
 # Setup login manager
 loginManager = LoginManager()
@@ -364,11 +368,11 @@ def runPage(runNumber, subsystemName, requestedFileType):
                 error.setdefault("Template Error", []).append("Request page: \"{}\", but it was not found!".format(requestedFileType))
 
         if error != {}:
-            logger.warning("error: {0}".format(error))
+            logger.warning("error: {error}".format(error = error))
             drawerContent = ""
             mainContent =  render_template("errorMainContent.html", errors = error)
 
-        # Includes hist group and hist name for time slices since it is easier to pass it here than parse the get requests. Otherwise, they are ignored.
+        # Includes hist group and hist name for time slices since it is easier to pass it here than parse the GET requests. Otherwise, they are ignored.
         return jsonify(drawerContent = drawerContent,
                        mainContent = mainContent,
                        timeSliceKey = json.dumps(timeSliceKey),

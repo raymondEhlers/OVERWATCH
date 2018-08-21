@@ -93,6 +93,7 @@ setup(
         "zodburi",
         "bcrypt",
         "Flask-Bcrypt",
+        "Flask-WTF",
         "requests",
         "uwsgi",
     ],

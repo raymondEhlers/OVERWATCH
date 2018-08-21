@@ -211,6 +211,7 @@
             <input id="timeSlicesFormHistName" name="histName" type="hidden" value="val"/>
             <input id="timeSlicesFormRunDir" name="runDir" type="hidden" value="val"/>
             <input id="timeSlicesFormSubsystem" name="subsystem" type="hidden" value="val"/>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <div class="buttons">
                 <paper-button dialog-dismiss>Cancel</paper-button>
                 <paper-button id="submitTimeSlices" dialog-confirm>Accept</paper-button>
@@ -228,6 +229,19 @@
 <script type="text/javascript">
     document.addEventListener("WebComponentsReady", function() {
         {% block pageReadyForJS %}{% endblock %}
+    });
+</script>
+
+{#- Add CSRF protection to all jQuery AJAX requests -#}
+{#- From: https://flask-wtf.readthedocs.io/en/stable/csrf.html -#}
+<script type="text/javascript">
+    var csrf_token = "{{ csrf_token() }}";
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrf_token);
+            }
+        }
     });
 </script>
     </body>

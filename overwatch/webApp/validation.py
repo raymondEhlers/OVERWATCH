@@ -3,6 +3,8 @@
 """ Contains validation functions.
 
 These functions are important to ensure that only valid values are passed to the processing functions.
+Validation could likely be improved by moving WTForms, which Overwatch already depends upon for CSRF
+protection.
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University 
 """
