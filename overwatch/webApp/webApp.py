@@ -25,6 +25,7 @@ import signal
 import jinja2
 import json
 import collections 
+import datetime
 import pkg_resources
 # For server status
 import requests
@@ -257,7 +258,7 @@ def contact():
     """ Simple contact page so we can provide general information and support to users.
 
     Also exposes useful links for development (for test data), and system status information
-    to administrators.
+    to administrators (which must authenticate as such).
 
     Args:
         None
@@ -266,11 +267,13 @@ def contact():
     """
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
+    # Provide current year for copyright information
+    currentYear = datetime.datetime.utcnow().year
     if ajaxRequest == False:
-        return render_template("contact.html")
+        return render_template("contact.html", currentYear = currentYear)
     else:
         drawerContent = ""
-        mainContent = render_template("contactMainContent.html")
+        mainContent = render_template("contactMainContent.html", currentYear = currentYear)
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
 @app.route("/statusQuery", methods=["POST"])
