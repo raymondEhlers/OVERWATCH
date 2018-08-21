@@ -1,6 +1,11 @@
 #!/usr/bin/env python
 
-""" WSGI server for hists and interactive features with HLT histograms.
+""" Web App for serving Overwatch results, as well as access to user defined reprocessing
+and times slices.
+
+This is the main web app executable, so it contains quite some functionality, especially
+that which is not so obvious how to refactor when using flask. Routing is divided up
+into authenticated and unauthenticated views.
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
@@ -63,6 +68,7 @@ if serverParameters["debug"]:
     app.secret_key = serverParameters["_secretKey"]
 else:
     # Set a temporary secret key. It can be set from the database later
+    # The production key is set in ``overwatch.webApp.run``
     app.secret_key = str(os.urandom(50))
 
 # Enable debugging if set in configuration
@@ -91,12 +97,12 @@ csrf = CSRFProtect(app)
 def handleCSRFError(error):
     """ Handle CSRF error.
 
-    Takes advantage of the property of the ``CSRFError`` class which Will return a string
-    description with str().
+    Takes advantage of the property of the ``CSRFError`` class which will return a string
+    description when called with ``str()``.
 
     Note:
-        The CSRF should only fail for AJAX requests, so it is reasonable to return an AJAX
-        formatted response.
+        The only requests that could fail due to a CSRF token issue are those made with AJAX,
+        so it is reasonable to return an AJAX formatted response.
 
     Note:
         For the error format in ``errors``, see the :doc:`web app README </webAppReadme>`.
@@ -104,7 +110,7 @@ def handleCSRFError(error):
     Args:
         error (CSRFError): Error object raised during as CSRF validation failure.
     Returns:
-        str: json encoded response containing the error.
+        str: JSON encoded response containing the error.
     """
     # Define the error in the proper format.
     # Also provide some additional error information.
@@ -126,7 +132,14 @@ loginManager.login_view = "login"
 
 @loginManager.user_loader
 def load_user(user):
-    """ Used to remember the user so that they don't need to login again each time they visit the site. """
+    """ Used to retrieve a remembered user so that they don't need to login again each time they visit the site.
+
+    Args:
+        user (str): Username to retrieve
+    Returns:
+        auth.User: The user stored in the database which corresponds to the given username, or
+            ``None`` if it doesn't exist.
+    """
     return auth.User.getUser(user, db)
 
 ######################################################################################################
@@ -139,6 +152,13 @@ def login():
 
     Unauthenticated users are also redirected here if they try to access something restricted.
     After logging in, it should then forward them to resource they requested.
+
+    Args:
+        None
+    Returns:
+        response: Response based on the provided request. Possible responses included validating
+            and logging in the user, rejecting invalid user credentials, or redirecting unauthenticated
+            users from a page which requires authentication (it will redirect back after login).
     """
     logger.debug("request.args: {0}".format(request.args))
     logger.debug("request.form: {0}".format(request.form))
@@ -151,6 +171,7 @@ def login():
     # Check for users and notify if there are none!
     if "users" not in db["config"] or not db["config"]["users"]:
         logger.fatal("No users found in database!")
+        # This is just for developer convenience.
         if serverParameters["debug"]:
             # It should be extremely unlikely for this condition to be met!
             logger.warning("Since we are debugging, adding users to the database automatically!")
@@ -210,12 +231,20 @@ def login():
 @app.route("/logout")
 @login_required
 def logout():
-    """ Logout function.
+    """ Logs out an authenticated user.
+
+    Once completed, it will always redirect to back to ``login()``. If the user then logs in,
+    they will be redirected back to index. Some care is required to handle all of the edge cases
+    - these are handled via careful redirection in ``login()`` and the ``routing`` module.
 
     Note:
-        Careful in changing the routing, as this is hard coded in :func:`~webApp.routing.redirectBack()`!
+        Careful in making changes to the routing related to function, as it is hard coded
+        in ```routing.redirectBack()``!
 
-    Redirects back to ``login()``, which willl redirect back to index if the user is logged in.
+    Args:
+        None
+    Returns:
+        Response: Redirect back to the login page.
     """
     previousUsername = current_user.id
     logout_user()
@@ -225,7 +254,16 @@ def logout():
 
 @app.route("/contact")
 def contact():
-    """ Simple contact page so we can provide support in the future. """
+    """ Simple contact page so we can provide general information and support to users.
+
+    Also exposes useful links for development (for test data), and system status information
+    to administrators.
+
+    Args:
+        None
+    Returns:
+        Response: Contact page template.
+    """
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
     if ajaxRequest == False:
