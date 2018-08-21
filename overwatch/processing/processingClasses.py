@@ -53,8 +53,8 @@ class runContainer(persistent.Persistent):
     Args:
         runDir (str): String containing the run number. For an example run 123456, it should be
             formatted as ``Run123456``.
-        fileMode (bool): If true, the run data was collected in cumulative mode. See the module README
-            for further information.
+        fileMode (bool): If true, the run data was collected in cumulative mode. See the 
+            :doc:`processing README </processingReadme>` for further information.
         hltMode (str): String containing the HLT mode used for the run.
 
     Attributes:
@@ -62,13 +62,13 @@ class runContainer(persistent.Persistent):
             formatted as ``Run123456``
         runNumber (int): Run number extracted from the ``runDir``.
         prettyName (str): Reformatting of the ``runDir`` for improved readability.
-        mode (bool): If true, the run data was collected in cumulative mode. See the module README
-            for further information. Set via ``fileMode``.
+        mode (bool): If true, the run data was collected in cumulative mode. See the
+            :doc:`processing README </processingReadme>` for further information. Set via ``fileMode``.
         subsystems (BTree): Dict-like object which will contain all of the subsystem containers in
             an event. The key is the corresponding subsystem three letter name.
         hltMode (str): Mode the HLT operated in for this run. Valid HLT modes are "B", "C", "E", and "U".
-            Further information on the various modes is in the module ``README.md``. Default: ``None`` (which
-            will be converted to "U", for "unknown").
+            Further information on the various modes is in the :doc:`processing README </processingReadme>`.
+            Default: ``None`` (which will be converted to "U", for "unknown").
     """
     def __init__(self, runDir, fileMode, hltMode = None):
         self.runDir = runDir
@@ -158,7 +158,7 @@ class subsystemContainer(persistent.Persistent):
     It is the main container for much of the information that is relevant for processing.
 
     Information on the file storage layout implemented through this class is available in the
-    module ``README.md``.
+    :doc:`processing README </processingReadme>`.
 
     Note:
         This object checks for and creates a number of directories on initialization.
@@ -659,12 +659,14 @@ class histogramContainer(persistent.Persistent):
         canvas (ROOT.TCanvas): Canvas onto which the histogram will be plotted. Available after the histogram
             has been classified (ie in processing functions).
         projectionFunctionsToApply (PersistentList): List-like object of functions that perform projections
-            to the histogram that is represented by this container. See the detector system README for more
-            information.
+            to the histogram that is represented by this container. See the :doc:`detector subsystem README </detectorPluginsReadme>`
+            for more information.
         functionsToApply (PersistentList): List-like object of functions that are applied to the histogram
-            during the processing step. See the detector subsystem README for more information.
+            during the processing step. See the :doc:`detector subsystem README </detectorPluginsReadme>`
+            for more information.
         trendingObjects (PersistentList): List-like object of trending objects which operate on this
-            histogram. See the detector system and trending README for more information.
+            histogram. See the :doc:`detector subsystem and trending README </detectorPluginsReadme>`
+            for more information.
     """
     def __init__(self, histName, histList = None, prettyName = None):
         # Replace any slashes with underscores to ensure that it can be used safely as a filename
@@ -762,7 +764,7 @@ class trendingObject(persistent.Persistent):
     and then call the base class to perform the value storage. Note that this object is designed only
     for trending 1D objects.
 
-    For more information on the trending subsystem, see the detector subsystem and trending README.
+    For more information on the trending subsystem, see the :doc:`detector subsystem and trending README </detectorPluginsReadme>`.
 
     Note:
         We refer to a histogram in this object, but it doesn't actually need to be a histogram.
