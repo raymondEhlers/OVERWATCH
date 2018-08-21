@@ -207,7 +207,7 @@ def validateRunPage(runDir, subsystemName, requestedFileType, runs):
     else:
         return (error, None, None, None, None, None, None, None, None, None)
 
-def validateTrending():
+def validateTrending(request):
     """ Validate requests to the trending page.
 
     Note:

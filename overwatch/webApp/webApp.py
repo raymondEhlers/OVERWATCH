@@ -148,7 +148,7 @@ def login():
     if previousUsername == serverParameters["defaultUsername"]:
         logger.debug("Equal!")
     logger.debug("serverParameters[defaultUsername]: {0}".format(serverParameters["defaultUsername"]))
-    # If we are not authenticated and we have a default username set and the previous username is 
+    # If we are not authenticated and we have a default username set and the previous username is not the default.
     if not current_user.is_authenticated and serverParameters["defaultUsername"] and previousUsername != serverParameters["defaultUsername"]:
         # Clear previous flashes which will be confusing to the user
         # See: https://stackoverflow.com/a/19525521
@@ -355,13 +355,13 @@ def runPage(runNumber, subsystemName, requestedFileType):
                                                   imgFilenameTemplate = imgFilenameTemplate,
                                                   jsRoot = jsRoot, timeSlice = timeSlice)
                 except jinja2.exceptions.TemplateNotFound as e:
-                    error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
+                    error.setdefault("Template Error", []).append("Request template: \"{}\", but it was not found!".format(e.name))
             elif requestedFileType == "rootFiles":
                 drawerContent = ""
                 mainContent = render_template("rootfilesMainContent.html", run = run, subsystem = subsystemName)
             else:
                 # Redundant, but good to be careful
-                error.setdefault("Template Error", []).append("Request page: \"{0}\", but it was not found!".format(requestedFileType))
+                error.setdefault("Template Error", []).append("Request page: \"{}\", but it was not found!".format(requestedFileType))
 
         if error != {}:
             logger.warning("error: {0}".format(error))
@@ -470,7 +470,7 @@ def trending():
 
     logger.debug("request: {0}".format(request.args))
     # Validate request
-    (error, subsystemName, requestedHist, jsRoot, ajaxRequest) = validation.validateTrending()
+    (error, subsystemName, requestedHist, jsRoot, ajaxRequest) = validation.validateTrending(request)
 
     # Create trending container from stored trending information
     trendingContainer = processingClasses.trendingContainer(db["trending"])
@@ -495,10 +495,10 @@ def trending():
                                               imgFilenameTemplate = imgFilenameTemplate,
                                               jsRoot = jsRoot)
             except jinja2.exceptions.TemplateNotFound as e:
-                error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
+                error.setdefault("Template Error", []).append("Request template: \"{}\", but it was not found!".format(e.name))
 
         if error != {}:
-            logger.warning("error: {0}".format(error))
+            logger.warning("error: {error}".format(error = error))
             returnValue = render_template("error.html", errors = error)
 
         return returnValue
@@ -516,10 +516,10 @@ def trending():
                                               imgFilenameTemplate = imgFilenameTemplate,
                                               jsRoot = jsRoot)
             except jinja2.exceptions.TemplateNotFound as e:
-                error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
+                error.setdefault("Template Error", []).append("Request template: \"{}\", but it was not found!".format(e.name))
 
         if error != {}:
-            logger.warning("error: {0}".format(error))
+            logger.warning("error: {error}".format(error = error))
             drawerContent = ""
             mainContent =  render_template("errorMainContent.html", errors = error)
 
