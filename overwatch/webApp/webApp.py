@@ -32,7 +32,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from flask_bcrypt import Bcrypt
 from flask_zodb import ZODB
 from flask_assets import Environment
-from flask_wtf.csrf import CSRFProtect
+from flask_wtf.csrf import CSRFProtect, CSRFError
 
 # Server configuration
 from ..base import config
@@ -86,6 +86,36 @@ assets.from_yaml(pkg_resources.resource_filename("overwatch.webApp", "flaskAsset
 
 # Setup CSRF protection via flask-wtf
 csrf = CSRFProtect(app)
+# Setup custom error handling to use the error template.
+@app.errorhandler(CSRFError)
+def handleCSRFError(error):
+    """ Handle CSRF error.
+
+    Takes advantage of the property of the ``CSRFError`` class which Will return a string
+    description with str().
+
+    Note:
+        The CSRF should only fail for AJAX requests, so it is reasonable to return an AJAX
+        formatted response.
+
+    Note:
+        For the error format in ``errors``, see the :doc:`web app README </webAppReadme>`.
+
+    Args:
+        error (CSRFError): Error object raised during as CSRF validation failure.
+    Returns:
+        str: json encoded response containing the error.
+    """
+    # Define the error in the proper format.
+    # Also provide some additional error information.
+    errors = {"CSRF Error" : [
+                    error,
+                    "Your page was manipulated. Please contact the admin."
+                ]}
+    # We don't have any drawer content
+    drawerContent = ""
+    mainContent = render_template("errorMainContent.html", errors = errors)
+    return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
 # Setup login manager
 loginManager = LoginManager()

@@ -127,7 +127,7 @@ function handleFormSubmit(selectedForm, selectedButton) {
         // Create a fake data response so that we can propogate the error
         data = {};
         data.mainContent = event.detail.error;
-        data.mainContent += ". Please content the admin with information about what you were doing so that the error can be fixed! Thank you!";
+        data.mainContent += ". Please contact the admin with information about what you were doing so that the error can be fixed! Thank you!";
 
         handleAjaxResponse()(data);
     });
@@ -144,29 +144,33 @@ function handleFormSubmit(selectedForm, selectedButton) {
         if (event.detail.status === 500) {
             console.log("Internal server error! ");
             // This should render in the main window
-            data.mainContent = "500: Internal Server Error! Please content the admin with information about what you were doing so that the error can be fixed! Thank you!";
+            data.mainContent = "500: Internal Server Error! Please contact the admin with information about what you were doing so that the error can be fixed! Thank you!";
         }
 
         handleAjaxResponse()(data);
 
         // Determine the GET params for display in the history
-        localParams = {}
-        if (data.hasOwnProperty("timeSliceKey") && data.timeSliceKey !== "null") {
-            localParams.timeSliceKey = data.timeSliceKey;
-        }
-        if (data.hasOwnProperty("histName") && data.histName !== "null") {
-            localParams.histName = data.histName;
-        }
-        if (data.hasOwnProperty("histGroup") && data.histGroup !== "null") {
-            localParams.histGroup = data.histGroup;
-        }
-        /*console.log("data: " + data);
-        console.log("localParams: " + JSON.stringify(localParams));*/
+        // It could be null here in some cases if the request failed and we returned
+        // an error message.
+        if (data !== null) {
+            localParams = {}
+            if (data.hasOwnProperty("timeSliceKey") && data.timeSliceKey !== "null") {
+                localParams.timeSliceKey = data.timeSliceKey;
+            }
+            if (data.hasOwnProperty("histName") && data.histName !== "null") {
+                localParams.histName = data.histName;
+            }
+            if (data.hasOwnProperty("histGroup") && data.histGroup !== "null") {
+                localParams.histGroup = data.histGroup;
+            }
+            /*console.log("data: " + data);
+            console.log("localParams: " + JSON.stringify(localParams));*/
 
-        // Staying on current page
-        var currentPage = window.location.pathname;
-        console.log("currentPage: " + currentPage);
-        updateHistory(localParams, currentPage);
+            // Staying on current page
+            var currentPage = window.location.pathname;
+            console.log("currentPage: " + currentPage);
+            updateHistory(localParams, currentPage);
+        }
     })
 }
 
@@ -425,7 +429,7 @@ function ajaxRequest(pageToRequest, params) {
     $.get($SCRIPT_ROOT + pageToRequest, localParams, handleAjaxResponse(localParams)).fail(function(jqXHR, textStatus, errorThrown) {
         var data = {};
         data.mainContent = textStatus + ": " + errorThrown;
-        data.mainContent += ". Please content the admin with information about what you were doing so that the error can be fixed! Thank you!";
+        data.mainContent += ". Please contact the admin with information about what you were doing so that the error can be fixed! Thank you!";
 
         handleAjaxResponse()(data);
     });
