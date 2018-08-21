@@ -2,10 +2,10 @@
 <hr />
 
 <div class="errors">
-    {% for errorContainer in errors %}
-    <p>Error type: {{ errorContainer }}</p>
+    {% for errorKey in errors %}
+    <p>Error type: {{ errorKey }}</p>
     <ul>
-        {% for error in errors[errorContainer] %}
+        {% for error in errors[errorKey] %}
         <li>{{ error }}</li>
         {% endfor %}
     </ul>
