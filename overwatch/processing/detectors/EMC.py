@@ -40,11 +40,13 @@ from ...base import config
 ######################################################################################################
 ######################################################################################################
 
-###################################################
-def sortSMsInPhysicalOrder(histList):
+def sortSMsInPhysicalOrder(histList, sortKey):
     """ Sort the SMs according to their physical order in which they are constructed.
 
-    The order is bottom-top, left-right. It is as follows::
+    This is a helper function solely used for displaying EMCal and DCal hists in a particularly
+    convenient order. The order is bottom-top, left-right. It is as follows
+
+    ::
 
         EMCal:
         10 11
@@ -60,17 +62,43 @@ def sortSMsInPhysicalOrder(histList):
         14 15
         12 13
 
-    Args:
-        histList (list): List of histogram names which are sorted in reversed order
-            (ie 19, 18, 17, ..).
+    This function will extract a prefix (``sortKey``) from the histogram names and then
+    sort them according to the reminaing string. As an example,
 
+    .. code-block:: python
+
+        >>> histList = ["prefix2", "prefix1"]
+        >>> sortKey = "prefix"
+        >>> histList = sortSMsInPhysicalOrder(histList = histList, sortKey = sortKey)
+        >>> histList
+        ["prefix1", "prefix2"]
+
+    Initially, it sorts the hists into reverse order, and then it performs the SM oritented sort
+    as described above.
+
+    Note:
+        Since the numbers on which we sort are in strings, the initial sort into reverse order
+        is performed carefully, such that the output is 19, 18, ..., (as expected), rather than
+        9, 8, 7, ..., 19, 18, ..., 10, 1.
+
+    Args:
+        histList (list): List of histogram names which contain the sort key. The sort
+            key will be used to sort them according to the proper EMCal order.
+        sortKey (str): Substring to be removed from the histograms. The remaining str
+            should then be the substring which will be used to sort the hists.
     Returns:
         list: Contains the histogram names sorted according to the scheme specified above
-
     """
+    # Reverse so that we plot SMs in descending order
+    # NOTE: If we do not sort carefully, then it will go 1, 10, 11, .., 2, 3, 4,..  since the
+    #       numbers are contained in strings.
+    # NOTE: This find could cause sorting problems if plotInGridSelectionPattern is not in the hist names!
+    #       However, this would mean that the object has been set up incorrectly.
+    histList = sorted(histList, key=lambda x: int(x[x.find(sortKey) + len(sortKey):]), reverse=True)
 
+    # Sort according to SM convention.
     tempList = []
-    logger.info(len(histList))
+    logger.info("Number of hists to be sorted according to SM convention: {}".format(len(histList)))
     for i in range(0, len(histList), 2):
         # Protect against overflowing the list
         if i != (len(histList)-1):
@@ -222,13 +250,7 @@ def generalEMCOptions(subsystem, hist, processingOptions, **kwargs):
     #    if group.histList == []:
     #        continue
     #    if group.plotInGrid == True:
-    #        # If we do not sort more carefully, then it will go 1, 10, 11, .., 2, 3, 4,..
-    #        # since the numbers are contained in strings.
-    #        # NOTE: This find could cause sorting problems if plotInGridSelectionPattern is not in the hist names!
-    #        # However, this would mean that the object has been set up incorrectly
-    #        # NOTE: Reverse so that we plot SMs in descending order
-    #        group.histList = sorted(group.histList, key=lambda x: int(x[x.find(group.plotInGridSelectionPattern) + len(group.plotInGridSelectionPattern):]), reverse=True)
-    #        group.histList = sortSMsInPhysicalOrder(group.histList)
+    #        group.histList = sortSMsInPhysicalOrder(histList = group.histList, sortKey = group.plotInGridSelectionPattern)
     #    else:
     #        # Sort hists
     #        group.histList.sort()
