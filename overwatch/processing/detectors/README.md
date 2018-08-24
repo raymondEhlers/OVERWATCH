@@ -11,6 +11,7 @@ create groups of histograms, `create(SYS)HistogramGroups(...)` would be `createE
 ## Table of Contents
 
 - [Subsystem plugins](#general-philosophy)
+- [Trending system](#trending)
 - [Available histograms](#available-histograms)
 
 ## General Philosophy
@@ -101,41 +102,57 @@ To create new histograms, implement the function `createAdditional(SYS)Histogram
 and add a new `histogramContainer` to the `subsystemContainer.histsAvailable` list. When specifying the
 histogram container, the histogram it will be projected from must be specified! Then, the projection function
 must be appended to the list `histogramContainer.projectionFunctionsToApply`. Note that additional processing
-functions can still be [added later](#find-processing-functions). Remember that the histogram to project is
+functions should be [added later](#find-processing-functions). Remember that the histogram to project is
 cloned, and therefore the user does not need to reset the axes ranges.
 
-As an example, consider the following implementation:
+For more implementation details, see the example below. Note that for an optimal workflow, the name of the
+projected histogram should be selected such that it will be included in a histogram group when they are
+defined later on.
+
+#### Example Implementation
 
 ```python
 def createAdditionalSYSHistograms(subsystem):
-    """ New histogram containers for the given subsystem should be created here. The actual histograms
-    will be created later through projections. Be certain to assign the projection functions here!
+    """ Create new histograms by defining new histogram containers and their projection functions.
+
+    New histogram containers for the given subsystem should be created here. The projection function which
+    will be used to project from an existing histogram should also be assigned here. The actual histograms
+    will be created later when the projection function is executed.
+
+    Here, we will define just one new histogram, which is created via a projection from just one histogram.
 
     Args:
-        subsystem (subsystemContainer): Subsystem for which additional histograms are to be created.
+        subsystem (subsystemContainer): Subsystem for which the additional histograms are to be created.
     Returns:
         None
     """
-    # Define additional histogram
+    # Define the additional histogram
     histName = "projectedHist"
+    # Select the histogram for which it will be projected.
+    # The histogram(s) will be made available inside of the projection function via the histogram container.
     histToProjectFrom = ["histToProjectFrom"]
     histCont = processingClasses.histogramContainer(histName = histName, histList = histToProjectFrom)
     # Add projection function
     histCont.projectionFunctionsToApply(projectionFunction)
-
     # Store the additional histogram
     subsystem.histsAvailable[histName] = histCont
 
 def projectionFunction(subsystem, hist, processingOptions, **kwargs):
-    """ Perform the actual projection.
+    """ Perform the actual projection to create a new histogram.
+
+    This function should make any necessary axes restrictions or other adjustments relevant
+    for the projection. One it is fully prepared, the projected itself should be performed.
+    The histogram from which the new hist should be projected is available inside of the
+    passed ``histogramContainer`` and thus can be accessed via ``hist.hist``. Note that the
+    properties of the passed ``histogramContainer`` correspond to the hist created when defining
+    the new histograms, not to the histogram available via ``hist.hist``.
 
     Args:
         subsystem (subsystemContainer): Subsystem which contains the projected histogram.
         hist (histogramContainer): Histogram container corresponding to the projected histogram.
             When this function is called, it contains the histogram to project from, so the hist
-            to project from can be retrieved by hist.hist
+            to project from can be retrieved via ``hist.hist``.
         processingOptions (dict): Dictionary of processing options for the given subsystem.
-        args (list): Additional possible future arguments.
         kwargs (dict): Additional possible future arguments.
     Returns:
         ROOT.TH1: The projected histogram
@@ -144,17 +161,8 @@ def projectionFunction(subsystem, hist, processingOptions, **kwargs):
     hist.hist.GetXaxis().SetRangeUser(0, 2)
     # Assigns the project the expected histogram name from the histogram container.
     proj = hist.hist.ProjectionX(hist.histName)
-
     # Return the projected histogram to ensure that it is saved for later processing.
     return proj
-```
-
-Note that for an optimal workflow, a histogram group should be defined that will pick up any additional
-histograms that will be created.
-
-#### Example Implementation
-
-```python
 ```
 
 ### Histogram Stacks
@@ -164,45 +172,64 @@ two spectra is easier when they are superimposed. When creating the stacks, we w
 that corresponds to the stacked objects, and then we will note that the individual histograms should not be
 displayed separately (unless that is also desired).
 
-To achieve this, the `create(SYS)HistogramStacks(subsystem, **kwargs)` function is expected to iterate over the
-`subsystemConatiner.histsInFile` dictionary. Histograms which don't need to be stacked should be stored in the
-`subsystemContainer.histsAvailable` dictionary use the same key under which it was stored in the `histsInFile`
-dictionary. In the most trivial case where all histograms would be kept and none would be stacked, we could
-have the following trivial piece of code (note that in such a case, we could just leave out the function
-entirely to get the same effect):
+To achieve this, the `create(SYS)HistogramStacks(subsystem, **kwargs)` function is expected to iterate over
+the `subsystemConatiner.histsInFile` dictionary. Histograms which don't need to be stacked should be stored
+immediately in the `subsystemContainer.histsAvailable` dictionary use the same key under which it was stored
+in the `histsInFile` dictionary. In the most trivial case where all histograms would be kept and none would be
+stacked, we could have the following trivial piece of code (note that in such a case, we should just leave out
+the function entirely. This function will be performed automatically):
 
 ```python
+# Don't actually do this!!
 for histName in subsystem.histsInFile:
     # Just add if we don't want need to stack
     subsystem.histsAvailable[histName] = subsystem.histsInFile[histName]
 ```
 
-If the case where we would want stack two histograms, `spectraA` and `spectraB`, we would first need to add a
-new `histogramContainer` for the spectra, and then we would want to skip `spectraA` and `spectraB`. This would
-look something like
-
-```python
-# Define and store the stacked spectra.
-# Note that the stacked histogram container must be available of the names of the histograms
-# which will be stacked
-histName = "stackedSpectra"
-histsToStack = ["spectraA", "spectraB"]
-stackedSpectraCont = processingClasses.histogramContainer(histName, histsToStack)
-subsystem.histsAvailable[histName] = stackedSpectraCont
-
-# Iterate over all of the histograms
-for histName in subsystem.histsInFile:
-    # Skip the spectra that will be stacked
-    if histName in histsToStack:
-        continue
-
-    # Add all other histograms
-    subsystem.histsAvailable[histName] = subsystem.histsInFile[histName]
-```
+For a less trivial example where we actually create a histogram stack, we can consider the case of the case
+where we would want stack two histograms, `spectraA` and `spectraB`.  To do so, we would first need to add a
+new `histogramContainer` for the stacked spectra, inform the histogram container to stack the spectra via the
+`histList` argument, and then we would want to skip `spectraA` and `spectraB`. For a full example of how this
+would be performed, see the example implementation below.
 
 #### Example Implementation
 
 ```python
+def createSYSHistogramStacks(subsystem):
+    """ Create histogram stacks from the existing histograms in the SYS subsystem.
+
+    Here we will stack two spectra histograms onto a single canvas so we can display them together.
+    This can be particularly useful for comparing similar spectra. Note that although this doesn't
+    necessarily have to be the case, we decided for this function to assume that histograms will
+    only be assigned to one stack.
+
+    Note:
+        This function is responsible for moving histogram containers from ``subsystem.histsInFile``
+        to ``subsystem.histsAvailable``.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+    Returns:
+        None. However, see the note above for the side effects.
+    """
+    # Define and store the stacked spectra.
+    # Name of the stacked spectra histogram stack
+    histName = "stackedSpectra"
+    # The stacked histogram container must be aware of the names of the histograms which will be stacked
+    histsToStack = ["spectraA", "spectraB"]
+    stackedSpectraCont = processingClasses.histogramContainer(histName = histName, histList = histsToStack)
+    # Store out stacked `histogramContainer`.
+    subsystem.histsAvailable[histName] = stackedSpectraCont
+
+    # Now move all of the rest of the histograms from `histsInFile` to `histsAvailable`,
+    # except for the individual spectra, which we will only display in the stack.
+    for histName in subsystem.histsInFile:
+        # Skip the spectra that will be stacked
+        if histName in histsToStack:
+            continue
+
+        # Add all other histograms
+        subsystem.histsAvailable[histName] = subsystem.histsInFile[histName]
 ```
 
 For a full example, see `overwatch.processing.detectors.EMC.createEMCHistogramStacks`.
@@ -356,6 +383,76 @@ functions rely on the histogram.
 #### Example Implementation
 
 ```python
+# Plug-in function
+def findFunctionsForSYSHistogram(subsystem, hist, **kwargs):
+    """ Find processing functions for EMC histograms based on their names.
+
+    This plug-in function steers the histograms to the right set of processing functions. These functions
+    will then be executed later when the histograms are actually processed. This function only executes
+    when the subsystem is created at the start of each new run. By doing so, we can minimize inefficient
+    string comparison each time we process a file in the same run.
+
+    Note:
+        The histogram underlying the ``histogramContainer`` which is passed in is not yet available
+        for this function. Only information which is stored directly in ``histogramContainer`` fields
+        should be used when classifying them and assigning functions.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None. The hist is modified.
+    """
+    # General SYS Options
+    hist.functionsToApply.append(generalOptions)
+
+    if "trigger" in hist.histName:
+        hist.functionsToApply.append(triggerThreshold)
+
+# Two example processing functions are below for illustrative purposes
+def generalOptions(subsystem, hist, processingOptions, **kwargs):
+    """ General SYS histogram options.
+
+    The underlying histogram and canvas are available, so this function can configure both of those objects.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None. The current canvas is modified.
+    """
+    # For example, set the z-axis to display as a log.
+    hist.canvas.SetLogz(True)
+
+def triggerThreshold(subsystem, hist, processingOptions, **kwargs)
+    """ Histogram processing options for trigger histograms.
+
+    Check for bins above a threshold. The threshold could be set in the processing options.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None. The current canvas is modified.
+    """
+    # Check for bins over some threshold.
+    # The threshold could be set in the processing options instead of hard coding it here.
+    threshold = 1
+    binsOverThreshold = []
+    for iBin in range(1, hist.hist.GetXaxis().GetNbins()+1):
+        if hist.hist.GetBinContent(iBin) > threshold:
+            binsOverThreshold.append(iBin)
+    # Store the output for display in the web app
+    hist.information["Bins over threshold"] = binsOverThreshold
 ```
 
 For a full example of how to determine the functions to apply to particular histograms, see
