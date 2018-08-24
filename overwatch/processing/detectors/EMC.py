@@ -72,7 +72,7 @@ def checkForEMCHistStack(subsystem, histName, skipList, selector):
             # See: https://stackoverflow.com/a/15411146
             subsystem.histsAvailable.pop(histName, None)
         # Add a new hist object for the stack
-        subsystem.histsAvailable[histName] = processingClasses.histogramContainer(histName, histNames)
+        subsystem.histsAvailable[histName] = processingClasses.histogramContainer(histName = histName, histList = histNames)
 
         # Ensure that the histogram that we started processing is _not_ stored individually
         # in ``subsystemContainer.histsAvailable``.
