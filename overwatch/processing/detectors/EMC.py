@@ -87,7 +87,7 @@ def sortSMsInPhysicalOrder(histList, sortKey):
         sortKey (str): Substring to be removed from the histograms. The remaining str
             should then be the substring which will be used to sort the hists.
     Returns:
-        list: Contains the histogram names sorted according to the scheme specified above
+        list: Contains the histogram names sorted according to the scheme specified above.
     """
     # Reverse so that we plot SMs in descending order
     # NOTE: If we do not sort carefully, then it will go 1, 10, 11, .., 2, 3, 4,..  since the
@@ -107,46 +107,118 @@ def sortSMsInPhysicalOrder(histList, sortKey):
 
     return tempList
 
-###################################################
 def checkForEMCHistStack(subsystem, histName, skipList, selector):
+    """ Check for and create histograms stacks from existing histograms.
+
+    This function assumes that there will be corresponding EMCal and DCal histograms
+    for a particular hist stack.
+
+    Note:
+        By including "EMCal" in the ``selector`` string, we can ensure that this function
+        will only create the stack when the EMCal hist comes up. If the DCal hist comes up
+        first, we will skip over it and then it will be removed from ``subsystem.histsAvailable``
+        when the EMCal hist is processed and the hist stack is created.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        histName (str): Name of the histogram currently being considered for inclusion
+            in a histogram stack.
+        skipList (list): List of histogram names which have already been handled and
+            therefore should not be stored later in ``subsystem.histsAvailable``.
+        selector (str): Substring which should be used to identify histograms to add
+            to a stack.
+    Returns:
+        bool: True if the histogram was added to the histogram stack.
+    """
+    # Require both the current hist to be selected, as well as the corresponding DCal hist.
+    # NOTE: "EMCal" must be included in the selector name for this function to work properly!
     if selector in histName and selector.replace("EMCal", "DCal") in subsystem.histsInFile:
-        # Don't add to the availableHists
         histNames = [histName, histName.replace("EMCal", "DCal")]
+        # When finished, we only want to store the hist stack, so we add the individual
+        # histogram names to the skip list.
         skipList.extend(histName)
-        # Remove hists if they exist (EMCal shouldn't, but DCal could)
+        # Remove hists if they exist in the subsystem (EMCal shouldn't, but DCal could) so
+        # they are only displayed in the histogram stack.
         for name in histName:
             # See: https://stackoverflow.com/a/15411146
             subsystem.histsAvailable.pop(histName, None)
         # Add a new hist object for the stack
         subsystem.histsAvailable[histName] = processingClasses.histogramContainer(histName, histNames)
 
+        # Ensure that the histogram that we started processing is _not_ stored individually
+        # in ``subsystemContainer.histsAvailable``.
         return True
 
-    # Return false otherwise
+    # If the histogram isn't stored into a stack, we allow it to be included in ``subsystem.histsAvailable``.
     return False
 
-###################################################
 def createEMCHistogramStacks(subsystem):
+    """ Create histogram stacks from the existing histograms in the EMCal subsystem.
+
+    Note that this function assumes that histograms will only be assigned to one stack.
+
+    Note:
+        This function is responsible for moving histogram containers from ``subsystem.histsInFile``
+        to ``subsystem.histsAvailable``.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+    Returns:
+        None. However, see the note above for the side effects.
+    """
     skipList = []
     for histName in subsystem.histsInFile:
         # Skip if we have already put it into another stack
         if histName in skipList:
             continue
         # Stack for EMCalMaxPatchAmp
+        # Note that this selector _must_ have "EMCal" included for the function to work as expected.
         result = checkForEMCHistStack(subsystem, histName, skipList, "EMCalMaxPatchAmpEMC")
+        # Don't store the individual histograms in a stack.
         if result:
             continue
         # Stack for EMCalPatchAmp
+        # Note that this selector _must_ have "EMCal" included for the function to work as expected.
         result = checkForEMCHistStack(subsystem, histName, skipList, "EMCalPatchAmpEMC")
+        # Don't store the individual histograms in a stack.
         if result:
             continue
 
-        # Just add if we don't want need to stack
+        # Just add if it's part of a stack.
         subsystem.histsAvailable[histName] = subsystem.histsInFile[histName]
 
-###################################################
 def createEMCHistogramGroups(subsystem):
-    # Sort the filenames of the histograms into catagories for better presentation
+    """ Create histogram groups for the EMCal subsystem.
+
+    This functions sorts the histograms into categories for better presentation based
+    on their names. The names are determined by those specified for each hist in the
+    subsystem component on the HLT. Assignments are made by the looking for substrings
+    specified in the hist groups in the hist names. Note that each histogram will be
+    categorized once, so the first entry will take all histograms which match. Thus,
+    histograms should be ordered in such that the most inclusive are specified last.
+
+    Super module differentiated groups are handled first since they would otherwise populate
+    in the more general histogram group corresponding to the same plot. Generally, hists are
+    sorted as follows:
+
+    - Trigger type: GA vs JE, low vs high threshold.
+    - L0 trigger information.
+    - Background (ie background subtraction information, luminosity, etc).
+    - Fast OR information.
+    - Other EMC information (number of events, etc).
+    - Catch all others.
+
+    Note:
+        Since the EMCal usually has a corresponding receiver and therefore a file source,
+        we include a catch all group at the end. However, it is protected such that it will
+        only be added for a particular run if there is actually an EMCal file. This avoids
+        collecting a bunch of unrelated hists in the case that there isn't a file.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+    Returns:
+        None. Histogram groups are stored in ``histGroups`` list of the ``subsystemContainer``.
+    """
     # The order in which these are added is the order in which they are processed!
     # Plot by SM
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("FEE vs TRU", "FEEvsTRU_SM", "_SM"))
@@ -169,36 +241,70 @@ def createEMCHistogramGroups(subsystem):
     # Other EMC
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("Other EMC", "EMC"))
 
-    # Catch all of the other hists
-    # NOTE: We only want to do this if we are using a subsystem that actually has a file. Otherwise, you end up with lots of irrelevant histograms
+    # Catch all of the other hists if we have a dedicated receiver.
+    # NOTE: We only want to do this if we are using a subsystem that actually has a file from a
+    #       dedicated receiver. Otherwise, you end up with lots of irrelevant histograms.
     if subsystem.subsystem == subsystem.fileLocationSubsystem:
         subsystem.histGroups.append(processingClasses.histogramGroupContainer("Non EMC", ""))
 
-###################################################
 def setEMCHistogramOptions(subsystem):
-    """ Set general hist object options.
+    """ Set general EMCal histogram options.
     
-    Canvas and additional options must be set later."""
+    In particular, these options should apply to all histograms, or at least a broad selection
+    of them. The list of histograms are accessed through the ``histsAvailable`` field of the
+    ``subsystemContainer``. Canvas options and additional histogram specific options must be
+    set later.
 
-    # Set the histogram pretty names
-    # We can remove the first 12 characters
+    Here, we improve the presentation quality of the histograms by setting the pretty name to
+    be presented without the shared name "EMC" prefix (which is contained in the first 12 characters),
+    set any `TH2` derived hists to draw with `colz`. We also set all histograms to be scaled
+    by the number of events collected.
+
+    Note:
+        The underlying hists are not yet available for this function. Only fields available
+        in the ``histogramContainer`` should be used!
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+    Returns:
+        None. Histogram groups are stored in appropriate field of the ``subsystemContainer``.
+    """
+    # Set histogram specific options
     for hist in subsystem.histsAvailable.values():
-        # Truncate the prefix off EMC hists, but also protect against truncating non-EMC hists
+        # Set the histogram pretty names
+        # We can remove the first 12 characters to truncate the prefix off of EMC hists.
+        # NOTE: The if statement is to protect against truncating non-EMC hists
         if "EMC" in hist.histName:
             hist.prettyName = hist.histName[12:]
 
-        # Set colz for any TH2 hists
+        # Set `colz` for any TH2 hists
         if hist.histType.InheritsFrom(TH2.Class()):
             hist.drawOptions += " colz"
 
     # Set general processing options
-    # Sets the histograms to scale if they are setup to scale by nEvents
+    # Set the subsystem wide preference that we would like for hists to be scaled by the number of events.
+    # This option can then be used in the processing functions to decide whether to scale the histogram
+    # which is being processed. This is _not_ performed automatically.
     subsystem.processingOptions["scaleHists"] = True
     # Sets the hot channel threshold. 0 uses the default in the defined function
     subsystem.processingOptions["hotChannelThreshold"] = 0
 
-###################################################
 def generalEMCOptions(subsystem, hist, processingOptions, **kwargs):
+    """ Processing function where general histograms options that require the histogram or canvas are set.
+
+    Note:
+        This is not a special plug-in function. It is just named similarly.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None.
+    """
     # Set options for when not debugging
     if processingParameters["debug"] == False:
         # Disable hist stats
@@ -433,11 +539,8 @@ def hasSignalOutlier(hist):
 
     return [len(outlierList), mean, stdev, newMean, newStdev] # info for legend
 
-###################################################
-# Plot Patch Spectra with logy and grad 
-###################################################
 def properlyPlotPatchSpectra(subsystem, hist, processingOptions):
-    """ Sets logy and a grid to gPad for particular histograms.
+    """ Plot patch spectra with `logy` and on a grid.
 
     These conditions are set for "{EMCal,DCal}(Max)Patch{Energy,Amp}".
 
@@ -445,38 +548,43 @@ def properlyPlotPatchSpectra(subsystem, hist, processingOptions):
     However, this does mean that it needs to be reset when we are not interested in these plots.
 
     Args:
-        hist (TH1): The histogram to be processed.
-
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
     Returns:
-        None
-
+        None.
     """
     hist.canvas.SetLogy()
     hist.canvas.SetGrid(1,1)
 
-###################################################
-# Add Energy Axis to Patch Amplitude Spectra
-###################################################
 def addEnergyAxisToPatches(subsystem, hist, processingOptions):
-    """ Adds an additional axis showing the conversion from ADC counts to Energy.
+    """ Adds an additional axis to patch amplitude spectra showing the conversion from ADC counts to energy.
 
     These conditions are set for "{EMCal,DCal}(Max)PatchAmp".
     It creates a new TGaxis that shows the ADC to Energy conversion. It then draws it on selected
     histogram. 
 
     Warning:
-        This function assumes that there is already a canvas created.
+        This function implicitly assumes that there is already a canvas created. Since the ``histogramContainer``
+        already contains a canvas, this is a reasonable assumption. It is explicitly noted because the dependence
+        is only implicit.
 
     Note:
         TGaxis removes ownership from Python to ensure that it continues to exist outside of the
         function scope.
 
     Args:
-        hist (TH1): The histogram to be processed.
-
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
     Returns:
-        None
-
+        None.
     """
     kEMCL1ADCtoGeV = 0.07874   # Conversion from EMCAL Level1 ADC to energy
     adcMin = hist.hist.GetXaxis().GetXmin()
@@ -566,8 +674,19 @@ def addTRUGrid(subsystem, hist):
     SetOwnership(line, False)
     line.Draw()
 
-###################################################
 def edgePosOptions(subsystem, hist, processingOptions):
+    """ Processing function ...
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None.
+    """
     if processingOptions["scaleHists"]:
         hist.hist.Scale(1. / subsystem.nEvents)
     hist.hist.GetZaxis().SetTitle("entries / events")
@@ -576,21 +695,54 @@ def edgePosOptions(subsystem, hist, processingOptions):
         # Add grid of TRU boundaries
         addTRUGrid(subsystem, hist)
 
-###################################################
 def smOptions(subsystem, hist, processingOptions):
+    """ Processing function ...
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None.
+    """
     #canvas.SetLogz(logz)
     if processingOptions["scaleHists"]:
         hist.hist.Scale(1. / subsystem.nEvents)
     labelSupermodules(hist)
 
-###################################################
 def feeSMOptions(subsystem, hist, processingOptions):
+    """ Processing function ...
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None.
+    """
     hist.canvas.SetLogz(True)
     hist.hist.GetXaxis().SetRangeUser(0, 250)
     hist.hist.GetYaxis().SetRangeUser(0, 20)
 
-###################################################
 def fastOROptions(subsystem, hist, processingOptions):
+    """ Processing function ...
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None.
+    """
     # Handle the 2D hists
     if hist.hist.InheritsFrom("TH2"):
         # Add grid of TRU boundaries
@@ -639,8 +791,19 @@ def fastOROptions(subsystem, hist, processingOptions):
         hist.information["Threshold"] = threshold
         hist.information["Fast OR Hot Channels ID"] = absIdList
 
-###################################################
 def patchAmpOptions(subsystem, hist, processingOptions):
+    """ Processing function ...
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None.
+    """
     # Setup canvas as desired
     hist.canvas.SetLogy(True)
     hist.canvas.SetGrid(1,1)
