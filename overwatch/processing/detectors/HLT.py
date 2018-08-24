@@ -20,23 +20,21 @@ def generalHLTOptions(subsystem, hist, processingOptions, **kwargs):
     Args:
         subsystem (subsystemContainer): The subsystem being processed.
         hist (histogramContainer): The histogram being processed.
-        processingOptions (dict): Implemented by the subsystem to note options used during standard processing. Keys
-            are names of options, while values are the corresponding option values.
+        processingOptions (dict): Implemented by the subsystem to note options used during standard
+            processing. Keys are names of options, while values are the corresponding option values.
         **kwargs (dict): Reserved for future arguments.
     Returns:
         None
     """
     # Show HLT titles (as requested by Mikolaj)
-    # NOTE: Titles are always shown by jsroot...
-    #       So this option is only relevant for png images.
+    # NOTE: Titles are always shown by jsRoot, so this option is only relevant for png images.
     ROOT.gStyle.SetOptTitle(1)
 
 def findFunctionsForHLTHistogram(subsystem, hist, **kwargs):
     """ Determine which processing functions to apply to which HLT histograms.
 
-    Functions should be added to the ``histogramContainer.functionsToApply`` list. This allows
-    those functions to applied repeatedly without having to perform the lookup each time a run
-    is processed.
+    Functions should be added to the ``histogramContainer.functionsToApply`` list. This allows those
+    functions to applied repeatedly without having to perform the lookup each time a run is processed.
 
     Args:
         subsystem (subsystemContainer): The subsystem being processed.
