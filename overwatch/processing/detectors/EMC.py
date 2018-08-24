@@ -319,7 +319,7 @@ def generalOptionsRequiringUnderlyingObjects(subsystem, hist, processingOptions,
             of processing for time slices.
         **kwargs (dict): Reserved for future use.
     Returns:
-        None.
+        None. The current histogram and canvas are modified.
     """
     # Set options for when not debugging
     if processingParameters["debug"] == False:
@@ -361,7 +361,7 @@ def checkForOutliers(hist):
     Args:
         hist (TH1): The histogram to be processed.
     Returns:
-        None.
+        None. The current canvas is modified.
     """
     (numOutliers, mean, stdev, newMean, newStdev) = hasSignalOutlier(hist)
 
@@ -447,14 +447,11 @@ def hasSignalOutlier(hist):
     return [len(outlierList), mean, stdev, newMean, newStdev] # info for legend
 
 def properlyPlotPatchSpectra(subsystem, hist, processingOptions, **kwargs):
-    """ Processing function to plot patch spectra with ``logy`` and on a grid.
+    """ Processing function to plot patch ADC amplitude spectra with ``logy`` and on a grid.
 
-    These conditions are set for "{EMCal,DCal}(Max)Patch{Energy,Amp}".
-
-    Since ROOT creates gPad as a globally available variable, we do not need to pass it into this function.
-    However, this does mean that it needs to be reset when we are not interested in these plots.
-
-    The grid corresponds to TRU boundaries, allowing for rapid identification of problematic TRUs.
+    Since we are plotting spectra, a log y-axis is helpful for presentation. The grid also
+    helps with readability. This function should apply for histograms in which the name matches
+    the rules ``{EMCal,DCal}(Max)Patch{Energy,Amp}``.
 
     Args:
         subsystem (subsystemContainer): The subsystem for the current run.
@@ -464,26 +461,26 @@ def properlyPlotPatchSpectra(subsystem, hist, processingOptions, **kwargs):
             of processing for time slices.
         **kwargs (dict): Reserved for future use.
     Returns:
-        None.
+        None. The current canvas is modified.
     """
-    hist.canvas.SetLogy()
+    hist.canvas.SetLogy(True)
     hist.canvas.SetGrid(1,1)
 
 def addEnergyAxisToPatches(subsystem, hist, processingOptions, **kwargs):
-    """ Processing function to add an additional axis to patch amplitude spectra showing the conversion from
+    """ Processing function to add an additional axis to patch ADC amplitude spectra showing the conversion from
     ADC counts to energy.
 
-    These conditions are set for "{EMCal,DCal}(Max)PatchAmp".
-    It creates a new TGaxis that shows the ADC to Energy conversion. It then draws it on selected
-    histogram. 
+    This function should apply for histograms in which the name matches the rules ``{EMCal,DCal}(Max)PatchAmp``.
+    It creates a new ``TGaxis`` that shows the ADC to Energy conversion. It then draws it on selected
+    histogram at the top of the plot.
 
-    Warning:
+    Note:
         This function implicitly assumes that there is already a canvas created. Since the ``histogramContainer``
         already contains a canvas, this is a reasonable assumption. It is explicitly noted because the dependence
         is only implicit.
 
     Note:
-        TGaxis removes ownership from Python to ensure that it continues to exist outside of the
+        The ownership of ``TGaxis`` is given to ROOT to ensure that it continues to exist outside of the
         function scope.
 
     Args:
@@ -494,28 +491,34 @@ def addEnergyAxisToPatches(subsystem, hist, processingOptions, **kwargs):
             of processing for time slices.
         **kwargs (dict): Reserved for future use.
     Returns:
-        None.
+        None. The current canvas is modified.
     """
-    kEMCL1ADCtoGeV = 0.07874   # Conversion from EMCAL Level1 ADC to energy
+    # Conversion from EMCal L1 ADC to energy
+    kEMCL1ADCtoGeV = 0.07874
     adcMin = hist.hist.GetXaxis().GetXmin()
     adcMax = hist.hist.GetXaxis().GetXmax()
     EMax = adcMax*kEMCL1ADCtoGeV
     EMin = adcMin*kEMCL1ADCtoGeV
-    #yMax = gPad.GetUymax()    # this function does not work here (log problem)
+
+    # Setup the energy axis.
+    # Note that although gPad.GetUymax() seems ideal here, it won't work properly due # to the histogram
+    # being plotted as a long. Instead, we need to extract the value based on the maximum.
     yMax= 2*hist.hist.GetMaximum()
     energyAxis = TGaxis(adcMin,yMax,adcMax,yMax,EMin,EMax,510,"-")
     SetOwnership(energyAxis, False)
     energyAxis.SetTitle("Energy (GeV)")
     energyAxis.Draw()
 
-###################################################
-# Label each individual super module (SM) plot
-###################################################
 def labelSupermodules(hist):
-    """ Label each individual super module (SM) plot.
+    """ Set of the title of each histogram which is broken out by super module (SM) to the SM number.
 
-    The label is inserted in the title.
+    The super module is determined by extracting it out from the end of the histogram name. In particular,
+    the name is expected to end in ``_SM10`` for super module 10.
 
+    Args:
+        hist (histogramContainer): The histogram to be processed.
+    Returns:
+        None. The current histogram and canvas are modified.
     """
     if "_SM" in hist.histName[-5:]:
         smNumber = hist.histName[hist.histName.find("_SM")+3:]
@@ -523,23 +526,27 @@ def labelSupermodules(hist):
         # Show title
         gStyle.SetOptTitle(1)
 
-###################################################
-# Add a grid representing the TRUs to a canvas.
-###################################################
 def addTRUGrid(subsystem, hist):
-    """ Add a grid of TLines representing the TRU on a canvas.
+    """ Add a grid of lines representing the TRU regions.
+
+    By making this grid available, it becomes extremely easy to identify and localized problems that
+    depend on a particular TRU. The grid is allocated 
 
     Note:
-        Assumes that the canvas is already created.
+        This function implicitly assumes that there is already a canvas created. Since the ``histogramContainer``
+        already contains a canvas, this is a reasonable assumption. It is explicitly noted because the dependence
+        is only implicit.
 
-    Note:
-        Allocates a large number of TLines which have SetOwnership(obj, False),
-        so this could lead to memory problems.
+    Warning:
+        The grid is created by allocating a large number of ``TLines`` which are owned by ROOT, but not by python.
+        Although this hasn't been observed to be a problem, this could in principle lead to memory problems.
 
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+    Returns:
+        None. The current canvas is modified.
     """
-    # TEMP
-    logger.debug("TRU Grid histName: {0}".format(hist.histName))
-
     # Draw grid for TRUs in full EMCal SMs
     for x in range(8, 48, 8):
         line = TLine(x, 0, x, 60)
@@ -585,7 +592,10 @@ def addTRUGrid(subsystem, hist):
     line.Draw()
 
 def edgePosOptions(subsystem, hist, processingOptions, **kwargs):
-    """ Processing function ...
+    """ Processing function for patch edge positions histograms.
+
+    It scales the histogram by number of events as as appropriate based on the EMC processing options,
+    as well as adding a TRU grid.
 
     Args:
         subsystem (subsystemContainer): The subsystem for the current run.
@@ -597,16 +607,21 @@ def edgePosOptions(subsystem, hist, processingOptions, **kwargs):
     Returns:
         None.
     """
+    zAxisLabel = "entries"
     if processingOptions["scaleHists"]:
         hist.hist.Scale(1. / subsystem.nEvents)
-    hist.hist.GetZaxis().SetTitle("entries / events")
+        zAxisLabel = "entries / events"
+    hist.hist.GetZaxis().SetTitle(zAxisLabel)
 
     if hist.hist.InheritsFrom("TH2"):
         # Add grid of TRU boundaries
         addTRUGrid(subsystem, hist)
 
 def smOptions(subsystem, hist, processingOptions, **kwargs):
-    """ Processing function ...
+    """ Processing function for histograms which are broken out by super module (SM).
+
+    It scales the histogram by number of events as as appropriate based on the EMC processing options,
+    as well as labeling each histogram by its SM number.
 
     Args:
         subsystem (subsystemContainer): The subsystem for the current run.
@@ -624,7 +639,9 @@ def smOptions(subsystem, hist, processingOptions, **kwargs):
     labelSupermodules(hist)
 
 def feeSMOptions(subsystem, hist, processingOptions, **kwargs):
-    """ Processing function ...
+    """ Processing function for Front End Electronics (FEE) related histograms.
+
+    It sets the Z axis to log, as well as restricting the viewable range to more useful values.
 
     Args:
         subsystem (subsystemContainer): The subsystem for the current run.
@@ -641,7 +658,29 @@ def feeSMOptions(subsystem, hist, processingOptions, **kwargs):
     hist.hist.GetYaxis().SetRangeUser(0, 20)
 
 def fastOROptions(subsystem, hist, processingOptions, **kwargs):
-    """ Processing function ...
+    """ Processing function for Fast OR based histograms.
+
+    FastOR histograms come in two variates:
+
+    - 1D with cell ID vs amplitude.
+    - 2D with cell amplitude vs row, column position.
+
+    For both histogram types, it scales the histogram by number of events as as appropriate based
+    on the EMC processing options.
+
+    For the 1D histograms, it can look for hot channels based on a threshold set in the processing options.
+    For any channels that are above this threshold, they cell IDs are stored in the ``histogramContainer``.
+    This allows for the information for be displayed in the web app for easy reference and action. For applying
+    the threshold, it is strongly recommended to scale by the number of events (which is the default for the EMC
+    subsystem, but can be modified during time slices). Note that the threshold values passed in from the web app
+    are scaled down by ``1e-3`` due to the usually small number of counts exception in hot channels, as well as
+    the difficulty in displaying such small numbers. 
+
+    For the 2D histograms, it also adds a TRU grid.
+
+    Warning:
+        The hot channel thresholds require further tuning. The current (Aug 2018) values are mostly set as a
+        proof on concept.
 
     Args:
         subsystem (subsystemContainer): The subsystem for the current run.
@@ -666,7 +705,6 @@ def fastOROptions(subsystem, hist, processingOptions, **kwargs):
         # Check thresholds for hot fastORs in 1D hists
         # Set threshold for printing
         threshold = 0
-        # TODO: These thresholds probably need to be tuned
         if "LargeAmp" in hist.histName:
             threshold = 1e-7
         elif "Amp" in hist.histName:
@@ -702,7 +740,17 @@ def fastOROptions(subsystem, hist, processingOptions, **kwargs):
         hist.information["Fast OR Hot Channels ID"] = absIdList
 
 def patchAmpOptions(subsystem, hist, processingOptions, **kwargs):
-    """ Processing function ...
+    """ Processing function for patch ADC amplitude spectra histograms.
+
+    This function supersedes ``properlyPlotPatchSpectra()`` and utilizes ``addEnergyAxisToPatches()``.
+    It plots the spectra on a log y axis and adds a grid for easier visualization. In the case of a
+    histogram stack containing the EMCal and DCal plots, it is specifically equipped to:
+
+    - Plot the EMCal as red and the DCal as blue.
+    - Provide a legend.
+    - Scale the histogram by number of events as as appropriate based on the processing options.
+    - Add an additional x axis which converts the ADC counts of the patch spectra to energy, thereby
+      displaying the spectra in a more familiar unit.
 
     Args:
         subsystem (subsystemContainer): The subsystem for the current run.
@@ -745,13 +793,10 @@ def patchAmpOptions(subsystem, hist, processingOptions, **kwargs):
                 tempHist.Scale(1./subsystem.nEvents)
             tempHist.GetYaxis().SetTitle("entries / events")
 
-            # Draw hists
-            # This is not the usual philosophy. We are clearing the canvas and then plotting
-            # the second hist on it
-            #tempHist.Draw(option)
+            # Record the entry for the legend.
             legend.AddEntry(tempHist, detector, "pe")
 
-        # Add legend
+        # Add legend to the canvas.
         legend.Draw()
 
         # Ensure that canvas is updated to account for the new object colors
@@ -799,8 +844,9 @@ def findFunctionsForEMCHistogram(subsystem, hist):
     if "PatchAmp" in hist.histName and "Subtracted" not in hist.histName and "EMCRE" not in hist.histName:
         hist.functionsToApply.append(patchAmpOptions)
 
-    # Essentially only for legacy support. Newer instances of this plot are handled above
-    if any(substring in hist.histName for substring in ["EMCalPatchEnergy", "EMCalPatchAmp", "EMCalMaxPatchAmp", "DCalPatchAmp", "DCalPatchEnergy", "DCalMaxPatchAmp"]):
+    # These functions are essentially only for legacy support.
+    # The names work out such that newer instances of this plot are handled by ``patchAmpOptions()``.
+    if any(substring in hist.histName for substring in ["EMCalPatchEnergy", "DCalPatchEnergy", "EMCalPatchAmp", "EMCalMaxPatchAmp", "DCalPatchAmp", "DCalMaxPatchAmp"]):
         hist.functionsToApply.append(properlyPlotPatchSpectra)
 
     if any(substring in hist.histName for substring in ["EMCalPatchAmp", "EMCalMaxPatchAmp", "DCalPatchAmp", "DCalMaxPatchAmp"]):
