@@ -83,6 +83,10 @@ def sortSMsInPhysicalOrder(histList, sortKey):
         is performed carefully, such that the output is 19, 18, ..., (as expected), rather than
         9, 8, 7, ..., 19, 18, ..., 10, 1.
 
+    Note:
+        This function isn't currently utilized by the EMC, but it is kept as proof of concept for more complex
+        functionality.
+
     Args:
         histList (list): List of histogram names which contain the sort key. The sort
             key will be used to sort them according to the proper EMCal order.
@@ -339,74 +343,65 @@ def generalOptionsRequiringUnderlyingObjects(subsystem, hist, processingOptions,
 ######################################################################################################
 ######################################################################################################
 
-###################################################
-# Checking for outliers
-###################################################
 def checkForOutliers(hist):
-    """ Checks for outliers in selected histograms.
+    """ Checks for outliers in the provided histogram.
 
-    Outliers are calculated by looking at the standard deviation. See: :func:`hasSignalOutlier()`.
-    This function is mainly a proof of concept, but could become more viable with a bit more work.
+    Outliers are calculated by looking at the standard deviation. See: ```hasSignalOutlier(..)`` for further
+    information. This function is mainly a proof of concept, but could become more flexible with a bit more work.
 
     Note:
-        This function will add a large TLegend to the histogram noting the mean and the number of
-        outliers. It will also display the recalculated mean excluding the outlier(s).
+        This function will add a large ``TLegend`` to the histogram which notes the mean and the number of
+        outliers. It will also display the recalculated mean excluding the outlier(s). This ``TLegend`` is owned
+        by ROOT.
+
+    Note:
+        This function isn't currently utilized by the EMC, but it is kept as proof of concept for more complex
+        functionality.
 
     Args:
         hist (TH1): The histogram to be processed.
-
     Returns:
-        None
-
+        None.
     """
-    # If outlier data point, print warning banner
-    if hist.GetName() == "":
-        tempList = hasSignalOutlier(hist) # array of info from hasSignalOutlier function, to print on legend
-        numOutliers = tempList[0]
-        mean = tempList[1]
-        stdev = tempList[2]
-        newMean = tempList[3]
-        newStdev = tempList[4]
-        if(numOutliers):
-            # Create TLegend and fill with information if there is an outlier.
-            leg = TLegend(0.15, 0.5, 0.7, 0.8)
-            SetOwnership(leg, False)
+    (numOutliers, mean, stdev, newMean, newStdev) = hasSignalOutlier(hist)
 
-            leg.SetBorderSize(4)
-            leg.SetShadowColor(2)
-            leg.SetHeader("#splitline{OUTLIER SIGNAL DETECTED}{IN %s BINS!}" % numOutliers)
-            leg.AddEntry(None, "Mean: %s, Stdev: %s" % ('%.2f'%mean, '%.2f'%stdev), "")
-            leg.AddEntry(None, "New mean: %s, New Stdev: %s" % ('%.2f'%newMean, '%.2f'%newStdev), "")
-            leg.SetTextSize(0.04)
-            leg.SetTextColor(2)
-            leg.Draw()
+    # If there are outliers, then print the warning banner.
+    if numOutliers:
+        # Create TLegend and fill with information if there is an outlier.
+        leg = TLegend(0.15, 0.5, 0.7, 0.8)
+        SetOwnership(leg, False)
 
-###################################################
+        leg.SetBorderSize(4)
+        leg.SetShadowColor(2)
+        leg.SetHeader("#splitline{OUTLIER SIGNAL DETECTED}{IN %s BINS!}" % numOutliers)
+        leg.AddEntry(None, "Mean: %s, Stdev: %s" % ('%.2f'%mean, '%.2f'%stdev), "")
+        leg.AddEntry(None, "New mean: %s, New Stdev: %s" % ('%.2f'%newMean, '%.2f'%newStdev), "")
+        leg.SetTextSize(0.04)
+        leg.SetTextColor(2)
+        leg.Draw()
+
 def hasSignalOutlier(hist):
-    """ Helper function to actually find the outlier from a signal.
+    """ Helper function to actually find the outlier from a signal histogram.
 
-    Find mean bin amplitude, and return True if at least one bin is beyond a threshold from this mean.
-    Works for both TH1 and TH2 (but note that it computes outlier based on bin content, which may not be 
-    desirable for TH1; in that case mean and stdev can easily be applied).
+    Find mean bin amplitude and standard deviation, remove outliers beyond a particular number of standard
+    deviations, and then recalculate the mean and standard deviation. Works for both TH1 and TH2 (but note
+    that it computes outlier based on bin content, which may not be desirable for TH1; in that case mean
+    and std dev can easily be applied).
+
+    Note:
+        This function isn't currently utilized by the EMC, but it is kept as proof of concept for more complex
+        functionality.
 
     Args:
         hist (TH1): The histogram to be processed.
-
     Returns:
-        tuple: Tuple containing:
-
-            len(outlierList) (int): Number of outliers
-
-            mean (float): Mean of the histogram
-
-            stdev (float): Standard deviation of the hist
-
-            newMean (float): Recalculated mean after excluding the outlier(s)
-
-            newStdev (float): Recalculated standard deviation after excluding the outlier(S)
-
+        list: [nOutliers, mean, stdev, newMean, newStdev] where nOutliers (int) is the number of outliers,
+            mean (float) and stdev (float) are the mean and standard deviation, respectively, of the given
+            histogram, and newMean (float) and newStdev (float) are the mean and standard deviation after
+            excluding the outlier(s).
     """
-    ignoreEmptyBins = False     # whether to include empty bins in mean/stdev calculation
+    # Whether to include empty bins in mean/std dev calculation
+    ignoreEmptyBins = False
     xbins = hist.GetNbinsX()
     ybins = hist.GetNbinsY()
     totalBins = xbins*ybins
