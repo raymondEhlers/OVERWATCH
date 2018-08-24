@@ -84,7 +84,8 @@ def checkForEMCHistStack(subsystem, histName, skipList, selector):
 def createEMCHistogramStacks(subsystem):
     """ Create histogram stacks from the existing histograms in the EMCal subsystem.
 
-    Note that this function assumes that histograms will only be assigned to one stack.
+    Note that although this doesn't necessarily have to be the case, we decided for this function to assume
+    that histograms will only be assigned to one stack.
 
     Note:
         This function is responsible for moving histogram containers from ``subsystem.histsInFile``
@@ -623,8 +624,10 @@ def properlyPlotPatchSpectra(subsystem, hist, processingOptions, **kwargs):
 def findFunctionsForEMCHistogram(subsystem, hist, **kwargs):
     """ Find processing functions for EMC histograms based on their names.
 
-    This plug-in function steers the histograms to the right set of processing functions.
-    These functions will then be executed later when the histograms are actually processed.
+    This plug-in function steers the histograms to the right set of processing functions. These functions
+    will then be executed later when the histograms are actually processed. This function only executes
+    when the subsystem is created at the start of each new run. By doing so, we can minimize inefficient
+    string comparison each time we process a file in the same run.
 
     The processing functions which are assigned here include those related to the processing of:
 
