@@ -249,7 +249,7 @@ def createEMCHistogramGroups(subsystem):
 
 def setEMCHistogramOptions(subsystem):
     """ Set general EMCal histogram options.
-    
+
     In particular, these options should apply to all histograms, or at least a broad selection
     of them. The list of histograms are accessed through the ``histsAvailable`` field of the
     ``subsystemContainer``. Canvas options and additional histogram specific options must be
@@ -257,7 +257,7 @@ def setEMCHistogramOptions(subsystem):
 
     Here, we improve the presentation quality of the histograms by setting the pretty name to
     be presented without the shared name "EMC" prefix (which is contained in the first 12 characters),
-    set any `TH2` derived hists to draw with `colz`. We also set all histograms to be scaled
+    set any ``TH2`` derived hists to draw with ``colz``. We also set all histograms to be scaled
     by the number of events collected.
 
     Note:
@@ -289,11 +289,19 @@ def setEMCHistogramOptions(subsystem):
     # Sets the hot channel threshold. 0 uses the default in the defined function
     subsystem.processingOptions["hotChannelThreshold"] = 0
 
-def generalEMCOptions(subsystem, hist, processingOptions, **kwargs):
-    """ Processing function where general histograms options that require the histogram or canvas are set.
+def generalOptionsRequiringUnderlyingObjects(subsystem, hist, processingOptions, **kwargs):
+    """ Processing function where general histograms options that require the underlying histogram and/or canvas
+    are set.
 
-    Note:
-        This is not a special plug-in function. It is just named similarly.
+    The options specified include:
+
+    - Showing histogram stats if running in debug mode.
+    - Disabling display of the title for EMC histograms (the title is _not_ set to empty string to ensure that
+      it is still available in the future).
+    - Set ``logz`` for all ``TH2`` histograms.
+
+    The canvas is also updated when we are finished to ensure that all options are applied successfully. This
+    may not actually be required, but it also doesn't hurt anything.
 
     Args:
         subsystem (subsystemContainer): The subsystem for the current run.
@@ -313,11 +321,11 @@ def generalEMCOptions(subsystem, hist, processingOptions, **kwargs):
     # Disable the title
     gStyle.SetOptTitle(0)
 
-    # Allows curotmization of draw options for 2D hists
+    # Allows customization of draw options for 2D hists
     if hist.hist.InheritsFrom(TH2.Class()):
         hist.canvas.SetLogz()
 
-    # Updates the canvas, as Update() does not seem to work
+    # Ensure that the canvas is updated, as Update() does not seem to work
     # See: https://root.cern.ch/root/roottalk/roottalk02/3965.html
     hist.canvas.Modified()
 
@@ -540,7 +548,7 @@ def hasSignalOutlier(hist):
     return [len(outlierList), mean, stdev, newMean, newStdev] # info for legend
 
 def properlyPlotPatchSpectra(subsystem, hist, processingOptions):
-    """ Plot patch spectra with `logy` and on a grid.
+    """ Plot patch spectra with ``logy`` and on a grid.
 
     These conditions are set for "{EMCal,DCal}(Max)Patch{Energy,Amp}".
 
@@ -857,7 +865,7 @@ def patchAmpOptions(subsystem, hist, processingOptions):
 def findFunctionsForEMCHistogram(subsystem, hist):
 
     # General EMC Options
-    hist.functionsToApply.append(generalEMCOptions)
+    hist.functionsToApply.append(generalOptionsRequiringUnderlyingObjects)
 
     # Plot by SM
     if "SM" in hist.histName:

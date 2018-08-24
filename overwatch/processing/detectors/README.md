@@ -360,7 +360,7 @@ functions rely on the histogram.
 
 For a full example of how to determine the functions to apply to particular histograms, see
 `overwatch.processing.detectors.EMC.findFunctionsForEMCHistogram`. For a full example of a processing
-function, see `overwatch.processing.detectors.EMC.generalEMCOptions`.
+function, see `overwatch.processing.detectors.EMC.generalOptionsRequiringUnderlyingObjects`.
 
 ## Trending 
 
