@@ -6,7 +6,7 @@ if a function does not exist - execution will proceed without that part of the f
 
 As a general convention throughout this documentation, `SYS` should be replaced by the three letter name of
 your desired subsystem (ie a detector). As an example, if you are working with the EMCal and are attempting to
-create groups of histograms, `createSYSHistogramGroups(...)` would be `createEMCHistogramGroups(...)`.
+create groups of histograms, `create(SYS)HistogramGroups(...)` would be `createEMCHistogramGroups(...)`.
 
 ## Table of Contents
 
@@ -74,17 +74,20 @@ executed for a particular run, they will not be repeated again until the next ru
 
 They plug-in functions are listed below in the order that they are called.
 
-1. Create [groups of histograms](#histogram-groups): `createSYSHistogramGroups(subsystemContainer)`.
-2. Create [new additional histogmras](#additional-histograms): `createAdditionalSYSHistograms(subsystemContainer)`.
-3. Create [stack of histograms](#histogram-stacks): `createSYSHistogramStacks(subsystemContainer)`.
+1. Create [groups of histograms](#histogram-groups): `create(SYS)HistogramGroups(subsystem, **kwargs)`.
+2. Create [new additional histogmras](#additional-histograms): `createAdditional(SYS)Histograms(subsystem, **kwargs)`.
+3. Create [stack of histograms](#histogram-stacks): `create(SYS)HistogramStacks(subsystem, **kwargs)`.
 4. Set [histogram processing options](#general-histogram-processing-options) or set options that apply to the entire subsystem:
-  `setSYSHistogramOptions(subsystemContainer)`.
+  `set(SYS)HistogramOptions(subsystem, **kwargs)`.
 5. [Find processing functions](#find-processing-functions) that apply to particular histograms for a given
-   subsystem: `findFunctionsForSYSHistogram(subsystemContainer, histogramContainer)`
+   subsystem: `findFunctionsFor(SYS)Histogram(subsystem, hist, **kwargs)`
 
 Note that the find processing functions plug-in is most important. It is how a detector maps particular
-histograms to particular processing functions. Recall that it is fine if a function does not exist - execution
-will proceed without that part of the functionality.
+ histograms to particular processing functions. Recall that it is fine if a function does not exist
+- execution will proceed without that part of the functionality. Lastly, for each function above, `subsystem`
+is a `subsystemContainer` for the current subsystem in the current run. At the end of each section, an example
+implementation for the plug-in will be shown, with complete argument documentation. The example subsystem name
+is `SYS` (for "Subsystem").
 
 ### Histogram Groups
 
@@ -93,10 +96,10 @@ histograms all related to one class of triggers. A histogram group, which is cre
 `processingClasses.histogramGroupContainer(title, selector)`, is defined by a title, which will be a displayed
 to the user, and a selector, which is a string that matches some subset (or full) histogram name(s).
 
-These groups should be defined in `createSYSHistogramGroups(subsystem)`. The groups are stored as a list in a
-`subsystemContainer`, which is accessible through `subsystemContainer.histGroups`. The order in which these
-groups are appended determines the priority of the selector. If a histogram could match into two groups, it
-will be stored in the group which is nearest to the front of the list.
+These groups should be defined in `create(SYS)HistogramGroups(subsystem, **kwargs)`. The groups are stored as
+a list in a `subsystemContainer`, which is accessible through `subsystemContainer.histGroups`. The order in
+which these groups are appended determines the priority of the selector. If a histogram could match into two
+groups, it will be stored in the group which is nearest to the front of the list.
 
 When defining histogram groups for a subsystem, it is recommended to have a catch all group at the end of the
 list to ensure that all histograms will be displayed. This also gives additional future proofing in the case
@@ -112,6 +115,38 @@ Note that an empty histogram group will not be displayed in the webApp. This can
 histograms are available at different times - for example, if a histogram that was previously available is
 not being sent anymore, it is not necessary to modify the histogram group configuration.
 
+#### Example Implementation
+
+```python
+def createSYSHistogramGroups(subsystem):
+    """ Create histogram groups for the SYS subsystem.
+
+    This functions sorts the histograms into categories for better presentation based
+    on their names. The names are determined by those specified for each hist in the 
+    subsystem component on the HLT. Assignments are made by the looking for substrings
+    specified in the hist groups in the hist names. Note that each histogram will be
+    categorized once, so the first entry will take all histograms which match. Thus,
+    histograms should be ordered in such that the most inclusive are specified last.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+    Returns:
+        None. Histogram groups are stored in ``histGroups`` list of the ``subsystemContainer``.
+    """
+    # Trigger related hists
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Triggers in SYS", "trigger"))
+    # Background related hists
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Background in SYS", "BKG"))
+    # Other Example hists
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Other SYS", "SYS"))
+
+    # Catch all of the other hists if we have a dedicated receiver.
+    # NOTE: We only want to do this if we are using a subsystem that actually has a file from a
+    #       dedicated receiver. Otherwise, you end up with lots of irrelevant histograms. 
+    if subsystem.subsystem == subsystem.fileLocationSubsystem:
+        subsystem.histGroups.append(processingClasses.histogramGroupContainer("Non EMC", ""))
+```
+
 ### Additional Histograms
 
 While a specific set of histograms is provided by the HLT, subsystems are not limited to displaying only those
@@ -120,10 +155,10 @@ clarify different aspects of detector performance. Consequently, it is possible 
 will depend on projections of existing histograms. Note that if you instead want to extract values (eg. time
 series of mean), use the [trending framework](#trending) instead.
 
-To create new histograms, implement the function `createAdditionalSYSHistograms(subsystemContainer)` and add a
-new `histogramContainer` to the `subsystemContainer.histsAvailable` list. When specifying the histogram
-container, the histogram it will be projected from must be specified! Then, the projection function must be
-appended to the list `histogramContainer.projectionFunctionsToApply`. Note that additional processing
+To create new histograms, implement the function `createAdditional(SYS)Histograms(subsystem, **kwargs)`
+and add a new `histogramContainer` to the `subsystemContainer.histsAvailable` list. When specifying the
+histogram container, the histogram it will be projected from must be specified! Then, the projection function
+must be appended to the list `histogramContainer.projectionFunctionsToApply`. Note that additional processing
 functions can still be [added later](#find-processing-functions). Remember that the histogram to project is
 cloned, and therefore the user does not need to reset the axes ranges.
 
@@ -175,6 +210,11 @@ def projectionFunction(subsystem, hist, processingOptions, **kwargs):
 Note that for an optimal workflow, a histogram group should be defined that will pick up any additional
 histograms that will be created.
 
+#### Example Implementation
+
+```python
+```
+
 ### Histogram Stacks
 
 At times, it is desirable to display sets of histograms on top of each other. For example, comparison between
@@ -182,7 +222,7 @@ two spectra is easier when they are superimposed. When creating the stacks, we w
 that corresponds to the stacked objects, and then we will note that the individual histograms should not be
 displayed separately (unless that is also desired).
 
-To achieve this, the `createSYSHistogramStacks(subsystem)` function is expected to iterate over the
+To achieve this, the `create(SYS)HistogramStacks(subsystem, **kwargs)` function is expected to iterate over the
 `subsystemConatiner.histsInFile` dictionary. Histograms which don't need to be stacked should be stored in the
 `subsystemContainer.histsAvailable` dictionary use the same key under which it was stored in the `histsInFile`
 dictionary. In the most trivial case where all histograms would be kept and none would be stacked, we could
@@ -218,7 +258,12 @@ for histName in subsystem.histsInFile:
     subsystem.histsAvailable[histName] = subsystem.histsInFile[histName]
 ```
 
-For an example, see `overwatch.processing.detectors.EMC.createEMCHistogramStacks`.
+#### Example Implementation
+
+```python
+```
+
+For a full example, see `overwatch.processing.detectors.EMC.createEMCHistogramStacks`.
 
 ### General Histogram Processing Options
 
@@ -226,7 +271,7 @@ There are a number of general options that could apply to all or a large subset 
 Perhaps they all contain a prefix that should be hidden. Perhaps all `TH2` histograms should have `colz`
 applied. Perhaps you want to set arbitrary properties that can be influence processing later. All such
 functionality can be achieved through setting the general subsystem properties, which are set in
-`setSYSHistogramOptions(subsystesm)`.
+`set(SYS)HistogramOptions(subsystem, **kwargs)`.
 
 To modify all (or a subset of) histogram properties, iterate over all histograms in
 `subsystemContainer.histsAvailable`. Although the histogram containers that are returned will not yet contain
@@ -239,7 +284,12 @@ subsystem to be stored. These options can then be later retrieved when processin
 example, the desired to scale (or not scale) every histogram in the subsystem by the number of events could be
 noted. Later, your processing function could retrieve that value and perform the proper scaling.
 
-For an example, see `overwatch.processing.detectors.EMC.setEMCHistogramOptions`.
+#### Example Implementation
+
+```python
+```
+
+For a full example, see `overwatch.processing.detectors.EMC.setEMCHistogramOptions`.
 
 ### Find Processing Functions
 
@@ -249,7 +299,7 @@ To apply these functions, a reference to each function that is to be executed is
 histogram container. That function will automatically be called when the histogram is processed.
 
 The relationship between which functions belong to which histogram should be defined in
-`findFunctionsForSYSHistogram(subsystemContainer, histogramContainer)`. In this function, the histogram name
+`findFunctionsFor(SYS)Histogram(subsystem, hist, **kwargs)`. In this function, the histogram name
 should be checked to determine which subsystem specific functions should be applied. Each function is stored
 by appending it to the `histogramContainer.functionsToApply` list. Note that these functions will be executed
 in the order which they are added.
@@ -261,10 +311,6 @@ correspond to the processing options you set in the [general options](#general-h
 or in the special case of reprocessing, a set of customized options. Note that including `**kwargs` in
 the function signature is important for forward compatibility.
 
-For an example of how to determine the functions to apply to particular histograms, see
-`overwatch.processing.detectors.EMC.findFunctionsForEMCHistogram`. For an example of a processing function,
-see `overwatch.processing.detectors.EMC.generalEMCOptions`.
-
 #### Adding new histograms
 
 If new histograms are to be created during these functions, they must be stored to be displayed. Here there
@@ -274,6 +320,15 @@ In the case of the original histogram not being needed, the approach is straight
 existing histogram in the current `histogramContainer` with the new histogram. This new histogram will be then
 be printed in the place of the existing histogram. Please note that if this could cause problems if additional
 functions rely on the histogram.
+
+#### Example Implementation
+
+```python
+```
+
+For a full example of how to determine the functions to apply to particular histograms, see
+`overwatch.processing.detectors.EMC.findFunctionsForEMCHistogram`. For a full example of a processing
+function, see `overwatch.processing.detectors.EMC.generalEMCOptions`.
 
 ## Trending 
 
