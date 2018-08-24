@@ -73,8 +73,10 @@ def sortSMsInPhysicalOrder(histList, sortKey):
         >>> histList
         ["prefix1", "prefix2"]
 
-    Initially, it sorts the hists into reverse order, and then it performs the SM oritented sort
-    as described above.
+    Initially, it sorts the hists into reverse order, and then it performs the SM oriented sort
+    as described above. As a practical matter, this function will usually be called via
+    ```sortSMsInPhysicalOrder(histList = group.histList, sortKey = group.plotInGridSelectionPattern)``,
+    taking advantage of the selection pattern stored in the group.
 
     Note:
         Since the numbers on which we sort are in strings, the initial sort into reverse order
@@ -110,8 +112,10 @@ def sortSMsInPhysicalOrder(histList, sortKey):
 def checkForEMCHistStack(subsystem, histName, skipList, selector):
     """ Check for and create histograms stacks from existing histograms.
 
-    This function assumes that there will be corresponding EMCal and DCal histograms
-    for a particular hist stack.
+    This is a helper function for stacking histograms which plot the same quantity,
+    but are plotted separately for the EMCal and DCal. It allows both to be plotted
+    on the same canvas. It assumes that there will be corresponding EMCal and DCal
+    histograms for a particular hist stack.
 
     Note:
         By including "EMCal" in the ``selector`` string, we can ensure that this function
@@ -328,106 +332,6 @@ def generalOptionsRequiringUnderlyingObjects(subsystem, hist, processingOptions,
     # Ensure that the canvas is updated, as Update() does not seem to work
     # See: https://root.cern.ch/root/roottalk/roottalk02/3965.html
     hist.canvas.Modified()
-
-###################################################
-#def sortAndGenerateHtmlForEMCHists(outputHistNames, outputFormatting, subsystem = "EMC"):
-#    """ Sorts and displays EMC histograms.
-#
-#    Heavily relies on :func:`~processRuns.generateHtml.generateHtmlForHistLinkOnRunPage`
-#    and :func:`~processRuns.generateHtml.generateHtmlForHistOnRunPage`.
-#    Check out code for specifics on how the images are sorted and the pages are formatted.
-#
-#    Args:
-#        outputHistNames (list): List of histograms to add to the page. Typically, these have
-#            been printed from ROOT files.
-#        outputFormatting (str): Specially formatted string which contains a generic path to the printed histograms.
-#            The string contains "%s" to print the filename contained in listOfHists. It also includes the file
-#            extension. Ex: "img/%s.png"
-#        subsystem (str): The current subsystem by three letter, all capital name. Here it should always be ``EMC``.
-#            Default: "EMC"
-#
-#    Returns:
-#        str: HTML containing all of the EMC histograms, with proper formatting and links from the top of the page to the named images.
-#
-#    """
-
-    ## Group filenames
-    #for filename in outputHistNames:
-    #    for group in groupedHists:
-    #        if group.selectionPattern in filename:
-    #            group.histList.append(filename)
-    #            # Break so that we don't have multiple copies of hists!
-    #            break
-
-    ## Sort
-    #for group in groupedHists:
-    #    if group.histList == []:
-    #        continue
-    #    if group.plotInGrid == True:
-    #        group.histList = sortSMsInPhysicalOrder(histList = group.histList, sortKey = group.plotInGridSelectionPattern)
-    #    else:
-    #        # Sort hists
-    #        group.histList.sort()
-
-    ## Links to histograms
-    #htmlText = ""
-    #htmlText += "<div class=\"contentDivider\">\n"
-    ## Get the proper label for the plots by SM section
-    ## This depends on all SM plots being processed first
-    #for group in groupedHists:
-    #    if group.plotInGrid == True and group.histList != []:
-    #        htmlText += "<h3>Plots By SM</h3>\n"
-    #        # We only want to make the label once
-    #        break
-
-    ## Generate the actual links
-    #for group in groupedHists:
-    #    # We don't want to generate any links if there are no hists in the category
-    #    if group.histList == []:
-    #        continue
-
-    #    if group.plotInGrid == True:
-    #        # Create a link to the group that will be displayed in a grid
-    #        # Seperate out into EMCal and DCal
-    #        # EMCal
-    #        htmlText += generateHtml.generateHtmlForPlotInGridLinks(group.name + " - EMCal")
-    #        # DCal
-    #        htmlText += generateHtml.generateHtmlForPlotInGridLinks(group.name + " -  DCal")
-    #    else:
-    #        # Create label for group
-    #        htmlText += "<h3>" + group.name + "</h3>\n"
-    #        startOfName = 12
-    #        if group.selectionPattern == "":
-    #            startOfName = 0
-    #        # Create links to all hists in the group
-    #        htmlText += generateHtml.generateHtmlForHistLinkOnRunPage(group.histList, startOfName)
-
-    ## Close the div
-    #htmlText += "</div>\n"
-
-    ## Display histograms in the same order as anchors
-    #for group in groupedHists:
-    #    # We don't want to add any images if there are no hists in the category
-    #    if group.histList == []:
-    #        continue
-
-    #    if group.plotInGrid == True:
-    #        # Add images in a grid
-    #        # Seperate out into EMCal and DCal
-    #        # EMCal
-    #        htmlText += generateHtml.generateHtmlForPlotInGrid(group.histList[8:], group.name + " - EMCal", outputFormatting, nColumns = 2)
-    #        # DCal
-    #        htmlText += generateHtml.generateHtmlForPlotInGrid(group.histList[:8], group.name + " -  DCal", outputFormatting, nColumns = 2)
-    #    else:
-    #        # This ensures that we don't cut the names of the non-EMC hists
-    #        startOfName = 12
-    #        if group.selectionPattern == "":
-    #            startOfName = 0
-    #        # Add images for this group
-    #        htmlText += generateHtml.generateHtmlForHistOnRunPage(group.histList, outputFormatting, startOfName)
-
-    #return htmlText
-
 
 ######################################################################################################
 ######################################################################################################
