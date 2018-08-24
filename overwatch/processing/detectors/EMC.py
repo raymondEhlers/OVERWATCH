@@ -269,8 +269,8 @@ def setEMCHistogramOptions(subsystem):
     by the number of events collected.
 
     Note:
-        The underlying hists are not yet available for this function. Only fields available
-        in the ``histogramContainer`` should be used!
+        The underlying hists are not yet available for this function. Only information which is stored
+        directly in ``histogramContainer`` fields should be used.
 
     Args:
         subsystem (subsystemContainer): The subsystem for the current run.
@@ -805,12 +805,41 @@ def patchAmpOptions(subsystem, hist, processingOptions, **kwargs):
         # Add energy axis
         addEnergyAxisToPatches(subsystem, hist, processingOptions, **kwargs)
 
-###################################################
-# Add drawing options to plots
-# Plots come in 4 types: PlotbySM, Plot2D, Plot1D, PlotMaxMatch
-###################################################
-def findFunctionsForEMCHistogram(subsystem, hist):
+def findFunctionsForEMCHistogram(subsystem, hist, **kwargs):
+    """ Find processing functions for EMC histograms based on their names.
 
+    This plug-in function steers the histograms to the right set of processing functions.
+    These functions will then be executed later when the histograms are actually processed.
+
+    The processing functions which are assigned here include those related to the processing of:
+
+    - General EMC histogram options which require the underlying histogram and canvas.
+    - General histograms which are split out by super module.
+    - Front end electronics (FEE) oriented histograms.
+    - Patch edge position oriented histogram.
+    - Fast OR oriented histograms.
+    - Patch ADC amplitude oriented histograms (both current and legacy).
+
+    See the particular functions for precisely which options are set.
+
+    Note:
+        The rules to select each particular set of histograms have become fairly complicated due to
+        the variation of histogram names depending on collision system, changing histograms over time,
+        etc. Each group has a fairly detailed describe either through comments or the code itself.
+        Due to this complexity, these selections should be modified with care!
+
+    Note:
+        The histogram underlying the ``histogramContainer`` which is passed in is not yet available
+        for this function. Only information which is stored directly in ``histogramContainer`` fields
+        should be used when classifying them and assigning functions.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None. The hist is modified.
+    """
     # General EMC Options
     hist.functionsToApply.append(generalOptionsRequiringUnderlyingObjects)
 
