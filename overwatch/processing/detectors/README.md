@@ -74,11 +74,11 @@ executed for a particular run, they will not be repeated again until the next ru
 
 They plug-in functions are listed below in the order that they are called.
 
-1. Create [groups of histograms](#histogram-groups): `create(SYS)HistogramGroups(subsystem, **kwargs)`.
-2. Create [new additional histogmras](#additional-histograms): `createAdditional(SYS)Histograms(subsystem, **kwargs)`.
-3. Create [stack of histograms](#histogram-stacks): `create(SYS)HistogramStacks(subsystem, **kwargs)`.
-4. Set [histogram processing options](#general-histogram-processing-options) or set options that apply to the entire subsystem:
+1. Create [new additional histogmras](#additional-histograms): `createAdditional(SYS)Histograms(subsystem, **kwargs)`.
+2. Create [stack of histograms](#histogram-stacks): `create(SYS)HistogramStacks(subsystem, **kwargs)`.
+3. Set [histogram processing options](#general-histogram-processing-options) or set options that apply to the entire subsystem:
   `set(SYS)HistogramOptions(subsystem, **kwargs)`.
+4. Create [groups of histograms](#histogram-groups): `create(SYS)HistogramGroups(subsystem, **kwargs)`.
 5. [Find processing functions](#find-processing-functions) that apply to particular histograms for a given
    subsystem: `findFunctionsFor(SYS)Histogram(subsystem, hist, **kwargs)`
 
@@ -88,64 +88,6 @@ Note that the find processing functions plug-in is most important. It is how a d
 is a `subsystemContainer` for the current subsystem in the current run. At the end of each section, an example
 implementation for the plug-in will be shown, with complete argument documentation. The example subsystem name
 is `SYS` (for "Subsystem").
-
-### Histogram Groups
-
-Histogram groups are related histograms which should be displayed together. For example, this may be
-histograms all related to one class of triggers. A histogram group, which is created via
-`processingClasses.histogramGroupContainer(title, selector)`, is defined by a title, which will be a displayed
-to the user, and a selector, which is a string that matches some subset (or full) histogram name(s).
-
-These groups should be defined in `create(SYS)HistogramGroups(subsystem, **kwargs)`. The groups are stored as
-a list in a `subsystemContainer`, which is accessible through `subsystemContainer.histGroups`. The order in
-which these groups are appended determines the priority of the selector. If a histogram could match into two
-groups, it will be stored in the group which is nearest to the front of the list.
-
-When defining histogram groups for a subsystem, it is recommended to have a catch all group at the end of the
-list to ensure that all histograms will be displayed. This also gives additional future proofing in the case
-that new classes of histograms are added to a particular subsystem. It is generally recommended to aim for
-less than 6 histograms in a group to ensure reasonable performance when loading an entire group over a slower
-internet connection through the webApp. 
-
-To determine the available histograms for a particular subsystem, it is best to simply retrieve a file for
-that subsystem and look at the histograms available with your favorite method, such as a `TBrowser`. All
-histograms available in that file will be available for processing.
-
-Note that an empty histogram group will not be displayed in the webApp. This can be beneficial if different
-histograms are available at different times - for example, if a histogram that was previously available is
-not being sent anymore, it is not necessary to modify the histogram group configuration.
-
-#### Example Implementation
-
-```python
-def createSYSHistogramGroups(subsystem):
-    """ Create histogram groups for the SYS subsystem.
-
-    This functions sorts the histograms into categories for better presentation based
-    on their names. The names are determined by those specified for each hist in the 
-    subsystem component on the HLT. Assignments are made by the looking for substrings
-    specified in the hist groups in the hist names. Note that each histogram will be
-    categorized once, so the first entry will take all histograms which match. Thus,
-    histograms should be ordered in such that the most inclusive are specified last.
-
-    Args:
-        subsystem (subsystemContainer): The subsystem for the current run.
-    Returns:
-        None. Histogram groups are stored in ``histGroups`` list of the ``subsystemContainer``.
-    """
-    # Trigger related hists
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Triggers in SYS", "trigger"))
-    # Background related hists
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Background in SYS", "BKG"))
-    # Other Example hists
-    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Other SYS", "SYS"))
-
-    # Catch all of the other hists if we have a dedicated receiver.
-    # NOTE: We only want to do this if we are using a subsystem that actually has a file from a
-    #       dedicated receiver. Otherwise, you end up with lots of irrelevant histograms. 
-    if subsystem.subsystem == subsystem.fileLocationSubsystem:
-        subsystem.histGroups.append(processingClasses.histogramGroupContainer("Non EMC", ""))
-```
 
 ### Additional Histograms
 
@@ -290,6 +232,64 @@ noted. Later, your processing function could retrieve that value and perform the
 ```
 
 For a full example, see `overwatch.processing.detectors.EMC.setEMCHistogramOptions`.
+
+### Histogram Groups
+
+Histogram groups are related histograms which should be displayed together. For example, this may be
+histograms all related to one class of triggers. A histogram group, which is created via
+`processingClasses.histogramGroupContainer(title, selector)`, is defined by a title, which will be a displayed
+to the user, and a selector, which is a string that matches some subset (or full) histogram name(s).
+
+These groups should be defined in `create(SYS)HistogramGroups(subsystem, **kwargs)`. The groups are stored as
+a list in a `subsystemContainer`, which is accessible through `subsystemContainer.histGroups`. The order in
+which these groups are appended determines the priority of the selector. If a histogram could match into two
+groups, it will be stored in the group which is nearest to the front of the list.
+
+When defining histogram groups for a subsystem, it is recommended to have a catch all group at the end of the
+list to ensure that all histograms will be displayed. This also gives additional future proofing in the case
+that new classes of histograms are added to a particular subsystem. It is generally recommended to aim for
+less than 6 histograms in a group to ensure reasonable performance when loading an entire group over a slower
+internet connection through the webApp.
+
+To determine the available histograms for a particular subsystem, it is best to simply retrieve a file for
+that subsystem and look at the histograms available with your favorite method, such as a `TBrowser`. All
+histograms available in that file will be available for processing.
+
+Note that an empty histogram group will not be displayed in the webApp. This can be beneficial if different
+histograms are available at different times - for example, if a histogram that was previously available is
+not being sent anymore, it is not necessary to modify the histogram group configuration.
+
+#### Example Implementation
+
+```python
+def createSYSHistogramGroups(subsystem):
+    """ Create histogram groups for the SYS subsystem.
+
+    This functions sorts the histograms into categories for better presentation based
+    on their names. The names are determined by those specified for each hist in the
+    subsystem component on the HLT. Assignments are made by the looking for substrings
+    specified in the hist groups in the hist names. Note that each histogram will be
+    categorized once, so the first entry will take all histograms which match. Thus,
+    histograms should be ordered in such that the most inclusive are specified last.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+    Returns:
+        None. Histogram groups are stored in ``histGroups`` list of the ``subsystemContainer``.
+    """
+    # Trigger related hists
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Triggers in SYS", "trigger"))
+    # Background related hists
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Background in SYS", "BKG"))
+    # Other Example hists
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Other SYS", "SYS"))
+
+    # Catch all of the other hists if we have a dedicated receiver.
+    # NOTE: We only want to do this if we are using a subsystem that actually has a file from a
+    #       dedicated receiver. Otherwise, you end up with lots of irrelevant histograms.
+    if subsystem.subsystem == subsystem.fileLocationSubsystem:
+        subsystem.histGroups.append(processingClasses.histogramGroupContainer("Non EMC", ""))
+```
 
 ### Find Processing Functions
 
