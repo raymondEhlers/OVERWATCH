@@ -229,6 +229,38 @@ noted. Later, your processing function could retrieve that value and perform the
 #### Example Implementation
 
 ```python
+def setSYSHistogramOptions(subsystem):
+    """ Set general SYS histogram options.
+
+    In particular, these options should apply to all histograms, or at least a broad selection
+    of them. The list of histograms are accessed through the ``histsAvailable`` field of the
+    ``subsystemContainer``. Canvas options and additional histogram specific options must be
+    set later because the canvas and underlying histograms are not yet available.
+
+    Note:
+        The underlying hists and canvases are not yet available for this function. Only fields
+        available in the ``histogramContainer`` should be used!
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+    Returns:
+        None. Histogram groups are stored in appropriate field of the ``subsystemContainer``.
+    """
+    # Set histogram specific options
+    for hist in subsystem.histsAvailable.values():
+        # Set the histogram pretty names
+        hist.prettyName = hist.histName.title()
+
+        # Set `colz` for any TH2 hists
+        if hist.histType.InheritsFrom(TH2.Class()):
+            hist.drawOptions += " colz"
+
+    # Set general processing options
+    # Set the subsystem wide preference that we would like for hists to be scaled by the number of events.
+    # This option can then be used in the processing functions to decide whether to scale the histogram
+    # which is being processed. This is _not_ performed automatically.
+    # NOTE: This assumes that the number of events is available in the SYS subsystem.
+    subsystem.processingOptions["scaleHists"] = True
 ```
 
 For a full example, see `overwatch.processing.detectors.EMC.setEMCHistogramOptions`.
