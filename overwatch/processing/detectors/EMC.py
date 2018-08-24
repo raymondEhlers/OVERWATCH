@@ -547,13 +547,15 @@ def hasSignalOutlier(hist):
 
     return [len(outlierList), mean, stdev, newMean, newStdev] # info for legend
 
-def properlyPlotPatchSpectra(subsystem, hist, processingOptions):
-    """ Plot patch spectra with ``logy`` and on a grid.
+def properlyPlotPatchSpectra(subsystem, hist, processingOptions, **kwargs):
+    """ Processing function to plot patch spectra with ``logy`` and on a grid.
 
     These conditions are set for "{EMCal,DCal}(Max)Patch{Energy,Amp}".
 
     Since ROOT creates gPad as a globally available variable, we do not need to pass it into this function.
     However, this does mean that it needs to be reset when we are not interested in these plots.
+
+    The grid corresponds to TRU boundaries, allowing for rapid identification of problematic TRUs.
 
     Args:
         subsystem (subsystemContainer): The subsystem for the current run.
@@ -568,8 +570,9 @@ def properlyPlotPatchSpectra(subsystem, hist, processingOptions):
     hist.canvas.SetLogy()
     hist.canvas.SetGrid(1,1)
 
-def addEnergyAxisToPatches(subsystem, hist, processingOptions):
-    """ Adds an additional axis to patch amplitude spectra showing the conversion from ADC counts to energy.
+def addEnergyAxisToPatches(subsystem, hist, processingOptions, **kwargs):
+    """ Processing function to add an additional axis to patch amplitude spectra showing the conversion from
+    ADC counts to energy.
 
     These conditions are set for "{EMCal,DCal}(Max)PatchAmp".
     It creates a new TGaxis that shows the ADC to Energy conversion. It then draws it on selected
@@ -682,7 +685,7 @@ def addTRUGrid(subsystem, hist):
     SetOwnership(line, False)
     line.Draw()
 
-def edgePosOptions(subsystem, hist, processingOptions):
+def edgePosOptions(subsystem, hist, processingOptions, **kwargs):
     """ Processing function ...
 
     Args:
@@ -703,7 +706,7 @@ def edgePosOptions(subsystem, hist, processingOptions):
         # Add grid of TRU boundaries
         addTRUGrid(subsystem, hist)
 
-def smOptions(subsystem, hist, processingOptions):
+def smOptions(subsystem, hist, processingOptions, **kwargs):
     """ Processing function ...
 
     Args:
@@ -721,7 +724,7 @@ def smOptions(subsystem, hist, processingOptions):
         hist.hist.Scale(1. / subsystem.nEvents)
     labelSupermodules(hist)
 
-def feeSMOptions(subsystem, hist, processingOptions):
+def feeSMOptions(subsystem, hist, processingOptions, **kwargs):
     """ Processing function ...
 
     Args:
@@ -738,7 +741,7 @@ def feeSMOptions(subsystem, hist, processingOptions):
     hist.hist.GetXaxis().SetRangeUser(0, 250)
     hist.hist.GetYaxis().SetRangeUser(0, 20)
 
-def fastOROptions(subsystem, hist, processingOptions):
+def fastOROptions(subsystem, hist, processingOptions, **kwargs):
     """ Processing function ...
 
     Args:
@@ -799,7 +802,7 @@ def fastOROptions(subsystem, hist, processingOptions):
         hist.information["Threshold"] = threshold
         hist.information["Fast OR Hot Channels ID"] = absIdList
 
-def patchAmpOptions(subsystem, hist, processingOptions):
+def patchAmpOptions(subsystem, hist, processingOptions, **kwargs):
     """ Processing function ...
 
     Args:
@@ -856,7 +859,7 @@ def patchAmpOptions(subsystem, hist, processingOptions):
         hist.canvas.Update()
 
         # Add energy axis
-        addEnergyAxisToPatches(subsystem, hist, processingOptions)
+        addEnergyAxisToPatches(subsystem, hist, processingOptions, **kwargs)
 
 ###################################################
 # Add drawing options to plots
