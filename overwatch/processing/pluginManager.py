@@ -63,31 +63,6 @@ def subsystemNamespace(functionName, subsystemName):
     """
     return "{subsystemName}_{functionName}".format(subsystemName = subsystemName, functionName = functionName)
 
-def createHistGroups(subsystem):
-    """ Properly route histogram group function for each subsystem.
-
-    Histogram groups are groups of histograms which should be displayed together for visualization.
-    Function names should be of the form ``create(SYS)HistogramGroups(subsystem, **kwargs)``,
-    where ``(SYS)`` is the subsystem three letter name, subsystem (subsystemContainer) is the current
-    subsystem container, and the other args are reserved for future use.
-
-    Args:
-        subsystem (subsystemContainer): Current subsystem container.
-    Returns:
-        bool: True if the function was called
-    """
-    functionName = "create{}HistogramGroups".format(subsystem.subsystem)
-    functionName = subsystemNamespace(functionName = functionName, subsystemName = subsystem.subsystem)
-    # Get the function
-    sortFunction = getattr(currentModule, functionName, None)
-    if sortFunction is not None:
-        sortFunction(subsystem)
-        return True
-
-    # If it doesn't work for any reason, return false so that we can create a default
-    logger.info("Could not find histogram group creation function for subsystem {0}".format(subsystem.subsystem))
-    return False
-
 def createAdditionalHistograms(subsystem):
     """ Properly routes additional histogram creation functions for each subsystem.
 
@@ -161,6 +136,31 @@ def setHistogramOptions(subsystem):
         histogramOptionsFunction(subsystem)
     else:
         logger.info("Could not find histogram options function for subsystem {0}.".format(subsystem.subsystem))
+
+def createHistGroups(subsystem):
+    """ Properly route histogram group function for each subsystem.
+
+    Histogram groups are groups of histograms which should be displayed together for visualization.
+    Function names should be of the form ``create(SYS)HistogramGroups(subsystem, **kwargs)``,
+    where ``(SYS)`` is the subsystem three letter name, subsystem (subsystemContainer) is the current
+    subsystem container, and the other args are reserved for future use.
+
+    Args:
+        subsystem (subsystemContainer): Current subsystem container.
+    Returns:
+        bool: True if the function was called
+    """
+    functionName = "create{}HistogramGroups".format(subsystem.subsystem)
+    functionName = subsystemNamespace(functionName = functionName, subsystemName = subsystem.subsystem)
+    # Get the function
+    sortFunction = getattr(currentModule, functionName, None)
+    if sortFunction is not None:
+        sortFunction(subsystem)
+        return True
+
+    # If it doesn't work for any reason, return false so that we can create a default
+    logger.info("Could not find histogram group creation function for subsystem {0}".format(subsystem.subsystem))
+    return False
 
 def findFunctionsForHist(subsystem, hist):
     """ Determines which functions should be applied to a histogram.
