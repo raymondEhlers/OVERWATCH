@@ -250,7 +250,7 @@ def validateTrending(request):
 ## Validate individual values
 
 def convertRequestToPythonBool(paramName, source):
-    """ Converts a requested parameter to a python bool
+    """ Converts a requested parameter to a python bool.
     
     The validation is particularly useful for jsRoot and ajaxRequest. Note that this function
     is fairly similar to `convertRequestToStringWhichMayBeEmpty`.
@@ -298,6 +298,25 @@ def convertRequestToStringWhichMayBeEmpty(paramName, source):
         paramValue = ""
     logger.info("{0}: {1}".format(paramName, paramValue))
 
+    return paramValue
+
+def convertRequestToPositiveInteger(paramName, source):
+    """ Converts a requested parameter into a positive integer.
+
+    This function is somewhat similar to the other conversion and validation functions,
+    although it is a bit simpler.
+
+    Args:
+        paramName (str): Name of the parameter in which we are interested in.
+        source (dict): Source of the information. Usually request.args or request.form.
+    Returns:
+        int: The requested int or 0 if it was somehow invalid.
+    """
+    paramValue = source.get(paramName, default = 0, type = int)
+    if paramValue < 0:
+        paramValue = 0
+
+    logger.info("{}: {}".format(paramName, paramValue))
     return paramValue
 
 def validateHistGroupAndHistName(histGroup, histName, subsystem, run, error):

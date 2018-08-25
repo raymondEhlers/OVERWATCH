@@ -29,3 +29,5 @@
     {% endfor %}
     </table>
 {%- endfor %}
+{#- NOTE: The +1 offset is because we of course don't want to count from 0. -#}
+<p style="text-align:center">{%- if runOffset - numberOfRunsToDisplay >= 0 -%}<a href={{ url_for("index", runOffset = runOffset - numberOfRunsToDisplay) }}>Previous</a> -{%- endif %} Showing runs {{runOffset + 1}} - {{ [runOffset + numberOfRunsToDisplay, totalNumberOfRuns] | min }} out of {{ totalNumberOfRuns }} total runs {% if runOffset + numberOfRunsToDisplay < totalNumberOfRuns -%} - <a href={{ url_for("index", runOffset = runOffset + numberOfRunsToDisplay) }}>Next</a>{%- endif -%}</p>

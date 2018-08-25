@@ -322,23 +322,34 @@ def statusQuery():
 @app.route("/monitoring", methods=["GET"])
 @login_required
 def index():
-    """ This is the main page for logged in users. It always redirects to the run list.
+    """ This is run list, which is the main page for logged in users.
+
+    The run list shows all available runs, which links to available subsystem histograms, as well
+    as the underlying root files. The current status of data taking, as extracted from when the
+    last file was received, is displayed in the drawer, as well as some links down the page to
+    allow runs to be moved through quickly. The main content is paginated in a fairly rudimentary
+    manner (it should be sufficient for our purposes). We have selected to show 50 runs per page,
+    which seems to be a reasonable balance between showing too much or too little information. This
+    can be tuned further if necessary.
 
     Note:
         Function args are provided through the flask request object.
 
     Args:
         ajaxRequest (bool): True if the response should be via AJAX.
+        runOffset (int): Number of runs to offset into the run list. Default: 0.
     Returns:
         Response: The main index page populated via template.
     """
     logger.debug("request.args: {0}".format(request.args))
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
+    # We only use this once and there isn't much complicated, so we just perform the validation here.
+    runOffset = validation.convertRequestToPositiveInteger(paramName = "runOffset", source = request.args)
 
     runs = db["runs"]
 
     # Determine if a run is ongoing
-    # To do so, we need the most recent run
+    # To do so, we need the most recent run (regardless of which runs we selected to display)
     mostRecentRun = runs[runs.keys()[-1]]
     runOngoing = mostRecentRun.isRunOngoing()
     if runOngoing:
@@ -346,26 +357,40 @@ def index():
     else:
         runOngoingNumber = ""
 
-    # Number of runs
+    # Determine number of runs to display
+    # We select a default of 50 runs per page. Too many might be unreasonable.
+    numberOfRunsToDisplay = 50
+    # Restrict the runs that we are going to display to those that are included in our requested range.
+    # It is reversed because we process the earliest runs first. However, the reversed object isn't scriptable,
+    # so it must be converted to a list to slice it.
+    # +1 on the upper limit so that the 50 is inclusive
+    runsToUse = list(reversed(runs.values()))[runOffset:runOffset + numberOfRunsToDisplay + 1]
+    logger.debug("runOffset: {}, numberOfRunsToDisplay: {}".format(runOffset, numberOfRunsToDisplay))
+    # Total number of runs, which should be displayed at the bottom.
     numberOfRuns = len(runs.keys())
-    # We want approximately 15 anchors
-    # NOTE: We need to round it to an int to ensure that mod works.
-    anchorFrequency = int(math.ceil(numberOfRuns/15.0))
+
+    # We want 10 anchors
+    # NOTE: We need to convert it to an int to ensure that the mod call in the template works.
+    anchorFrequency = int(numberOfRunsToDisplay/10.0)
 
     if ajaxRequest != True:
-        return render_template("runList.html", drawerRuns = reversed(runs.values()),
-                                mainContentRuns = reversed(runs.values()),
+        return render_template("runList.html", drawerRuns = runsToUse,
+                                mainContentRuns = runsToUse,
                                 runOngoing = runOngoing,
                                 runOngoingNumber = runOngoingNumber,
                                 subsystemsWithRootFilesToShow = serverParameters["subsystemsWithRootFilesToShow"],
-                                anchorFrequency = anchorFrequency)
+                                anchorFrequency = anchorFrequency,
+                                runOffset = runOffset, numberOfRunsToDisplay = numberOfRunsToDisplay,
+                                totalNumberOfRuns = numberOfRuns)
     else:
-        drawerContent = render_template("runListDrawer.html", runs = reversed(runs.values()), runOngoing = runOngoing,
+        drawerContent = render_template("runListDrawer.html", runs = runsToUse, runOngoing = runOngoing,
                                          runOngoingNumber = runOngoingNumber, anchorFrequency = anchorFrequency)
-        mainContent = render_template("runListMainContent.html", runs = reversed(runs.values()), runOngoing = runOngoing,
+        mainContent = render_template("runListMainContent.html", runs = runsToUse, runOngoing = runOngoing,
                                        runOngoingNumber = runOngoingNumber,
                                        subsystemsWithRootFilesToShow = serverParameters["subsystemsWithRootFilesToShow"],
-                                       anchorFrequency = anchorFrequency)
+                                       anchorFrequency = anchorFrequency,
+                                       runOffset = runOffset, numberOfRunsToDisplay = numberOfRunsToDisplay,
+                                       totalNumberOfRuns = numberOfRuns)
 
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
