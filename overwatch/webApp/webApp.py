@@ -323,9 +323,14 @@ def statusQuery():
 @login_required
 def index():
     """ This is the main page for logged in users. It always redirects to the run list.
-    
+
+    Note:
+        Function args are provided through the flask request object.
+
     Args:
-        None.
+        ajaxRequest (bool): True if the response should be via AJAX.
+    Returns:
+        Response: The main index page populated via template.
     """
     logger.debug("request.args: {0}".format(request.args))
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
