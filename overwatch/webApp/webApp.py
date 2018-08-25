@@ -263,7 +263,7 @@ def contact():
     Args:
         None
     Returns:
-        Response: Contact page template.
+        Response: Contact page populated via template.
     """
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
@@ -276,23 +276,30 @@ def contact():
         mainContent = render_template("contactMainContent.html", currentYear = currentYear)
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
-@app.route("/statusQuery", methods=["POST"])
+@app.route("/status", methods=["GET"])
 def statusQuery():
-    """ Respond to a status query (separated so that it doesn't require a login!) """
+    """ Returns the status of the Overwatch server instance.
 
+    This can be accessed by a GET request. If the request is successful, it will response with "Alive"
+    and the response code 200. If it didn't work properly, then the response won't come through properly,
+    indicating that an action must be taken to restart the web app.
+
+    Note:
+        It doesn't require authentication to simply the process of querying it. This should be fine
+        because the information that the web app is up isn't sensitive.
+
+    Args:
+        None
+    Returns:
+        Response: Contains a string, "Alive", and a 200 response code to indicate that the web app is still up.
+            If the database is somehow not available, it will return "DB failed" and a 500 response code.
+            A response timeout indicates that the web app is somehow down.
+    """
     # Responds to requests from other OVERWATCH servers to display the status of the site
-    return "Alive"
-
-@app.route("/health")
-def health():
-    """ Respond to health request to note that the web app is still alive. """
-    # TODO: Increase sophistication of checks here!
-    returnCode = 500
-    # Check that DB is alive
+    response = "DB failed", 500
     if db:
-        returnCode = 200
-
-    return "", returnCode
+        response = "Alive", 200
+    return response
 
 ######################################################################################################
 # Authenticated Routes
@@ -696,7 +703,7 @@ def status():
         serverError = {}
         statusResult = ""
         try:
-            serverRequest = requests.post(url + "/status", timeout = 0.5)
+            serverRequest = requests.get(url + "/status", timeout = 0.5)
             if serverRequest.status_code != 200:
                 serverError.setdefault("Request error", []).append("Request to \"{0}\" at \"{1}\" returned error response {2}!".format(site, url, serverRequest.status_code))
             else:
