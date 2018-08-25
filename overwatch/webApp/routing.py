@@ -62,7 +62,7 @@ def redirectBack(endpoint, **values):
     to ``endpoint`` instead.
 
     Note:
-        Relies on the flask.request object.
+        Relies on the request.form dict.
 
     Args:
         endpoint (str): Where to redirect in case the Next url is not safe
@@ -73,7 +73,7 @@ def redirectBack(endpoint, **values):
             given endpoint if the URL is not safe.
     """
     target = request.form['next']
-    # If an unauthentictaed user attempted to access /logout, then after logging in, it would redirect
+    # If an unauthenticated user attempted to access /logout, then after logging in, it would redirect
     # them to logout, causing a loop. So instead we just redirect to the default location in such a case.
     # Also prevent downloading test data since it would lead to a confusing situation where the user stays
     # on the login page after logging in.

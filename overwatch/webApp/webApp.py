@@ -154,17 +154,22 @@ def login():
     Unauthenticated users are also redirected here if they try to access something restricted.
     After logging in, it should then forward them to resource they requested.
 
+    Note:
+        Function args are provided through the flask request object.
+
     Args:
-        None
+        ajaxRequest (bool): True if the response should be via AJAX.
+        previousUsername (str): The username that was previously used to login. Used to check when
+            automatic login should be performed (if it's enabled).
     Returns:
         response: Response based on the provided request. Possible responses included validating
             and logging in the user, rejecting invalid user credentials, or redirecting unauthenticated
             users from a page which requires authentication (it will redirect back after login).
     """
+    # Retrieve args
     logger.debug("request.args: {0}".format(request.args))
-    logger.debug("request.form: {0}".format(request.form))
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
-    previousUsername = validation.extractValueFromNextOrRequest("previousUsername")
+    previousUsername = validation.extractValueFromNextOrRequest("previousUsername", request.args)
 
     errorValue = None
     nextValue = routing.getRedirectTarget()
@@ -202,10 +207,11 @@ def login():
                 errorValue = "Login failed with invalid credentials"
 
     if previousUsername == serverParameters["defaultUsername"]:
-        logger.debug("Equal!")
+        logger.debug("Previous username is the same as the default username!")
     logger.debug("serverParameters[defaultUsername]: {0}".format(serverParameters["defaultUsername"]))
     # If we are not authenticated and we have a default username set and the previous username is not the default.
     if not current_user.is_authenticated and serverParameters["defaultUsername"] and previousUsername != serverParameters["defaultUsername"]:
+        # In this case, we want to perform an automatic login.
         # Clear previous flashes which will be confusing to the user
         # See: https://stackoverflow.com/a/19525521
         session.pop('_flashes', None)
@@ -238,9 +244,14 @@ def logout():
     they will be redirected back to index. Some care is required to handle all of the edge cases
     - these are handled via careful redirection in ``login()`` and the ``routing`` module.
 
-    Note:
+    Warning:
         Careful in making changes to the routing related to function, as it is hard coded
         in ```routing.redirectBack()``!
+
+    Note:
+        ``previousUsername`` is provided to the next request so we can do the right thing on
+        automatic login. In that case, we want to provide automatic login, but also allow the opportunity
+        to logout and then explicitly login with different credentials.
 
     Args:
         None
@@ -260,8 +271,11 @@ def contact():
     Also exposes useful links for development (for test data), and system status information
     to administrators (which must authenticate as such).
 
+    Note:
+        Function args are provided through the flask request object.
+
     Args:
-        None
+        ajaxRequest (bool): True if the response should be via AJAX.
     Returns:
         Response: Contact page populated via template.
     """
@@ -310,6 +324,8 @@ def statusQuery():
 def index():
     """ This is the main page for logged in users. It always redirects to the run list.
     
+    Args:
+        None.
     """
     logger.debug("request.args: {0}".format(request.args))
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)

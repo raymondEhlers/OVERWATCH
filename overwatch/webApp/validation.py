@@ -259,7 +259,7 @@ def convertRequestToPythonBool(paramName, source):
         paramName (str): Name of the parameter in which we are interested in.
         source (dict): Source of the information. Usually request.args or request.form.
     Returns:
-
+        bool: True if the retrieved value was True.
     """
     paramValue = source.get(paramName, False, type=str)
     #logger.info("{0}: {1}".format(paramName, paramValue))
@@ -395,7 +395,7 @@ def retrieveAndValidateTimeSlice(subsystem, error):
 
     return (timeSliceKey, timeSlice)
 
-def extractValueFromNextOrRequest(paramName):
+def extractValueFromNextOrRequest(paramName, source):
     """ Extract the selected parameter from the next parameter or directly from the request.
 
     First attempt to extract the named parameter from the next parameter in the args of the
@@ -405,14 +405,15 @@ def extractValueFromNextOrRequest(paramName):
 
     Args:
         paramName (str): Name of the parameter to extract.
+        source (dict): Source of the information. Usually request.args or request.form.
     Returns:
         str: Value of the extracted parameter.
     """
     # Attempt to extract from the next parameter if it exists
     paramValue = ""
-    if "next" in request.args:
+    if "next" in source:
         # Check the next parameter
-        nextParam = request.args.get("next", "", type=str)
+        nextParam = source.get("next", "", type=str)
         #logger.debug("nextParam: {0}".format(nextParam))
         if nextParam != "":
             nextParam = urlparse.urlparse(nextParam)
@@ -430,7 +431,7 @@ def extractValueFromNextOrRequest(paramName):
 
     # Just try to extract directly if it isn't in the next parameter
     if paramValue == "":
-        paramValue = request.args.get(paramName, "", type=str)
+        paramValue = source.get(paramName, "", type=str)
     logger.info("{0}: {1}".format(paramName, paramValue))
 
     return paramValue
