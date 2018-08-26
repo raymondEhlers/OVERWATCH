@@ -731,8 +731,9 @@ def testingDataArchive():
     This function will look through at most the 5 most recent runs, looking for the minimum number of files
     necessary for running Overwatch successfully. These files will be zipped up and provided to the user.
     The minimum files are the combined file, and the most recent file received for the subsystem (they are
-    usually the same, but it is easier to include both). The zip archive will include all subsystems which
-    are available.
+    usually the same, but it is easier to include both). If possible, an additional file is included for testing
+    the time slice functionality. It may not always be available if runs are extremely short. The zip archive will
+    include all subsystems which are available.
 
     Note:
         It is not guaranteed that every subsystem will be in the most recent 5 runs, since there could be a number
@@ -776,6 +777,11 @@ def testingDataArchive():
                 zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.combinedFile.filename))
                 # Uncombined file. This is the last file that was received from the subsystem.
                 zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.files[subsystem.files.keys()[-1]].filename))
+                # We select 4 as an arbitrary point to ensure that there is some different between the data stored
+                # in it and the combined file.
+                if len(subsystem.files) > 4:
+                    # Write an additional file for testing time slices.
+                    zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.files[subsystem.files.keys()[-5]].filename))
 
     # Return with a download link
     return redirect(url_for("protected", filename=zipFilename))
