@@ -556,52 +556,68 @@ def protected(filename):
 @app.route("/timeSlice", methods=["GET", "POST"])
 @login_required
 def timeSlice():
-    """ Handles time slice requests.
+    """ Handles time slice and user reprocessing requests.
 
-    In the case of a GET request, it will throw an error, since the interface is built into the header of each
-    individual run page. In the case of a POST request, it handles, validates, and processes the timing request,
-    rendering the result template and returning the user to the same spot as in the previous page.
+    This is the main function for serving user requests. This function calls out directly to the processing module
+    to perform the actual time slice or reprocessing request. It provides access to this functionality through
+    the interface built into the header of the run page. In the case of a POST request, it handles, validates,
+    and processes the timing request, rendering the result template and returning the user to the same spot as
+    in the previous page. A GET request is invalid and will return an error (but the route itself is allowed
+    to check that it is handled correctly).
+
+    This request should always be submitted via AJAX.
 
     Note:
-        Some function args (after the first 3) are provided through the flask request object.
+        Function args are provided through the flask request object.
 
     Args:
-        ...
+        jsRoot (bool): True if the response should use jsRoot instead of images.
+        minTime (float): Minimum time for the time slice.
+        maxTime (float): Maximum time for the time slice.
+        runDir (str): String containing the run number. For an example run 123456, it should be
+            formatted as ``Run123456``.
+        subsystemName (str): The current subsystem in the form of a three letter, all capital name (ex. ``EMC``).
+        scaleHists (str): True if the hists should be scaled by the number of events. Converted from string to bool.
+        hotChannelThreshold (int): Value of the hot channel threshold.
+        histGroup (str): Name of the requested hist group. It is fine for it to be an empty string.
+        histName (str): Name of the requested histogram. It is fine for it to be an empty string.
     Returns:
-        Response: ...
+        Response: A run page template populated with information from a newly processed time slice (via a redirect
+            to ``runPage()``). In case of error(s), returns the error message(s).
     """
-    #logger.debug("request.args: {0}".format(request.args))
-    logger.debug("request.form: {0}".format(request.form))
-    # We don't get ajaxRequest because this request should always be made via ajax
+    logger.debug("request.form: {}".format(request.form))
+    # We don't get ``ajaxRequest`` because this request should always be made via AJAX.
     jsRoot = validation.convertRequestToPythonBool("jsRoot", request.form)
 
     if request.method == "POST":
         # Get the runs
         runs = db["runs"]
 
-        # Validates the request
+        # Validates the request.
         (error, minTime, maxTime, runDir, subsystem, histGroup, histName, inputProcessingOptions) = validation.validateTimeSlicePostRequest(request, runs)
 
         if error == {}:
-            # Print input values
-            logger.debug("minTime: {0}".format(minTime))
-            logger.debug("maxTime: {0}".format(maxTime))
-            logger.debug("runDir: {0}".format(runDir))
-            logger.debug("subsystem: {0}".format(subsystem))
-            logger.debug("histGroup: {0}".format(histGroup))
-            logger.debug("histName: {0}".format(histName))
+            # Print input values for help in debugging.
+            logger.debug("minTime: {minTime}".format(minTime = minTime))
+            logger.debug("maxTime: {maxTime}".format(maxTime = maxTime))
+            logger.debug("runDir: {runDir}".format(runDir = runDir))
+            logger.debug("subsystem: {subsystem}".format(subsystem = subsystem))
+            logger.debug("histGroup: {histGroup}".format(histGroup = histGroup))
+            logger.debug("histName: {histName}".format(histName = histName))
 
             # Process the time slice
             returnValue = processRuns.processTimeSlices(runs, runDir, minTime, maxTime, subsystem, inputProcessingOptions)
+            logger.info("returnValue: {}".format(returnValue))
+            logger.debug("runs[runDir].subsystems[subsystem].timeSlices: {}".format(runs[runDir].subsystems[subsystem].timeSlices))
 
-            logger.info("returnValue: {0}".format(returnValue))
-            logger.debug("runs[runDir].subsystems[subsystem].timeSlices: {0}".format(runs[runDir].subsystems[subsystem].timeSlices))
-
+            # A normal return value should be a time slice key as a string. We can continue as expected.
+            # However, if we received an error, we expect some sort of dictionary (mapping). We handle that below.
             if not isinstance(returnValue, collections.Mapping):
                 timeSliceKey = returnValue
-                #if timeSliceKey == "fullProcessing":
-                #    timeSliceKey = None
-                # We always want to use ajax here
+
+                # Passed off the result to render via the run page since we a time slice just modifies
+                # the content which is displayed there.
+                # We always want to use AJAX here
                 return redirect(url_for("runPage",
                                         runNumber = runs[runDir].runNumber,
                                         subsystemName = subsystem,
@@ -615,13 +631,12 @@ def timeSlice():
                 # Fall through to return an error
                 error = returnValue
 
-        logger.info("Time slices error:", error)
+        logger.info("Time slices error: {error}".format(error = error))
         drawerContent = ""
-        mainContent = render_template("errorMainContent.html", errors=error)
+        mainContent = render_template("errorMainContent.html", errors = error)
 
-        # We always want to use ajax here
-        return jsonify(mainContent = mainContent, drawerContent = "")
-
+        # We always want to use AJAX here
+        return jsonify(drawerContent = drawerContent, mainContent = mainContent)
     else:
         return render_template("error.html", errors={"error": ["Need to access through a run page!"]})
 
