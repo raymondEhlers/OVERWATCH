@@ -874,12 +874,25 @@ def status():
 @app.route("/upgradeDocker")
 @login_required
 def upgradeDocker():
-    """ Kill ``supervisord`` in the docker image (so that it will be upgrade with the new version by offline).
+    """ Kill ``supervisord`` in the docker image so the docker image will stop.
+
+    On the ALICE offline infrastructure, a stopped docker image will cause the image to be upgraded and restarted.
+    Thus, we can intentionally stop the image indirectly by killing the supervisor process to force an upgrade.
+
+    Note:
+        This operation requires administrative rights (as the ``emcalAdmin`` user).
+
+    Warning:
+        This is untested and is unsupported in any other infrastructure! It is experimental as of August 2018.
+
+    Note:
+        Function args are provided through the flask request object.
 
     Args:
-        ...
+        ajaxRequest (bool): True if the response should be via AJAX.
     Returns:
-        ...
+        Response or None: Likely a timeout if the function was successful, or a response with an error message
+            if the function was unsuccessful.
     """
     # Display the status page from the other sites
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
@@ -890,12 +903,12 @@ def upgradeDocker():
 
     try:
         if os.environ["deploymentOption"]:
-            logger.info("Running docker in deployment mode {0}".format(os.environ["deploymentOption"]))
+            logger.info("Running docker in deployment mode {}".format(os.environ["deploymentOption"]))
     except KeyError:
         error.setdefault("User error", []).append("Must be in a docker container to run this!")
 
     if error == {}:
-        # Attempt to kill supervisord
+        # Attempt to kill `supervisord`
         # Following: https://stackoverflow.com/a/2940878
         p = subprocess.Popen(['ps', '-A'], stdout=subprocess.PIPE)
         out, err = p.communicate()
@@ -907,20 +920,20 @@ def upgradeDocker():
                 # Send TERM
                 os.kill(pid, signal.SIGTERM)
                 # NOTE: If this succeeds, then nothing will be sent because the process will be dead...
-                error.setdefault("Signal Sent", []).append("Sent TERM signal to line with \"{0}\"".format(line))
+                error.setdefault("Signal Sent", []).append("Sent TERM signal to process with \"{line}\"".format(line = line))
 
         # Give a note if nothing happened....
         if error == {}:
-            error.setdefault("No response", []).append("Should have some response by now, but there is none. It seems that the supervisord process cannot be found!")
+            error.setdefault("No response", []).append("Should have some response by now, but there is none. It seems that the `supervisord` process cannot be found!")
 
-    # Co-opt error output here since it is probably not worth a new page yet...
+    # Co-opt error output here since it is not worth a new template...
     if ajaxRequest == True:
-        logger.warning("error: {0}".format(error))
+        logger.warning("error: {error}".format(error = error))
         drawerContent = ""
         mainContent =  render_template("errorMainContent.html", errors = error)
 
-        # We always want to use ajax here
-        return jsonify(mainContent = mainContent, drawerContent = "")
+        # We always want to use AJAX here
+        return jsonify(drawerContent = drawerContent, mainContent = mainContent)
     else:
         return render_template("error.html", errors = error)
 
