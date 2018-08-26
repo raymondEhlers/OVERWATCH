@@ -397,39 +397,57 @@ def index():
 @app.route("/Run<int:runNumber>/<string:subsystemName>/<string:requestedFileType>", methods=["GET"])
 @login_required
 def runPage(runNumber, subsystemName, requestedFileType):
-    """ Serves the run pages and root files for a request run
-    
-    """
-    # Setup runDir
-    runDir = "Run{0}".format(runNumber)
+    """ Serves the run pages and root files for a request run.
 
-    # Setup db information
+    This is really the main function for serving information in Overwatch. The run page provides subsystem
+    specific histograms and information to the user. Time slices and user directed reprocessing is also
+    made available through this page. If a subsystem has made a customized run page, this will automatically
+    be served. If they haven't, then a default page will be provided.
+
+    This function serves both run pages, which display histograms, as well as root files pages, which provide
+    direct access to the underlying root files. Since they require similar information, it is convenient to
+    provide access to both of them from one function.
+
+    Note:
+        Some function args (after the first 3) are provided through the flask request object.
+
+    Args:
+        runNumber (int): Run number of interest.
+        subsystemName (str): Name of the subsystem of interest.
+        requestedFileType (str): Type of file in which we are interested. Can be either ``runPage`` (corresponding to a
+            run page) or ``rootFiles`` (corresponding to access to the underlying root files).
+        jsRoot (bool): True if the response should use jsRoot instead of images.
+        ajaxRequest (bool): True if the response should be via AJAX.
+        requestedHistGroup (str): Name of the requested hist group. It is fine for it to be an empty string.
+        requestedHist (str): Name of the requested histogram. It is fine for it to be an empty string.
+    Returns:
+        Response: A run page or root files page populated via template.
+    """
+    # Setup runDir and db information
+    runDir = "Run{0}".format(runNumber)
     runs = db["runs"]
 
+    # Validation for all passed values
     (error, run, subsystem, requestedFileType, jsRoot, ajaxRequest, requestedHistGroup, requestedHist, timeSliceKey, timeSlice) = validation.validateRunPage(runDir, subsystemName, requestedFileType, runs)
 
     # This will only work if all of the values are properly defined.
     # Otherwise, we just skip to the end to return the error to the user.
     if error == {}:
-        # Sets the filenames for the json and img files
+        # Sets the filenames for the json and image files
         # Create these templates here so we don't have inside of the template
-        jsonFilenameTemplate = os.path.join(subsystem.jsonDir, "{0}.json")
+        jsonFilenameTemplate = os.path.join(subsystem.jsonDir, "{}.json")
         if timeSlice:
-            jsonFilenameTemplate = jsonFilenameTemplate.format(timeSlice.filenamePrefix + ".{0}")
-        imgFilenameTemplate = os.path.join(subsystem.imgDir, "{0}." + serverParameters["fileExtension"])
+            jsonFilenameTemplate = jsonFilenameTemplate.format(timeSlice.filenamePrefix + ".{}")
+        imgFilenameTemplate = os.path.join(subsystem.imgDir, "{}." + serverParameters["fileExtension"])
 
         # Print request status
-        logger.debug("request: {0}".format(request.args))
-        logger.debug("runDir: {0}, subsytsem: {1}, requestedFileType: {2}, "
+        logger.debug("request: {}".format(request.args))
+        logger.debug("runDir: {0}, subsystem: {1}, requestedFileType: {2}, "
               "ajaxRequest: {3}, jsRoot: {4}, requestedHistGroup: {5}, requestedHist: {6}, "
               "timeSliceKey: {7}, timeSlice: {8}".format(runDir, subsystemName, requestedFileType,
                ajaxRequest, jsRoot, requestedHistGroup, requestedHist, timeSliceKey, timeSlice))
-
-        # TEMP
-        logger.debug("subsystem.timeSlices: {0}".format(subsystem.timeSlices))
-        # END TEMP
     else:
-        logger.warning("Error: {0}".format(error))
+        logger.warning("Error on run page: {error}".format(error = error))
 
     if ajaxRequest != True:
         if error == {}:
@@ -439,6 +457,8 @@ def runPage(runNumber, subsystemName, requestedFileType):
                 if runPageName not in serverParameters["availableRunPageTemplates"]:
                     runPageName = runPageName.replace(subsystemName, "")
 
+                # We use try here because it's possible for this page not to exist if ``availableRunPageTemplates``
+                # is not determined properly due to other files interfering..
                 try:
                     returnValue = render_template(runPageName, run = run, subsystem = subsystem,
                                                   selectedHistGroup = requestedHistGroup, selectedHist = requestedHist,
@@ -446,16 +466,16 @@ def runPage(runNumber, subsystemName, requestedFileType):
                                                   imgFilenameTemplate = imgFilenameTemplate,
                                                   jsRoot = jsRoot, timeSlice = timeSlice)
                 except jinja2.exceptions.TemplateNotFound as e:
-                    error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
+                    error.setdefault("Template Error", []).append("Request template: \"{}\", but it was not found!".format(e.name))
             elif requestedFileType == "rootFiles":
                 # Subsystem specific run pages are not available since they don't seem to be necessary
                 returnValue = render_template("rootfiles.html", run = run, subsystem = subsystemName)
             else:
                 # Redundant, but good to be careful
-                error.setdefault("Template Error", []).append("Request page: \"{0}\", but it was not found!".format(requestedFileType))
+                error.setdefault("Template Error", []).append("Request page: \"{}\", but it was not found!".format(requestedFileType))
 
         if error != {}:
-            logger.warning("error: {0}".format(error))
+            logger.warning("error: {error}".format(error = error))
             returnValue = render_template("error.html", errors = error)
 
         return returnValue
@@ -471,6 +491,9 @@ def runPage(runNumber, subsystemName, requestedFileType):
                 if runPageMainContentName not in serverParameters["availableRunPageTemplates"]:
                     runPageMainContentName = runPageMainContentName.replace(subsystemName, "")
 
+                # We use try here because it's possible for this page not to exist if ``availableRunPageTemplates``
+                # is not determined properly due to other files interfering..
+                # If either one fails, we want to jump right to the template error.
                 try:
                     drawerContent = render_template(runPageDrawerName, run = run, subsystem = subsystem,
                                                     selectedHistGroup = requestedHistGroup, selectedHist = requestedHist,
@@ -514,6 +537,11 @@ def protected(filename):
         This ignores GET parameters. However, they can be useful to pass here to prevent something
         from being cached, such as a time slice image which could have the same name, but has changed
         since last being served.
+
+    Args:
+        filename (str): Path to the file to be served.
+    Returns:
+        Response: File with the proper headers.
     """
     logger.debug("filename: {0}".format(filename))
     logger.debug("request.args: {0}".format(request.args))
@@ -531,6 +559,13 @@ def timeSlice():
     individual run page. In the case of a POST request, it handles, validates, and processes the timing request,
     rendering the result template and returning the user to the same spot as in the previous page.
 
+    Note:
+        Some function args (after the first 3) are provided through the flask request object.
+
+    Args:
+        ...
+    Returns:
+        Response: ...
     """
     #logger.debug("request.args: {0}".format(request.args))
     logger.debug("request.form: {0}".format(request.form))
@@ -593,6 +628,10 @@ def timeSlice():
 def trending():
     """ Trending visualization.
 
+    Args:
+        ...
+    Returns:
+        Response: ...
     """
     error = {}
 
@@ -669,7 +708,6 @@ def testingDataArchive():
 
     Args:
         None
-
     Returns:
         redirect: Redirects to the newly created file.
     """
@@ -708,8 +746,13 @@ def testingDataArchive():
 @app.route("/status")
 @login_required
 def status():
-    """ Returns the status of the OVERWATCH sites """
+    """ Returns the status of the OVERWATCH sites.
 
+    Args:
+        ...
+    Returns:
+        ...
+    """
     # Get db
     runs = db["runs"]
 
@@ -779,7 +822,13 @@ def status():
 @app.route("/upgradeDocker")
 @login_required
 def upgradeDocker():
-    """ Kill supervisord in the docker image (so that it will be upgrade with the new version by offline). """
+    """ Kill ``supervisord`` in the docker image (so that it will be upgrade with the new version by offline).
+
+    Args:
+        ...
+    Returns:
+        ...
+    """
     # Display the status page from the other sites
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
@@ -823,5 +872,3 @@ def upgradeDocker():
     else:
         return render_template("error.html", errors = error)
 
-if __name__ == "__main__":
-    pass
