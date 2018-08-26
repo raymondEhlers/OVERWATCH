@@ -726,29 +726,41 @@ def trending():
 @app.route("/testingDataArchive")
 @login_required
 def testingDataArchive():
-    """ Creates a zip archive to download data for Overwatch development.
+    """ Provides a zip archive of test data for Overwatch development.
 
-    It will return at most the 5 most recent runs. The archive contains the combined file for all subsystems.
+    This function will look through at most the 5 most recent runs, looking for the minimum number of files
+    necessary for running Overwatch successfully. These files will be zipped up and provided to the user.
+    The minimum files are the combined file, and the most recent file received for the subsystem (they are
+    usually the same, but it is easier to include both). The zip archive will include all subsystems which
+    are available.
 
     Note:
-        Careful in changing the routing, as this is hard coded in :func:`~webApp.routing.redirectBack()`!
+        It is not guaranteed that every subsystem will be in the most recent 5 runs, since there could be a number
+        of standalone runs for a single subsystem in a row. In such a case, the easiest course of action is to wait
+        a few hours until more runs have been started.
+
+    Warning:
+        Careful in changing the routing for this function, as the name of it is hard coded in
+        ``webApp.routing.redirectBack()``. This hard coding is to avoid a loop where the user is stuck accessing
+        this file after logging in.
 
     Args:
         None
     Returns:
-        redirect: Redirects to the newly created file.
+        redirect: Redirect to the newly created file.
     """
     # Get db
     runs = db["runs"]
     runList = runs.keys()
 
-    # Retreive at most 5 files
+    # Retrieve at most 5 files
     if len(runList) < 5:
         numberOfFilesToDownload = len(runList)
     else:
         numberOfFilesToDownload = 5
 
-    # Create zip file. It is stored in the root of the data directory
+    # Create zip file. It will be stored in the root of the data directory.
+    # It is fine to be overwritten because it can always be recreated.
     zipFilename = "testingDataArchive.zip"
     zipFile = zipfile.ZipFile(os.path.join(serverParameters["protectedFolder"], zipFilename), "w")
     logger.info("Creating zipFile at %s" % os.path.join(serverParameters["protectedFolder"], zipFilename))
@@ -761,7 +773,7 @@ def testingDataArchive():
             # Write files to the zip file
             # Combined file
             zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.combinedFile.filename))
-            # Uncombined file
+            # Uncombined file. This is the last file that was received from the subsystem.
             zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.files[subsystem.files.keys()[-1]].filename))
 
     # Finish with the zip file
