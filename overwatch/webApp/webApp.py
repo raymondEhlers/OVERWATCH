@@ -136,7 +136,7 @@ def load_user(user):
     """ Used to retrieve a remembered user so that they don't need to login again each time they visit the site.
 
     Args:
-        user (str): Username to retrieve
+        user (str): Username to retrieve.
     Returns:
         auth.User: The user stored in the database which corresponds to the given username, or
             ``None`` if it doesn't exist.
@@ -783,17 +783,26 @@ def testingDataArchive():
 @app.route("/status")
 @login_required
 def status():
-    """ Returns the status of the OVERWATCH sites.
+    """ Query and determine the status of the Overwatch sites.
+
+    This function takes advantage of the status functionality of the web app to determine the state of any
+    deployed web apps that are specified in the web app config. This is achieved by sending requests to all
+    other sites and then aggregating the results. Each request is allowed a 0.5 second timeout.
+
+    Note:
+        Since the GET requests are blocking, it can appear that the web app is hanging. However, this is
+        just due to the time that the requests take.
+
+    Note:
+        Function args are provided through the flask request object.
 
     Args:
-        ...
+        ajaxRequest (bool): True if the response should be via AJAX.
     Returns:
-        ...
+        Response: Status template populated with the status of Overwatch sites specified in the configuration.
     """
-    # Get db
+    # Setup
     runs = db["runs"]
-
-    # Display the status page from the other sites
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
     # Where the statuses will be collected
