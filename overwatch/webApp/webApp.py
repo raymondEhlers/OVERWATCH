@@ -789,9 +789,16 @@ def status():
     deployed web apps that are specified in the web app config. This is achieved by sending requests to all
     other sites and then aggregating the results. Each request is allowed a 0.5 second timeout.
 
+    This functionality will only work if the web app is accessible from the site where this is run. This may
+    not always be the case.
+
     Note:
         Since the GET requests are blocking, it can appear that the web app is hanging. However, this is
         just due to the time that the requests take.
+
+    Warning:
+        This can behave somewhat strangely using the flask development server, especially if there is reloading.
+        If possible, it is best to run with ``uwsgi`` for testing of this function.
 
     Note:
         Function args are provided through the flask request object.
@@ -817,14 +824,14 @@ def status():
     else:
         runOngoingNumber = ""
     # Add to status
-    statuses["Ongoing run?"] = "{0} {1}".format(runOngoing, runOngoingNumber)
+    statuses["Ongoing run?"] = "{runOngoing} {runOngoingNumber}".format(runOngoing = runOngoing, runOngoingNumber = runOngoingNumber)
 
     if "config" in db and "receiverLogLastModified" in db["config"]:
         receiverLogLastModified = db["config"]["receiverLogLastModified"]
         lastModified = time.time() - receiverLogLastModified
         # Display in minutes
         lastModified = int(lastModified//60)
-        lastModifiedMessage = "{0} minutes ago".format(lastModified)
+        lastModifiedMessage = "{lastModified} minutes ago".format(lastModified = lastModified)
     else:
         lastModified = -1
         lastModifiedMessage = "Error! Could not retrieve receiver log information!"
@@ -832,7 +839,7 @@ def status():
     statuses["Last requested data"] = lastModifiedMessage
 
     # Determine server statuses
-    # TODO: Consider reducing the max number of retries
+    exceptionErrorMessage = "Request to \"{site}\" at \"{url}\" {errorType} with error message {e}!"
     sites = serverParameters["statusRequestSites"]
     for site, url in iteritems(sites):
         serverError = {}
@@ -840,20 +847,19 @@ def status():
         try:
             serverRequest = requests.get(url + "/status", timeout = 0.5)
             if serverRequest.status_code != 200:
-                serverError.setdefault("Request error", []).append("Request to \"{0}\" at \"{1}\" returned error response {2}!".format(site, url, serverRequest.status_code))
+                serverError.setdefault("Request error", []).append("Request to \"{}\" at \"{}\" returned error response {}!".format(site, url, serverRequest.status_code))
             else:
                 statusResult = "Site is up!"
         except requests.exceptions.Timeout as e:
-            serverError.setdefault("Timeout error", []).append("Request to \"{0}\" at \"{1}\" timed out with error {2}!".format(site, url, e))
+            serverError.setdefault("Timeout error", []).append(exceptionErrorMessage.format(site = site, url = url, errorType = "timed out", e = e))
         except requests.exceptions.ConnectionError as e:
-            serverError.setdefault("Connection error", []).append("Request to \"{0}\" at \"{1}\" had a connection error with message {2}!".format(site, url, e))
+            serverError.setdefault("Connection error", []).append(exceptionErrorMessage.format(site = site, url = url, errorType = "had a connection error", e = e))
         except requests.exceptions.RequestException as e:
-            serverError.setdefault("General Requests error", []).append("Request to \"{0}\" at \"{1}\" had a general requests error with message {2}!".format(site, url, e))
+            serverError.setdefault("General Requests error", []).append(exceptionErrorMessage.format(site = site, url = url, errorType = "had a general requests error", e = e))
 
-        # Return error if one occurred
+        # Store the error if one occurred
         if serverError != {}:
             statusResult = serverError
-
         # Add to status
         statuses[site] = statusResult
 
