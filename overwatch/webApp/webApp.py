@@ -529,14 +529,18 @@ def runPage(runNumber, subsystemName, requestedFileType):
 @app.route("/monitoring/protected/<path:filename>")
 @login_required
 def protected(filename):
-    """ Serves the actual files.
+    """ Serves the underlying files.
 
-    Based on the suggestion described here: https://stackoverflow.com/a/27611882
+    This function is response for actually making files available. Ideally, these would be served via
+    the production web server, but since access to the data requires authentication, we instead have
+    to provide access via this function. To provide this function, we utilized the approach
+    `described here <https://stackoverflow.com/a/27611882>`_.
 
     Note:
-        This ignores GET parameters. However, they can be useful to pass here to prevent something
-        from being cached, such as a time slice image which could have the same name, but has changed
-        since last being served.
+        This function ignores GET parameters. This is done intentionally to allow for avoiding problematic
+        caching by a browser. To avoid this caching, simply pass an additional get parameter after the
+        filename which varies when we need to avoid the cache. This is particularly useful for time slices,
+        where the name could be the same, but the information has changed since last being served.
 
     Args:
         filename (str): Path to the file to be served.
@@ -544,7 +548,6 @@ def protected(filename):
         Response: File with the proper headers.
     """
     logger.debug("filename: {0}".format(filename))
-    logger.debug("request.args: {0}".format(request.args))
     # Ignore the time GET parameter that is sometimes passed- just to avoid the cache when required
     #if request.args.get("time"):
     #    print "timeParameter:", request.args.get("time")
