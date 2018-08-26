@@ -640,20 +640,27 @@ def timeSlice():
     else:
         return render_template("error.html", errors={"error": ["Need to access through a run page!"]})
 
-#@app.route("/trending/<string:subsystemName>", methods=["GET", "POST"])
-@app.route("/trending", methods=["GET", "POST"])
+@app.route("/trending", methods=["GET"])
 @login_required
 def trending():
-    """ Trending visualization.
+    """ Route to provide visualization of trending information.
+
+    This method provides functionality similar to that of a run page, but focused instead on displaying
+    trending information. In particular, it displays trended objects from all subsystems, including
+    those generated through the trending subsystem.
+
+    Note:
+        Function args are provided through the flask request object.
 
     Args:
-        ...
+        jsRoot (bool): True if the response should use jsRoot instead of images.
+        ajaxRequest (bool): True if the response should be via AJAX.
+        subsystemName (str): Name of the requested subsystem. It is fine for it to be an empty string.
+        histName (str): Name of the requested histogram. It is fine for it to be an empty string.
     Returns:
-        Response: ...
+        Response: Trending information template populated with trended objects.
     """
-    error = {}
-
-    logger.debug("request: {0}".format(request.args))
+    logger.debug("request: {}".format(request.args))
     # Validate request
     (error, subsystemName, requestedHist, jsRoot, ajaxRequest) = validation.validateTrending(request)
 
@@ -668,11 +675,12 @@ def trending():
                 break
 
     # Template paths to the individual files
-    imgFilenameTemplate = os.path.join(trendingContainer.imgDir % {"subsystem" : subsystemName}, "{0}." + serverParameters["fileExtension"])
-    jsonFilenameTemplate = os.path.join(trendingContainer.jsonDir % {"subsystem" : subsystemName}, "{0}.json")
+    imgFilenameTemplate = os.path.join(trendingContainer.imgDir % {"subsystem" : subsystemName}, "{}." + serverParameters["fileExtension"])
+    jsonFilenameTemplate = os.path.join(trendingContainer.jsonDir % {"subsystem" : subsystemName}, "{}.json")
 
     if ajaxRequest != True:
         if error == {}:
+            # There isn't any reason to think that the template won't be found, but it doesn't hurt to account for it.
             try:
                 returnValue = render_template("trending.html", trendingContainer = trendingContainer,
                                               selectedHistGroup = subsystemName, selectedHist = requestedHist,
@@ -689,6 +697,7 @@ def trending():
         return returnValue
     else:
         if error == {}:
+            # There isn't any reason to think that the template won't be found, but it doesn't hurt to account for it.
             try:
                 drawerContent = render_template("trendingDrawer.html", trendingContainer = trendingContainer,
                                                 selectedHistGroup = subsystemName, selectedHist = requestedHist,
