@@ -53,16 +53,33 @@ def validateLoginPostRequest(request):
 def validateTimeSlicePostRequest(request, runs):
     """ Validates the time slice POST request.
 
-    If an error occurs in determining the run or subsystem, we cannot retrieve the rest of the information
-    necessary to validate the request, so the rest of the values in the return tuple are set to None.
+    The return tuple contains the validated values. The error value should always be checked first
+    before using the other return values (they will be safe, but may not be meaningful).
+
+    Warning:
+        If an error occurs in determining the run or subsystem, we cannot retrieve the rest of the
+        information necessary to validate the request, so the rest of the values in the return tuple are
+        set to ``None``.
 
     Note:
         For the error format in ``errorValue``, see the :doc:`web app README </webAppReadme>`.
+
+    Note:
+        The listed args (after the first two) are provided through the flask ``request.form`` dictionary.
 
     Args:
         request (Flask.request): The request object from Flask.
         runs (BTree): Dict-like object which stores all run, subsystem, and hist information. Keys are the
             in the ``runDir`` format ("Run123456"), while the values are ``runContainer`` objects.
+        minTime (float): Minimum time for the time slice.
+        maxTime (float): Maximum time for the time slice.
+        runDir (str): String containing the run number. For an example run 123456, it should be
+            formatted as ``Run123456``.
+        subsystemName (str): The current subsystem in the form of a three letter, all capital name (ex. ``EMC``).
+        scaleHists (str): True if the hists should be scaled by the number of events. Converted from string to bool.
+        hotChannelThreshold (int): Value of the hot channel threshold.
+        histGroup (str): Name of the requested hist group. It is fine for it to be an empty string.
+        histName (str): Name of the requested histogram. It is fine for it to be an empty string.
     Returns:
         tuple: (errorValue, minTime, maxTime, runDir, subsystemName, scrollAmount) where errorValue (dict)
             containers any possible errors, minTime (float) is the minimum time for the time slice,
@@ -147,6 +164,9 @@ def validateRunPage(runDir, subsystemName, requestedFileType, runs):
     Note:
         For the error format in ``error``, see the :doc:`web app README </webAppReadme>`.
 
+    Note:
+        The listed args (after the first four) are provided through the flask ``request.args`` dictionary.
+
     Args:
         runDir (str): String containing the run number. For an example run 123456, it should be
             formatted as ``Run123456``
@@ -156,6 +176,10 @@ def validateRunPage(runDir, subsystemName, requestedFileType, runs):
         runs (BTree): Dict-like object which stores all run, subsystem, and hist information. Keys are the
             in the ``runDir`` format ("Run123456"), while the values are ``runContainer`` objects. This should
             be retrieved from the database.
+        jsRoot (bool): True if the response should use jsRoot instead of images.
+        ajaxRequest (bool): True if the response should be via AJAX.
+        requestedHistGroup (str): Name of the requested hist group. It is fine for it to be an empty string.
+        requestedHist (str): Name of the requested histogram. It is fine for it to be an empty string.
     Returns:
         tuple: (error, run, subsystem, requestedFileType, jsRoot, ajaxRequest, requestedHistGroup, requestedHist, timeSliceKey, timeSlice)
             where error (dict) contains any possible errors, run (runContainer) corresponds to the current
@@ -212,11 +236,23 @@ def validateRunPage(runDir, subsystemName, requestedFileType, runs):
 def validateTrending(request):
     """ Validate requests to the trending page.
 
+    The return tuple contains the validated values. The error value should always be checked first
+    before using the other return values (they will be safe, but may not be meaningful).
+
     Note:
         For the error format in ``error``, see the :doc:`web app README </webAppReadme>`.
 
+    Note:
+        Function args are provided through the flask ``request.args`` dictionary.
+
     Args:
         request (Flask.request): The request object from Flask.
+        jsRoot (bool): True if the response should use jsRoot instead of images.
+        ajaxRequest (bool): True if the response should be via AJAX.
+        subsystemName (str): Name of the requested subsystem. It is fine for it to be an empty string.
+            Provided via the ``histGroup`` field since it is treated identically, allowing us to avoid
+            the need to define another field for this one case.
+        histName (str): Name of the requested histogram. It is fine for it to be an empty string.
     Returns:
         tuple: (error, subsystemName, requestedHist, jsRoot, ajaxRequest), where where error (dict) contains
             any possible errors, subsystemName (str) corresponds to the current subsystem, subsystemName (str)
