@@ -754,30 +754,28 @@ def testingDataArchive():
     runList = runs.keys()
 
     # Retrieve at most 5 files
+    numberOfFilesToDownload = 5
     if len(runList) < 5:
         numberOfFilesToDownload = len(runList)
-    else:
-        numberOfFilesToDownload = 5
 
     # Create zip file. It will be stored in the root of the data directory.
     # It is fine to be overwritten because it can always be recreated.
     zipFilename = "testingDataArchive.zip"
-    zipFile = zipfile.ZipFile(os.path.join(serverParameters["protectedFolder"], zipFilename), "w")
-    logger.info("Creating zipFile at %s" % os.path.join(serverParameters["protectedFolder"], zipFilename))
+    with zipfile.ZipFile(os.path.join(serverParameters["protectedFolder"], zipFilename), "w") as zipFile:
+        logger.info("Creating zipFile at %s" % os.path.join(serverParameters["protectedFolder"], zipFilename))
 
-    # Add files to the zip file
-    runKeys = runs.keys()
-    for i in range(1, numberOfFilesToDownload+1):
-        run = runs[runKeys[-1*i]]
-        for subsystem in run.subsystems.values():
-            # Write files to the zip file
-            # Combined file
-            zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.combinedFile.filename))
-            # Uncombined file. This is the last file that was received from the subsystem.
-            zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.files[subsystem.files.keys()[-1]].filename))
-
-    # Finish with the zip file
-    zipFile.close()
+        # Add files to the zip file
+        runKeys = runs.keys()
+        # Write the files in reverse order. However, this is fine because the order doesn't make a difference
+        # in the final archive.
+        for i in range(-1*numberOfFilesToDownload, 0):
+            run = runs[runKeys[i]]
+            for subsystem in run.subsystems.values():
+                # Write files to the zip file
+                # Combined file
+                zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.combinedFile.filename))
+                # Uncombined file. This is the last file that was received from the subsystem.
+                zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.files[subsystem.files.keys()[-1]].filename))
 
     # Return with a download link
     return redirect(url_for("protected", filename=zipFilename))
