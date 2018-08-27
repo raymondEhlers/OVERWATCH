@@ -7,7 +7,9 @@ Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
 ### Added
 
 - Fully document all classes.
-- Update documentation scheme.
+- Update documentation scheme and system (update sphinx, etc)
+- Deploy documentation to Read The Docs.
+- CSRF protection for the web app in preparation for deployment.
 
 ### Changed
 
@@ -17,6 +19,8 @@ Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
   available via `overwatchUpdateUsers`.
 - Modified plugin future arguments to only use `**kwargs`. Using `*args` seems like a dangerous standard.
   Anything that will be added should be added explicitly as a keyword argument.
+- Renamed `retrieveHist` -> `retrieveHistogram` in the `trendingObject` for consistency with the histogram
+  container. Updated the corresponding classes and documentation.
 
 ### Fixed
 

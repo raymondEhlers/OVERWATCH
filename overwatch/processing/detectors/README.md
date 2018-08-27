@@ -492,9 +492,9 @@ Once defined, the `fill(...)` function will be called automatically any time the
 similar to processing functions.
 
 For the trended values to be displayed, a `ROOT.TGraph` or `ROOT.TH1` must be defined, and the trended values
-copied in. As a default option, `trendingObject.retrieveHist()` will automatically define a `TGraph` based on
-the number of entries specified during object construction. It can be overridden by defining an object to be
-stored in `histContainer.hist` before calling the base class `retrieveHist()`.
+copied in. As a default option, `trendingObject.retrieveHistogram()` will automatically define a `TGraph`
+based on the number of entries specified during object construction. It can be overridden by defining an
+object to be stored in `histContainer.hist` before calling the base class `retrieveHistogram()`.
 
 For an example, see `processing.detectors.TPC.defineTPCTrendingObjects`.
 

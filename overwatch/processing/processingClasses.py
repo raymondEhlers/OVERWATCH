@@ -788,7 +788,6 @@ class trendingObject(persistent.Persistent):
         nextEntry (int): Location where the next trending entry should go.
         canvas (ROOT.TCanvas): Canvas onto which the hist will be plotted.
     """
-
     def __init__(self, trendingName, prettyTrendingName, nEntries, histNames, trendingHist = None):
         self.name = trendingName
         self.prettyName = prettyTrendingName
@@ -849,6 +848,11 @@ class trendingObject(persistent.Persistent):
             We refer to a histogram in this method name, but it doesn't actually need to be a histogram.
             A ``TGraphErrors`` or other objects that supports storing values and errors is a fine options.
             For this function, we return a ``TGraphErrors`` if a histogram was not already passed.
+
+        Warning:
+            As of August 2018, the x axis of the created object doesn't properly represent the time at
+            which an entry was stored. Improvements here require some consideration of how best to store
+            the relevant starting and entry times.
 
         Args:
             None
