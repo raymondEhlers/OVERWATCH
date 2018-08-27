@@ -85,6 +85,9 @@ setup(
         "flask",
         "Flask-Login",
         "Flask-Assets",
+        # PyYAML is needed for Flask-Assets, but they don't include it as a requirement, so we
+        # need to explicitly include it here.
+        "PyYAML",
         "Flask-RESTful",
         "ZODB",
         # Install `Flask-ZODB` from git repo to support the newer hook and py 3
