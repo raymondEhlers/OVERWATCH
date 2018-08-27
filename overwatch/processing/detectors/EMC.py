@@ -1,9 +1,9 @@
 #/usr/bin/env python
 
-""" EMC detector specific sorting for monitoring, and QA.
+""" EMC detector specific functionality.
 
-The EMCal has substantial sorting for online monitoring. It also has automated QA monitoring functions that apply
-every run and true QA functions that only run at selected times.
+The EMCal has a wide variety of monitoring functions, taking broad advantage of the Overwatch detector
+plug-in system. These functions allow for enhanced data extraction, as well as improved presentation.
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 .. codeauthor:: James Mulligan <james.mulligan@yale.edu>, Yale University

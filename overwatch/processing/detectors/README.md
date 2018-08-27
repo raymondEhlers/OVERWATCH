@@ -124,7 +124,7 @@ def createAdditionalSYSHistograms(subsystem):
     Args:
         subsystem (subsystemContainer): Subsystem for which the additional histograms are to be created.
     Returns:
-        None
+        None. Newly created histograms are added to ``subsystemContainer.histsAvailable``.
     """
     # Define the additional histogram
     histName = "projectedHist"
