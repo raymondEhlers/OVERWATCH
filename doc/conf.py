@@ -186,3 +186,20 @@ texinfo_documents = [
 
 
 # -- Extension configuration -------------------------------------------------
+
+# Mock modules which won't be available when reading the docs
+# See: https://docs.readthedocs.io/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
+try:
+    from unittest.mock import MagicMock
+except ImportError:
+    from mock import MagicMock
+
+class Mock(MagicMock):
+    @classmethod
+    def __getattr__(cls, name):
+        return MagicMock()
+
+# root isn't available on RTD, and a flask-zodb that is python 3 compatiable isn't available on PyPI, so
+# we can't install it as easily. This works fine for our purposes.
+MOCK_MODULES = ["root", "flask-zodb"]
+sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
