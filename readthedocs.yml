@@ -4,6 +4,6 @@ python:
     # Run on py 2 to ensure that we catch any missing imports
     # This is convenient until we have better CI
     version: 2
-    pip install: true
+    pip_install: true
     extra_requirements:
         - docs
