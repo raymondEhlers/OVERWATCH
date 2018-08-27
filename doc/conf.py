@@ -201,5 +201,6 @@ class Mock(MagicMock):
 
 # root isn't available on RTD, and a flask-zodb that is python 3 compatiable isn't available on PyPI, so
 # we can't install it as easily. This works fine for our purposes.
-MOCK_MODULES = ["root", "flask-zodb"]
+MOCK_MODULES = ["ROOT", "flask_zodb"]
 sys.modules.update((mod_name, Mock()) for mod_name in MOCK_MODULES)
+
