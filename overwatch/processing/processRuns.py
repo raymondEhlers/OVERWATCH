@@ -79,7 +79,9 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
             It must contain ``base``, ``name``, and ``ext``, where ``base`` is the base path, ``name`` is the filename
             and ``ext`` is the extension. Ex: ``{base}/{name}.{ext}``.
         subsystem (subsystemContainer): Contains information about the current subsystem.
-        processingOptions (): ... Default: ``None``.
+        processingOptions (dict): Implemented by the subsystem to note options used during standard processing. Keys
+            are names of options, while values are the corresponding option values. Default: ``None``. Note: In this case,
+            it will use the default subsystem processing options.
         forceRecreateSubsystem (bool): True if subsystems will be recreated, even if they already exist.
         trendingContainer (trendingContainer): Contains trending objects which will be used when determining which histograms
             need to be used for trending.
@@ -147,7 +149,7 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
                     # NOTE: In addition to being a normal option, this ensures that the HLT will always catch all extra histograms from HLT files!
                     # However, having this selection for other subsystems is dangerous, because it will include many unrelated hists
                     selection = ""
-                logger.info("selection: {0}".format(selection))
+                logger.info("selection: {selection}".format(selection = selection))
                 subsystem.histGroups.append(processingClasses.histogramGroupContainer(subsystem.subsystem + " Histograms", selection))
 
         # See how we've done.
@@ -165,7 +167,7 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
                     break
 
             # See if we've classified successfully.
-            logger.info("{2} hist: {0} - classified: {1}".format(hist.histName, classifiedHist, subsystem.subsystem))
+            logger.info("{subsystem} hist: {histName} - classified: {classifiedHist}".format(subsystem = subsystem.subsystem, histName = hist.histName, classifiedHist = classifiedHist))
 
             if classifiedHist:
                 # Determine the processing functions to apply
@@ -173,23 +175,23 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
                 # Determine the trending functions to apply
                 if trendingContainer:
                     trendingContainer.findTrendingFunctionsForHist(hist)
-                    print("trending container: {}, hist: {}, ")
+                    logger.debug("trending container: {}, hist: {}, ")
                 # Add it to the subsystem
                 subsystem.hists[hist.histName] = hist
             else:
                 # We don't want to process histograms which haven't been defined.
-                logger.debug("Skipping histogram {0} since it is not classifiable for subsystem {1}".format(hist.histName, subsystem.subsystem))
+                logger.debug("Skipping histogram {} since it is not classifiable for subsystem {}".format(hist.histName, subsystem.subsystem))
 
     # Set the proper processing options
     # If it was passed in, it was probably from time slices
     if processingOptions is None:
         processingOptions = subsystem.processingOptions
-    logger.debug("processingOptions: {0}".format(processingOptions))
+    logger.debug("processingOptions: {processingOptions}".format(processingOptions = processingOptions))
 
     # Canvases must have unique names - otherwise they will be replaced, leading to segfaults.
     # Start of run should unique to each run!
-    canvas = ROOT.TCanvas("{0}Canvas{1}{2}".format("processRuns", subsystem.subsystem, subsystem.startOfRun),
-                          "{0}Canvas{1}{2}".format("processRuns", subsystem.subsystem, subsystem.startOfRun))
+    canvas = ROOT.TCanvas("processRunsCanvas{}{}".format(subsystem.subsystem, subsystem.startOfRun),
+                          "processRunsCanvas{}{}".format(subsystem.subsystem, subsystem.startOfRun))
     # Loop over histograms and draw
     for histGroup in subsystem.histGroups:
         for histName in histGroup.histList:
@@ -205,7 +207,7 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
     fIn.Close()
 
 def processTrending(outputFormatting, trending, processingOptions = None):
-    """
+    """ 
     
     Args:
         outputFormatting (str): Specially formatted string which contains a generic path to be used when printing histograms.
@@ -308,7 +310,7 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, su
     #logger.debug("histName: {}, hist: {}, hist entries: {}".format(hist.histName, hist.hist, hist.hist.GetEntries()))
 
     # Apply trending functions
-    print("hist {} trending objects: {}".format(hist.histName, hist.trendingObjects))
+    logger.debug("hist {} trending objects: {}".format(hist.histName, hist.trendingObjects))
     for trendingObject in hist.trendingObjects:
         logger.debug("Filling trending object {}".format(trendingObject.name))
         trendingObject.fill(hist)
@@ -649,6 +651,7 @@ def processAllRuns():
     Returns:
         None
     """
+    # TODO: Update description and remove references to QA!
     dirPrefix = processingParameters["dirPrefix"]
 
     # Get the database
