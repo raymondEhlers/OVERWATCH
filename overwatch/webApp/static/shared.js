@@ -1,5 +1,13 @@
-// Handles JS generally for OVERWATCH
-// Author: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
+/** Handles JS generally for Overwatch
+  *
+  * Contains general functionality for Overwatch, including supporting AJAX requests, JSRoot, as well
+  * as presentation (such as collapsing containers, etc).
+  *
+  * NOTE: For our purposes, this code is sufficient for getting the job done. However, it really isn't
+  *       very pretty or sophisticated and could most certainly benefit from a more experienced developer.
+  *
+  * Author: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
+  */
 
 // Handle all of the polymer elements!
 // To ensure that elements are ready on polyfilled browsers, wait for WebComponentsReady. 

@@ -5,7 +5,7 @@ General information from the README is available immediately below. Further modu
 available further below in the :ref:`package reference <web-app-package-reference>`.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    ../webAppReadme.md
 

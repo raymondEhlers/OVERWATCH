@@ -1,6 +1,14 @@
-/* Started from: http://cssreset.com/creating-fixed-headers-with-css/ */
-/* Most of these values are more or less hacks. It is usually easiest to understand each setting */
-/* from inspecting elements when viewing the pages in the browser */
+/**
+  * Provide general styling for Overwatch.
+  *
+  * Styling is predominately based around customizing Polymer classes, as well the layout of elements within
+  * particular pages.
+  *
+  * NOTE: For our purposes, this styling is sufficient for getting the job done. However, it really isn't
+  *       very sophisticated and could most certainly benefit from a more experienced developer.
+  *
+  * Author: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
+  */
 
 /* General header elements */
 /* A fixed polymer header for both desktop and mobile */
