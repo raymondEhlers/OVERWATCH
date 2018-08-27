@@ -198,7 +198,7 @@ def writeSensitiveVariableToFile(config, name, prettyName, defaultWriteLocation)
     # Check that the variable is not empty
     if not sensitiveVariable:
         raise ValueError("Empty {} passed".format(prettyName))
-    print("variableName: {}, {}: {}".format(variableName, prettyName, sensitiveVariable))
+    logger.debug("variableName: {}, {}: {}".format(variableName, prettyName, sensitiveVariable))
 
     # Write to file
     writeLocation = config[name].get("writeLocation", defaultWriteLocation)
@@ -280,7 +280,7 @@ def setupRoot(config):
 def setupEnv(config):
     if "root" in config["env"] and config["env"]["root"]["enabled"]:
         setupRoot(config)
-        print(os.environ)
+        logger.info(os.environ)
 
 def dqmReceiver(config, receiver, receiverConfig):
     """ Start the DQM receiver """
@@ -758,8 +758,7 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
     else:
         config["avoidNohup"] = avoidNohup
 
-    logger.info("Config:")
-    pprint.pprint(config)
+    logger.info("Config: {}".format(pprint.pformat(config)))
 
     if "cert" in config and config["cert"]["enabled"]:
         # TODO: Update default location to "~/.globus/overwatchCert.pem" (?)

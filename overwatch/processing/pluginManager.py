@@ -236,7 +236,7 @@ for subsystem in subsystems:
 
     # Ensure that the module exists before trying to load it
     if os.path.exists(os.path.join(os.path.dirname(__file__), "detectors", "{}.py".format(subsystem))):
-        #print("file exists, qa __name__: {0}".format(__name__))
+        #logger.debug("file exists, plugin manager __name__: {}".format(__name__))
         # Import module dynamically
         # Using absolute import
         #subsystemModule = importlib.import_module("%s.%s.%s.%s" % ("overwatch", "processing", "detectors", subsystem))
@@ -265,9 +265,9 @@ for subsystem in subsystems:
             functionNames.append(funcName)
             
         # Print out the function names that have been loaded
-        #print(functionNames)
+        #logger.debug("Function names: {}".format(functionNames))
         if functionNames != []:
-            logger.info("\t{0}".format(", ".join(functionNames)))
+            logger.info("\t{}".format(", ".join(functionNames)))
         else:
             logger.info("")
     else:

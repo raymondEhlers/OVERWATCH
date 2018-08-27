@@ -237,4 +237,4 @@ def returnFile(filename):
     return send_from_directory(receiverParameters["dataFolder"], filename)
 
 if __name__ == "__main__":
-    print("Run with overwatchDQMReceiver instead of directly!")
+    raise RuntimeError("Run with overwatchDQMReceiver instead of directly!")
