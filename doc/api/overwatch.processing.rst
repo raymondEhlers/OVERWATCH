@@ -2,12 +2,15 @@ Overwatch Processing Package (``overwatch.processing``)
 =======================================================
 
 General information from the README is available immediately below. Further module specific documentation is
-available further below in the :ref:`package reference <processing-package-reference>`.
+available further below in the :ref:`package reference <processing-package-reference>`, with the modules
+listed below.
 
 .. toctree::
-   :maxdepth: 2
+   :maxdepth: 3
 
    ../processingReadme.md
+
+.. contents:: :local:
 
 .. _processing-package-reference:
 

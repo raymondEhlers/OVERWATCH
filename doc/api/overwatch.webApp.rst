@@ -2,12 +2,15 @@ Overwatch Web App Package (``overwatch.webApp``)
 ================================================
 
 General information from the README is available immediately below. Further module specific documentation is
-available further below in the :ref:`package reference <web-app-package-reference>`.
+available further below in the :ref:`package reference <web-app-package-reference>`, with the modules
+listed below.
 
 .. toctree::
    :maxdepth: 3
 
    ../webAppReadme.md
+
+.. contents:: :local:
 
 .. _web-app-package-reference:
 
