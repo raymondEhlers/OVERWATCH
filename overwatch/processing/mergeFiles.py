@@ -59,8 +59,8 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlice = None):
         dirPrefix (str): Path to the root directory where the data is stored.
         runDir (str): Run directory of current run. Of the form ``Run######``.
         subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
-        cumulativeMode (bool): Specifies whether the histograms we receive are cumulative or if they 
-            have been reset between each acquired ROOT file, i.e. whether we merge in "subscribe mode" or 
+        cumulativeMode (bool): Specifies whether the histograms we receive are cumulative or if they
+            have been reset between each acquired ROOT file, i.e. whether we merge in "subscribe mode" or
             "request/reset mode". Default: True.
         timeSlice (processingClasses.timeSliceContainer): Stores the properties of the requested time slice. If not specified,
             it will be ignored and it will create a standard "combined file". Default: None
@@ -83,7 +83,7 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlice = None):
     # Sort files by time
     filesToMerge.sort(key=lambda x: x.fileTime)
 
-    # If in cumulativeMode, we subtract the earliest file from the latest file, unless 
+    # If in cumulativeMode, we subtract the earliest file from the latest file, unless
     # the beginning of the time slice is the start of the run. In that case, case we don't
     # subtract anything from the most recent
     # (if >0, we should subtract the first file; if =0, we should include everything)
@@ -143,7 +143,7 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlice = None):
     return None
 
 def subtractFiles(minFile, maxFile, outfile):
-    """ Subtract histograms in one file from matching histograms in another. 
+    """ Subtract histograms in one file from matching histograms in another.
 
     This function is used for creating time slices in cumulative mode. Since each file is cumulative,
     the later time stamped file needs to be subtracted from the earlier time stamped file. The
@@ -161,8 +161,8 @@ def subtractFiles(minFile, maxFile, outfile):
 
     Args:
         minFile (str): Filename of the ROOT file containing data to be subtracted.
-        maxFile (str): Filename of the ROOT file containing data to to subtracted from. 
-        outfile (str): Filename of the output file which will contain the subtracted histograms. 
+        maxFile (str): Filename of the ROOT file containing data to to subtracted from.
+        outfile (str): Filename of the output file which will contain the subtracted histograms.
     Returns:
         None.
     """
@@ -172,8 +172,8 @@ def subtractFiles(minFile, maxFile, outfile):
     fOut = ROOT.TFile(outfile, "RECREATE")
 
     # Read in available keys in the file
-    keysMinFile = fMin.GetListOfKeys();
-    keysMaxFile = fMax.GetListOfKeys();
+    keysMinFile = fMin.GetListOfKeys()
+    keysMaxFile = fMax.GetListOfKeys()
 
     # Loop through both files, and subtract matching pairs of hists
     for keyMin in keysMinFile:
@@ -218,9 +218,9 @@ def mergeRootFiles(runs, dirPrefix, forceNewMerge = False, cumulativeMode = True
             in the from of ``Run######``.
         dirPrefix (str): Path to the root directory where the data is stored.
         forceNewMerge (bool): Flag to force merging for all runs, regardless of whether it is supposed
-            to be merged.  Default: False. 
-        cumulativeMode (bool): Specifies whether the histograms we receive are cumulative or if they 
-            have been reset between each acquired ROOT file, i.e. whether we merge in "subscribe mode" or 
+            to be merged.  Default: False.
+        cumulativeMode (bool): Specifies whether the histograms we receive are cumulative or if they
+            have been reset between each acquired ROOT file, i.e. whether we merge in "subscribe mode" or
             "request/reset mode". See ``merge()`` for further information on this mode. Default: True.
     Returns:
         None
@@ -231,7 +231,7 @@ def mergeRootFiles(runs, dirPrefix, forceNewMerge = False, cumulativeMode = True
     for runDir, run in iteritems(runs):
         for subsystem in run.subsystems:
             # Only merge if we there are new files to merge
-            if run.subsystems[subsystem].newFile == True or forceNewMerge:
+            if run.subsystems[subsystem].newFile is True or forceNewMerge:
                 # Skip if the subsystem does not have it's own files
                 if run.subsystems[subsystem].subsystem != run.subsystems[subsystem].fileLocationSubsystem:
                     continue

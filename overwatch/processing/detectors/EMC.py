@@ -244,7 +244,7 @@ def generalOptionsRequiringUnderlyingObjects(subsystem, hist, processingOptions,
         None. The current histogram and canvas are modified.
     """
     # Set options for when not debugging
-    if processingParameters["debug"] == False:
+    if processingParameters["debug"] is False:
         # Disable hist stats
         hist.hist.SetStats(False)
 
@@ -271,7 +271,7 @@ def labelSupermodules(hist):
         None. The current histogram and canvas are modified.
     """
     if "_SM" in hist.histName[-5:]:
-        smNumber = hist.histName[hist.histName.find("_SM")+3:]
+        smNumber = hist.histName[hist.histName.find("_SM") + 3:]
         hist.hist.SetTitle("SM {smNumber}".format(smNumber = smNumber))
         # Show title
         gStyle.SetOptTitle(1)
@@ -320,7 +320,7 @@ def addTRUGrid(subsystem, hist):
     """ Add a grid of lines representing the TRU regions.
 
     By making this grid available, it becomes extremely easy to identify and localized problems that
-    depend on a particular TRU. The grid is allocated 
+    depend on a particular TRU. The grid is drawn on the current canvas.
 
     Note:
         This function implicitly assumes that there is already a canvas created. Since the ``histogramContainer``
@@ -343,7 +343,7 @@ def addTRUGrid(subsystem, hist):
         SetOwnership(line, False)
         line.Draw()
     # 60 + 1 to ensure that 60 is plotted
-    for y in range(12, 60+1, 12):
+    for y in range(12, 60 + 1, 12):
         line = TLine(0, y, 48, y)
         SetOwnership(line, False)
         line.Draw()
@@ -361,9 +361,9 @@ def addTRUGrid(subsystem, hist):
         if (x == 24):
             # skip PHOS hole
             continue
-        line = TLine(x, 64, x, 100);
+        line = TLine(x, 64, x, 100)
         SetOwnership(line, False)
-        line.Draw();
+        line.Draw()
     for y in range(76, 100, 12):
         line = TLine(0, y, 16, y)
         SetOwnership(line, False)
@@ -424,7 +424,7 @@ def fastOROptions(subsystem, hist, processingOptions, **kwargs):
     the threshold, it is strongly recommended to scale by the number of events (which is the default for the EMC
     subsystem, but can be modified during time slices). Note that the threshold values passed in from the web app
     are scaled down by ``1e-3`` due to the usually small number of counts exception in hot channels, as well as
-    the difficulty in displaying such small numbers. 
+    the difficulty in displaying such small numbers.
 
     For the 2D histograms, it also adds a TRU grid.
 
@@ -466,7 +466,7 @@ def fastOROptions(subsystem, hist, processingOptions, **kwargs):
         if processingOptions["hotChannelThreshold"] > 0:
             # Normalize by 1000, since it is displayed that way on the site to make it readable.
             # ie. Map 0 to 1e3 -> 1e-3 to 1
-            threshold = processingOptions["hotChannelThreshold"]/1000.0
+            threshold = processingOptions["hotChannelThreshold"] / 1000.0
 
         # Set hist options
         hist.hist.Sumw2()
@@ -476,12 +476,12 @@ def fastOROptions(subsystem, hist, processingOptions, **kwargs):
         # Set style
         hist.hist.SetMarkerStyle(kFullCircle)
         hist.hist.SetMarkerSize(0.8)
-        hist.hist.SetMarkerColor(kBlue+1)
-        hist.hist.SetLineColor(kBlue+1)
+        hist.hist.SetMarkerColor(kBlue + 1)
+        hist.hist.SetLineColor(kBlue + 1)
 
         # Find bins above the threshold
         absIdList = []
-        for iBin in range(1, hist.hist.GetXaxis().GetNbins()+1):
+        for iBin in range(1, hist.hist.GetXaxis().GetNbins() + 1):
             if hist.hist.GetBinContent(iBin) > threshold:
                 # Translate back from bin number (1, Nbins() + 1) to fastOR ID (0, Nbins())
                 absIdList.append(iBin - 1)
@@ -520,14 +520,14 @@ def addEnergyAxisToPatches(subsystem, hist, processingOptions, **kwargs):
     kEMCL1ADCtoGeV = 0.07874
     adcMin = hist.hist.GetXaxis().GetXmin()
     adcMax = hist.hist.GetXaxis().GetXmax()
-    EMax = adcMax*kEMCL1ADCtoGeV
-    EMin = adcMin*kEMCL1ADCtoGeV
+    EMax = adcMax * kEMCL1ADCtoGeV
+    EMin = adcMin * kEMCL1ADCtoGeV
 
     # Setup the energy axis.
     # Note that although gPad.GetUymax() seems ideal here, it won't work properly due # to the histogram
     # being plotted as a long. Instead, we need to extract the value based on the maximum.
-    yMax= 2*hist.hist.GetMaximum()
-    energyAxis = TGaxis(adcMin,yMax,adcMax,yMax,EMin,EMax,510,"-")
+    yMax = 2 * hist.hist.GetMaximum()
+    energyAxis = TGaxis(adcMin, yMax, adcMax, yMax, EMin, EMax, 510, "-")
     SetOwnership(energyAxis, False)
     energyAxis.SetTitle("Energy (GeV)")
     energyAxis.Draw()
@@ -557,7 +557,7 @@ def patchAmpOptions(subsystem, hist, processingOptions, **kwargs):
     """
     # Setup canvas as desired
     hist.canvas.SetLogy(True)
-    hist.canvas.SetGrid(1,1)
+    hist.canvas.SetGrid(1, 1)
 
     # Plot both on the same canvas if they both exist
     #if otherHist is not None:
@@ -570,7 +570,7 @@ def patchAmpOptions(subsystem, hist, processingOptions, **kwargs):
 
         # Lists to use to plot
         detectors = ["EMCal", "DCal"]
-        colors = [kRed+1, kBlue+1]
+        colors = [kRed + 1, kBlue + 1]
         markers = [kFullCircle, kOpenCircle]
         options = ["", ""]
 
@@ -583,7 +583,7 @@ def patchAmpOptions(subsystem, hist, processingOptions, **kwargs):
             tempHist.SetMarkerColor(color)
 
             if processingOptions["scaleHists"]:
-                tempHist.Scale(1./subsystem.nEvents)
+                tempHist.Scale(1. / subsystem.nEvents)
             tempHist.GetYaxis().SetTitle("entries / events")
 
             # Record the entry for the legend.
@@ -619,7 +619,7 @@ def properlyPlotPatchSpectra(subsystem, hist, processingOptions, **kwargs):
         None. The current canvas is modified.
     """
     hist.canvas.SetLogy(True)
-    hist.canvas.SetGrid(1,1)
+    hist.canvas.SetGrid(1, 1)
 
 def findFunctionsForEMCHistogram(subsystem, hist, **kwargs):
     """ Find processing functions for EMC histograms based on their names.
@@ -664,25 +664,25 @@ def findFunctionsForEMCHistogram(subsystem, hist, **kwargs):
     # Plot by SM
     if "SM" in hist.histName:
         hist.functionsToApply.append(smOptions)
-       
+
         # For FEE plots, set a different range
         if "FEE" in hist.histName:
             hist.functionsToApply.append(feeSMOptions)
-                    
+
     # EdgePos plots
     if "EdgePos" in hist.histName:
         hist.functionsToApply.append(edgePosOptions)
-        
+
     # Check summary FastOR hists
     # First determine possible fastOR names
     fastORLevels = ["EMCTRQA_histFastORL0", "EMCTRQA_histFastORL1"]
     fastORTypes = ["", "Amp", "LargeAmp"]
-    possibleFastORNames = [a + b for a,b in list(itertools.product(fastORLevels, fastORTypes))]
+    possibleFastORNames = [a + b for a, b in list(itertools.product(fastORLevels, fastORTypes))]
     #logger.debug(possibleFastORNames)
-    #if "FastORL" in hist.GetName() and "SM" not in hist.GetName(): 
+    #if "FastORL" in hist.GetName() and "SM" not in hist.GetName():
     if any(substring == hist.histName for substring in possibleFastORNames):
         hist.functionsToApply.append(fastOROptions)
-            
+
     # PlotMaxPatch plots
     # Ideally EMCal and DCal histos should be plot on the same plot
     # However, sometimes they are unpaired and must be printed individually
@@ -770,8 +770,8 @@ def sortSMsInPhysicalOrder(histList, sortKey):
     logger.info("Number of hists to be sorted according to SM convention: {}".format(len(histList)))
     for i in range(0, len(histList), 2):
         # Protect against overflowing the list
-        if i != (len(histList)-1):
-            tempList.append(histList[i+1])
+        if i != (len(histList) - 1):
+            tempList.append(histList[i + 1])
         tempList.append(histList[i])
 
     return tempList
@@ -807,8 +807,8 @@ def checkForOutliers(hist):
         leg.SetBorderSize(4)
         leg.SetShadowColor(2)
         leg.SetHeader("#splitline{OUTLIER SIGNAL DETECTED}{IN %s BINS!}" % numOutliers)
-        leg.AddEntry(None, "Mean: %s, Stdev: %s" % ('%.2f'%mean, '%.2f'%stdev), "")
-        leg.AddEntry(None, "New mean: %s, New Stdev: %s" % ('%.2f'%newMean, '%.2f'%newStdev), "")
+        leg.AddEntry(None, "Mean: %s, Stdev: %s" % ('%.2f' % mean, '%.2f' % stdev), "")
+        leg.AddEntry(None, "New mean: %s, New Stdev: %s" % ('%.2f' % newMean, '%.2f' % newStdev), "")
         leg.SetTextSize(0.04)
         leg.SetTextColor(2)
         leg.Draw()
@@ -837,19 +837,20 @@ def hasSignalOutlier(hist):
     ignoreEmptyBins = False
     xbins = hist.GetNbinsX()
     ybins = hist.GetNbinsY()
-    totalBins = xbins*ybins
+    totalBins = xbins * ybins
     signal = numpy.zeros(totalBins)
 
     # Get bins for hist
-    for binX in range(1, xbins+1):
-        for binY in range(1, ybins+1):
+    for binX in range(1, xbins + 1):
+        for binY in range(1, ybins + 1):
             binContent = hist.GetBinContent(binX, binY)
-            signal[(binX-1) + (binY-1)*xbins] = binContent #bins start at 1, arrays at 0
+            # Bins start at 1, arrays at 0
+            signal[(binX - 1) + (binY - 1) * xbins] = binContent
 
     # Change calculation technique depending on option and type of hist
     if ignoreEmptyBins:
-        mean = numpy.mean(signal[signal>0])
-        stdev = numpy.std(signal[signal>0])
+        mean = numpy.mean(signal[signal > 0])
+        stdev = numpy.std(signal[signal > 0])
     else:
         mean = numpy.mean(signal)
         stdev = numpy.std(signal)
@@ -861,22 +862,23 @@ def hasSignalOutlier(hist):
     # index of outliers in signal array
     outlierList = []
     # Determine if a bin is an outlier
-    for binX in range(1, xbins+1):
-        for binY in range(1, ybins+1):
-            amp = signal[(binX-1) + (binY-1)*xbins]
+    for binX in range(1, xbins + 1):
+        for binY in range(1, ybins + 1):
+            amp = signal[(binX - 1) + (binY - 1) * xbins]
             if(amp > threshUp or amp < threshDown):
                 if not ignoreEmptyBins or amp > 0:
-                    logger.info("bin (" + repr(binX) + "," + repr(binY) + ") has amplitude " + repr(amp) + "! This is outside of threshold, [" + '%.2f'%threshDown + "," + '%.2f'%threshUp + "]")
-                    outlierList.append((binX-1) + (binY-1)*xbins)
+                    logger.info("bin (" + repr(binX) + "," + repr(binY) + ") has amplitude " + repr(amp) + "! This is outside of threshold, [" + '%.2f' % threshDown + "," + '%.2f' % threshUp + "]")
+                    outlierList.append((binX - 1) + (binY - 1) * xbins)
 
     # Exclude outliers and recalculate
     newSignal = numpy.delete(signal, outlierList)
     if ignoreEmptyBins:
-        newMean = numpy.mean(newSignal[newSignal>0])
-        newStdev = numpy.std(newSignal[newSignal>0])
+        newMean = numpy.mean(newSignal[newSignal > 0])
+        newStdev = numpy.std(newSignal[newSignal > 0])
     else:
         newMean = numpy.mean(newSignal)
         newStdev = numpy.std(newSignal)
 
-    return [len(outlierList), mean, stdev, newMean, newStdev] # info for legend
+    # Info for legend
+    return [len(outlierList), mean, stdev, newMean, newStdev]
 

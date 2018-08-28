@@ -224,12 +224,12 @@ def readConfig(configType):
     #     defined in the config in the package base directory.
     # For more on pkg_resources, see: https://stackoverflow.com/a/5601839
     fileList = [
-            # Config file in the local directory where it is run
-            "config.yaml",
-            # Config in the home directory
-            # Ensures that we have "WebApp" here.
-            os.path.expandvars("~/.overwatch{0}").format(configType.name[0].upper() + configType.name[1:]),
-        ]
+        # Config file in the local directory where it is run
+        "config.yaml",
+        # Config in the home directory
+        # Ensures that we have "WebApp" here.
+        os.path.expandvars("~/.overwatch{0}").format(configType.name[0].upper() + configType.name[1:]),
+    ]
     # Reversed so the modules are added in the proper order (ie. following the dependencies)
     for val in reversed(configurationType):
         # Retrieve and store the configuration of the requested object depends on that configuration
@@ -259,7 +259,7 @@ def readConfig(configType):
 
     return (globalConfig, filesRead)
 
-if __name__ == "__main__": # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     """ Load basic configuration for testing (although unit tests would be preferred in the future). """
     # Setup logging
     # Provides a warning if there are no handlers
@@ -271,5 +271,5 @@ if __name__ == "__main__": # pragma: no cover
     logger.setLevel("DEBUG")
 
     # Load configuration
-    config,_ = readConfig(configurationType.processing)
+    config, _ = readConfig(configurationType.processing)
     logger.info("Final config: {0}".format(pprint.pformat(config)))

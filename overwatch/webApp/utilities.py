@@ -80,14 +80,14 @@ class PolymerBundler(webassets.filter.ExternalTool):
         # Stream the result to stdout since writing the file seems to cause trouble with
         # the "out" string, which will overwrite the desired output
         args = [
-                "polymer-bundler",
-                "--inline-scripts",
-                "--strip-comments",
-                #"--out-html",
-                #os.path.join(serverParameters["staticFolder"], "{output}.tmp".format(**kwargs)),
-                "--in-html",
-                os.path.join(serverParameters["staticFolder"], "{source}".format(**kwargs))
-                ]
+            "polymer-bundler",
+            "--inline-scripts",
+            "--strip-comments",
+            #"--out-html",
+            #os.path.join(serverParameters["staticFolder"], "{output}.tmp".format(**kwargs)),
+            "--in-html",
+            os.path.join(serverParameters["staticFolder"], "{source}".format(**kwargs))
+        ]
 
         logger.debug("Executing polymer filter with execution path \"{exeuctionPath}\" and args {args}".format(executionPath = executionPath, args = args))
         output = subprocess.check_output(args, cwd = executionPath)

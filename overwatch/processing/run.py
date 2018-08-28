@@ -13,7 +13,6 @@ import logging
 import pprint
 
 # Config
-#from config.processingParams import processingParameters
 from overwatch.base import config
 from overwatch.base import utilities
 (processingParameters, filesRead) = config.readConfig(config.configurationType.processing)
@@ -27,9 +26,9 @@ logger = logging.getLogger("")
 
 # Setup logging
 utilities.setupLogging(logger = logger,
-        logLevel = processingParameters["loggingLevel"],
-        debug = processingParameters["debug"],
-        logFilename = "processRuns")
+                       logLevel = processingParameters["loggingLevel"],
+                       debug = processingParameters["debug"],
+                       logFilename = "processRuns")
 # Log settings
 logger.info(processingParameters)
 

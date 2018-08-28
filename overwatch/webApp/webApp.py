@@ -17,14 +17,13 @@ from future.utils import iteritems
 
 # General includes
 import os
-import math
 import time
 import zipfile
 import subprocess
 import signal
 import jinja2
 import json
-import collections 
+import collections
 import datetime
 import pkg_resources
 # For server status
@@ -50,7 +49,7 @@ from ..base import utilities as baseUtilities
 from . import routing
 from . import auth
 from . import validation
-from . import utilities
+from . import utilities  # NOQA
 
 # Processing module includes
 from ..processing import processRuns
@@ -73,7 +72,7 @@ else:
     app.secret_key = str(os.urandom(50))
 
 # Enable debugging if set in configuration
-if serverParameters["debug"] == True:
+if serverParameters["debug"] is True:
     app.debug = True
 
 # Setup Bcrypt
@@ -115,10 +114,10 @@ def handleCSRFError(error):
     """
     # Define the error in the proper format.
     # Also provide some additional error information.
-    errors = {"CSRF Error" : [
-                    error,
-                    "Your page was manipulated. Please contact the admin."
-                ]}
+    errors = {"CSRF Error": [
+        error,
+        "Your page was manipulated. Please contact the admin."
+    ]}
     # We don't have any drawer content
     drawerContent = ""
     mainContent = render_template("errorMainContent.html", errors = errors)
@@ -229,7 +228,7 @@ def login():
         logger.info("Redirecting logged in user \"{id}\" to index...".format(id = current_user.id))
         return redirect(url_for("index", ajaxRequest = json.dumps(ajaxRequest)))
 
-    if ajaxRequest == False:
+    if ajaxRequest is False:
         return render_template("login.html", error=errorValue, nextValue=nextValue)
     else:
         drawerContent = ""
@@ -284,7 +283,7 @@ def contact():
 
     # Provide current year for copyright information
     currentYear = datetime.datetime.utcnow().year
-    if ajaxRequest == False:
+    if ajaxRequest is False:
         return render_template("contact.html", currentYear = currentYear)
     else:
         drawerContent = ""
@@ -372,9 +371,9 @@ def index():
 
     # We want 10 anchors
     # NOTE: We need to convert it to an int to ensure that the mod call in the template works.
-    anchorFrequency = int(numberOfRunsToDisplay/10.0)
+    anchorFrequency = int(numberOfRunsToDisplay / 10.0)
 
-    if ajaxRequest != True:
+    if ajaxRequest is not True:
         return render_template("runList.html", drawerRuns = runsToUse,
                                 mainContentRuns = runsToUse,
                                 runOngoing = runOngoing,
@@ -444,13 +443,13 @@ def runPage(runNumber, subsystemName, requestedFileType):
         # Print request status
         logger.debug("request: {}".format(request.args))
         logger.debug("runDir: {}, subsystem: {}, requestedFileType: {}, "
-              "ajaxRequest: {}, jsRoot: {}, requestedHistGroup: {}, requestedHist: {}, "
-              "timeSliceKey: {}, timeSlice: {}".format(runDir, subsystemName, requestedFileType,
-               ajaxRequest, jsRoot, requestedHistGroup, requestedHist, timeSliceKey, timeSlice))
+                     "ajaxRequest: {}, jsRoot: {}, requestedHistGroup: {}, requestedHist: {}, "
+                     "timeSliceKey: {}, timeSlice: {}".format(runDir, subsystemName, requestedFileType,
+                      ajaxRequest, jsRoot, requestedHistGroup, requestedHist, timeSliceKey, timeSlice))
     else:
         logger.warning("Error on run page: {error}".format(error = error))
 
-    if ajaxRequest != True:
+    if ajaxRequest is not True:
         if error == {}:
             if requestedFileType == "runPage":
                 # Attempt to use a subsystem specific run page if available
@@ -483,7 +482,7 @@ def runPage(runNumber, subsystemName, requestedFileType):
     else:
         if error == {}:
             if requestedFileType == "runPage":
-               # Drawer
+                # Drawer
                 runPageDrawerName = subsystemName + "runPageDrawer.html"
                 if runPageDrawerName not in serverParameters["availableRunPageTemplates"]:
                     runPageDrawerName = runPageDrawerName.replace(subsystemName, "")
@@ -518,7 +517,7 @@ def runPage(runNumber, subsystemName, requestedFileType):
         if error != {}:
             logger.warning("error: {error}".format(error = error))
             drawerContent = ""
-            mainContent =  render_template("errorMainContent.html", errors = error)
+            mainContent = render_template("errorMainContent.html", errors = error)
 
         # Includes hist group and hist name for time slices since it is easier to pass it here than parse the GET requests. Otherwise, they are ignored.
         return jsonify(drawerContent = drawerContent,
@@ -676,10 +675,10 @@ def trending():
                 break
 
     # Template paths to the individual files
-    imgFilenameTemplate = os.path.join(trendingContainer.imgDir % {"subsystem" : subsystemName}, "{}." + serverParameters["fileExtension"])
-    jsonFilenameTemplate = os.path.join(trendingContainer.jsonDir % {"subsystem" : subsystemName}, "{}.json")
+    imgFilenameTemplate = os.path.join(trendingContainer.imgDir % {"subsystem": subsystemName}, "{}." + serverParameters["fileExtension"])
+    jsonFilenameTemplate = os.path.join(trendingContainer.jsonDir % {"subsystem": subsystemName}, "{}.json")
 
-    if ajaxRequest != True:
+    if ajaxRequest is not True:
         if error == {}:
             # There isn't any reason to think that the template won't be found, but it doesn't hurt to account for it.
             try:
@@ -716,7 +715,7 @@ def trending():
         if error != {}:
             logger.warning("error: {error}".format(error = error))
             drawerContent = ""
-            mainContent =  render_template("errorMainContent.html", errors = error)
+            mainContent = render_template("errorMainContent.html", errors = error)
 
         # Includes hist group and hist name for time slices since it is easier to pass it here than parse the get requests. Otherwise, they are ignored.
         return jsonify(drawerContent = drawerContent,
@@ -770,7 +769,7 @@ def testingDataArchive():
         runKeys = runs.keys()
         # Write the files in reverse order. However, this is fine because the order doesn't make a difference
         # in the final archive.
-        for i in range(-1*numberOfFilesToDownload, 0):
+        for i in range(-1 * numberOfFilesToDownload, 0):
             run = runs[runKeys[i]]
             for subsystem in run.subsystems.values():
                 # Write files to the zip file
@@ -837,7 +836,7 @@ def status():
         receiverLogLastModified = db["config"]["receiverLogLastModified"]
         lastModified = time.time() - receiverLogLastModified
         # Display in minutes
-        lastModified = int(lastModified//60)
+        lastModified = int(lastModified // 60)
         lastModifiedMessage = "{lastModified} minutes ago".format(lastModified = lastModified)
     else:
         lastModified = -1
@@ -870,7 +869,7 @@ def status():
         # Add to status
         statuses[site] = statusResult
 
-    if ajaxRequest == False:
+    if ajaxRequest is False:
         return render_template("status.html", statuses = statuses)
     else:
         drawerContent = ""
@@ -934,10 +933,10 @@ def upgradeDocker():
             error.setdefault("No response", []).append("Should have some response by now, but there is none. It seems that the `supervisord` process cannot be found!")
 
     # Co-opt error output here since it is not worth a new template...
-    if ajaxRequest == True:
+    if ajaxRequest is True:
         logger.warning("error: {error}".format(error = error))
         drawerContent = ""
-        mainContent =  render_template("errorMainContent.html", errors = error)
+        mainContent = render_template("errorMainContent.html", errors = error)
 
         # We always want to use AJAX here
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)

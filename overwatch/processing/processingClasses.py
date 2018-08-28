@@ -53,7 +53,7 @@ class runContainer(persistent.Persistent):
     Args:
         runDir (str): String containing the run number. For an example run 123456, it should be
             formatted as ``Run123456``.
-        fileMode (bool): If true, the run data was collected in cumulative mode. See the 
+        fileMode (bool): If true, the run data was collected in cumulative mode. See the
             :doc:`processing README </processingReadme>` for further information.
         hltMode (str): String containing the HLT mode used for the run.
 
@@ -87,7 +87,7 @@ class runContainer(persistent.Persistent):
                     runInfo = yaml.load(f.read())
 
                 self.hltMode = runInfo["hltMode"]
-            except IOError as e:
+            except IOError:
                 # File does not exist
                 # HLT mode will have to be unknown
                 self.hltMode = "U"
@@ -209,10 +209,10 @@ class subsystemContainer(persistent.Persistent):
             changed when beginning processing the next time. To be explicit, if a subsystem just received a new file
             and it was processed, this flag should only be changed to ``False`` after the next processing iteration
             begins. This allows the status of the run (determined through the subsystem) to be displayed in the web app.
-            Default: True because if the subsystem is being created, we likely need reprocessing. 
+            Default: True because if the subsystem is being created, we likely need reprocessing.
         nEvents (int): Number of events in the subsystem. Processing will look for a histogram that contains ``events``
             in the name and attempt to extract the number of events based on the number of entries. Should not be used
-            unless the subsystem explicitly includes a histogram with the number of events. Default: 1. 
+            unless the subsystem explicitly includes a histogram with the number of events. Default: 1.
         processingOptions (PersistentMapping): Implemented by the subsystem to note options used during
             standard processing. The subsystem processing options can vary when processing a time slice,
             so storing the options allow us to return to the standard options when performing a full processing.
@@ -238,7 +238,7 @@ class subsystemContainer(persistent.Persistent):
         else:
             self.fileLocationSubsystem = fileLocationSubsystem
 
-        if self.showRootFiles == True and self.subsystem != self.fileLocationSubsystem:
+        if self.showRootFiles is True and self.subsystem != self.fileLocationSubsystem:
             logger.warning("\tIt is requested to show ROOT files for subsystem %s, but the subsystem does not have specific data files. Using HLT data files!" % subsystem)
 
         # Files
@@ -264,7 +264,7 @@ class subsystemContainer(persistent.Persistent):
         self.startOfRun = startOfRun
         self.endOfRun = endOfRun
         # The run length is in minutes
-        self.runLength = (endOfRun - startOfRun)//60
+        self.runLength = (endOfRun - startOfRun) // 60
 
         # Histograms
         self.histGroups = persistent.list.PersistentList()
@@ -331,14 +331,14 @@ class trendingContainer(persistent.Persistent):
 
     Args:
         trendingDB (BTree): Dict-like object stored in the main ZODB database which is used for storing
-            trending objects persistently. Keys are the names of subsystems used for trending and values are 
+            trending objects persistently. Keys are the names of subsystems used for trending and values are
             ``BTree`` objects which are used to store the trending objects for that histogram. See the
             ``trendingObjects`` attribute description for further details.
 
     Attributes:
         subsystem (str): Name of trending subsystem, "TDG".
         trendingObjects (BTree): Dict-like object stored in the main ZODB database which is used for storing
-            trending objects persistently. Keys are the names of subsystems used for trending and values are 
+            trending objects persistently. Keys are the names of subsystems used for trending and values are
             ``BTree`` objects which are used to store the trending objects for that histogram. Inside of these
             ``BTree`` objects, keys are the name of the individual trending objects and values are the trending
             objects themselves. As an example, ``trendingObjects["TDG"]["testObj"]`` will be a trending object
@@ -373,10 +373,10 @@ class trendingContainer(persistent.Persistent):
         self.jsonDir = os.path.join(self.baseDir, "%(subsystem)s", "json")
         # Ensure that they exist for each subsystem
         for subsystemName in processingParameters["subsystemList"] + ["TDG"]:
-            if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.imgDir % {"subsystem" : subsystemName})):
-                os.makedirs(os.path.join(processingParameters["dirPrefix"], self.imgDir % {"subsystem" : subsystemName}))
-            if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.jsonDir % {"subsystem" : subsystemName})):
-                os.makedirs(os.path.join(processingParameters["dirPrefix"], self.jsonDir % {"subsystem" : subsystemName}))
+            if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.imgDir % {"subsystem": subsystemName})):
+                os.makedirs(os.path.join(processingParameters["dirPrefix"], self.imgDir % {"subsystem": subsystemName}))
+            if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.jsonDir % {"subsystem": subsystemName})):
+                os.makedirs(os.path.join(processingParameters["dirPrefix"], self.jsonDir % {"subsystem": subsystemName}))
 
         # Processing options
         # Implemented by the detector to note how it was processed that may be changed during time slice processing
@@ -396,7 +396,7 @@ class trendingContainer(persistent.Persistent):
             None
         """
         # The storage for a particular subsystem may not always be initialized, so set it up if necessary.
-        if not subsystem in self.trendingObjects.keys():
+        if subsystem not in self.trendingObjects.keys():
             self.trendingObjects[subsystem] = BTrees.OOBTree.BTree()
 
         logger.debug("self.trendingObjects[{}]: {}".format(subsystem, self.trendingObjects[subsystem]))
@@ -405,7 +405,7 @@ class trendingContainer(persistent.Persistent):
         # There shouldn't be an namespace conflicts because each subsystem has it's own entry
         # in the storage dict.
         for name, obj in iteritems(trendingObjects):
-            if not name in self.trendingObjects[subsystem] or forceRecreateSubsystem:
+            if name not in self.trendingObjects[subsystem] or forceRecreateSubsystem:
                 logger.debug("Adding trending object {} from subsystem {} to the trending objects".format(name, subsystem))
                 self.trendingObjects[subsystem][name] = obj
             else:
@@ -520,7 +520,7 @@ class timeSliceContainer(persistent.Persistent):
             int: Minutes from the start of run to the given time.
         """
         #logger.debug("inputTime: {inputTime}, startOfRun: {startOfRun}".format(inputTime = inputTime, startOfRun = self.startOfRun))
-        return (inputTime - self.startOfRun)//60
+        return (inputTime - self.startOfRun) // 60
 
     def timeInMinutesRounded(self, inputTime):
         """ Return the time from the input unix time to start of the run in minutes, rounded to
@@ -587,7 +587,7 @@ class histogramGroupContainer(persistent.Persistent):
 
     Histograms groups are created by providing name substrings of histogram which should be included.
     The name substring is referred to as a ``groupSelectionPattern``. For example, if the pattern was
-    "hello", all histograms containing "hello" would be selected. Additional properties related to 
+    "hello", all histograms containing "hello" would be selected. Additional properties related to
     groups, such as display information, are also stroed.
 
     Args:
@@ -711,7 +711,7 @@ class histogramContainer(persistent.Persistent):
         """
         returnValue = True
         if fIn:
-            if not self.histList is None:
+            if self.histList is not None:
                 if len(self.histList) > 1:
                     self.hist = ROOT.THStack(self.histName, self.histName)
                     for name in self.histList:
@@ -878,7 +878,7 @@ class trendingObject(persistent.Persistent):
             logger.debug("GetNbins: {}, GetEntries: {}".format(self.hist.hist.GetXaxis().GetNbins(), self.hist.hist.GetEntries()))
 
             # Need to pass with zeros for the over and underflow bins values, errors
-            valuesWithOverAndUnderflow = np.concatenate([[(0,0)], self.values, [(0,0)]])
+            valuesWithOverAndUnderflow = np.concatenate([[(0, 0)], self.values, [(0, 0)]])
             logger.debug("valuesWithOverAndUnderflow: {}".format(valuesWithOverAndUnderflow))
 
             # Access the ctypes via: https://docs.scipy.org/doc/numpy-1.14.0/reference/generated/numpy.ndarray.ctypes.html

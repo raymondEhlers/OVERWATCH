@@ -83,7 +83,7 @@ def createFileDictionary(currentDir, runDir, subsystem):
     Args:
         currentDir (str): Path to the directory containing run directories.
         runDir (str): Run directory to be considered.
-        subsystem (str): Subsystem to be considered. 
+        subsystem (str): Subsystem to be considered.
     Returns:
         list: [Dictionary from time stamp to filename, time in minutes spanned by the run]
     """
@@ -95,13 +95,13 @@ def createFileDictionary(currentDir, runDir, subsystem):
     # Add uncombined .root files to mergeDict, then sort by timestamp
     for name in os.listdir(os.path.join(currentDir, runDir, subsystem)):
         if ".root" in name and "combined" not in name and "timeSlice" not in name:
-            filename  = os.path.join(filenamePrefix, name)
-            mergeDict[extractTimeStampFromFilename(filename)] = filename 
+            filename = os.path.join(filenamePrefix, name)
+            mergeDict[extractTimeStampFromFilename(filename)] = filename
 
     # Max time range in minutes (60s added to make sure we don't undershoot)
     keys = sorted(mergeDict.keys())
     # // is integer division
-    maxTimeMinutes = (keys[-1] - keys[0] + 60)//60 
+    maxTimeMinutes = (keys[-1] - keys[0] + 60) // 60
 
     return [mergeDict, maxTimeMinutes]
 
@@ -221,7 +221,7 @@ def setupLogging(logger, logLevel, debug, logFilename):
     logFormat = logging.Formatter(logFormatStr)
 
     # For docker, we log to stdout so that supervisor is able to handle the logging
-    if debug == True or dockerDeploymentOption:
+    if debug is True or dockerDeploymentOption:
         # Log to stdout
         handler = logging.StreamHandler(sys.stdout)
         handler.setLevel(logLevel)
@@ -277,7 +277,7 @@ def enumerateFiles(dirPrefix, subsystem):
 
     Args:
         dirPrefix (str): Path to the root directory where the data is stored.
-        subsystem (str): Subsystem to be considered. 
+        subsystem (str): Subsystem to be considered.
     Returns:
         list: Files in provided directory that need to be moved.
     """
@@ -291,7 +291,7 @@ def enumerateFiles(dirPrefix, subsystem):
         if subsystem in name and ".root" in name:
             filesToMove.append(name)
             #logger.debug("name: %s" % name)
-        
+
     return sorted(filesToMove)
 
 def moveFiles(dirPrefix, subsystemDict):
@@ -351,7 +351,7 @@ def moveFiles(dirPrefix, subsystemDict):
             # We remove the ".root" so we can split on "_" without having an extraneous
             # information tacked on.
             tempFilename = filename
-            splitFilename = tempFilename.replace(".root","").split("_")
+            splitFilename = tempFilename.replace(".root", "").split("_")
             #logger.debug("tempFilename: %s" % tempFilename)
             #logger.debug("splitFilename: ", splitFilename)
 
@@ -386,14 +386,14 @@ def moveFiles(dirPrefix, subsystemDict):
 
             # Create run directory and subsystem directories as needed
             if not os.path.exists(os.path.join(dirPrefix, runDirectoryPath)):
-                os.makedirs( os.path.join(dirPrefix, runDirectoryPath) )
+                os.makedirs(os.path.join(dirPrefix, runDirectoryPath))
             # Only create the subsystem if we actually have files to move there. In principle, we
             # should never got to this point with no files to move (since it is checked before looping
             # and if there are no files, we wouldn't have anything to loop over), but we check here
             # for good measure.
             if len(filesToMove) != 0 and not os.path.exists(os.path.join(dirPrefix, runDirectoryPath, key)):
                 os.makedirs(os.path.join(dirPrefix, runDirectoryPath, key))
-            
+
             # Determine the final filename according to the format "SYShists.timestamp.root"
             newFilename = key + "hists." + timeString + ".root"
 
@@ -430,7 +430,7 @@ def moveRootFiles(dirPrefix, subsystemList):
     subsystemDict = {}
     for subsystem in subsystemList:
         subsystemDict[subsystem] = enumerateFiles(dirPrefix, subsystem)
-    
+
     return moveFiles(dirPrefix, subsystemDict)
 
 ###################################################

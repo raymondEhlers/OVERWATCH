@@ -123,7 +123,7 @@ def setHistogramOptions(subsystem):
     ``set(SYS)HistogramOptions(subsystem, **kwargs)``, where ``(SYS)`` is the subsystem three
     letter name, subsystem (subsystemContainer) is the current subsystem container, and the other
     args are reserved for future use.
-    
+
     Args:
         subsystem (subsystemContainer): Current subsystem container
     Returns:
@@ -263,7 +263,7 @@ for subsystem in subsystems:
 
             # Save the function name so that it can be printed
             functionNames.append(funcName)
-            
+
         # Print out the function names that have been loaded
         #logger.debug("Function names: {}".format(functionNames))
         if functionNames != []:

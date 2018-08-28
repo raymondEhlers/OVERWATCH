@@ -33,9 +33,9 @@ logger = logging.getLogger("")
 
 # Setup logger
 utilities.setupLogging(logger = logger,
-        logLevel = serverParameters["loggingLevel"],
-        debug = serverParameters["debug"],
-        logFilename = "webApp")
+                       logLevel = serverParameters["loggingLevel"],
+                       debug = serverParameters["debug"],
+                       logFilename = "webApp")
 # Log server settings
 logger.info(serverParameters)
 
@@ -56,7 +56,7 @@ if not serverParameters["debug"]:
 
     # Note the changes in values
     logger.debug("Previous secretKey: {key}".format(key = app.config["SECRET_KEY"]))
-    logger.debug("     New secretKey: {key}".format(key =  secretKey))
+    logger.debug("     New secretKey: {key}".format(key = secretKey))
     # Update it with the new value
     app.config.update(SECRET_KEY = secretKey)
     logger.debug("     After setting: {key}".format(key = app.config["SECRET_KEY"]))
@@ -70,16 +70,16 @@ def runDevelopment():
     if "pdsf" in socket.gethostname():
         from flup.server.fcgi import WSGIServer
         logger.info("Starting flup WSGI app")
-        WSGIServer(app, bindAddress=("127.0.0.1",8851)).run()
+        WSGIServer(app, bindAddress = ("127.0.0.1", 8851)).run()
     elif "sgn" in socket.gethostname():
         from flup.server.fcgi import WSGIServer
         logger.info("Starting flup WSGI app on sciece gateway")
-        WSGIServer(app, bindAddress=("127.0.0.1",8851)).run()
+        WSGIServer(app, bindAddress = ("127.0.0.1", 8851)).run()
     else:
         logger.info("Starting flask app")
         # Careful with threaded, but it can be useful to test the status page, since the post request succeeds!
-        app.run(host=serverParameters["ipAddress"],
-                port=serverParameters["port"])#, threaded=True)
+        app.run(host = serverParameters["ipAddress"],
+                port = serverParameters["port"])#, threaded=True)
 
 if __name__ == "__main__":
     runDevelopment()

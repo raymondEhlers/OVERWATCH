@@ -8,7 +8,7 @@ http://flask.pocoo.org/snippets/62/, and were written by the author of Flask.
 Slight modifications were made to :func:`redirectBack` to ensure that a login-logout loop was avoided
 under particular circumstances.
 
-.. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University 
+.. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
 
 from flask import request, url_for, redirect
@@ -57,7 +57,7 @@ def getRedirectTarget():
 
 def redirectBack(endpoint, **values):
     """ Handles safe redirection.
-    
+
     It extracts the value of Next from flask.request. If the target is not safe, then redirect back
     to ``endpoint`` instead.
 

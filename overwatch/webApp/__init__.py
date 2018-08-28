@@ -6,5 +6,5 @@
 """
 
 __all__ = [
-           "webApp"
-          ]
+    "webApp",
+]

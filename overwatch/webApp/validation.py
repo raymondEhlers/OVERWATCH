@@ -6,7 +6,7 @@ These functions are important to ensure that only valid values are passed to the
 Validation could likely be improved by moving WTForms, which Overwatch already depends upon for CSRF
 protection.
 
-.. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University 
+.. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
 
 # General
@@ -29,7 +29,7 @@ logger = logging.getLogger(__name__)
 
 def validateLoginPostRequest(request):
     """ Validates the login POST request.
-    
+
     Note:
         The error format is different here. Instead of a list in a dict, we simply have a string.
 
@@ -139,7 +139,7 @@ def validateTimeSlicePostRequest(request, runs):
         # Processing options
         inputProcessingOptions = {}
         # Ensure scaleHists is a bool
-        if scaleHists != False:
+        if scaleHists is not False:
             scaleHists = True
         inputProcessingOptions["scaleHists"] = scaleHists
 
@@ -272,7 +272,7 @@ def validateTrending(request):
         requestedHist = convertRequestToStringWhichMayBeEmpty("histName", request.args)
 
         # subsystemName could be None, so we first must check if it exists
-        if subsystemName and not subsystemName in serverParameters["subsystemList"] + ["TDG"]:
+        if subsystemName and subsystemName not in serverParameters["subsystemList"] + ["TDG"]:
             error.setdefault("Subsystem", []).append("{} is not a valid subsystem!".format(subsystemName))
     except KeyError as e:
         error.setdefault("keyError", []).append("Key error in " + e.args[0])
@@ -288,7 +288,7 @@ def validateTrending(request):
 
 def convertRequestToPythonBool(paramName, source):
     """ Converts a requested parameter to a python bool.
-    
+
     The validation is particularly useful for jsRoot and ajaxRequest. Note that this function
     is fairly similar to `convertRequestToStringWhichMayBeEmpty`.
 
@@ -300,7 +300,7 @@ def convertRequestToPythonBool(paramName, source):
     """
     paramValue = source.get(paramName, False, type=str)
     #logger.info("{paramName}: {paramValue}".format(paramName = paramName, paramValue = paramValue))
-    if paramValue != False:
+    if paramValue is not False:
         paramValue = json.loads(paramValue)
     logger.info("{paramName}: {paramValue}".format(paramName = paramName, paramValue = paramValue))
 
@@ -308,7 +308,7 @@ def convertRequestToPythonBool(paramName, source):
 
 def convertRequestToStringWhichMayBeEmpty(paramName, source):
     """ Handle strings which may be empty or contain "None".
-    
+
     This validation is particularly useful for validating hist names and hist groups
     request strings to ensure that they are valid strings before doing further validation.
     Empty strings should be treated as ``None``. The ``None`` strings are from the
@@ -365,7 +365,7 @@ def validateHistGroupAndHistName(histGroup, histName, subsystem, run, error):
 
     Note:
         As of Sept 2016, this check is not performed on the run page because it seems unnecessary
-        to check every single value and there could be a substantial performance cost. This 
+        to check every single value and there could be a substantial performance cost. This
         should be revisited in the future if it becomes a problem.
 
     Note:
@@ -414,7 +414,7 @@ def retrieveAndValidateTimeSlice(subsystem, error):
 
     Note:
         For the error format in ``error``, see the :doc:`web app README </webAppReadme>`.
-    
+
     Args:
         subsystem (subsystemContainer): Subsystem for which the time slices request was made.
         error (dict): Contains any possible errors following the defined error format. We will append

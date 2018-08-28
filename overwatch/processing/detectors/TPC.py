@@ -143,7 +143,7 @@ def defineTPCTrendingObjects(trending, **kwargs):
     for name, title, histNames in names:
         # It may be possible that the object already exists, so be certain that we don't overwrite it.
         # NOTE: The object already existing is not possible as of August 2018.
-        if not name in trending.keys():
+        if name not in trending.keys():
             # Define and store new trending histogram
             trending[name] = TPCTrendingObjectMean(name, title, histNames)
 
@@ -313,9 +313,9 @@ def restrictInclusiveDCAzVsPhiPtEtaRangeAndProjectTo1D(subsystem, hist, processi
     """
     # Restrict pt and eta ranges
     # Pt
-    hist.hist.GetZaxis().SetRangeUser(0.25,10);
+    hist.hist.GetZaxis().SetRangeUser(0.25, 10)
     # Eta
-    hist.hist.GetYaxis().SetRangeUser(-1,1);
+    hist.hist.GetYaxis().SetRangeUser(-1, 1)
 
     # Project and store the projection
     logger.debug("Projecting hist {} with hist container {} (names shouldn't match!)".format(hist.hist.GetName(), hist.histName))
@@ -384,7 +384,7 @@ def projectToXZ(subsystem, hist, processingOptions, aSide):
     Returns:
         ROOT.TH1: The projected histogram
     """
-    if aSide == True:
+    if aSide is True:
         hist.hist.GetYaxis().SetRangeUser(15, 29)
     else:
         hist.hist.GetYaxis().SetRangeUser(0, 14)

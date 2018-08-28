@@ -4,7 +4,7 @@
 
 For user authentication, https://exploreflask.com/users.html was extensively used as a guide.
 
-.. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University 
+.. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
 
 # Flask
@@ -46,7 +46,7 @@ class User(UserMixin):
 
     def checkPassword(self, plainTextPassword):
         """ Check a plain text password against a hashed password.
-        
+
         Args:
             plainTextPassword (str): The plain text password to test.
         Returns:
@@ -67,8 +67,9 @@ class User(UserMixin):
                 returns ``None``.
         """
         try:
-            userPasswordHash = db.get("config").get("users").get(username)
-        except:
+            userPasswordHash = db["config"]["users"][username]
+        except KeyError:
+            # Catch if one of the keys doesn't exist.
             userPasswordHash = None
         # If we can retrieve the hash, then it means that we have a valid user
         if userPasswordHash:
