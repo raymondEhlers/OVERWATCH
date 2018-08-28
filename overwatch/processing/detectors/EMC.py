@@ -13,19 +13,15 @@ plug-in system. These functions allow for enhanced data extraction, as well as i
 from __future__ import print_function
 from builtins import range
 
-# Used for QA functions
-from ROOT import gStyle, TH1F, TH2, THStack, TF1, TGaxis, SetOwnership, TLegend, TLine, kRed, kBlue, kOpenCircle, kFullCircle
-
-# Used for the outlier detection function
-import numpy
-
-# Used to enumerate possible names in a list
-import itertools
-
 # General includes
 import logging
-# Setup logger
 logger = logging.getLogger(__name__)
+
+import ROOT
+# Used to enumerate possible names in a list
+import itertools
+# Used for the outlier detection function
+import numpy
 
 # Basic processing classes
 from .. import processingClasses
@@ -148,7 +144,7 @@ def setEMCHistogramOptions(subsystem):
             hist.prettyName = hist.histName[12:]
 
         # Set `colz` for any TH2 hists
-        if hist.histType.InheritsFrom(TH2.Class()):
+        if hist.histType.InheritsFrom(ROOT.TH2.Class()):
             hist.drawOptions += " colz"
 
     # Set general processing options
@@ -249,10 +245,10 @@ def generalOptionsRequiringUnderlyingObjects(subsystem, hist, processingOptions,
         hist.hist.SetStats(False)
 
     # Disable the title
-    gStyle.SetOptTitle(0)
+    ROOT.gStyle.SetOptTitle(0)
 
     # Allows customization of draw options for 2D hists
-    if hist.hist.InheritsFrom(TH2.Class()):
+    if hist.hist.InheritsFrom(ROOT.TH2.Class()):
         hist.canvas.SetLogz()
 
     # Ensure that the canvas is updated, as Update() does not seem to work
@@ -274,7 +270,7 @@ def labelSupermodules(hist):
         smNumber = hist.histName[hist.histName.find("_SM") + 3:]
         hist.hist.SetTitle("SM {smNumber}".format(smNumber = smNumber))
         # Show title
-        gStyle.SetOptTitle(1)
+        ROOT.gStyle.SetOptTitle(1)
 
 def smOptions(subsystem, hist, processingOptions, **kwargs):
     """ Processing function for histograms which are broken out by super module (SM).
@@ -328,8 +324,8 @@ def addTRUGrid(subsystem, hist):
         is only implicit.
 
     Warning:
-        The grid is created by allocating a large number of ``TLines`` which are owned by ROOT, but not by python.
-        Although this hasn't been observed to be a problem, this could in principle lead to memory problems.
+        The grid is created by allocating a large number of ``TLine`` objects which are owned by ROOT, but not by
+        python. Although this hasn't been observed to be a problem, this could in principle lead to memory problems.
 
     Args:
         subsystem (subsystemContainer): The subsystem for the current run.
@@ -339,21 +335,21 @@ def addTRUGrid(subsystem, hist):
     """
     # Draw grid for TRUs in full EMCal SMs
     for x in range(8, 48, 8):
-        line = TLine(x, 0, x, 60)
-        SetOwnership(line, False)
+        line = ROOT.TLine(x, 0, x, 60)
+        ROOT.SetOwnership(line, False)
         line.Draw()
     # 60 + 1 to ensure that 60 is plotted
     for y in range(12, 60 + 1, 12):
-        line = TLine(0, y, 48, y)
-        SetOwnership(line, False)
+        line = ROOT.TLine(0, y, 48, y)
+        ROOT.SetOwnership(line, False)
         line.Draw()
 
     # Draw grid for TRUs in 1/3 EMCal SMs
-    line = TLine(0, 64, 48, 64)
-    SetOwnership(line, False)
+    line = ROOT.TLine(0, 64, 48, 64)
+    ROOT.SetOwnership(line, False)
     line.Draw()
-    line = TLine(24, 60, 24, 64)
-    SetOwnership(line, False)
+    line = ROOT.TLine(24, 60, 24, 64)
+    ROOT.SetOwnership(line, False)
     line.Draw()
 
     # Draw grid for TRUs in 2/3 DCal SMs
@@ -361,24 +357,24 @@ def addTRUGrid(subsystem, hist):
         if (x == 24):
             # skip PHOS hole
             continue
-        line = TLine(x, 64, x, 100)
-        SetOwnership(line, False)
+        line = ROOT.TLine(x, 64, x, 100)
+        ROOT.SetOwnership(line, False)
         line.Draw()
     for y in range(76, 100, 12):
-        line = TLine(0, y, 16, y)
-        SetOwnership(line, False)
+        line = ROOT.TLine(0, y, 16, y)
+        ROOT.SetOwnership(line, False)
         line.Draw()
         # skip PHOS hole
-        line = TLine(32, y, 48, y)
-        SetOwnership(line, False)
+        line = ROOT.TLine(32, y, 48, y)
+        ROOT.SetOwnership(line, False)
         line.Draw()
 
     # Draw grid for TRUs in 1/3 DCal SMs
-    line = TLine(0, 100, 48, 100)
-    SetOwnership(line, False)
+    line = ROOT.TLine(0, 100, 48, 100)
+    ROOT.SetOwnership(line, False)
     line.Draw()
-    line = TLine(24, 100, 24, 104)
-    SetOwnership(line, False)
+    line = ROOT.TLine(24, 100, 24, 104)
+    ROOT.SetOwnership(line, False)
     line.Draw()
 
 def edgePosOptions(subsystem, hist, processingOptions, **kwargs):
@@ -403,7 +399,7 @@ def edgePosOptions(subsystem, hist, processingOptions, **kwargs):
         zAxisLabel = "entries / events"
     hist.hist.GetZaxis().SetTitle(zAxisLabel)
 
-    if hist.hist.InheritsFrom("TH2"):
+    if hist.hist.InheritsFrom(ROOT.TH2.Class()):
         # Add grid of TRU boundaries
         addTRUGrid(subsystem, hist)
 
@@ -443,7 +439,7 @@ def fastOROptions(subsystem, hist, processingOptions, **kwargs):
         None.
     """
     # Handle the 2D hists
-    if hist.hist.InheritsFrom("TH2"):
+    if hist.hist.InheritsFrom(ROOT.TH2.Class()):
         # Add grid of TRU boundaries
         addTRUGrid(subsystem, hist)
 
@@ -474,10 +470,10 @@ def fastOROptions(subsystem, hist, processingOptions, **kwargs):
             hist.hist.Scale(1. / subsystem.nEvents)
 
         # Set style
-        hist.hist.SetMarkerStyle(kFullCircle)
+        hist.hist.SetMarkerStyle(ROOT.kFullCircle)
         hist.hist.SetMarkerSize(0.8)
-        hist.hist.SetMarkerColor(kBlue + 1)
-        hist.hist.SetLineColor(kBlue + 1)
+        hist.hist.SetMarkerColor(ROOT.kBlue + 1)
+        hist.hist.SetLineColor(ROOT.kBlue + 1)
 
         # Find bins above the threshold
         absIdList = []
@@ -527,8 +523,8 @@ def addEnergyAxisToPatches(subsystem, hist, processingOptions, **kwargs):
     # Note that although gPad.GetUymax() seems ideal here, it won't work properly due # to the histogram
     # being plotted as a long. Instead, we need to extract the value based on the maximum.
     yMax = 2 * hist.hist.GetMaximum()
-    energyAxis = TGaxis(adcMin, yMax, adcMax, yMax, EMin, EMax, 510, "-")
-    SetOwnership(energyAxis, False)
+    energyAxis = ROOT.TGaxis(adcMin, yMax, adcMax, yMax, EMin, EMax, 510, "-")
+    ROOT.SetOwnership(energyAxis, False)
     energyAxis.SetTitle("Energy (GeV)")
     energyAxis.Draw()
 
@@ -561,17 +557,17 @@ def patchAmpOptions(subsystem, hist, processingOptions, **kwargs):
 
     # Plot both on the same canvas if they both exist
     #if otherHist is not None:
-    if hist.hist.InheritsFrom(THStack.Class()):
+    if hist.hist.InheritsFrom(ROOT.THStack.Class()):
         # Add legend
-        legend = TLegend(0.6, 0.9, 0.9, 0.7)
+        legend = ROOT.TLegend(0.6, 0.9, 0.9, 0.7)
         legend.SetBorderSize(0)
         legend.SetFillStyle(0)
-        SetOwnership(legend, False)
+        ROOT.SetOwnership(legend, False)
 
         # Lists to use to plot
         detectors = ["EMCal", "DCal"]
-        colors = [kRed + 1, kBlue + 1]
-        markers = [kFullCircle, kOpenCircle]
+        colors = [ROOT.kRed + 1, ROOT.kBlue + 1]
+        markers = [ROOT.kFullCircle, ROOT.kOpenCircle]
         options = ["", ""]
 
         # Plot elements
@@ -801,8 +797,8 @@ def checkForOutliers(hist):
     # If there are outliers, then print the warning banner.
     if numOutliers:
         # Create TLegend and fill with information if there is an outlier.
-        leg = TLegend(0.15, 0.5, 0.7, 0.8)
-        SetOwnership(leg, False)
+        leg = ROOT.TLegend(0.15, 0.5, 0.7, 0.8)
+        ROOT.SetOwnership(leg, False)
 
         leg.SetBorderSize(4)
         leg.SetShadowColor(2)
@@ -817,9 +813,9 @@ def hasSignalOutlier(hist):
     """ Helper function to actually find the outlier from a signal histogram.
 
     Find mean bin amplitude and standard deviation, remove outliers beyond a particular number of standard
-    deviations, and then recalculate the mean and standard deviation. Works for both TH1 and TH2 (but note
-    that it computes outlier based on bin content, which may not be desirable for TH1; in that case mean
-    and std dev can easily be applied).
+    deviations, and then recalculate the mean and standard deviation. Works for both ``TH1`` and ``TH2``
+    (but note that it computes outlier based on bin content, which may not be desirable for ``TH1``; in that
+    case mean and std dev can easily be applied).
 
     Note:
         This function isn't currently utilized by the EMC, but it is kept as proof of concept for more complex
