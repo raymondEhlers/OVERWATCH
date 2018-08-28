@@ -895,3 +895,34 @@ class trendingObject(persistent.Persistent):
         # The hist is already available through the histogram container, but we return the hist
         # container in case the caller wants to do additional customization
         return self.hist
+
+    def listOfTrendedValuesForPrinting(self):
+        """ Print values contained inside the underlying trending object.
+
+        This is useful mainly as a debugging tool.
+
+        Args:
+            None
+        Returns:
+            tuple: (nonzeroBins, values) where ``nonzeroBins`` (list) are the indices of all non-zero bins,
+                and ``values`` (list) are all values stored in the trending object.
+        """
+        if self.hist.hist.InheritsFrom(ROOT.TH1.Class()):
+            # TH1
+            nonzeroBins = [index for index in range(0, self.hist.hist.GetXaxis().GetNbins()) if self.hist.hist.GetBinContent(index) > 0.]
+            values = [self.hist.hist.GetBinContent(index) for index in range(0, self.hist.hist.GetXaxis().GetNbins())]
+        else:
+            # TGraph
+            import ctypes
+            x = ctypes.c_double(0.)
+            y = ctypes.c_double(0.)
+            nonzeroBins = []
+            values = []
+            for index in range(0, self.hist.hist.GetN()):
+                self.hist.hist.GetPoint(index, x, y)
+                values.append(y.value)
+                if y.value > 0:
+                    nonzeroBins.append(index)
+
+        return (nonzeroBins, values)
+

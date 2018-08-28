@@ -73,6 +73,9 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
     steps and simply apply the processing functions. If a histogram was not sorted then it belongs to another
     subsystem and could be processed by it later (depending on the configured subsystems).
 
+    Note:
+        Trending objects are filled (in ``processHist()``) when the relevant hists are processed in this function.
+
     Args:
         filename (str): The full path to the file to be processed.
         outputFormatting (str): Specially formatted string which contains a generic path to be used when printing histograms.
@@ -86,7 +89,7 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
         trendingContainer (trendingContainer): Contains trending objects which will be used when determining which histograms
             need to be used for trending.
     Returns:
-        None
+        None. However, the underlying subsystems, histograms, etc, are modified.
     """
     # The file with the new histograms
     fIn = ROOT.TFile(filename, "READ")
@@ -207,7 +210,15 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
     fIn.Close()
 
 def processTrending(outputFormatting, trending, processingOptions = None):
-    """ 
+    """ Process the trending objects stored in the trending container.
+
+    This function is something of an analog to ``processRootFile()``, except for the trending objects stored in the trending
+    container. It loops over the stored trending objects and retrieves their underlying objects before passing them along to
+    ``processHist()`` for any processing functions and plotting.
+
+    Note:
+        The trending objects need to already be filled by being processed in ``processRootFile()``. ``processTrending()`` only
+        deals with processing the already filled trending objects.
     
     Args:
         outputFormatting (str): Specially formatted string which contains a generic path to be used when printing histograms.
@@ -219,7 +230,7 @@ def processTrending(outputFormatting, trending, processingOptions = None):
             are names of options, while values are the corresponding option values. Default: ``None``. In this case,
             it will use the default trending processing options.
     Returns:
-        None, but with side effects ...
+        None. However, the underlying trending subsystem, trending objects, etc, are modified.
     """
     # Set the proper processing options
     # If it was passed in, it was from time slices
@@ -238,38 +249,59 @@ def processTrending(outputFormatting, trending, processingOptions = None):
             hist = trendingObject.hist
             hist.retrieveHistogram(trending = trending, ROOT = ROOT)
             logger.debug("trendingObject: {}, hist: {}, hist.histName: {}, hist.hist: {}".format(trendingObject, hist, hist.histName, hist.hist))
-            #logger.debug("entries: {}".format(hist.hist.GetEntries()))
-            # TEMP - Check for entries!
-            if hist.hist.InheritsFrom(ROOT.TH1.Class()):
-                nonzeroBins = [index for index in range(0, hist.hist.GetXaxis().GetNbins()) if hist.hist.GetBinContent(index) > 0.]
-            else:
-                import ctypes
-                x = ctypes.c_double(0.)
-                y = ctypes.c_double(0.)
-                nonzeroBins = []
-                values = []
-                for index in range(0, hist.hist.GetN()):
-                    hist.hist.GetPoint(index, x, y)
-                    values.append(y.value)
-                    if y.value > 0:
-                        nonzeroBins.append(index)
+
+            # Check for entries for debugging
+            if logger.isEnabledFor(logging.DEBUG):
+                (nonzeroBins, values) = trendingObject.listOfTrendedValuesForPrinting()
                 logger.debug("nonzeroBins: {}".format(nonzeroBins))
                 logger.debug("values: {}".format(values))
-            # ENDTEMP
+
+            # Process and output the underlying trending object.
             processHist(subsystem = trending, hist = hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions, subsystemName = subsystemName)
 
 def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, subsystemName = None):
-    """
-    
+    """ Main histogram processing function.
+
+    This function is responsible for taking a given ``histogramContainer``, process the underlying histogram
+    via processing functions, fill trending objects (if applicable), and then store the result in images and
+    ``json`` for display in the web app. Here, execute the plug-in functionality assigned earlier and perform
+    the actual drawing of the hist onto a canvas.
+
+    Note:
+        The hist is drawn **before** calling the processing function to allow the plug-ins to draw on top of the histogram.
+
+    Note:
+        The ``json`` that is written is by ``TBufferJSON`` for display via ``jsRoot``. While it stores the information,
+        it requires ``jsRoot`` to be displayed meaningfully.
+
+    Note:
+        This function is built in such a way that it works for processing both histograms and trending objects.
+        For this to work, both the ``subsystemContainer`` and the ``trendingContainer`` must support the following
+        methods: ``imgDir()``, which is the image storage directory, and ``jsonDir()``, which is the ``json`` storage
+        directory. Both should except to get formatted with `` % {"subsystem" : subsystemName}``.
+
     Args:
-        subsystem (): ...
-        hist (): ...
-        canvas (): ...
-        outputFormatting (): ...
-        processingOptions (): ...
-        subsystemName (): ... . Default: ``None``.
+        subsystem (subsystemContainer or trendingContainer): Subsystem or trending container which contains the histogram
+            being processed. It only uses a subset of either classes methods. See the note for information about the
+            requirements of this object.
+        hist (histogramContainer): Histogram to be processed.
+        canvas (TCanvas): Canvas on which the histogram should be plotted. It will be stored in the ``histogramContainer``
+            for the purposes of processing the hist.
+        outputFormatting (str): Specially formatted string which contains a generic path to be used when printing histograms.
+            It must contain ``base``, ``name``, and ``ext``, where ``base`` is the base path, ``name`` is the filename
+            and ``ext`` is the extension. Ex: ``{base}/{name}.{ext}``.
+        processingOptions (dict): Implemented by the subsystem to note options used during standard processing. Keys
+            are names of options, while values are the corresponding option values. Default: ``None``. Note: In this case,
+            it will use the default subsystem or trending processing options.
+        subsystemName (str): Name of the . Default: ``None``.
+        subsystemName (str): The current subsystem by three letter, all capital name (ex. ``EMC``).  Default: ``None``.
+            In that case of ``None``, the subsystem name is retrieved from ``subsystem.subsystem``. This argument is used
+            for processing the trending objects where we don't have access to their corresponding ``subsystemContainer``.
+            The subsystem name of the ``trendingContainer`` (``TDG``) does not necessarily correspond to the subsystem
+            of the object being processed, so we have to pass it here.
     Returns:
-        None. Side effects of written files, changed objects, etc ...
+        None. However, the subsystem, histogram, etc are modified and their representations in images
+            and ``json`` are written to disk.
     """
     # In the case of trending, we have to pass a separate subsystem name because the trending container
     # holds hists from various subsystems
@@ -307,23 +339,18 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, su
         func(subsystem, hist, processingOptions)
 
     logger.debug("histName: {}, hist: {}".format(hist.histName, hist.hist))
-    #logger.debug("histName: {}, hist: {}, hist entries: {}".format(hist.histName, hist.hist, hist.hist.GetEntries()))
 
     # Apply trending functions
     logger.debug("hist {} trending objects: {}".format(hist.histName, hist.trendingObjects))
     for trendingObject in hist.trendingObjects:
         logger.debug("Filling trending object {}".format(trendingObject.name))
         trendingObject.fill(hist)
-        #func(hist)
-
-    # Filter here for hists in the subsystem if subsystem != fileLocationSubsystem
-    # Thus, we can filter the proper subsystems for subsystems that don't have their own data files
-    #if subsystem.subsystem != subsystem.fileLocationSubsystem and subsystem.subsystem not in hist.GetName():
-    #    continue
 
     # Save
     outputName = hist.histName
-    # Replace any slashes with underscores to ensure that it can be used safely as a filename
+    # Replace any slashes with underscores to ensure that it can be used safely as a filename.
+    # For example, the TPC has historically had a `/` in the name. This is fine everywhere except
+    # when attempting to use the name as a filename.
     outputName = outputName.replace("/", "_")
     outputFilename = outputFormatting.format(base = os.path.join(processingParameters["dirPrefix"], subsystem.imgDir % {"subsystem" : subsystemName}),
                                          name = outputName,
