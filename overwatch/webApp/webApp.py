@@ -111,7 +111,7 @@ def handleCSRFError(error):
     Args:
         error (CSRFError): Error object raised during as CSRF validation failure.
     Returns:
-        str: JSON encoded response containing the error.
+        str: ``json`` encoded response containing the error.
     """
     # Define the error in the proper format.
     # Also provide some additional error information.
