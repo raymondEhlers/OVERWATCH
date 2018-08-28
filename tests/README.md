@@ -1,4 +1,4 @@
-# Testing
+# Testing Overwatch
 
 Tests are implemented using `pytest`. As of July 2018, they don't have extensive coverage, but should be
 expanded upon when making code improvements. For running tests, you should run them from the `tests` folder!
