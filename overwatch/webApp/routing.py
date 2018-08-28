@@ -80,6 +80,6 @@ def redirectBack(endpoint, **values):
     # This logout and test data specific change is the only one made in these functions
     if not target or not isSafeUrl(target) or "logout" in target or "testingDataArchive" in target:
         target = url_for(endpoint, **values)
-    #logger.debug("target for redirectBack: {0}".format(target))
+    #logger.debug("target for redirectBack: {target}".format(target = target))
     return redirect(target)
 

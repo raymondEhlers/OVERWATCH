@@ -75,7 +75,7 @@ def checkForToken(func):
             raise InvalidUsage("Must pass a token!")
 
         # Execute if the token matches
-        logger.debug("Token: {0}".format(request.headers["token"]))
+        logger.debug("Token: {token}".format(token = request.headers["token"]))
         if request.headers["token"] == receiverParameters["apiToken"]:
             return func(*args, **kwargs)
 
@@ -105,7 +105,7 @@ def dqm():
     logger.info("Headers:")
     requestHeaders = dict()
     for header, val in iteritems(request.headers):
-        logger.debug("\"{0}\":, \"{1}\"".format(header, val))
+        logger.debug("\"{header}\":, \"{val}\"".format(header = header, val = val))
         requestHeaders[header] = val
 
     response["receivedHeaders"] = requestHeaders
@@ -127,7 +127,7 @@ def dqm():
     # TString filename = TString::Format("%shistos_%d_%s_%d_%d_%d_%d_%d_%d.root", fSubsystem.c_str(), fRunNumber, fHLTMode.c_str(), timestamp->tm_year+1900, timestamp->tm_mon+1, timestamp->tm_mday, timestamp->tm_hour, timestamp->tm_min, timestamp->tm_sec);
     # NOTE: these values are zero padded! However, this should be fine.
     timeStr = time.strftime("%Y_%m_%d_%H_%M_%S", timeTuple)
-    logger.info("timeStr: {0}".format(timeStr))
+    logger.info("timeStr: {timeStr".format(timeStr = timeStr))
 
     # If the mode needs to be one letter, perhaps make it "Z" to make it obvious or "D" for DQM?
     filename = "{amoreAgent}histos_{runNumber}_{mode}_{timestamp}.root".format(amoreAgent = agent, runNumber = runNumber, mode = "DQM", timestamp = timeStr)
@@ -161,7 +161,7 @@ def dqm():
         # Can use request.data to get the data as a string
         # Can use request.get_data() to get all non-form data as the bytes of whatever is in the body
         payload = request.get_data()
-        logger.info("payload: {0}".format(payload[:100]))
+        logger.info("payload: {payload}".format(payload = payload[:100]))
         if payload:
             # Not opening as ROOT file since we are just writing the bytes to a file
             with open(outputPath, "wb") as fOut:
@@ -208,7 +208,7 @@ def dqm():
     resp.status_code = response["status"]
 
     # Print and return
-    logger.info("Response: {0}, resp: {1}".format(resp, response))
+    logger.info("Response: {response}, resp: {resp}".format(response = response, resp = resp))
     return resp
 
 def receivedObjectInfo(outputPath):
@@ -221,7 +221,7 @@ def receivedObjectInfo(outputPath):
     receivedObjects = dict()
     for key in keys:
         obj = key.ReadObj()
-        receivedObjects[key.GetName()] = "Obj name: {0}, Obj IsA() Name: {1}".format(obj.GetName(), obj.IsA().GetName())
+        receivedObjects[key.GetName()] = "Obj name: {}, Obj IsA() Name: {}".format(obj.GetName(), obj.IsA().GetName())
         success = True
 
     # Print to log for convenience

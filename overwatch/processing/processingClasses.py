@@ -73,7 +73,7 @@ class runContainer(persistent.Persistent):
     def __init__(self, runDir, fileMode, hltMode = None):
         self.runDir = runDir
         self.runNumber = int(runDir.replace("Run", ""))
-        self.prettyName = "Run {0}".format(self.runNumber)
+        self.prettyName = "Run {runNumber}".format(runNumber = self.runNumber)
         self.mode = fileMode
         self.subsystems = BTrees.OOBTree.BTree()
         self.hltMode = hltMode
@@ -519,7 +519,7 @@ class timeSliceContainer(persistent.Persistent):
         Returns:
             int: Minutes from the start of run to the given time.
         """
-        #logger.debug("inputTime: {0}, startOfRun: {1}".format(inputTime, self.startOfRun))
+        #logger.debug("inputTime: {inputTime}, startOfRun: {startOfRun}".format(inputTime = inputTime, startOfRun = self.startOfRun))
         return (inputTime - self.startOfRun)//60
 
     def timeInMinutesRounded(self, inputTime):
@@ -715,7 +715,7 @@ class histogramContainer(persistent.Persistent):
                 if len(self.histList) > 1:
                     self.hist = ROOT.THStack(self.histName, self.histName)
                     for name in self.histList:
-                        logger.debug("HistName in list: {0}".format(name))
+                        logger.debug("HistName in list: {name}".format(name = name))
                         self.hist.Add(fIn.GetKey(name).ReadObj())
                     self.drawOptions += "nostack"
                     # TODO: Allow for further configuration of THStack, like TLegend and such
@@ -733,7 +733,7 @@ class histogramContainer(persistent.Persistent):
                     logger.warning("histList for hist {} is defined, but is empty".format(histName))
                     returnValue = False
             else:
-                logger.debug("HistName: {0}".format(self.histName))
+                logger.debug("HistName: {histName}".format(histName = self.histName))
                 tempHist = fIn.GetKey(self.histName)
                 if tempHist:
                     self.hist = tempHist.ReadObj()

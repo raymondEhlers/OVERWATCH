@@ -106,7 +106,7 @@ def createHistogramStacks(subsystem):
     if histogramStackFunction is not None:
         histogramStackFunction(subsystem)
     else:
-        logger.info("Could not find histogram stack function for subsystem {0}.".format(subsystem.subsystem))
+        logger.info("Could not find histogram stack function for subsystem {subsystem}.".format(subsystem = subsystem.subsystem))
         # Ensure that the histograms propagate to the next dict if there is not stack function!
         # Copy by key and value so any existing hists in histsAvailable are preserved
         for k in subsystem.histsInFile.iterkeys():
@@ -135,7 +135,7 @@ def setHistogramOptions(subsystem):
     if histogramOptionsFunction is not None:
         histogramOptionsFunction(subsystem)
     else:
-        logger.info("Could not find histogram options function for subsystem {0}.".format(subsystem.subsystem))
+        logger.info("Could not find histogram options function for subsystem {subsystem}.".format(subsystem = subsystem.subsystem))
 
 def createHistGroups(subsystem):
     """ Properly route histogram group function for each subsystem.
@@ -159,7 +159,7 @@ def createHistGroups(subsystem):
         return True
 
     # If it doesn't work for any reason, return false so that we can create a default
-    logger.info("Could not find histogram group creation function for subsystem {0}".format(subsystem.subsystem))
+    logger.info("Could not find histogram group creation function for subsystem {subsystem}".format(subsystem = subsystem.subsystem))
     return False
 
 def findFunctionsForHist(subsystem, hist):
@@ -190,7 +190,7 @@ def findFunctionsForHist(subsystem, hist):
     if findFunction is not None:
         findFunction(subsystem, hist)
     else:
-        logger.info("Could not find histogram function for subsystem {0}".format(subsystem.subsystem))
+        logger.info("Could not find histogram function for subsystem {subsystem}".format(subsystem = subsystem.subsystem))
 
 def defineTrendingObjects(subsystem):
     """ Defines trending objects and the histograms from which they should be extracted.
@@ -213,7 +213,7 @@ def defineTrendingObjects(subsystem):
     if defineTrendingFunction is not None:
         trending = defineTrendingFunction(trending)
     else:
-        logger.info("Could not find histogram trending function for subsystem {0}".format(subsystem))
+        logger.info("Could not find histogram trending function for subsystem {subsystem}".format(subsystem = subsystem))
 
     return trending
 
@@ -242,7 +242,7 @@ for subsystem in subsystems:
         #subsystemModule = importlib.import_module("%s.%s.%s.%s" % ("overwatch", "processing", "detectors", subsystem))
         # Using relative import
         # Relative import is preferred here because it's used elsewhere in the project.
-        subsystemModule = importlib.import_module(".detectors.{0}".format(subsystem), package = "overwatch.processing")
+        subsystemModule = importlib.import_module(".detectors.{subsystem}".format(subsystem = subsystem), package = "overwatch.processing")
         #logger.info(dir(subsystemModule))
 
         # Loop over all functions from the dynamically loaded module

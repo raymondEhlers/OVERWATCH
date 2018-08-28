@@ -141,7 +141,7 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
         if not subsystem.histGroups:
             sortingSuccess = pluginManager.createHistGroups(subsystem)
             if sortingSuccess is False:
-                logger.debug("Subsystem {0} does not have a sorting function. Adding all histograms into one group!".format(subsystem.subsystem))
+                logger.debug("Subsystem {subsystem} does not have a sorting function. Adding all histograms into one group!".format(subsystem = subsystem.subsystem))
 
                 if subsystem.fileLocationSubsystem != subsystem.subsystem:
                     selection = subsystem.subsystem
@@ -225,7 +225,7 @@ def processTrending(outputFormatting, trending, processingOptions = None):
     # If it was passed in, it was from time slices
     if processingOptions == None:
         processingOptions = trending.processingOptions
-    logger.debug("processingOptions: {0}".format(processingOptions))
+    logger.debug("processingOptions: {processingOptions}".format(processingOptions = processingOptions))
 
     # Cannot have same name as other canvases, otherwise the canvas will be replaced, leading to segfaults
     canvas = ROOT.TCanvas("processTrendingCanvas", "processTrendingCanvas")
@@ -291,7 +291,7 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, su
     # Apply projection functions
     # Must be done before drawing!
     for func in hist.projectionFunctionsToApply:
-        logger.debug("Calling projection func: {0}".format(func))
+        logger.debug("Calling projection func: {func}".format(func = func))
         hist.hist = func(subsystem, hist, processingOptions)
 
     # Setup and draw histogram
@@ -301,9 +301,9 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, su
     hist.hist.Draw(hist.drawOptions)
 
     # Call functions for each hist
-    #logger.debug("Functions to apply: {0}".format(hist.functionsToApply))
+    #logger.debug("Functions to apply: {functionsToApply}".format(functionsToApply = hist.functionsToApply))
     for func in hist.functionsToApply:
-        logger.debug("Calling func: {0}".format(func))
+        logger.debug("Calling func: {func}".format(func = func))
         func(subsystem, hist, processingOptions)
 
     logger.debug("histName: {}, hist: {}".format(hist.histName, hist.hist))
@@ -335,7 +335,7 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, su
     jsonBufferFile = outputFormatting.format(base = os.path.join(processingParameters["dirPrefix"], subsystem.jsonDir % {"subsystem" : subsystemName}),
                                          name = outputName,
                                          ext = "json")
-    #logger.debug("jsonBufferFile: {0}".format(jsonBufferFile))
+    #logger.debug("jsonBufferFile: {jsonBufferFile}".format(jsonBufferFile = jsonBufferFile))
     # GZip is performed by the web server, not here!
     with open(jsonBufferFile, "wb") as f:
         f.write(ROOT.TBufferJSON.ConvertToJSON(canvas).Data().encode())
@@ -359,7 +359,7 @@ def compareProcessingOptionsDicts(inputProcessingOptions, processingOptions):
     processingOptionsAreTheSame = True
     for key,val in iteritems(inputProcessingOptions):
         if key not in processingOptions:
-            return (None, None, {"Processing option error": ["Key \"{0}\" in inputProcessingOptions ({1}) is not in subsystem processingOptions {2}!".format(key, inputProcessingOptions, processingOptions)]})
+            return (None, None, {"Processing option error": ["Key \"{key}\" in inputProcessingOptions ({inputProcessingOptions}) is not in subsystem processingOptions {processingOptions}!".format(key = key, inputProcessingOptions = inputProcessingOptions, processingOptions = processingOptions)]})
         if val != processingOptions[key]:
             processingOptionsAreTheSame = False
             break
@@ -394,19 +394,19 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
         return ("fullProcessing", False, None)
 
     # If input time range out of range, return 0
-    logger.info("Filtering time window! Min:{0}, Max: {1}".format(minTimeMinutes,maxTimeMinutes)) 
+    logger.info("Filtering time window! Min:{minTimeMinutes}, Max: {maxTimeMinutes}".format(minTimeMinutes = minTimeMinutes, maxTimeMinutes = maxTimeMinutes))
     if minTimeMinutes < 0:
         logger.info("Minimum input time less than 0!")
-        return (None, None, {"Request Error": ["Miniumum input time of \"{0}\" is less than 0!".format(minTimeMinutes)]})
+        return (None, None, {"Request Error": ["Miniumum input time of \"{minTimeMinutes}\" is less than 0!".format(minTimeMinutes = minTimeMinutes)]})
     if minTimeCutUnix > maxTimeCutUnix:
         logger.info("Max time must be greater than Min time!")
-        return (None, None, {"Request Error": ["Max time of \"{0}\" must be greater than the min time of {1}!".format(maxTimeMinutes, minTimeMinutes)]})
+        return (None, None, {"Request Error": ["Max time of \"{maxTimeMinutes}\" must be greater than the min time of {minTimeMinutes}!".format(maxTimeMinutes = maxTimeMinutes, minTimeMinutes = minTimeMinutes)]})
 
     # Filter files by input time range
     filesToMerge = []
     for fileCont in subsystem.files.values():
-        #logger.info("fileCont.fileTime: {0}, minTimeCutUnix: {1}, maxTimeCutUnix: {2}".format(fileCont.fileTime, minTimeCutUnix, maxTimeCutUnix))
-        logger.info("fileCont.timeIntoRun (minutes): {0}, minTimeMinutes: {1}, maxTimeMinutes: {2}".format(round(fileCont.timeIntoRun/60), minTimeMinutes, maxTimeMinutes))
+        #logger.info("fileCont.fileTime: {fileTime}, minTimeCutUnix: {minTimeCutUnix}, maxTimeCutUnix: {maxTimeCutUnix}".format(fileTime = fileCont.fileTime, minTimeCutUnix = minTimeCutUnix, maxTimeCutUnix = maxTimeCutUnix))
+        logger.info("fileCont.timeIntoRun (minutes): {timeIntoRun}, minTimeMinutes: {minTimeMinutes}, maxTimeMinutes: {maxTimeMinutes}".format(timeIntoRun = round(fileCont.timeIntoRun/60), minTimeMinutes = minTimeMinutes, maxTimeMinutes = maxTimeMinutes))
         #if fileCont.fileTime >= minTimeCutUnix and fileCont.fileTime <= maxTimeCutUnix and fileCont.combinedFile == False:
         # It is important to make this check in such a way that we can round to the nearest minute.
         if round(fileCont.timeIntoRun/60) >= minTimeMinutes and round(fileCont.timeIntoRun/60) <= maxTimeMinutes and fileCont.combinedFile == False:
@@ -415,21 +415,21 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
 
     # If filesToMerge is empty, then the time range has no files. We need to report as such
     if filesToMerge == []:
-         return (None, None, {"Request Error": ["No files are available in requested range of {0}-{1}! Please make another request with a different range".format(minTimeMinutes, maxTimeMinutes)]})
+         return (None, None, {"Request Error": ["No files are available in requested range of {minTimeMinutes}-{maxTimeMinutes}! Please make another request with a different range".format(minTimeMinutes = minTimeMinutes, maxTimeMinutes = maxTimeMinutes)]})
 
     # Sort files by time
     filesToMerge.sort(key=lambda x: x.fileTime)
     
-    #logger.info("filesToMerge: {0}, times: {1}".format(filesToMerge, [x.fileTime for x in filesToMerge]))
+    #logger.info("filesToMerge: {filesToMerge}, times: {times}".format(filesToMerge = filesToMerge, times = [x.fileTime for x in filesToMerge]))
 
     # Get min and max time stamp remaining
     minFilteredTimeStamp = filesToMerge[0].fileTime
     maxFilteredTimeStamp = filesToMerge[-1].fileTime
 
     # Check if it already exists and return if that is the case
-    #logger.info("subsystem.timeSlice: {0}".format(subsystem.timeSlices))
+    #logger.info("subsystem.timeSlice: {timeSlices}".format(timeSlices = subsystem.timeSlices))
     for key, timeSlice in iteritems(subsystem.timeSlices):
-        #logger.info("minFilteredTimeStamp: {0}, maxFilteredTimeStamp: {1}, timeSlice.minTime: {2}, timeSlice.maxTime: {3}".format(minFilteredTimeStamp, maxFilteredTimeStamp, timeSlice.minTime, timeSlice.maxTime))
+        #logger.info("minFilteredTimeStamp: {minFilteredTimeStamp}, maxFilteredTimeStamp: {maxFilteredTimeStamp}, timeSlice.minTime: {minTime}, timeSlice.maxTime: {maxTime}".format(minFilteredTimeStamp = minFilteredTimeStamp, maxFilteredTimeStamp = maxFilteredTimeStamp, minTime = timeSlice.minTime, maxTime = timeSlice.maxTime))
         processingOptionsAreTheSame = compareProcessingOptionsDicts(inputProcessingOptions, timeSlice.processingOptions)
         if timeSlice.minUnixTimeAvailable == minFilteredTimeStamp and timeSlice.maxUnixTimeAvailable == maxFilteredTimeStamp and processingOptionsAreTheSame:
             # Already exists - we don't need to remerge or reprocess
@@ -479,11 +479,11 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
     if runDir in runs:
         run = runs[runDir]
     else:
-        return {"Request Error": ["Requested Run {0}, but there is no run information on it! Please check that it is a valid run and retry in a few minutes!".format(timeSliceRunNumber)]}
+        return {"Request Error": ["Requested Run {timeSliceRunNumber}, but there is no run information on it! Please check that it is a valid run and retry in a few minutes!".format(timeSliceRunNumber = timeSliceRunNumber)]}
 
     # Get subsystem
     subsystem = run.subsystems[subsystemName]
-    logger.info("subsystem.baseDir: {0}".format(subsystem.baseDir))
+    logger.info("subsystem.baseDir: {baseDir}".format(baseDir = subsystem.baseDir))
 
     # Setup dirPrefix
     dirPrefix = processingParameters["dirPrefix"]
@@ -496,7 +496,7 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
     # Little should happen here since few, if any files, should be moved
     processMovedFilesIntoRuns(runs, runDict)
 
-    logger.info("runLength: {0}".format(subsystem.runLength))
+    logger.info("runLength: {runLength}".format(runLength = subsystem.runLength))
 
     # Validate and create time slice
     (timeSliceKey, newlyCreated, errors) = validateAndCreateNewTimeSlice(run, subsystem, minTimeRequested, maxTimeRequested, inputProcessingOptions)
@@ -521,8 +521,8 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
         return {"Merge Error" : e.args}
 
     # Print variables for log
-    logger.debug("minTimeRequested: {0}, maxTimeRequested: {1}".format(minTimeRequested, maxTimeRequested))
-    logger.debug("subsystem.subsystem: {0}, subsystem.fileLocationSubsystem: {1}".format(subsystem.subsystem, subsystem.fileLocationSubsystem))
+    logger.debug("minTimeRequested: {minTimeRequested}, maxTimeRequested: {maxTimeRequested}".format(minTimeRequested = minTimeRequested, maxTimeRequested = maxTimeRequested))
+    logger.debug("subsystem.subsystem: {subsystem}, subsystem.fileLocationSubsystem: {fileLocationSubsystem}".format(subsystem = subsystem.subsystem, fileLocationSubsystem = subsystem.fileLocationSubsystem))
 
     # Generate the histograms
     outputFormattingSave = os.path.join("{base}", "%(prefix)s.{name}.{ext}" % {"prefix" : timeSlice.filenamePrefix})
@@ -537,7 +537,7 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
                     outputFormattingSave, subsystem,
                     processingOptions = timeSlice.processingOptions)
 
-    logger.info("Finished processing {0}!".format(run.prettyName))
+    logger.info("Finished processing {prettyName}!".format(prettyName = run.prettyName))
 
     # No errors, so return the key
     return timeSliceKey
@@ -563,7 +563,7 @@ def createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir):
     filenames = sorted(runDict[runDir].subsystems[fileLocationSubsystem])
     startOfRun = utilities.extractTimeStampFromFilename(filenames[0])
     endOfRun = utilities.extractTimeStampFromFilename(filenames[-1])
-    logger.info("runLength filename: {0}".format(filenames[-1]))
+    logger.info("runLength filename: {filename}".format(filename = filenames[-1]))
 
     # Create the subsystem
     showRootFiles = False
@@ -610,7 +610,7 @@ def processMovedFilesIntoRuns(runs, runDict):
                     fileKeys = subsystem.files.keys()
                     # This should rarely change, but in principle we could get a new file that we missed.
                     subsystem.startOfRun = fileKeys[0]
-                    logger.info("Previous EOR: {0}\tNew: {1}".format(subsystem.endOfRun, fileKeys[-1]))
+                    logger.info("Previous EOR: {endOfRun}\tNew: {fileKey}".format(endOfRun = subsystem.endOfRun, fileKey = fileKeys[-1]))
                     subsystem.endOfRun = fileKeys[-1]
                 else:
                     # Create a new subsystem
@@ -700,20 +700,20 @@ def processAllRuns():
                     else:
                         # Cannot create subsystem, since the HLT doesn't exist as a fall back
                         if subsystem == "HLT":
-                            logger.warning("Could not create subsystem {0} in {1} due to lacking HLT files.".format(subsystem, runDir))
+                            logger.warning("Could not create subsystem {subsystem} in {runDir} due to lacking HLT files.".format(subsystem = subsystem, runDir = runDir))
                         else:
-                            logger.warning("Could not create subsystem {0} in {1} due to lacking {0} and HLT files.".format(subsystem, runDir))
+                            logger.warning("Could not create subsystem {subsystem} in {runDir} due to lacking {subsystem} and HLT files.".format(subsystem = subsystem, runDir = runDir))
                         continue
 
-                logger.info("Creating subsystem {0} in {1}".format(subsystem, runDir))
+                logger.info("Creating subsystem {subsystem} in {runDir}".format(subsystem = subsystem, runDir = runDir))
                 # Retrieve the files for a given directory
                 [filenamesDict, runLength] = utilities.createFileDictionary(dirPrefix, runDir, fileLocationSubsystem)
-                #logger.info("runLength: {0}, filenamesDict: {1}".format(runLength, filenamesDict))
+                #logger.info("runLength: {runLength}, filenamesDict: {filenamesDict}".format(runLength = runLength, filenamesDict = filenamesDict))
                 sortedKeys = sorted(filenamesDict.keys())
                 startOfRun = utilities.extractTimeStampFromFilename(filenamesDict[sortedKeys[0]])
                 endOfRun = utilities.extractTimeStampFromFilename(filenamesDict[sortedKeys[-1]])
-                #logger.info("filenamesDict.values(): {0}".format(filenamesDict.values()))
-                logger.info("startOfRun: {0}, endOfRun: {1}, runLength: {2}".format(startOfRun, endOfRun, (endOfRun - startOfRun)//60))
+                #logger.info("filenamesDict.values(): {values}".format(values = filenamesDict.values()))
+                logger.info("startOfRun: {startOfRun}, endOfRun: {endOfRun}, runLength: {runLength}".format(startOfRun = startOfRun, endOfRun = endOfRun, runLength = (endOfRun - startOfRun)//60))
 
                 # Now create the subsystem
                 showRootFiles = False
@@ -733,17 +733,17 @@ def processAllRuns():
                 for key in filenamesDict:
                     subsystemFiles[key] = processingClasses.fileContainer(filenamesDict[key], startOfRun)
 
-                logger.debug("Files length: {0}".format(len(subsystemFiles)))
+                logger.debug("Files length: {subsystemFilesLength}".format(subsystemFilesLength = len(subsystemFiles)))
 
                 # Add combined
                 combinedFilename = [filename for filename in os.listdir(subsystemPath) if "combined" in filename and ".root" in filename]
                 if len(combinedFilename) > 1:
-                    logger.critical("Number of combined files in {0} is {1}, but should be 1! Exiting!".format(runDir, len(combinedFilename)))
+                    logger.critical("Number of combined files in {runDir} is {combinedFilenameLength}, but should be 1! Exiting!".format(runDir = runDir, combinedFilenameLength = len(combinedFilename)))
                     exit(0)
                 if len(combinedFilename) == 1:
                     run.subsystems[subsystem].combinedFile = processingClasses.fileContainer(os.path.join(runDir, fileLocationSubsystem, combinedFilename[0]), startOfRun)
                 else:
-                    logger.info("No combined file in {0}".format(runDir))
+                    logger.info("No combined file in {runDir}".format(runDir = runDir))
 
         # Commit any changes made to the database
         transaction.commit()
@@ -756,13 +756,13 @@ def processAllRuns():
     if "config" not in dbRoot:
         dbRoot["config"] = persistent.mapping.PersistentMapping()
 
-    logger.info("runs: {0}".format(list(runs.keys())))
+    logger.info("runs: {runs}".format(runs = list(runs.keys())))
 
     # Start of processing data
     # Takes histos from dirPrefix and moves them into Run dir structure, with a subdir for each subsystem
     runDict = utilities.moveRootFiles(dirPrefix, processingParameters["subsystemList"])
 
-    logger.info("Files moved: {0}".format(runDict))
+    logger.info("Files moved: {runDict}".format(runDict = runDict))
 
     # Now process the results from moving the files and add them into the runs list
     processMovedFilesIntoRuns(runs, runDict)
@@ -771,7 +771,7 @@ def processAllRuns():
     if processingParameters["debug"]:
         for runDir in runs.keys():
             for subsystem in runs[runDir].subsystems.keys():
-                logger.debug("{0}, {1} has nFiles: {2}".format(runDir, subsystem, len(runs[runDir].subsystems[subsystem].files)))
+                logger.debug("{runDir}, {subsystem} has nFiles: {nFiles}".format(runDir = runDir, subsystem = subsystem, nFiles = len(runs[runDir].subsystems[subsystem].files)))
 
     # Merge histograms over all runs, all subsystems if needed. Results in one combined file per subdir.
     mergeFiles.mergeRootFiles(runs, dirPrefix,
@@ -798,7 +798,7 @@ def processAllRuns():
             logger.debug("runDir: {}, reprocessRuns: {}".format(runDir.replace("Run", ""), processingParameters["forceReprocessRuns"]))
             if subsystem.newFile or processingParameters["forceReprocessing"] or int(runDir.replace("Run","")) in processingParameters["forceReprocessRuns"]:
                 # Process combined root file: plot histos and save in imgDir
-                logger.info("About to process {0}, {1}".format(run.prettyName, subsystem.subsystem))
+                logger.info("About to process {prettyName}, {subsystem}".format(prettyName = run.prettyName, subsystem = subsystem.subsystem))
                 processRootFile(os.path.join(processingParameters["dirPrefix"], subsystem.combinedFile.filename),
                                 outputFormattingSave,
                                 subsystem,
@@ -809,7 +809,7 @@ def processAllRuns():
                     pass
             else:
                 # We often want to skip this point since most runs will not need to be processed most times
-                logger.debug("Don't need to process {0}. It has already been processed".format(run.prettyName))
+                logger.debug("Don't need to process {prettyName}. It has already been processed".format(prettyName = run.prettyName))
 
         # Commit after we have successfully processed a run
         transaction.commit()
@@ -837,7 +837,7 @@ def processAllRuns():
     if os.path.exists(receiverLogFileDir):
         receiverLogFilePath = os.path.join(receiverLogFileDir,
                                            next(( name for name in os.listdir(receiverLogFileDir) if "Receiver.log" in name), ""))
-        logger.debug("receiverLogFilePath: {0}".format(receiverLogFilePath))
+        logger.debug("receiverLogFilePath: {receiverLogFilePath}".format(receiverLogFilePath = receiverLogFilePath))
 
         # Add the receiver last modified time
         if receiverLogFilePath and os.path.exists(receiverLogFilePath):

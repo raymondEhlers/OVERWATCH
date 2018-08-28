@@ -112,7 +112,7 @@ def validateTimeSlicePostRequest(request, runs):
         if runDir in runs.keys():
             run = runs[runDir]
         else:
-            error.setdefault("Run Dir", []).append("Run dir {0} is not available in runs!".format(runDir))
+            error.setdefault("Run Dir", []).append("Run dir {runDir} is not available in runs!".format(runDir = runDir))
             # Invalidate and we cannot continue
             return (error, None, None, None, None, None, None, None, None)
 
@@ -120,17 +120,17 @@ def validateTimeSlicePostRequest(request, runs):
         if subsystemName in run.subsystems.keys():
             subsystem = run.subsystems[subsystemName]
         else:
-            error.setdefault("subsystem", []).append("Subsystem name {0} is not available in {1}!".format(subsystemName, run.prettyName))
+            error.setdefault("subsystem", []).append("Subsystem name {subsystemName} is not available in {prettyName}!".format(subsystemName = subsystemName, prettyName = run.prettyName))
             # Invalidate and we cannot continue
             return (error, None, None, None, None, None, None, None, None)
 
         # Check times
         if minTime < 0:
-            error.setdefault("minTime", []).append("{0} less than 0!".format(minTime))
+            error.setdefault("minTime", []).append("{minTime} less than 0!".format(minTime = minTime))
         if maxTime > subsystem.runLength:
-            error.setdefault("maxTime", []).append("Max time of {0} greater than the run length of {1}".format(maxTime, subsystem.runLength))
+            error.setdefault("maxTime", []).append("Max time of {maxTime} greater than the run length of {runLength}".format(maxTime = maxTime, runLength = subsystem.runLength))
         if minTime > maxTime:
-            error.setdefault("minTime", []).append("minTime {0} is greater than maxTime {1}".format(minTime, maxTime))
+            error.setdefault("minTime", []).append("minTime {minTime} is greater than maxTime {maxTime}".format(minTime = minTime, maxtime = maxTime))
 
         # Validate histGroup and histName
         # NOTE: It could be valid for both to be None!
@@ -146,7 +146,8 @@ def validateTimeSlicePostRequest(request, runs):
         # Check hot channel threshold
         # NOTE: The max hot channel threshold (hotChannelThreshold) is also defined here!
         if hotChannelThreshold < 0 or hotChannelThreshold > 1000:
-            error.setdefault("hotChannelThreshold", []).append("Hot channel threshold {0} is outside the possible range of 0-1000!".format(hotChannelThreshold))
+            # NOTE: We also mention the hot channel limits here
+            error.setdefault("hotChannelThreshold", []).append("Hot channel threshold {hotChannelThreshold} is outside the possible range of 0-1000!".format(hotChannelThreshold = hotChannelThreshold))
         inputProcessingOptions["hotChannelThreshold"] = hotChannelThreshold
 
     # Handle an unexpected exception
@@ -196,7 +197,7 @@ def validateRunPage(runDir, subsystemName, requestedFileType, runs):
         if runDir in runs.keys():
             run = runs[runDir]
         else:
-            error.setdefault("Run Dir", []).append("{0} is not a valid run dir! Please select a different run!".format(runDir))
+            error.setdefault("Run Dir", []).append("{runDir} is not a valid run dir! Please select a different run!".format(runDir = runDir))
             # Invalidate and we cannot continue
             return (error, None, None, None, None, None, None, None, None, None)
 
@@ -204,13 +205,13 @@ def validateRunPage(runDir, subsystemName, requestedFileType, runs):
         if subsystemName in run.subsystems.keys():
             subsystem = runs[runDir].subsystems[subsystemName]
         else:
-            error.setdefault("Subsystem", []).append("{0} is not a valid subsystem in {1}!".format(subsystemName, run.prettyName))
+            error.setdefault("Subsystem", []).append("{subsystemName} is not a valid subsystem in {prettyName}!".format(subsystemName = subsystemName, prettyName = run.prettyName))
             # Invalidate and we cannot continue
             return (error, None, None, None, None, None, None, None, None, None)
 
         # Validate requested file type
         if requestedFileType not in ["runPage", "rootFiles"]:
-            error.setdefault("Request Error", []).append("Requested: {0}. Must request either runPage or rootFiles!".format(requestedFileType))
+            error.setdefault("Request Error", []).append("Requested: {requestedFileType}. Must request either runPage or rootFiles!".format(requestedFileType = requestedFileType))
 
         # Determine request parameters
         jsRoot = convertRequestToPythonBool("jsRoot", request.args)
@@ -298,10 +299,10 @@ def convertRequestToPythonBool(paramName, source):
         bool: True if the retrieved value was True.
     """
     paramValue = source.get(paramName, False, type=str)
-    #logger.info("{0}: {1}".format(paramName, paramValue))
+    #logger.info("{paramName}: {paramValue}".format(paramName = paramName, paramValue = paramValue))
     if paramValue != False:
         paramValue = json.loads(paramValue)
-    logger.info("{0}: {1}".format(paramName, paramValue))
+    logger.info("{paramName}: {paramValue}".format(paramName = paramName, paramValue = paramValue))
 
     return paramValue
 
@@ -321,7 +322,7 @@ def convertRequestToStringWhichMayBeEmpty(paramName, source):
         str or None: Validated string or ``None`` if the string is empty or "None".
     """
     paramValue = source.get(paramName, None, type=str)
-    #logger.info("{0}: {1}".format(paramName, paramValue))
+    logger.info("{paramName}: {paramValue}".format(paramName = paramName, paramValue = paramValue))
     # If we see "None", then we want to be certain that it is ``None``!
     # Otherwise, we will interpret an empty string as a None value.
     if paramValue == "" or paramValue == "None":
@@ -332,7 +333,7 @@ def convertRequestToStringWhichMayBeEmpty(paramName, source):
     # but that is not equal to no hist being selected in a request.
     if paramValue == "nonSubsystemEmptyString":
         paramValue = ""
-    logger.info("{0}: {1}".format(paramName, paramValue))
+    logger.info("{paramName}: {paramValue}".format(paramName = paramName, paramValue = paramValue))
 
     return paramValue
 
@@ -384,24 +385,24 @@ def validateHistGroupAndHistName(histGroup, histName, subsystem, run, error):
     """
     # The request with either be for a hist group or a hist name, so we can just use an if statement here.
     if histGroup:
-        #logger.info("histGroup: {0}".format(histGroup))
+        #logger.info("histGroup: {histGroup}".format(histGroup = histGroup))
         #if histGroup in [group.selectionPattern for group in subsystem.histGroups]:
         foundHistGroup = False
         for i, group in enumerate(subsystem.histGroups):
-            #logger.debug("group.selectionPattern: {0}".format(group.selectionPattern))
+            #logger.debug("group.selectionPattern: {selectionPattern}".format(selectionPattern = group.selectionPattern))
             if histGroup == group.selectionPattern:
                 foundHistGroup = True
                 if histName and histName not in subsystem.histGroups[i].histList:
-                    error.setdefault("histName", []).append("histName {0} is not available in histGroup {1} in {2}".format(histName, histGroup, run.prettyName))
+                    error.setdefault("histName", []).append("histName {histName} is not available in histGroup {histGroup} in {prettyName}".format(histName = histName, histGroup = histGroup, prettyName = run.prettyName))
 
                 # Found group - we don't need to look at any more groups
                 break
 
         if not foundHistGroup:
-            error.setdefault("histGroup", []).append("histGroup {0} is not available in {1}".format(histGroup, run.prettyName))
+            error.setdefault("histGroup", []).append("histGroup {histGroup} is not available in {prettyName}".format(histGroup = histGroup, prettyName = run.prettyName))
     else:
         if histName and histName not in subsystem.hists.keys():
-            error.setdefault("histName", []).append("histName {0} is not available in {1}".format(histName, run.prettyName))
+            error.setdefault("histName", []).append("histName {histName} is not available in {prettyName}".format(histName = histName, prettyName = run.prettyName))
 
 def retrieveAndValidateTimeSlice(subsystem, error):
     """ Retrieves the time slice key and then returns the corresponding time slice (it is exists).
@@ -426,7 +427,7 @@ def retrieveAndValidateTimeSlice(subsystem, error):
     """
     # Retrieve the key and validate.
     timeSliceKey = request.args.get("timeSliceKey", "", type=str)
-    logger.info("timeSliceKey: {0}".format(timeSliceKey))
+    logger.info("timeSliceKey: {timeSliceKey}".format(timeSliceKey = timeSliceKey))
     if timeSliceKey == "" or timeSliceKey == "None":
         timeSlice = None
         timeSliceKey = None
@@ -435,14 +436,14 @@ def retrieveAndValidateTimeSlice(subsystem, error):
 
     # Select the time slice if the key is valid
     if timeSliceKey:
-        #logger.debug("timeSlices: {0}, timeSliceKey: {1}".format(subsystem.timeSlices, timeSliceKey))
+        #logger.debug("timeSlices: {timeSlices}, timeSliceKey: {timeSliceKey}".format(timeSlices = subsystem.timeSlices, timeSliceKey = timeSliceKey))
         # Filter out "fullProcessing"
         if timeSliceKey == "fullProcessing":
             timeSlice = None
         elif timeSliceKey in subsystem.timeSlices.keys():
             timeSlice = subsystem.timeSlices[timeSliceKey]
         else:
-            error.setdefault("timeSliceKey", []).append("{0} is not a valid time slice key! Valid time slices include {1}. Please select a different time slice!".format(timeSliceKey, subsystem.timeSlices))
+            error.setdefault("timeSliceKey", []).append("{timeSliceKey} is not a valid time slice key! Valid time slices include {timeSlices}. Please select a different time slice!".format(timeSliceKey = timeSliceKey, timeSlices = subsystem.timeSlices))
             timeSlice = None
     else:
         # Should be redundant, but left for completeness
@@ -469,24 +470,24 @@ def extractValueFromNextOrRequest(paramName, source):
     if "next" in source:
         # Check the next parameter
         nextParam = source.get("next", "", type=str)
-        #logger.debug("nextParam: {0}".format(nextParam))
+        #logger.debug("nextParam: {nextParam}".format(nextParam = nextParam))
         if nextParam != "":
             nextParam = urlparse.urlparse(nextParam)
-            #logger.debug("nextParam: {0}".format(nextParam))
+            #logger.debug("nextParam: {nextParam}".format(nextParam = nextParam))
             # Get the actual parameters
 
             params = urlparse.parse_qs(nextParam.query)
-            #logger.debug("params: {0}".format(params))
+            #logger.debug("params: {params}".format(params = params))
             try:
                 # Has a one entry list
                 paramValue = params.get(paramName, "")[0]
             except (KeyError, IndexError) as e:
-                logger.warning("Error in getting {0}: {1}".format(paramName, e.args[0]))
+                logger.warning("Error in getting {paramName}: {args}".format(paramName = paramName, args = e.args[0]))
                 paramValue = ""
 
     # Just try to extract directly if it isn't in the next parameter
     if paramValue == "":
         paramValue = source.get(paramName, "", type=str)
-    logger.info("{0}: {1}".format(paramName, paramValue))
+    logger.info("{paramName}: {paramValue}".format(paramName = paramName, paramValue = paramValue))
 
     return paramValue

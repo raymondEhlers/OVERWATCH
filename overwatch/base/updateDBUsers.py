@@ -29,7 +29,7 @@ utilities.setupLogging(logger = logger,
         debug = serverParameters["debug"],
         logFilename = "updateDBUsers")
 # Log settings
-logger.info("Settings: {0}".format(pprint.pformat(serverParameters)))
+logger.info("Settings: {serverParameters}".format(serverParameters = pprint.pformat(serverParameters)))
 
 def updateDBUsers():
     """ Updates users in the database based on the current configuration.

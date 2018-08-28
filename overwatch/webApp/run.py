@@ -23,8 +23,8 @@ from overwatch.base import config
 # For configuring logger
 from overwatch.base import utilities
 (serverParameters, filesRead) = config.readConfig(config.configurationType.webApp)
-print("Configuration files read: {0}".format(filesRead))
-print("serverParameters: {0}".format(pprint.pformat(serverParameters)))
+print("Configuration files read: {filesRead}".format(filesRead = filesRead))
+print("serverParameters: {serverParameters}".format(serverParameters = pprint.pformat(serverParameters)))
 
 # By not setting a name, we get everything!
 logger = logging.getLogger("")
@@ -55,11 +55,11 @@ if not serverParameters["debug"]:
         secretKey = str(os.urandom(50))
 
     # Note the changes in values
-    logger.debug("Previous secretKey: {0}".format(app.config["SECRET_KEY"]))
-    logger.debug("     New secretKey: {0}".format(secretKey))
+    logger.debug("Previous secretKey: {key}".format(key = app.config["SECRET_KEY"]))
+    logger.debug("     New secretKey: {key}".format(key =  secretKey))
     # Update it with the new value
     app.config.update(SECRET_KEY = secretKey)
-    logger.debug("     After setting: {0}".format(app.config["SECRET_KEY"]))
+    logger.debug("     After setting: {key}".format(key = app.config["SECRET_KEY"]))
 
     # Usually we close the db connection here!
     # Even though we just created a new db connection, if we close it here, then it will interfere with the web app

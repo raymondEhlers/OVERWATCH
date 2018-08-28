@@ -167,7 +167,7 @@ def login():
             users from a page which requires authentication (it will redirect back after login).
     """
     # Retrieve args
-    logger.debug("request.args: {0}".format(request.args))
+    logger.debug("request.args: {args}".format(args = request.args))
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
     previousUsername = validation.extractValueFromNextOrRequest("previousUsername", request.args)
 
@@ -199,8 +199,9 @@ def login():
                 # Login the user into flask
                 login_user(validUser, remember=True)
 
-                flash("Login Success for {0}.".format(validUser.id))
-                logger.info("Login Success for {0}.".format(validUser.id))
+                message = "Login Success for {id}.".format(id = validUser.id)
+                flash(message)
+                logger.info(message)
 
                 return routing.redirectBack("index")
             else:
@@ -208,7 +209,7 @@ def login():
 
     if previousUsername == serverParameters["defaultUsername"]:
         logger.debug("Previous username is the same as the default username!")
-    logger.debug("serverParameters[defaultUsername]: {0}".format(serverParameters["defaultUsername"]))
+    logger.debug("serverParameters[defaultUsername]: {defaultUsername}".format(defaultUsername = serverParameters["defaultUsername"]))
     # If we are not authenticated and we have a default username set and the previous username is not the default.
     if not current_user.is_authenticated and serverParameters["defaultUsername"] and previousUsername != serverParameters["defaultUsername"]:
         # In this case, we want to perform an automatic login.
@@ -220,12 +221,12 @@ def login():
         # Login the user into flask
         login_user(defaultUser, remember=True)
         # Note for the user
-        logger.info("Logged into user \"{0}\" automatically!".format(current_user.id))
-        flash("Logged into user \"{0}\" automatically!".format(current_user.id))
+        logger.info("Logged into user \"{id}\" automatically!".format(id = current_user.id))
+        flash("Logged into user \"{id}\" automatically!".format(id = current_user.id))
 
     # If we visit the login page, but we are already authenticated, then send to the index page.
     if current_user.is_authenticated:
-        logger.info("Redirecting logged in user \"{0}\" to index...".format(current_user.id))
+        logger.info("Redirecting logged in user \"{id}\" to index...".format(id = current_user.id))
         return redirect(url_for("index", ajaxRequest = json.dumps(ajaxRequest)))
 
     if ajaxRequest == False:
@@ -341,7 +342,7 @@ def index():
     Returns:
         Response: The main index page populated via template.
     """
-    logger.debug("request.args: {0}".format(request.args))
+    logger.debug("request.args: {args}".format(args = request.args))
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
     # We only use this once and there isn't much complicated, so we just perform the validation here.
     runOffset = validation.convertRequestToPositiveInteger(paramName = "runOffset", source = request.args)
@@ -424,7 +425,7 @@ def runPage(runNumber, subsystemName, requestedFileType):
         Response: A run page or root files page populated via template.
     """
     # Setup runDir and db information
-    runDir = "Run{0}".format(runNumber)
+    runDir = "Run{runNumber}".format(runNumber = runNumber)
     runs = db["runs"]
 
     # Validation for all passed values
@@ -442,9 +443,9 @@ def runPage(runNumber, subsystemName, requestedFileType):
 
         # Print request status
         logger.debug("request: {}".format(request.args))
-        logger.debug("runDir: {0}, subsystem: {1}, requestedFileType: {2}, "
-              "ajaxRequest: {3}, jsRoot: {4}, requestedHistGroup: {5}, requestedHist: {6}, "
-              "timeSliceKey: {7}, timeSlice: {8}".format(runDir, subsystemName, requestedFileType,
+        logger.debug("runDir: {}, subsystem: {}, requestedFileType: {}, "
+              "ajaxRequest: {}, jsRoot: {}, requestedHistGroup: {}, requestedHist: {}, "
+              "timeSliceKey: {}, timeSlice: {}".format(runDir, subsystemName, requestedFileType,
                ajaxRequest, jsRoot, requestedHistGroup, requestedHist, timeSliceKey, timeSlice))
     else:
         logger.warning("Error on run page: {error}".format(error = error))
@@ -547,7 +548,7 @@ def protected(filename):
     Returns:
         Response: File with the proper headers.
     """
-    logger.debug("filename: {0}".format(filename))
+    logger.debug("filename: {filename}".format(filename = filename))
     # Ignore the time GET parameter that is sometimes passed- just to avoid the cache when required
     #if request.args.get("time"):
     #    print "timeParameter:", request.args.get("time")

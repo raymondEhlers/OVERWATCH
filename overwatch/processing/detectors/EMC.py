@@ -272,7 +272,7 @@ def labelSupermodules(hist):
     """
     if "_SM" in hist.histName[-5:]:
         smNumber = hist.histName[hist.histName.find("_SM")+3:]
-        hist.hist.SetTitle("SM {0}".format(smNumber))
+        hist.hist.SetTitle("SM {smNumber}".format(smNumber = smNumber))
         # Show title
         gStyle.SetOptTitle(1)
 

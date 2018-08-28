@@ -8,8 +8,8 @@ from overwatch.base import config
 # For configuring logger
 from overwatch.base import utilities
 (receiverParameters, filesRead) = config.readConfig(config.configurationType.receiver)
-print("Configuration files read: {0}".format(filesRead))
-print("receiverParameters: {0}".format(pprint.pformat(receiverParameters)))
+print("Configuration files read: {filesRead}".format(filesRead = filesRead))
+print("receiverParameters: {receiverParameters}".format(receiverParameters = pprint.pformat(receiverParameters)))
 
 # By not setting a name, we get everything!
 logger = logging.getLogger("")

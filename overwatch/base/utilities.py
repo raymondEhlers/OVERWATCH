@@ -490,7 +490,7 @@ def updateDBSensitiveParameters(db, overwriteSecretKey = True):
     users = db["config"]["users"]
     for user, pw in iteritems(sensitiveParameters["_users"]):
         users[user] = pw
-        logger.info("Adding user {0}".format(user))
+        logger.info("Adding user {user}".format(user = user))
 
     # Secret key
     # Set the secret key to that set in the server parameters
