@@ -425,7 +425,7 @@ def moveRootFiles(dirPrefix, subsystemList):
         dirPrefix (str): Path to the root directory where the data is stored.
         subsystemList (list): List of subsystems to be considered.
     Returns:
-        None.
+        dict: Nested dict which contains the new filenames and the HLT mode. For the precise structure, ``moveFiles()``.
     """
     subsystemDict = {}
     for subsystem in subsystemList:
