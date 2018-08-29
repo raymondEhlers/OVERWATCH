@@ -84,7 +84,7 @@ class runContainer(persistent.Persistent):
             # Use the mode from the file if it exists, or otherwise note it as undefined = "U".
             try:
                 with open(runInfoFilePath, "rb") as f:
-                    runInfo = yaml.load(f.read())
+                    runInfo = yaml.load(f.read(), Loader = yaml.SafeLoader)
 
                 self.hltMode = runInfo["hltMode"]
             except IOError:
