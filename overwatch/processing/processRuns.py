@@ -278,7 +278,7 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, su
         This function is built in such a way that it works for processing both histograms and trending objects.
         For this to work, both the ``subsystemContainer`` and the ``trendingContainer`` must support the following
         methods: ``imgDir()``, which is the image storage directory, and ``jsonDir()``, which is the ``json`` storage
-        directory. Both should except to get formatted with `` % {"subsystem" : subsystemName}``.
+        directory. Both should except to get formatted with `` % {"subsystem": subsystemName}``.
 
     Args:
         subsystem (subsystemContainer or trendingContainer): Subsystem or trending container which contains the histogram
@@ -371,56 +371,94 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, su
     hist.hist = None
     hist.canvas = None
 
-def compareProcessingOptionsDicts(inputProcessingOptions, processingOptions):
-    """ Compare an input and existing processing options dicts and return True if all input options are the same values as in the existing options.
+def compareProcessingOptionsDicts(inputProcessingOptions, processingOptions, errors):
+    """ Compare an input and existing processing options dictionaries.
+
+    Compare the dictionary values stored in the input (``inputProcessingOptions``) to those in the reference
+    (``processingOptions``). Both the keys and values are compared. For both dictionaries, keys are names of
+    options, while values are the corresponding option values.
 
     Note:
-        The existing processing options can have more than entries than the input. Only the values in the input are checked.
-    
+        The existing processing options can have more entries than the input. Only the keys and values in the
+        input are checked.
+
+    Note:
+        For the error format in ``errors``, see the :doc:`web app README </webAppReadme>`.
+
     Args:
-        inputProcessingOptions (): ...
-        processingOptions (): ...
+        inputProcessingOptions (dict): Processing options specified in the time slice.
+        processingOptions (dict): Processing options used during standard processing which serve as the reference options.
+            These usually should be the subsystem processing options.
     Returns:
-        bool: ...
+        tuple: (processingOptionsAreTheSame, errors) where ``processingOptionsAreTheSame`` (bool) is ``True`` if all input
+            options are the same values as in the existing options and ``errors`` (dict) is an error dictionary in the
+            proper format.
     """
     processingOptionsAreTheSame = True
     for key,val in iteritems(inputProcessingOptions):
+        # Return the error immediately, as we can't properly compare the keys if they don't exist.
         if key not in processingOptions:
-            return (None, None, {"Processing option error": ["Key \"{key}\" in inputProcessingOptions ({inputProcessingOptions}) is not in subsystem processingOptions {processingOptions}!".format(key = key, inputProcessingOptions = inputProcessingOptions, processingOptions = processingOptions)]})
+            errors.setdefault("Processing option error", []).append("Key \"{key}\" in inputProcessingOptions ({inputProcessingOptions}) is not in subsystem processingOptions {processingOptions}!".format(key = key, inputProcessingOptions = inputProcessingOptions, processingOptions = processingOptions))
+            processingOptionsAreTheSame = False
+            break
         if val != processingOptions[key]:
             processingOptionsAreTheSame = False
             break
 
-    return processingOptionsAreTheSame
+    return (processingOptionsAreTheSame, errors)
 
 def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes, inputProcessingOptions):
-    """
+    """ Validate and create a ``timeSliceContainer`` based on the given inputs.
+
+    Validate the given time slice options, check the options to determine if we've already create the time
+    slice, and then return the proper ``timeSliceContainer`` (either an existing container or a new one based
+    on the result of the checks). By comparing the requested options and times with those that we have already
+    processed, we can avoid having to reprocess existing data when nothing has changed. This effectively allows
+    us to cache the processing results.
+
+    The resulting ``timeSliceContainer`` is stored under a ``UUID`` generated string to ensure that they never
+    overwrite each other.
+
+    Note:
+        For the error format in ``errors``, see the :doc:`web app README </webAppReadme>`.
 
     Args:
-        run (): ...
-        subsystem (): ...
-        minTimeMinutes (): ...
-        maxTimeMinutes (): ...
-        inputProcessingOptions (): ...
+        run (runContainer): Run for which the time slice was requested.
+        subsystem (subsystemContainer): Subsystem for which the time slice was requested.
+        minTimeMinutes (int): Minimum time for the time slice in minutes.
+        maxTimeMinutes (int): Maximum time for the time slice in minutes.
+        inputProcessingOptions (dict): Processing options requested for the time slice.
     Returns:
-        tuple: ?? - See webApp
+        tuple: (timeSliceKey, newlyCreated, errors) where timeSliceKey (str) is the key under which the  relevant
+            ``timeSliceContainer`` is stored in the ``subsystemContainer.timesSlices`` dict, newlyCreated (bool) is
+            ``True`` if the ``timeSliceContainer`` was newly created (as opposed to already existing), and
+            errors (dict) is an error dictionary in the proper format.
     """
-    # User filter time, in unix time. This makes it possible to compare to the startOfRun and endOfRun times
+    # Setup error dict
+    errors = {}
+
+    # User filter time, in unix time. This makes it possible to compare to the ``startOfRun`` and ``endOfRun`` times
     minTimeCutUnix = minTimeMinutes*60 + subsystem.startOfRun
     maxTimeCutUnix = maxTimeMinutes*60 + subsystem.startOfRun
 
-    # If max filter time is greater than max file time, merge up to and including last file
+    # If max filter time is greater than max file time, merge up to and including the last file
     if maxTimeCutUnix > subsystem.endOfRun:
         logger.warning("Input max time exceeds data! It has been reset to the maximum allowed.")
         maxTimeMinutes = subsystem.runLength
         maxTimeCutUnix = subsystem.endOfRun
 
+    # Compare requested processing options to avoid additional computation if possible.
+    processingOptionsAreTheSame, errors = compareProcessingOptionsDicts(inputProcessingOptions, subsystem.processingOptions, errors)
+    # Handle errors immediately if they are returned.
+    if errors != {}:
+        return (None, None, errors)
     # Return immediately if it is just a full time request with the normal processing options
-    processingOptionsAreTheSame = compareProcessingOptionsDicts(inputProcessingOptions, subsystem.processingOptions)
+    # If all of the options are the same and the time range is the full run length, then the request is just
+    # for the normal processing. Indicate this by returning ``"fullProcessing"``.
     if minTimeMinutes == 0 and maxTimeMinutes == round(subsystem.runLength) and processingOptionsAreTheSame:
         return ("fullProcessing", False, None)
 
-    # If input time range out of range, return 0
+    # If input time range is invalid, then return an error.
     logger.info("Filtering time window! Min:{minTimeMinutes}, Max: {maxTimeMinutes}".format(minTimeMinutes = minTimeMinutes, maxTimeMinutes = maxTimeMinutes))
     if minTimeMinutes < 0:
         logger.info("Minimum input time less than 0!")
@@ -429,13 +467,13 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
         logger.info("Max time must be greater than Min time!")
         return (None, None, {"Request Error": ["Max time of \"{maxTimeMinutes}\" must be greater than the min time of {minTimeMinutes}!".format(maxTimeMinutes = maxTimeMinutes, minTimeMinutes = minTimeMinutes)]})
 
-    # Filter files by input time range
+    # Filter files by input time range. We will use the files which pass the filtering for the time slice.
     filesToMerge = []
     for fileCont in subsystem.files.values():
         #logger.info("fileCont.fileTime: {fileTime}, minTimeCutUnix: {minTimeCutUnix}, maxTimeCutUnix: {maxTimeCutUnix}".format(fileTime = fileCont.fileTime, minTimeCutUnix = minTimeCutUnix, maxTimeCutUnix = maxTimeCutUnix))
         logger.info("fileCont.timeIntoRun (minutes): {timeIntoRun}, minTimeMinutes: {minTimeMinutes}, maxTimeMinutes: {maxTimeMinutes}".format(timeIntoRun = round(fileCont.timeIntoRun/60), minTimeMinutes = minTimeMinutes, maxTimeMinutes = maxTimeMinutes))
-        #if fileCont.fileTime >= minTimeCutUnix and fileCont.fileTime <= maxTimeCutUnix and fileCont.combinedFile == False:
         # It is important to make this check in such a way that we can round to the nearest minute.
+        # This is because the exact second when the receiver records the file can vary from file to file.
         if round(fileCont.timeIntoRun/60) >= minTimeMinutes and round(fileCont.timeIntoRun/60) <= maxTimeMinutes and fileCont.combinedFile == False:
             # The file is in the time range, so we keep it
             filesToMerge.append(fileCont)
@@ -446,100 +484,102 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
 
     # Sort files by time
     filesToMerge.sort(key=lambda x: x.fileTime)
-    
     #logger.info("filesToMerge: {filesToMerge}, times: {times}".format(filesToMerge = filesToMerge, times = [x.fileTime for x in filesToMerge]))
 
     # Get min and max time stamp remaining
     minFilteredTimeStamp = filesToMerge[0].fileTime
     maxFilteredTimeStamp = filesToMerge[-1].fileTime
 
-    # Check if it already exists and return if that is the case
+    # Check if the time slice already exists and return if that is the case
     #logger.info("subsystem.timeSlice: {timeSlices}".format(timeSlices = subsystem.timeSlices))
     for key, timeSlice in iteritems(subsystem.timeSlices):
         #logger.info("minFilteredTimeStamp: {minFilteredTimeStamp}, maxFilteredTimeStamp: {maxFilteredTimeStamp}, timeSlice.minTime: {minTime}, timeSlice.maxTime: {maxTime}".format(minFilteredTimeStamp = minFilteredTimeStamp, maxFilteredTimeStamp = maxFilteredTimeStamp, minTime = timeSlice.minTime, maxTime = timeSlice.maxTime))
-        processingOptionsAreTheSame = compareProcessingOptionsDicts(inputProcessingOptions, timeSlice.processingOptions)
+        processingOptionsAreTheSame, errors = compareProcessingOptionsDicts(inputProcessingOptions, timeSlice.processingOptions, errors)
+        # Handle errors immediately
+        if errors != {}:
+            return (None, None, errors)
         if timeSlice.minUnixTimeAvailable == minFilteredTimeStamp and timeSlice.maxUnixTimeAvailable == maxFilteredTimeStamp and processingOptionsAreTheSame:
-            # Already exists - we don't need to remerge or reprocess
+            # Already exists - we don't need to re-merge or reprocess
             return (key, False, None)
 
-    # Hash processing options so that we can compare
-    # The hash is needed to ensure that different options with the same times don't overwrite each other!
+    # Hash processing options to ensure that different options with the same times don't overwrite each other!
     optionsHash = hashlib.sha1(str(inputProcessingOptions).encode()).hexdigest()
-    # Determine index by UUID to ensure that there is no clash
+    # Determine index by ``UUID`` to ensure that there is no clash in the dict keys.
     timeSliceCont = processingClasses.timeSliceContainer(minUnixTimeRequested = minTimeCutUnix,
-                                                          maxUnixTimeRequested = maxTimeCutUnix,
-                                                          minUnixTimeAvailable = minFilteredTimeStamp,
-                                                          maxUnixTimeAvailable = maxFilteredTimeStamp,
-                                                          startOfRun = subsystem.startOfRun,
-                                                          filesToMerge = filesToMerge,
-                                                          optionsHash = optionsHash)
+                                                         maxUnixTimeRequested = maxTimeCutUnix,
+                                                         minUnixTimeAvailable = minFilteredTimeStamp,
+                                                         maxUnixTimeAvailable = maxFilteredTimeStamp,
+                                                         startOfRun = subsystem.startOfRun,
+                                                         filesToMerge = filesToMerge,
+                                                         optionsHash = optionsHash)
     # Set the processing options in the time slice container
+    # We do it by key, value to be certain that they are copied.
     for key, val in iteritems(inputProcessingOptions):
         timeSliceCont.processingOptions[key] = val
 
+    # Store the final result in the time slices dictionary for future reference.
     uuidDictKey = str(uuid.uuid4())
     subsystem.timeSlices[uuidDictKey] = timeSliceCont
 
     return (uuidDictKey, True, None)
 
-def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequested, subsystemName, inputProcessingOptions):
-    """ Processes a given run using only data in a given time range (ie time slices).
+def processTimeSlices(runs, runDir, minTimeRequested, maxTimeRequested, subsystemName, inputProcessingOptions):
+    """ Creates a time slice or performs user directed reprocessing.
 
-    Usually invoked via the web app on a particular run page.
+    Time slices are created by processing a given run using only data in a given time range (and potentially modifying the
+    processing options). User directed reprocessing uses the same infrastructure by varying the processing arguments and
+    selecting the full time range available for a given run. While the external interface is different, this capabilities
+    are performed using the same underlying infrastructure as in the standard processing.
+
+    This function is usually invoked via the web app on a particular run page.
+
+    Note:
+        For the format of the errors that are returned, see the :doc:`web app README </webAppReadme>`.
 
     Args:
-        timeSliceRunNumber (str): The run dir to be processed.
+        runs (BTree): Dict-like object which stores all run, subsystem, and hist information. Keys are the
+            in the ``runDir`` format ("Run123456"), while the values are ``runContainer`` objects.
+        runDir (str): String containing the requested run number. For an example run 123456, it
+            should be formatted as ``Run123456``.
         minTimeRequested (int): The requested start time of the merge in minutes.
         maxTimeRequested (int): The requested end time of the merge in minutes.
-        subsystemName (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
+        subsystemName (str): The subsystem of the time slice request by three letter, all capital name (ex. ``EMC``).
+        inputProcessingOptions (dict): Processing options requested for the time slice. Keys are the names of
+        the options, while values are the actual values of the processing options.
     Returns:
-        str: Path to the run page that was generated.
+        str or dict: If successful, we return the time slice key (str) under which the requested time slice is stored
+            in the ``subsystemContainer.timeSlices`` dictionary. If an error was encountered, we return an error
+            dictionary in the proper format.
     """
-    # TODO: Check if the docs above are valid!
+    logger.info("Processing time slice for {runDir}".format(runDir))
 
-    # Setup start runDir string of the form "Run#"
-    #runDir = "Run" + str(timeSliceRunNumber)
-    runDir = timeSliceRunNumber
-    logger.info("Processing %s" % runDir)
-
-    # Load run information
+    # Load run information and subsystem
     if runDir in runs:
         run = runs[runDir]
     else:
-        return {"Request Error": ["Requested Run {timeSliceRunNumber}, but there is no run information on it! Please check that it is a valid run and retry in a few minutes!".format(timeSliceRunNumber = timeSliceRunNumber)]}
-
-    # Get subsystem
+        return {"Request Error": ["Requested {runDir}, but there is no run information on it! Please check that it is a valid run and retry in a few minutes!".format(runDir = runDir)]}
     subsystem = run.subsystems[subsystemName]
-    logger.info("subsystem.baseDir: {baseDir}".format(baseDir = subsystem.baseDir))
 
-    # Setup dirPrefix
-    dirPrefix = processingParameters["dirPrefix"]
-
-    # Takes histos from dirPrefix and moves them into Run dir structure, with a subdir for each subsystem
-    # While this function should be fast, we want this to run to ensure that time slices use the most recent data
-    # available in performed on a run this is ongoing
-    runDict = utilities.moveRootFiles(dirPrefix, processingParameters["subsystemList"])
-
-    # Little should happen here since few, if any files, should be moved
+    # Move any new files into the Overwatch run directory structure and add them into the database.
+    # Along this may be a bit slow, we do it here so that the most up to date information is available for
+    # the time slice - particularly in the case of an ongoing run.
+    runDict = utilities.moveRootFiles(processingParameters["dirPrefix"], processingParameters["subsystemList"])
     processMovedFilesIntoRuns(runs, runDict)
 
-    logger.info("runLength: {runLength}".format(runLength = subsystem.runLength))
-
-    # Validate and create time slice
+    # Validate and create (or retrieve) the ``timeSliceContainer``.
     (timeSliceKey, newlyCreated, errors) = validateAndCreateNewTimeSlice(run, subsystem, minTimeRequested, maxTimeRequested, inputProcessingOptions)
+    # Handle any errors immediately.
     if errors:
         return errors
-    # It has already been merged and processed
+    # It if already exists, we want to skip the processing and return immediately.
     if not newlyCreated:
-        # This is the UUID
         return timeSliceKey
-
     timeSlice = subsystem.timeSlices[timeSliceKey]
 
-    # Merge only the partial run.
+    # Merge the files that are included in the time slice.
     # Return if there were errors in merging
     try:
-        errors = mergeFiles.merge(dirPrefix, run, subsystem,
+        errors = mergeFiles.merge(processingParameters["dirPrefix"], run, subsystem,
                                   cumulativeMode = processingParameters["cumulativeMode"],
                                   timeSlice = timeSlice)
     except ValueError as e:
@@ -547,9 +587,9 @@ def processTimeSlices(runs, timeSliceRunNumber, minTimeRequested, maxTimeRequest
         # We want to return a list, so we just return all of the args.
         return {"Merge Error" : e.args}
 
-    # Print variables for log
-    logger.debug("minTimeRequested: {minTimeRequested}, maxTimeRequested: {maxTimeRequested}".format(minTimeRequested = minTimeRequested, maxTimeRequested = maxTimeRequested))
-    logger.debug("subsystem.subsystem: {subsystem}, subsystem.fileLocationSubsystem: {fileLocationSubsystem}".format(subsystem = subsystem.subsystem, fileLocationSubsystem = subsystem.fileLocationSubsystem))
+    # Print time slice request variables for log
+    logger.debug("Time slice request values:")
+    logger.debug("subsystem.subsystem: {subsystem}, subsystem.fileLocationSubsystem: {fileLocationSubsystem}, minTimeRequested: {minTimeRequested}, maxTimeRequested: {maxTimeRequested}".format(subsystem = subsystem.subsystem, fileLocationSubsystem = subsystem.fileLocationSubsystem, minTimeRequested = minTimeRequested, maxTimeRequested = maxTimeRequested))
 
     # Generate the histograms
     outputFormattingSave = os.path.join("{base}", "%(prefix)s.{name}.{ext}" % {"prefix" : timeSlice.filenamePrefix})
