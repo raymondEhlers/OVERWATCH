@@ -264,8 +264,17 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, su
 
     This function is responsible for taking a given ``histogramContainer``, process the underlying histogram
     via processing functions, fill trending objects (if applicable), and then store the result in images and
-    ``json`` for display in the web app. Here, execute the plug-in functionality assigned earlier and perform
-    the actual drawing of the hist onto a canvas.
+    ``json`` for display in the web app. Here, we execute the plug-in functionality assigned earlier and
+    perform the actual drawing of the hist onto a canvas.
+
+    In more detail, we processing steps performed here are:
+
+    - Setup the canvas.
+    - Apply the projection functions (if applicable) to get the proper histogram.
+    - Draw the histogram.
+    - Apply the processing functions (if applicable).
+    - Write the output to image and ``json``.
+    - Cleanup the hist and canvas by removing reference to them.
 
     Note:
         The hist is drawn **before** calling the processing function to allow the plug-ins to draw on top of the histogram.
@@ -609,15 +618,19 @@ def processTimeSlices(runs, runDir, minTimeRequested, maxTimeRequested, subsyste
     # No errors, so return the key
     return timeSliceKey
 
-def createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir):
-    """ Creates a new subsystem based on the information from the merge.
+def createNewSubsystemFromMovedFilesInformation(runs, subsystem, runDict, runDir):
+    """ Creates a new subsystem based on the information from the moved files.
 
     Args:
-        runs ():
+        runs (BTree): Dict-like object which stores all run, subsystem, and hist information. Keys are the
+            in the ``runDir`` format ("Run123456"), while the values are ``runContainer`` objects.
         subsystem ():
         runDict ():
         runDir (str?):
+    Returns:
+        None
     """
+    logger.warning("In new subsystem function! runDict: {}".format(runDict))
     if subsystem in runDict.subsystems:
         fileLocationSubsystem = subsystem
     else:
@@ -653,11 +666,17 @@ def createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir):
     runs[runDir].subsystems[subsystem].newFile = True
 
 def processMovedFilesIntoRuns(runs, runDict):
-    """
+    """ Convert the list of moved files into run and subsystem containers stored in the database.
+
+    If the subsystem already exists, the moved files are added to the existing objects.
+
+    ...
 
     Args:
-        runs ():
-        runDict (dict):
+        runs (BTree): Dict-like object which stores all run, subsystem, and hist information. Keys are the
+            in the ``runDir`` format ("Run123456"), while the values are ``runContainer`` objects.
+        runDict (dict): Nested dict which contains the new filenames and the HLT mode. For the precise
+            structure, ``base.utilities.moveFiles()``.
     Returns:
         None ...
     """
@@ -681,7 +700,7 @@ def processMovedFilesIntoRuns(runs, runDict):
                     subsystem.endOfRun = fileKeys[-1]
                 else:
                     # Create a new subsystem
-                    createNewSubsystemFromMergeInformation(runs, subsystemName, runDict, runDir)
+                    createNewSubsystemFromMovedFilesInformation(runs, subsystemName, runDict, runDir)
 
         else:
             runs[runDir] = processingClasses.runContainer(runDir = runDir,
@@ -690,7 +709,7 @@ def processMovedFilesIntoRuns(runs, runDict):
             # Add files and subsystems.
             # We are creating runs here, so we already have all the information that we need from moving the files
             for subsystem in processingParameters["subsystemList"]:
-                createNewSubsystemFromMergeInformation(runs, subsystem, runDict, runDir)
+                createNewSubsystemFromMovedFilesInformation(runs, subsystem, runDict, runDir)
 
 def processAllRuns():
     """ Process all available data and write out individual run pages and a run list.
