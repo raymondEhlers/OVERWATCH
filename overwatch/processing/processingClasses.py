@@ -83,7 +83,7 @@ class runContainer(persistent.Persistent):
         if not hltMode:
             # Use the mode from the file if it exists, or otherwise note it as undefined = "U".
             try:
-                with open(runInfoFilePath, "rb") as f:
+                with open(runInfoFilePath, "r") as f:
                     runInfo = yaml.load(f.read(), Loader = yaml.SafeLoader)
 
                 self.hltMode = runInfo["hltMode"]
@@ -103,7 +103,7 @@ class runContainer(persistent.Persistent):
             # Write information
             if not os.path.exists(os.path.dirname(runInfoFilePath)):
                 os.makedirs(os.path.dirname(runInfoFilePath))
-            with open(runInfoFilePath, "wb") as f:
+            with open(runInfoFilePath, "w") as f:
                 yaml.dump(runInfo, f)
 
     def isRunOngoing(self):
