@@ -13,3 +13,8 @@ __all__ = [
            "processing",
            "webApp"
           ]
+
+# Provide easy access to the version
+# __version__ is the version string, while version_info is a tuple with an entry per point in the verion
+from overwatch.version import __version__
+from overwatch.version import version_info

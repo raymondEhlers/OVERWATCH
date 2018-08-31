@@ -1,23 +1,33 @@
 #/usr/bin/env python
 
-# Setup OVERWATCH
-# Derived from the setup.py in aliBuild
-#  and based on: https://python-packaging.readthedocs.io/en/latest/index.html
+""" Setup OVERWATCH
+
+Originally derived from the ``setup.py`` in ``aliBuild``, with options derived
+from `here < https://python-packaging.readthedocs.io/en/latest/index.html>`__.
+
+.. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
+"""
 
 # Always prefer setuptools over distutils
 from setuptools import setup, find_packages
 # To use a consistent encoding
 from codecs import open
-from os import path
+import os
+
+def getVersion():
+    versionModule = {}
+    with open(os.path.join("overwatch", "version.py")) as f:
+        exec(f.read(), versionModule)
+    return versionModule["__version__"]
 
 # Get the long description from the README file
-here = path.abspath(path.dirname(__file__))
-with open(path.join(here, 'README.md'), encoding='utf-8') as f:
+here = os.path.abspath(os.path.dirname(__file__))
+with open(os.path.join(here, 'README.md'), encoding='utf-8') as f:
     long_description = f.read()
 
 setup(
     name="aliceoverwatch",
-    version="1.0",
+    version=getVersion(),
 
     description="ALICE OVERWATCH: Online Monitoring via the HLT",
     long_description=long_description,
