@@ -78,9 +78,9 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
 
     Args:
         filename (str): The full path to the file to be processed.
-        outputFormatting (str): Specially formatted string which contains a generic path to be used when printing histograms.
-            It must contain ``base``, ``name``, and ``ext``, where ``base`` is the base path, ``name`` is the filename
-            and ``ext`` is the extension. Ex: ``{base}/{name}.{ext}``.
+        outputFormatting (str): Specially formatted string which contains a generic path to be used when printing
+            histograms.  It must contain ``base``, ``name``, and ``ext``, where ``base`` is the base path, ``name``
+            is the filename and ``ext`` is the extension. Ex: ``{base}/{name}.{ext}``.
         subsystem (subsystemContainer): Contains information about the current subsystem.
         processingOptions (dict): Implemented by the subsystem to note options used during standard processing. Keys
             are names of options, while values are the corresponding option values. Default: ``None``. Note: In this case,
@@ -149,8 +149,10 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
                 if subsystem.fileLocationSubsystem != subsystem.subsystem:
                     selection = subsystem.subsystem
                 else:
-                    # NOTE: In addition to being a normal option, this ensures that the HLT will always catch all extra histograms from HLT files!
-                    # However, having this selection for other subsystems is dangerous, because it will include many unrelated hists
+                    # NOTE: In addition to being a normal option, this ensures that the HLT will always catch all
+                    #       extra histograms from HLT files!
+                    #       However, having this selection for other subsystems is dangerous, because it will include
+                    #       many unrelated hists
                     selection = ""
                 logger.info("selection: {selection}".format(selection = selection))
                 subsystem.histGroups.append(processingClasses.histogramGroupContainer(subsystem.subsystem + " Histograms", selection))
@@ -212,18 +214,18 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
 def processTrending(outputFormatting, trending, processingOptions = None):
     """ Process the trending objects stored in the trending container.
 
-    This function is something of an analog to ``processRootFile()``, except for the trending objects stored in the trending
-    container. It loops over the stored trending objects and retrieves their underlying objects before passing them along to
-    ``processHist()`` for any processing functions and plotting.
+    This function is something of an analog to ``processRootFile()``, except for the trending objects stored in the
+    trending container. It loops over the stored trending objects and retrieves their underlying objects before passing
+    them along to ``processHist()`` for any processing functions and plotting.
 
     Note:
-        The trending objects need to already be filled by being processed in ``processRootFile()``. ``processTrending()`` only
-        deals with processing the already filled trending objects.
+        The trending objects need to already be filled by being processed in ``processRootFile()``. ``processTrending()``
+        only deals with processing the already filled trending objects.
 
     Args:
-        outputFormatting (str): Specially formatted string which contains a generic path to be used when printing histograms.
-            It must contain ``base``, ``name``, and ``ext``, where ``base`` is the base path, ``name`` is the filename
-            and ``ext`` is the extension. Ex: ``{base}/{name}.{ext}``.
+        outputFormatting (str): Specially formatted string which contains a generic path to be used when printing
+            histograms.  It must contain ``base``, ``name``, and ``ext``, where ``base`` is the base path, ``name``
+            is the filename and ``ext`` is the extension. Ex: ``{base}/{name}.{ext}``.
         trending (trendingContainer): Trending object which contains all of the trending objects and additional
             information.
         processingOptions (dict): Implemented by the subsystem to note options used during standard processing. Keys
@@ -302,7 +304,6 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, su
         processingOptions (dict): Implemented by the subsystem to note options used during standard processing. Keys
             are names of options, while values are the corresponding option values. Default: ``None``. Note: In this case,
             it will use the default subsystem or trending processing options.
-        subsystemName (str): Name of the . Default: ``None``.
         subsystemName (str): The current subsystem by three letter, all capital name (ex. ``EMC``).  Default: ``None``.
             In that case of ``None``, the subsystem name is retrieved from ``subsystem.subsystem``. This argument is used
             for processing the trending objects where we don't have access to their corresponding ``subsystemContainer``.
@@ -621,29 +622,55 @@ def processTimeSlices(runs, runDir, minTimeRequested, maxTimeRequested, subsyste
 def createNewSubsystemFromMovedFilesInformation(runs, subsystem, runDict, runDir):
     """ Creates a new subsystem based on the information from the moved files.
 
+    This function determines the ``fileLocationSubsystem`` and then creates a new subsystem based on the
+    given information, including adding the files to the subsystem. It also ensures that the subsystem
+    will be processed by enabling the ``newFile`` flag in the subsystem.
+
+    Note:
+        In the case of a subsystem which doesn't have it's own files in a run where the ``HLT`` is not available
+        (for example, and ``EMC`` standalone run), the ``ValueError`` exception will be raised. If the run has
+        just been created, this is just fine - the subsystem just won't be created (as it shouldn't be). In this
+        case, it's advisable to catch and log exception and continue with standard execution. However, in other
+        cases (such as adding a file later in the run), this shouldn't be possible, so we want the exception to
+        be raised and it needs to be handled carefully (in such a case, it likely indicates that something is broken).
+
     Args:
         runs (BTree): Dict-like object which stores all run, subsystem, and hist information. Keys are the
             in the ``runDir`` format ("Run123456"), while the values are ``runContainer`` objects.
-        subsystem ():
-        runDict ():
-        runDir (str?):
+        subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).  Default: ``None``.
+        runDict (dict): Nested dict which contains the new filenames and the HLT mode. For the precise
+            structure, ``base.utilities.moveFiles()``.
+        runDir (str): String containing the requested run number. For an example run 123456, it
+            should be formatted as ``Run123456``.
     Returns:
-        None
+        None. However, the run container is modified to store the newly created subsystem.
+
+    Raises:
+        ValueError: If the subsystem requests doesn't have it's own receiver files and files from the HLT receiver
+            are also not available.
     """
-    logger.warning("In new subsystem function! runDict: {}".format(runDict))
-    if subsystem in runDict.subsystems:
+    if subsystem in runDict[runDir]:
         fileLocationSubsystem = subsystem
     else:
-        if "HLT" in runDict.subsystems:
+        # First check is applicable for an entirely new run, while the second is for # handling an
+        # existing subsystem which where the `runDict` doesn't have any HLT files, but there may
+        # already by some which exist. In particular, this may be possible if the data sync the HLT
+        # receiver hasn't written it's first file yet. This shouldn't be terribly likely, but it
+        # certainly is possible.
+        if "HLT" in runDict[runDir] or "HLT" in runs[runDir].subsystems:
             fileLocationSubsystem = "HLT"
         else:
             # Cannot create subsystem, since the HLT doesn't exist as a fall back
-            return 1
+            # This isn't fatal, since it can happen to many subsystems if the HLT doesn't exist.
+            # However, it needs to be caught explicitly. And in cases where it isn't acceptable,
+            # don't catch the exception.
+            raise ValueError("Could not create subsystem {subsystem} in {runDir} due to lacking {subsystem} and HLT files.".format(subsystem = subsystem, runDir = runDir))
 
-    filenames = sorted(runDict[runDir].subsystems[fileLocationSubsystem])
+    # Sort the filenames by time stamp for easy access (they are stored in an ordered dict).
+    filenames = sorted(runDict[runDir][fileLocationSubsystem])
     startOfRun = utilities.extractTimeStampFromFilename(filenames[0])
     endOfRun = utilities.extractTimeStampFromFilename(filenames[-1])
-    logger.info("runLength filename: {filename}".format(filename = filenames[-1]))
+    logger.info("end of run filename: {filename}".format(filename = filenames[-1]))
 
     # Create the subsystem
     showRootFiles = False
@@ -656,11 +683,12 @@ def createNewSubsystemFromMovedFilesInformation(runs, subsystem, runDict, runDir
                                                                               showRootFiles = showRootFiles,
                                                                               fileLocationSubsystem = fileLocationSubsystem)
 
-    # Handle files
+    # Store the file(s) information
+    # `subsystemFiles` is a reference, so it will be updated when we add the files to # the dictionary.
     subsystemFiles = runs[runDir].subsystems[subsystem].files
     for filename in filenames:
+        filename = os.path.join(runs[runDir].subsystems[subsystem].baseDir, filename)
         subsystemFiles[utilities.extractTimeStampFromFilename(filename)] = processingClasses.fileContainer(filename, startOfRun)
-    #runs[runDir].subsystems[subsystem].files = files
 
     # Flag that there are new files
     runs[runDir].subsystems[subsystem].newFile = True
@@ -668,9 +696,10 @@ def createNewSubsystemFromMovedFilesInformation(runs, subsystem, runDict, runDir
 def processMovedFilesIntoRuns(runs, runDict):
     """ Convert the list of moved files into run and subsystem containers stored in the database.
 
-    If the subsystem already exists, the moved files are added to the existing objects.
-
-    ...
+    In the case that the run has not been created, a new run container is created and an attempt is made
+    to create all subsystems that were requested in the configuration. If the subsystem already exists,
+    the moved files are added to the existing objects. It also includes the capability to add new subsystems
+    part of the way through a run in the unlikely event that we pick up new data during the run.
 
     Args:
         runs (BTree): Dict-like object which stores all run, subsystem, and hist information. Keys are the
@@ -678,18 +707,37 @@ def processMovedFilesIntoRuns(runs, runDict):
         runDict (dict): Nested dict which contains the new filenames and the HLT mode. For the precise
             structure, ``base.utilities.moveFiles()``.
     Returns:
-        None ...
+        None. Subsystems are created inside of the ``runContainer`` objects for which there are entries in the
+            ``runDict``.
     """
     for runDir in runDict:
+        # Remove the HLT mode so it doesn't get interpreted as a subsystem.
+        hltMode = runDict[runDir].pop("hltMode")
+
+        # Update existing runs and subsystems or create new ones if necessary
         if runDir in runs:
             run = runs[runDir]
+
+            # Determine the subsystems which we want to update. When the subsystem is initially created,
+            # every subsystem that does not have its `fileLocationSubsystem` is already created. Thus, we want to
+            # update any subsystem that already exist (including those which do not have their own
+            # `fileLocationSubsystem`) or those which have new files. However, if it's somehow not included
+            # (for example, EMC files were not provided, then these won't be included).
+            # Basically, we need existing subsystems in the run, and then any which subsystems which have
+            # files in the `runDict`.
+            subsystemsToCheck = set(run.subsystems)
+            subsystemsToCheck.union(runDict[runDir])
             # Update each subsystem and note that it needs to be reprocessed
-            for subsystemName in processingParameters["subsystemList"]:
-                if subsystemName in runs.subsystems:
+            for subsystemName in subsystemsToCheck:
+                if subsystemName in run.subsystems:
+                    logger.debug("Updating files in existing subsystem {subsystemName}.".format(subsystemName = subsystemName))
                     # Update the existing subsystem
                     subsystem = run.subsystems[subsystemName]
+                    # Add the new files and note them in the subsystem, which will lead to reprocessing.
                     subsystem.newFile = True
-                    for filename in runDict[runDir][subsystem]:
+                    for filename in runDict[runDir][subsystemName]:
+                        # We need the full path to the file (ie everything except for the dirPrefix).
+                        filename = os.path.join(subsystem.baseDir, filename)
                         subsystem.files[utilities.extractTimeStampFromFilename(filename)] = processingClasses.fileContainer(filename = filename, startOfRun = subsystem.startOfRun)
 
                     # Update time stamps
@@ -699,17 +747,34 @@ def processMovedFilesIntoRuns(runs, runDict):
                     logger.info("Previous EOR: {endOfRun}\tNew: {fileKey}".format(endOfRun = subsystem.endOfRun, fileKey = fileKeys[-1]))
                     subsystem.endOfRun = fileKeys[-1]
                 else:
-                    # Create a new subsystem
+                    # Create a new subsystem in an existing run.
+                    # This shouldn't be super common, as it corresponds to the case where we have
+                    # already setup a run (with all of its subsystems already created), then later received a file
+                    # from a new subsystem.
+                    logger.debug("Creating new subsystem {subsystemName} in existing run.".format(subsystemName = subsystemName))
+                    # NOTE: We don't catch the exception here, as we want it to fail if the subsystem doesn't have its own
+                    #       files and the HLT receiver data isn't available.
                     createNewSubsystemFromMovedFilesInformation(runs, subsystemName, runDict, runDir)
 
         else:
+            # The run doesn't yet exist, so we'll create a new run and new subsystems.
+            # First, create the new run.
+            logger.debug("Creating new run and set of subsystems for {runDir}".format(runDir = runDir))
             runs[runDir] = processingClasses.runContainer(runDir = runDir,
                                                           fileMode = processingParameters["cumulativeMode"],
-                                                          hltMode = runDict[runDir]["hltMode"])
-            # Add files and subsystems.
-            # We are creating runs here, so we already have all the information that we need from moving the files
+                                                          hltMode = hltMode)
+            # Add files and subsystems based on the moved file information. We want to consider all
+            # possible subsystems here. Anything for which we don't have available data will either
+            # not be shown (if there is not HLT receiver data) or will take advantage of relevant data
+            # from the HLT receiver.
             for subsystem in processingParameters["subsystemList"]:
-                createNewSubsystemFromMovedFilesInformation(runs, subsystem, runDict, runDir)
+                try:
+                    createNewSubsystemFromMovedFilesInformation(runs, subsystem, runDict, runDir)
+                except ValueError as e:
+                    # This means that the subsystem could not be created.  This is okay - we just want
+                    # to log it and continue on. For more information on the conditions that can lead
+                    # to such a case, see ``createNewSubsystemFromMovedFilesInformation(...)``.
+                    logger.warning(e.args[0])
 
 def processAllRuns():
     """ Process all available data and write out individual run pages and a run list.

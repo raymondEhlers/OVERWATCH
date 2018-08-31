@@ -47,12 +47,15 @@ def extractTimeStampFromFilename(filename):
 
     For possibles filenames are as follows:
 
-    - For combined files, the format is `combined.unixTimeStamp.root`, so we can just extract it directly.
-    - For time slices, the format is `timeSlices.unixStartTime.unixEndTime.root`, so we extract the two times,
-      subtract them, and return the difference. Note that this makes it a different format than the other
+    - For combined files, the format is `prefix/combined.unixTimeStamp.root`, so we can just extract it directly.
+    - For time slices, the format is `prefix/timeSlices.unixStartTime.unixEndTime.root`, so we extract the two
+      times, subtract them, and return the difference. Note that this makes it a different format than the other
       two timestamps.
-    - For other files processed into subsystems, the format is `SYShists.%Y_%m_%d_%H_%M_%S.root`. We extract
-      the time stamp and convert it to unix time. The time stamp is assumed to be in the CERN time zone.
+    - For other files processed into subsystems, the format is `prefix/SYShists.%Y_%m_%d_%H_%M_%S.root`. We
+      extract the time stamp and convert it to unix time. The time stamp is assumed to be in the CERN time zone.
+
+    Note:
+        The ``prefix/`` can be anything (or non-existent), as long as it doesn't contain any ``.``.
 
     Args:
         filename (str): Filename which contains the desired timestamp. The precise format of the timestamp
@@ -372,13 +375,12 @@ def moveFiles(dirPrefix, subsystemDict):
             # using extractTimeStampFromFilename() (although note that it usually assumes
             # that the structure of the filename follows the output of this function,
             # so it would require some additional formatting if it was used right here).
-            runString = splitFilename[1]
-            runNumber = int(runString)
+            runDir = "Run" + splitFilename[1]
             hltMode = splitFilename[2]
 
             # Determine the directory structure for each run
-            # We want it to be of the form "Run123456"
-            runDirectoryPath = "Run" + str(runNumber)
+            # We want to start with a path of the form "Run123456"
+            runDirectoryPath = runDir
 
             # Move replays of the data to a different directory, since we don't want to process it.
             if hltMode == "E":
@@ -401,7 +403,7 @@ def moveFiles(dirPrefix, subsystemDict):
             oldPath = os.path.join(dirPrefix, tempFilename)
             newPath = os.path.join(dirPrefix, runDirectoryPath, key, newFilename)
             logger.info("Moving %s to %s" % (oldPath, newPath))
-            # Don't import move from shutils. It appears to have unexpected behavior which
+            # Don't import `move` from shutils. It appears to have unexpected behavior which
             # can have very bad consequences, including deleting files and other data loss!
             shutil.move(oldPath, newPath)
 
@@ -410,10 +412,10 @@ def moveFiles(dirPrefix, subsystemDict):
             #       within a particular run.
             # Create dict for subsystem if it doesn't exist, and then create a list for the run if it doesn't exist
             # See: https://stackoverflow.com/a/12906014
-            runsDict.setdefault(runString, {}).setdefault(key, []).append(newFilename)
+            runsDict.setdefault(runDir, {}).setdefault(key, []).append(newFilename)
             # Save the HLT mode
-            if "hltMode" not in runsDict[runString]:
-                runsDict[runString]["hltMode"] = hltMode
+            if "hltMode" not in runsDict[runDir]:
+                runsDict[runDir]["hltMode"] = hltMode
 
     return runsDict
 

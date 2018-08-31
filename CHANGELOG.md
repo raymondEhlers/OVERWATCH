@@ -25,6 +25,8 @@ Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 - Add missing `__init__.py` in the `overwatch.processing.detectors` module.
+- Handling of newly received files had a number of small bugs and other mistakes in the relevant data
+  structures. All of these were corrected and tested.
 
 ### Removed
 
