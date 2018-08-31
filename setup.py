@@ -65,20 +65,20 @@ setup(
     # Rename scripts to the desired executable names
     # See: https://stackoverflow.com/a/8506532
     entry_points = {
-        "console_scripts" : [
+        "console_scripts": [
             # Note that the flask apss only run the flask development server through these scripts
             # because they will be launched directly via uwsgi (ie not through these scripts)
             "overwatchDQMReceiver = overwatch.receiver.run:runDevelopment",
             "overwatchWebApp = overwatch.webApp.run:runDevelopment",
-            # The processing will be launched this way in both production and development, so it 
+            # The processing will be launched this way in both production and development, so it
             # points to a different type of function
             "overwatchProcessing = overwatch.processing.run:run",
             # Deployment script
             "overwatchDeploy = overwatch.base.deploy:run",
             # Utility script to update the database users
             "overwatchUpdateUsers = overwatch.base.updateDBUsers:updateDBUsers",
-            ],
-        },
+        ],
+    },
 
     # Required packages.
     # Optional dependencies are defined below
@@ -115,12 +115,12 @@ setup(
     include_package_data=True,
 
     extras_require = {
-        "tests" : [
+        "tests": [
             "pytest",
             "pytest-cov",
             "pytest-mock",
         ],
-        "docs" : [
+        "docs": [
             "sphinx",
             # Allow markdown files to be used
             "recommonmark",
@@ -128,4 +128,4 @@ setup(
             "sphinx_markdown_tables",
         ]
     }
-  )
+)
