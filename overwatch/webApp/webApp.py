@@ -64,7 +64,7 @@ db = ZODB(app)
 
 # Set secret key for flask
 if serverParameters["debug"]:
-    # Cannot use the db value here since the reloader will cause it to fail...
+    # Cannot use the db value here since the reloader will cause it to fail.
     app.secret_key = serverParameters["_secretKey"]
 else:
     # Set a temporary secret key. It can be set from the database later
@@ -225,7 +225,7 @@ def login():
 
     # If we visit the login page, but we are already authenticated, then send to the index page.
     if current_user.is_authenticated:
-        logger.info("Redirecting logged in user \"{id}\" to index...".format(id = current_user.id))
+        logger.info("Redirecting logged in user \"{id}\" to the index page.".format(id = current_user.id))
         return redirect(url_for("index", ajaxRequest = json.dumps(ajaxRequest)))
 
     if ajaxRequest is False:
@@ -410,6 +410,11 @@ def runPage(runNumber, subsystemName, requestedFileType):
 
     Note:
         Some function args (after the first 3) are provided through the flask request object.
+
+    Warning:
+        Careful if changing the routing for this function, as the display swtich for the time slices button
+        in the web app depends on "runPage" being in this route. If this is changed, then the ``js`` also needs
+        to be changed.
 
     Args:
         runNumber (int): Run number of interest.
@@ -927,14 +932,14 @@ def upgradeDocker():
                 pid = int(line.split(None, 1)[0])
                 # Send TERM
                 os.kill(pid, signal.SIGTERM)
-                # NOTE: If this succeeds, then nothing will be sent because the process will be dead...
+                # NOTE: If this succeeds, then nothing will be sent because the process will be dead.
                 error.setdefault("Signal Sent", []).append("Sent TERM signal to process with \"{line}\"".format(line = line))
 
-        # Give a note if nothing happened....
+        # Give a note if nothing happened.
         if error == {}:
             error.setdefault("No response", []).append("Should have some response by now, but there is none. It seems that the `supervisord` process cannot be found!")
 
-    # Co-opt error output here since it is not worth a new template...
+    # Co-opt error output here since it is not worth a new template.
     if ajaxRequest is True:
         logger.warning("error: {error}".format(error = error))
         drawerContent = ""
