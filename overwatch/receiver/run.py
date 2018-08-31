@@ -17,10 +17,10 @@ logger = logging.getLogger("")
 #logger = logging.getLogger("reciever")
 
 # Setup logger
-utilities.setupLogging(logger = logger, 
-        logLevel = receiverParameters["loggingLevel"],
-        debug = receiverParameters["debug"],
-        logFilename = "dqmReceiver")
+utilities.setupLogging(logger = logger,
+                       logLevel = receiverParameters["loggingLevel"],
+                       debug = receiverParameters["debug"],
+                       logFilename = "dqmReceiver")
 
 # Imports are below here so that they can be logged
 from overwatch.receiver.dqmReceiver import app
@@ -31,7 +31,9 @@ def runDevelopment():
     app.debug = receiverParameters["debug"]
     # Careful with threaded, but it can be useful to test the status page, since the post request succeeds!
     app.run(host=receiverParameters["receiverIP"],
-            port=receiverParameters["receiverPort"])#, threaded=True)
+            port=receiverParameters["receiverPort"],
+            #threaded=True
+            )
 
 if __name__ == "__main__":
     runDevelopment()

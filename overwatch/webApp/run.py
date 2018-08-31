@@ -79,7 +79,9 @@ def runDevelopment():
         logger.info("Starting flask app")
         # Careful with threaded, but it can be useful to test the status page, since the post request succeeds!
         app.run(host = serverParameters["ipAddress"],
-                port = serverParameters["port"])#, threaded=True)
+                port = serverParameters["port"],
+                #threaded=True
+                )
 
 if __name__ == "__main__":
     runDevelopment()

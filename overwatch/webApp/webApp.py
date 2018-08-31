@@ -375,22 +375,22 @@ def index():
 
     if ajaxRequest is not True:
         return render_template("runList.html", drawerRuns = runsToUse,
-                                mainContentRuns = runsToUse,
-                                runOngoing = runOngoing,
-                                runOngoingNumber = runOngoingNumber,
-                                subsystemsWithRootFilesToShow = serverParameters["subsystemsWithRootFilesToShow"],
-                                anchorFrequency = anchorFrequency,
-                                runOffset = runOffset, numberOfRunsToDisplay = numberOfRunsToDisplay,
-                                totalNumberOfRuns = numberOfRuns)
+                               mainContentRuns = runsToUse,
+                               runOngoing = runOngoing,
+                               runOngoingNumber = runOngoingNumber,
+                               subsystemsWithRootFilesToShow = serverParameters["subsystemsWithRootFilesToShow"],
+                               anchorFrequency = anchorFrequency,
+                               runOffset = runOffset, numberOfRunsToDisplay = numberOfRunsToDisplay,
+                               totalNumberOfRuns = numberOfRuns)
     else:
         drawerContent = render_template("runListDrawer.html", runs = runsToUse, runOngoing = runOngoing,
-                                         runOngoingNumber = runOngoingNumber, anchorFrequency = anchorFrequency)
+                                        runOngoingNumber = runOngoingNumber, anchorFrequency = anchorFrequency)
         mainContent = render_template("runListMainContent.html", runs = runsToUse, runOngoing = runOngoing,
-                                       runOngoingNumber = runOngoingNumber,
-                                       subsystemsWithRootFilesToShow = serverParameters["subsystemsWithRootFilesToShow"],
-                                       anchorFrequency = anchorFrequency,
-                                       runOffset = runOffset, numberOfRunsToDisplay = numberOfRunsToDisplay,
-                                       totalNumberOfRuns = numberOfRuns)
+                                      runOngoingNumber = runOngoingNumber,
+                                      subsystemsWithRootFilesToShow = serverParameters["subsystemsWithRootFilesToShow"],
+                                      anchorFrequency = anchorFrequency,
+                                      runOffset = runOffset, numberOfRunsToDisplay = numberOfRunsToDisplay,
+                                      totalNumberOfRuns = numberOfRuns)
 
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
@@ -445,7 +445,9 @@ def runPage(runNumber, subsystemName, requestedFileType):
         logger.debug("runDir: {}, subsystem: {}, requestedFileType: {}, "
                      "ajaxRequest: {}, jsRoot: {}, requestedHistGroup: {}, requestedHist: {}, "
                      "timeSliceKey: {}, timeSlice: {}".format(runDir, subsystemName, requestedFileType,
-                      ajaxRequest, jsRoot, requestedHistGroup, requestedHist, timeSliceKey, timeSlice))
+                                                              ajaxRequest, jsRoot,
+                                                              requestedHistGroup, requestedHist,
+                                                              timeSliceKey, timeSlice))
     else:
         logger.warning("Error on run page: {error}".format(error = error))
 

@@ -25,9 +25,9 @@ import pprint
 
 # Setup logging
 utilities.setupLogging(logger = logger,
-        logLevel = serverParameters["loggingLevel"],
-        debug = serverParameters["debug"],
-        logFilename = "updateDBUsers")
+                       logLevel = serverParameters["loggingLevel"],
+                       debug = serverParameters["debug"],
+                       logFilename = "updateDBUsers")
 # Log settings
 logger.info("Settings: {serverParameters}".format(serverParameters = pprint.pformat(serverParameters)))
 

@@ -246,8 +246,8 @@ def setupLogging(logger, logLevel, debug, logFilename):
         # See: http://flask.pocoo.org/docs/0.10/errorhandling/
         notifyAddresses = []
         handler = logging.handlers.SMTPHandler("smtp.cern.ch",
-                                                "error@aliceoverwatch.cern.ch",
-                                                notifyAddresses, "OVERWATCH Failed")
+                                               "error@aliceoverwatch.cern.ch",
+                                               notifyAddresses, "OVERWATCH Failed")
         handler.setLevel(logging.WARNING)
         logFormatStr = """
         Message type:       %(levelname)s
