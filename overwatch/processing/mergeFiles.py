@@ -66,10 +66,11 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlice = None):
             it will be ignored and it will create a standard "combined file". Default: None
     Returns:
         None: On success, ``None`` is returned. Otherwise, an exception is raise.
-    """
-    # Merging using root
-    merger = ROOT.TFileMerger()
 
+    Raises:
+        ValueError: If the number of input files doesn't match the number of files in the merger. Perhaps if a
+            file is inaccessible.
+    """
     # Determines which files are needed to merge
     if timeSlice:
         filesToMerge = timeSlice.filesToMerge
@@ -102,6 +103,11 @@ def merge(currentDir, run, subsystem, cumulativeMode = True, timeSlice = None):
         # Take the most recent file
         filesToMerge = [filesToMerge[-1]]
 
+    # Merging using root. We use this for multiple files, but will skip it
+    # if we are only copying one file.
+    merger = ROOT.TFileMerger()
+
+    # Determine the files to merge
     if len(filesToMerge) == 1:
         # This is often cumulative mode, but could also be reset mode with only 1 file
         numberOfFiles = len(filesToMerge)

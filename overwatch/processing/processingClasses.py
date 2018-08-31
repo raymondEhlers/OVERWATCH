@@ -219,15 +219,11 @@ class subsystemContainer(persistent.Persistent):
             Keys are the option names as string, while values are their corresponding values.
     """
     def __init__(self, subsystem, runDir, startOfRun, endOfRun, showRootFiles = False, fileLocationSubsystem = None):
-        """ Initializes subsystem properties.
-
-        It does safety and sanity checks on a number of variables.
-        """
         self.subsystem = subsystem
         self.showRootFiles = showRootFiles
 
         # If data does not exist for this subsystem then it is dependent on HLT data
-        # Detect it if not passed to the constructor
+        # Detect it automatically if not passed to the initialization.
         if fileLocationSubsystem is None:
             # Use the subsystem directory as proxy for whether it exists.
             # NOTE: This detection works, but it isn't so flexible.
@@ -239,7 +235,7 @@ class subsystemContainer(persistent.Persistent):
             self.fileLocationSubsystem = fileLocationSubsystem
 
         if self.showRootFiles is True and self.subsystem != self.fileLocationSubsystem:
-            logger.warning("\tIt is requested to show ROOT files for subsystem %s, but the subsystem does not have specific data files. Using HLT data files!" % subsystem)
+            logger.warning("\tIt is requested to show ROOT files for subsystem {subsystem}, but the subsystem does not have specific data files. Using HLT data files!".format(subsystem = subsystem))
 
         # Files
         # Be certain to set these after the subsystem has been created!
@@ -547,13 +543,15 @@ class fileContainer(persistent.Persistent):
     Note that it *does not* open the file itself - this is still the responsibility of the user.
 
     Args:
-        filenae (str): Filename of the corresponding file.
+        filenae (str): Filename of the corresponding file. This is expected to the full path
+            from the ``dirPrefix`` to the file.
         startOfRun (int): Start of the run in unix time. Default: ``None``. The default will lead
             to timeIntoRun being set to ``-1``. The default is most commonly used for time slices,
             where the start of run isn't so meaningful.
 
     Attributes:
-        filenae (str): Filename of the corresponding file.
+        filenae (str): Filename of the corresponding file. This is expected to the full path
+            from the ``dirPrefix`` to the file.
         combinedFile (bool): True if this file corresponds to a combined file. It is set to ``True``
             if "combined" is in the filename.
         timeSlice (bool): True if this file corresponds to a time slice. It is set to ``True`` if

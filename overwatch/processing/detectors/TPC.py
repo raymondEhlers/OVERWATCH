@@ -88,6 +88,9 @@ class TPCTrendingObjectMean(processingClasses.trendingObject):
             hist (histogramContainer): Histogram from which the trended value should be extracted.
         Returns:
             None. The extracted value is stored in the trending object.
+
+        Raises:
+            ValueError: If there is more than one histogram name in ``histNames``. This function only supports one.
         """
         if len(self.histNames) > 1:
             raise ValueError("Too many histograms passed to the trending object. Expected histograms named: {}!".format(self.histNames))
