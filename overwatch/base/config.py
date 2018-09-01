@@ -183,8 +183,9 @@ def readConfigFiles(fileList):
     return (configs, filesRead)
 
 def readConfig(configType):
-    """ Main function to read the Overwatch configuration. It looks for values in a set of configuration
-    files according to the module that is specified.
+    """ Main function to read the Overwatch configuration.
+
+    It looks for values in a set of configuration files according to the module that is specified.
 
     The configuration file must be named ``config.yaml``. The files are read in such an order that values
     specified in later packages will override earlier ones. For example, ``webApp`` depends on ``processing``,
@@ -194,17 +195,17 @@ def readConfig(configType):
     In additional to looking in Overwatch modules, it also looks for a configuration in the current working
     directory, as well as in the user home directory.
 
-    The current (July 2018) order of override priority from highest to lowest is:
+    The current (as of August 2018) order of override priority from highest to lowest is:
 
     .. code-block:: none
 
-        local directory
-        user home directory
-        webApp
-        processing
-        receiver
-        api
-        base
+        Current working directory
+        User home directory
+        overwatch.webApp
+        overwatch.processing
+        overwatch.receiver
+        overwatch.api
+        overwatch.base
 
     (this basically follows the dependency tree).
 
