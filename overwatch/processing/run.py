@@ -17,7 +17,8 @@ from overwatch.base import config
 from overwatch.base import utilities
 (processingParameters, filesRead) = config.readConfig(config.configurationType.processing)
 print("Configuration files read: {filesRead}".format(filesRead = filesRead))
-print("processingParameters: {processingParameters}".format(processingParameters = pprint.pformat(processingParameters)))
+print("processingParameters: {processingParameters}".format(
+    processingParameters = pprint.pformat(processingParameters)))
 
 # By not setting a name, we get everything!
 logger = logging.getLogger("")
