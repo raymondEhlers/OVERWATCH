@@ -87,8 +87,8 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
             are names of options, while values are the corresponding option values. Default: ``None``. Note: In this case,
             it will use the default subsystem processing options.
         forceRecreateSubsystem (bool): True if subsystems will be recreated, even if they already exist.
-        trendingContainer (trendingContainer): Contains trending objects which will be used when determining which histograms
-            need to be used for trending.
+        trendingContainer (trendingContainer): Contains trending objects which will be used when determining which
+            histograms need to be used for trending.
     Returns:
         None. However, the underlying subsystems, histograms, etc, are modified.
     """
@@ -930,7 +930,7 @@ def processAllRuns():
     else:
         trendingContainer = None
 
-    # From here, we start of actual processing data
+    # From here, we start the actual data processing
 
     # First, we move files that we have received from the receivers into the Overwatch run structure and
     # add them to the database.

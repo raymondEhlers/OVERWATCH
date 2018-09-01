@@ -88,7 +88,8 @@ Note that the find processing functions plug-in is most important. It is how a d
 - execution will proceed without that part of the functionality. Lastly, for each function above, `subsystem`
 is a `subsystemContainer` for the current subsystem in the current run. At the end of each section, an example
 implementation for the plug-in will be shown, with complete argument documentation. The example subsystem name
-is `SYS` (for "Subsystem").
+is `SYS` (for "Subsystem"). Lastly, further information on precisely how histograms flow from one plug-in
+function to the next is described in the processing package README.
 
 ### Additional Histograms
 
