@@ -12,6 +12,7 @@ processing and trending steps.
 
 from __future__ import print_function
 from future.utils import iteritems
+from future.utils import itervalues
 
 # ROOT
 import ROOT
@@ -684,7 +685,7 @@ def createNewSubsystemFromMovedFilesInformation(runs, subsystem, runDict, runDir
                                                                               fileLocationSubsystem = fileLocationSubsystem)
 
     # Store the file(s) information
-    # `subsystemFiles` is a reference, so it will be updated when we add the files to # the dictionary.
+    # `subsystemFiles` is a reference, so it will be updated when we add the files to the dictionary.
     subsystemFiles = runs[runDir].subsystems[subsystem].files
     for filename in filenames:
         filename = os.path.join(runs[runDir].subsystems[subsystem].baseDir, filename)
@@ -777,47 +778,54 @@ def processMovedFilesIntoRuns(runs, runDict):
                     logger.warning(e.args[0])
 
 def processAllRuns():
-    """ Process all available data and write out individual run pages and a run list.
+    """ Driver function for processing all available data, storing the results in a database and on disk.
 
-    This function moves all data that has been received by the HLT, categorizes the data by subsystem
-    and puts it into a directory structure, prints it out applying the proper always applied QA
-    functions, and then writes out web pages for each individual run, as well as a run list index
-    which allows access to all runs.
-    Each run will only be processed if necessary (for example, if there is new data) or if it is
-    specifically set to reprocess in the configuration files.
-    This function drives all of the processing, except for functions that are specifically
-    requested by a user through the web app (ie. QA and time slices).
+    This function is responsible for driving all processing functionality in Overwatch. This spans from
+    initial preprocessing of the received ROOT files to trending information extracted from histograms.
+    In particular, it directs:
 
-    This is the main function to process data, and should be run repeatedly with a short period
-    to ensure that data is processed in a timely manner. This function also can handle exporting
-    the data to another system, such as PDSF, via rsync.
+    - Retrieve the run information or recreate it if it doesn't exist. If recreated, it will be populated
+      with existing information already stored in the data directory.
+    - Retrieve the trending object or recreate it if it doesn't exist. As of August 2018, the trending
+      objects will be empty when recreated.
+    - Move new files into the Overwatch file structure and create runs and/or subsystems from those new files.
+      If the corresponding objects already exist, then they are updated.
+    - Perform the actual processing, which includes executing the subsystem (detector) plug-in functionality.
+      The processing will only be performed if necessary (ie if there are new files which need processing).
+      This can also be overridden by specifically requesting reprocessing.
+    - Perform the trending. It also has subsystem (detector) plug-in functionality.
+    - Transferring the processed data if requested.
+
+    For further information on the technical details of how all of this is accomplished, see the
+    :doc:`processing README </processingReadme>`, as well as the package documentation. For further information
+    on the subsystem (detector) plug-in functionality, see
+    the :doc:`detector subsystem and trending README </detectorPluginsReadme>`.
 
     Note:
-        Configuration is set in the class :class:`config.processingParams.processingParameters`
-        instead of via arguments to this function. This allows it to be easily invoked
-        via ``python processRuns.py`` in the terminal.
+        Configuration for this processing is provided by the Overwatch configuration system. For further
+        information, see the :doc:`Overwatch base module README </baseReadme>`.
 
     Args:
         None: See the note above.
     Returns:
-        None
+        None. However, it has extensive side effects. It changes values in the database related to runs,
+            subsystems, etc, as well as writing image and ``json`` files to disk.
     """
-    # TODO: Update description and remove references to QA!
-    dirPrefix = processingParameters["dirPrefix"]
-
-    # Get the database
+    # Get the database.
     (dbRoot, connection) = utilities.getDB(processingParameters["databaseLocation"])
 
-    # Create runs list
+    # Setup the runs dict by either retrieving it or recreating it.
     if "runs" in dbRoot:
-        # The objects exist, so just use the stored copy and update it.
+        # The objects already exist, so we use the existing information.
         logger.info("Utilizing existing database!")
         runs = dbRoot["runs"]
 
-        # Files which were new are marked as such from the previous run,
-        # They are not anymore, so we mark them as processed
-        for runDir, run in runs.items():
-            for subsystemName, subsystem in run.subsystems.items():
+        # During the previous processing run, new files were marked as new in the subsystem.
+        # At the end of the previous processing run, this flag wasn't clear so we can know
+        # which files were just processed. Since we are now starting a new processing run,
+        # we now must be clear this flag so we don't reprocess those runs again.
+        for run in itervalues(runs):
+            for subsystem in itervalues(run.subsystems):
                 if subsystem.newFile:
                     subsystem.newFile = False
     else:
@@ -826,30 +834,31 @@ def processAllRuns():
         runs = dbRoot["runs"]
 
         # The objects don't exist, so we need to create them.
-        # This will be a slow process, so the results should be stored
-        for runDir in utilities.findCurrentRunDirs(dirPrefix):
-            # Create run object
+        # This will be a slow process, so the results should be stored.
+        for runDir in utilities.findCurrentRunDirs(processingParameters["dirPrefix"]):
+            # Create run objects.
             runs[runDir] = processingClasses.runContainer(runDir = runDir,
                                                           fileMode = processingParameters["cumulativeMode"])
 
-        # Find files and create subsystems
-        for runDir, run in runs.items():
+        # Find files and create subsystems based on the existing files.
+        for runDir, run in iteritems(runs):
             for subsystem in processingParameters["subsystemList"]:
-                # Skip trending subsystem here
-                #if subsystem == "TDG":
-                #    continue
-
-                # If subsystem exists, then create file containers
-                subsystemPath = os.path.join(dirPrefix, runDir, subsystem)
+                # For each subsystem, determine where the files are stored.
+                # NOTE: There are some similarities in this section to ``createNewSubsystemFromMovedFilesInformation()``,
+                #       but there are enough differences small that the amount of code we can actual combine is rather small,
+                #       such that it's not really worth the effort.
+                subsystemPath = os.path.join(processingParameters["dirPrefix"], runDir, subsystem)
                 if os.path.exists(subsystemPath):
                     fileLocationSubsystem = subsystem
                 else:
-                    if os.path.exists(os.path.join(dirPrefix, runDir, "HLT")):
+                    # In this case, the subsystem actual files will be provided by the "HLT", if the subsystem
+                    # is supposed to exist at all for this particular run.
+                    if os.path.exists(os.path.join(processingParameters["dirPrefix"], runDir, "HLT")):
                         fileLocationSubsystem = "HLT"
-                        # Define subsystem path properly for this data arrangement
+                        # Define subsystem path properly for this data arrangement.
                         subsystemPath = subsystemPath.replace(subsystem, "HLT")
                     else:
-                        # Cannot create subsystem, since the HLT doesn't exist as a fall back
+                        # Cannot create subsystem, since the HLT doesn't exist as a fall back.
                         if subsystem == "HLT":
                             logger.warning("Could not create subsystem {subsystem} in {runDir} due to lacking HLT files.".format(subsystem = subsystem, runDir = runDir))
                         else:
@@ -857,16 +866,16 @@ def processAllRuns():
                         continue
 
                 logger.info("Creating subsystem {subsystem} in {runDir}".format(subsystem = subsystem, runDir = runDir))
-                # Retrieve the files for a given directory
-                [filenamesDict, runLength] = utilities.createFileDictionary(dirPrefix, runDir, fileLocationSubsystem)
-                #logger.info("runLength: {runLength}, filenamesDict: {filenamesDict}".format(runLength = runLength, filenamesDict = filenamesDict))
+                # Retrieve the files for a given subsystem directory.
+                [filenamesDict, runLength] = utilities.createFileDictionary(processingParameters["dirPrefix"], runDir, fileLocationSubsystem)
+                # We want them to be ordered by time stamp.
                 sortedKeys = sorted(filenamesDict.keys())
+                # Extract information necessary for creating the subsystem.
                 startOfRun = utilities.extractTimeStampFromFilename(filenamesDict[sortedKeys[0]])
                 endOfRun = utilities.extractTimeStampFromFilename(filenamesDict[sortedKeys[-1]])
-                #logger.info("filenamesDict.values(): {values}".format(values = filenamesDict.values()))
                 logger.info("startOfRun: {startOfRun}, endOfRun: {endOfRun}, runLength: {runLength}".format(startOfRun = startOfRun, endOfRun = endOfRun, runLength = (endOfRun - startOfRun) // 60))
 
-                # Now create the subsystem
+                # Now create the actual subsystem.
                 showRootFiles = False
                 if subsystem in processingParameters["subsystemsWithRootFilesToShow"]:
                     showRootFiles = True
@@ -877,98 +886,108 @@ def processAllRuns():
                                                                                  showRootFiles = showRootFiles,
                                                                                  fileLocationSubsystem = fileLocationSubsystem)
 
-                # Handle files and create file containers
+                # Store the file(s) information.
+                # `subsystemFiles` is a reference, so it will be updated when we add the files to the dictionary.
                 subsystemFiles = run.subsystems[subsystem].files
-
-                # And add the files to the subsystem
                 for key in filenamesDict:
                     subsystemFiles[key] = processingClasses.fileContainer(filenamesDict[key], startOfRun)
-
                 logger.debug("Files length: {subsystemFilesLength}".format(subsystemFilesLength = len(subsystemFiles)))
 
-                # Add combined
+                # Add the combined file to the subsystem if it already exists. If it doesn't it will be created
+                # in `mergeFiles.mergeRootFiles()`
                 combinedFilename = [filename for filename in os.listdir(subsystemPath) if "combined" in filename and ".root" in filename]
                 if len(combinedFilename) > 1:
-                    logger.critical("Number of combined files in {runDir} is {combinedFilenameLength}, but should be 1! Exiting!".format(runDir = runDir, combinedFilenameLength = len(combinedFilename)))
-                    exit(0)
+                    raise ValueError("Number of combined files found in {runDir} for subsystem {subsystem} is {combinedFilenameLength}, but should be 1!".format(runDir = runDir, subsystem = subsystem, combinedFilenameLength = len(combinedFilename)))
                 if len(combinedFilename) == 1:
                     run.subsystems[subsystem].combinedFile = processingClasses.fileContainer(os.path.join(runDir, fileLocationSubsystem, combinedFilename[0]), startOfRun)
                 else:
                     logger.info("No combined file in {runDir}".format(runDir = runDir))
 
-        # Commit any changes made to the database
+        # Commit any changes made to the database so we can proceed onto the actual processing.
         transaction.commit()
+
+    # See how we've done so far.
+    # This is quite verbose, so we don't want it to be normally enabled.
+    #logger.info("runs: {runs}".format(runs = list(runs.keys())))
+
+    # Create the configuration stored in the database if necessary
+    # This doesn't exhaustively contain all of the settings, but stores some properties are useful.
+    if "config" not in dbRoot:
+        dbRoot["config"] = persistent.mapping.PersistentMapping()
 
     # Create trending if necessary
     if "trending" not in dbRoot and processingParameters["trending"]:
         dbRoot["trending"] = BTrees.OOBTree.BTree()
 
-    # Create configuration list
-    if "config" not in dbRoot:
-        dbRoot["config"] = persistent.mapping.PersistentMapping()
-
-    logger.info("runs: {runs}".format(runs = list(runs.keys())))
-
-    # Start of processing data
-    # Takes histos from dirPrefix and moves them into Run dir structure, with a subdir for each subsystem
-    runDict = utilities.moveRootFiles(dirPrefix, processingParameters["subsystemList"])
-
-    logger.info("Files moved: {runDict}".format(runDict = runDict))
-
-    # Now process the results from moving the files and add them into the runs list
-    processMovedFilesIntoRuns(runs, runDict)
-
-    # Potentially helpful debug information
-    if processingParameters["debug"]:
-        for runDir in runs.keys():
-            for subsystem in runs[runDir].subsystems.keys():
-                logger.debug("{runDir}, {subsystem} has nFiles: {nFiles}".format(runDir = runDir, subsystem = subsystem, nFiles = len(runs[runDir].subsystems[subsystem].files)))
-
-    # Merge histograms over all runs, all subsystems if needed. Results in one combined file per subdir.
-    mergeFiles.mergeRootFiles(runs, dirPrefix,
-                              processingParameters["forceNewMerge"],
-                              processingParameters["cumulativeMode"])
-
-    # Setup trending
+    # Next, set up the trending.
     if processingParameters["trending"]:
         trendingContainer = processingClasses.trendingContainer(dbRoot["trending"])
-        # Subsystem specific trending histograms
-        # "TDG" corresponds to general trending histograms (perhaps between two subsystem)
+        # Create subsystem specific trending histograms.
+        # "TDG" corresponds to general trending histograms (for example, it could be trending between two subsystem).
         for subsystem in processingParameters["subsystemList"] + ["TDG"]:
             trendingObjects = pluginManager.defineTrendingObjects(subsystem)
             trendingContainer.addSubsystemTrendingObjects(subsystem, trendingObjects, forceRecreateSubsystem = processingParameters["forceRecreateSubsystem"])
     else:
         trendingContainer = None
 
-    # Determine which runs to process
+    # From here, we start of actual processing data
+
+    # First, we move files that we have received from the receivers into the Overwatch run structure and
+    # add them to the database.
+    runDict = utilities.moveRootFiles(processingParameters["dirPrefix"], processingParameters["subsystemList"])
+    logger.info("Files moved: {runDict}".format(runDict = runDict))
+    processMovedFilesIntoRuns(runs, runDict)
+
+    # Potentially helpful debug information
+    if processingParameters["debug"]:
+        logger.debug("Moved files information:")
+        for runDir in runs.keys():
+            for subsystem in runs[runDir].subsystems.keys():
+                logger.debug("{runDir}, {subsystem} has nFiles: {nFiles}".format(runDir = runDir, subsystem = subsystem, nFiles = len(runs[runDir].subsystems[subsystem].files)))
+
+    # Determine the most recent histograms by merging the relevant files (as determined by the mode
+    # in which Overwatch is operating. See more on this in the `mergeFiles` module).
+    # Regardless of the mode, this will result in a single "combined" file which contains all of the
+    # most up to date files.
+    # NOTE: We will only subsystems which contain new files.
+    mergeFiles.mergeRootFiles(runs, processingParameters["dirPrefix"],
+                              processingParameters["forceNewMerge"],
+                              processingParameters["cumulativeMode"])
+
+    # Perform the actual histogram processing
     outputFormattingSave = os.path.join("{base}", "{name}.{ext}")
-    for runDir, run in runs.items():
-        #for subsystem in subsystems:
+    for runDir, run in iteritems(runs):
         for subsystem in run.subsystems.values():
-            # Process if there is a new file or if forceReprocessing
-            logger.debug("runDir: {}, reprocessRuns: {}".format(runDir.replace("Run", ""), processingParameters["forceReprocessRuns"]))
+            # Process the subsystem if there is a new file or we explicitly ask for
+            # processing by forcing it.
+            # We can force either generally (`forceReprocess`), or for particular runs (`forceReprocessRuns`)
             if subsystem.newFile or processingParameters["forceReprocessing"] or int(runDir.replace("Run", "")) in processingParameters["forceReprocessRuns"]:
-                # Process combined root file: plot histos and save in imgDir
+                # Process combined root file: plot histograms and save the results of the processing
+                # in both image and `json` on the disk.
                 logger.info("About to process {prettyName}, {subsystem}".format(prettyName = run.prettyName, subsystem = subsystem.subsystem))
-                processRootFile(os.path.join(processingParameters["dirPrefix"], subsystem.combinedFile.filename),
-                                outputFormattingSave,
-                                subsystem,
+                processRootFile(filename = os.path.join(processingParameters["dirPrefix"], subsystem.combinedFile.filename),
+                                outputFormatting = outputFormattingSave,
+                                subsystem = subsystem,
                                 forceRecreateSubsystem = processingParameters["forceRecreateSubsystem"],
                                 trendingContainer = trendingContainer)
                 if trendingContainer and not trendingContainer.updateToDate:
-                    # Loop over process root file with various until it is up to date
+                    # As of August 2018, this is where the trending container should step in to
+                    # update the trending objects if they are not entirely up to date (say, if they're
+                    # missing entries because the trending objects were recreated).
+                    # TODO: Loop over process root file with various until it is up to date
                     pass
             else:
-                # We often want to skip this point since most runs will not need to be processed most times
+                # We often want to skip processing since most runs won't have new files and will not need to be processed most times.
                 logger.debug("Don't need to process {prettyName}. It has already been processed".format(prettyName = run.prettyName))
 
-        # Commit after we have successfully processed a run
+        # Commit after we have successfully processed each run
         transaction.commit()
 
-    logger.info("Finished processing!")
+    logger.info("Finished standard processing!")
 
+    # Run trending now that we have gotten to the most recent run
     if trendingContainer:
-        # Run trending once we have gotten to the most recent run
+        # NOTE: The trending will loop over the trending subsystems in `processTrending()`.
         logger.info("About to process trending")
         processTrending(outputFormatting = outputFormattingSave,
                         trending = trendingContainer)
@@ -976,14 +995,17 @@ def processAllRuns():
         # Commit after we have successfully processed the trending
         transaction.commit()
 
-    logger.info("Finishing trending")
+    logger.info("Finished trending processing!")
 
-    # Send data to pdsf via rsync
+    # Send data via `rsync` (if necessary)
     if processingParameters["sendData"]:
         logger.info("Preparing to send data")
-        utilities.rsyncData(dirPrefix, processingParameters["remoteUsername"], processingParameters["remoteSystems"], processingParameters["remoteFileLocations"])
+        utilities.rsyncData(processingParameters["dirPrefix"], processingParameters["remoteUsername"], processingParameters["remoteSystems"], processingParameters["remoteFileLocations"])
 
     # Update receiver last modified time if the log exists
+    # This allows to keep track of when we last processed a new file.
+    # However, it requires that the receiver log file is available on the same machine as where the processing
+    # is performed.
     receiverLogFileDir = os.path.join("deploy")
     if os.path.exists(receiverLogFileDir):
         receiverLogFilePath = os.path.join(receiverLogFileDir,
@@ -997,11 +1019,12 @@ def processAllRuns():
             dbRoot["config"]["receiverLogLastModified"] = receiverLogLastModified
 
     # Add users and secret key if debugging
-    # This needs to be done manually if deploying, since this requires some care to ensure that everything is configured properly
+    # This needs to be done manually if deploying, since this requires some care to ensure that everything is
+    # configured properly. However, it's quite convenient for development.
     if processingParameters["debug"]:
         utilities.updateDBSensitiveParameters(dbRoot)
 
-    # Ensure that any additional changes are committed
+    # Ensure that any additional changes are committed and finish up with the database.
     transaction.commit()
     connection.close()
 
