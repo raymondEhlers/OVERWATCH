@@ -261,7 +261,6 @@ def mergeRootFiles(runs, dirPrefix, forceNewMerge = False, cumulativeMode = True
                 # Perform the actual merge
                 merge(currentDir, run, run.subsystems[subsystem], cumulativeMode)
 
-                # We have successfully merged
-                # Still considered a newFile until we have processed, so don't change state here
-                #run.subsystems[subsystem].newFile = False
+                # We have successfully merged!
+                # Still considered a new file until we have processed it entirely, so don't change state here
 

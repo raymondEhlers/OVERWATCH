@@ -83,6 +83,9 @@ def createFileDictionary(currentDir, runDir, subsystem):
     This function effectively characterizes the files available for a subsystem in a given
     run, providing all files, as well as the length of the run.
 
+    Note:
+        The filenames that are returned are of the form ``Run123456/SYS/file.root``.
+
     Args:
         currentDir (str): Path to the directory containing run directories.
         runDir (str): Run directory to be considered.
@@ -334,6 +337,11 @@ def moveFiles(dirPrefix, subsystemDict):
     Note:
         HLT mode "E" corresponds to be replayed data which can be disregarded. Here, it is moved
         to the `ReplayData` directory so it doesn't get processed, but it also isn't entirely lost.
+
+    Note:
+        The filenames returned here are different than those from ``createFileDictionary()``. Here, we return
+        just the filename in the nested dict, while there we return the full path to the file (not including the
+        ``dirPrefix``).
 
     Args:
         dirPrefix (str): Path to the root directory where the data is stored.

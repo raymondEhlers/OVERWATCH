@@ -542,7 +542,7 @@ This list can by looking at the histograms that are available in the test data. 
     KEY: TH2F     EMCTRQA_histMaxEdgePosEMCL0Online;1     Edge Position Max EMCL0 patch Online
     KEY: TH2F     EMCTRQA_histMaxEdgePosEMCL0Recalc;1     Edge Position Max EMCL0 patch Recalc
     # L0 and L1 trigger information
-    KEY: TH1F     EMCTRQA_histFastORL0;1  				  L0 entires vs FastOR number
+    KEY: TH1F     EMCTRQA_histFastORL0;1  				  L0 entries vs FastOR number
     KEY: TH2F     EMCTRQA_histFastORL0Amp;1       		  L0 amplitudes vs position
     KEY: TH1F     EMCTRQA_histFastORL0LargeAmp;1  		  L0 (amp>400) vs FastOR number
     KEY: TH2F     EMCTRQA_histFastORL0Time;1      		  L0 trigger time vs FastOR number
