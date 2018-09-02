@@ -14,8 +14,11 @@ listed below.
 
 .. _base-package-reference:
 
+Package reference
+-----------------
+
 overwatch.base.config module
-----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: overwatch.base.config
     :members:
@@ -23,7 +26,7 @@ overwatch.base.config module
     :show-inheritance:
 
 overwatch.base.deploy module
-----------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: overwatch.base.deploy
     :members:
@@ -31,7 +34,7 @@ overwatch.base.deploy module
     :show-inheritance:
 
 overwatch.base.utilities module
--------------------------------
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: overwatch.base.utilities
     :members:

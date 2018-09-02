@@ -151,7 +151,7 @@ def dqm():
     """ Receive files from the DQM system.
 
     For further information on the REST API (which is partially defined here), see
-    :doc:`the DQM receiver README </dqmReceiverReadme>`__. It contains a comprehensive description of the
+    :doc:`the DQM receiver README </dqmReceiverReadme>`. It contains a comprehensive description of the
     APIs described here.
 
     Args:
@@ -317,7 +317,7 @@ def returnFile(filename):
     """ Return the ROOT file which was previously sent to the receiver.
 
     For further information on the REST API (which is partially defined here), see
-    :doc:`the DQM receiver README </dqmReceiverReadme>`__. It contains a comprehensive description of the
+    :doc:`the DQM receiver README </dqmReceiverReadme>`. It contains a comprehensive description of the
     APIs described here.
 
     Args:
