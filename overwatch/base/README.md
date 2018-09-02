@@ -29,3 +29,9 @@ the joining of paths, in a similar way to `os.path.join`.
 
 For additional technical details regarding the configuration system as well as an exhaustive list of
 constructor plug-ins, see the documentation for functions within the `overwatch.base.config` module.
+
+## Additional files
+
+`storageWrapper.py` is an idea for how files could be accessed through `XRootD` instead of needing to preside
+on the local disk. This would be particularly useful because we would then be able to take advantage of EOS
+directly. However, as of August 2018, this is still very much a work in progress and isn't fully operation.
