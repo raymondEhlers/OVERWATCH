@@ -141,13 +141,14 @@ c++
 zmqReceiver
 ```
 
-Further information on each component is available in the sections below.
+Further information on each component is available in the sections below. More detailed technical information
+is available in the READMEs for each package, as well as in the code documentation.
 
 ## Overwatch Processing
 
 The main processing component of Overwatch is responsible for transforming the received data into a viewable
 form, while also extracting derived quantities and performing checks for alarms. The main processing module is
-written in python and depends heavily on PyRoot, with some functionality implemented through numpy. The module
+written in python and depends heavily on PyROOT, with some functionality implemented through numpy. The module
 is located in `overwatch/processing`, with the file `processRuns.py` driving the processing.
 
 At a high level, the processing pipeline looks like:
