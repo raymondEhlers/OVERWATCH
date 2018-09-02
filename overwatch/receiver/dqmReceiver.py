@@ -164,7 +164,9 @@ def dqm():
     response = {}
     # Handle the "GET request"
     if request.method == "GET":
-        availableFiles = [f for f in os.listdir(receiverParameters["dataFolder"]) if os.path.isfile(os.path.join(receiverParameters["dataFolder"], f) and "DQM" in f)]
+        # We use upper on the filename so that "DQM" will always match, regardless of the case in the file.
+        # "DQM" is unique enough in English that we don't need to worry about this matching unrelated files.
+        availableFiles = [f for f in os.listdir(receiverParameters["dataFolder"]) if os.path.isfile(os.path.join(receiverParameters["dataFolder"], f) and "DQM" in f.upper())]
         response["files"] = availableFiles
         resp = jsonify(response)
         resp.status_code = 200
@@ -296,18 +298,22 @@ def receivedObjectInfo(outputPath):
     """
     # Setup.
     success = False
-    fOut = ROOT.TFile.Open(outputPath, "READ")
-    keys = fOut.GetListOfKeys()
-
-    # Iterate over the available objects.
     receivedObjects = {}
-    for key in keys:
-        obj = key.ReadObj()
-        receivedObjects[key.GetName()] = "Obj name: {}, Obj IsA() Name: {}".format(obj.GetName(), obj.IsA().GetName())
-        success = True
 
-    # Print to log for convenience
-    logger.info(receivedObjects)
+    # Open file, and if it's valid, read the objects.
+    # The file could be invalid if the file sent was not a ROOT object.
+    fOut = ROOT.TFile.Open(outputPath, "READ")
+    if fOut:
+        keys = fOut.GetListOfKeys()
+
+        # Iterate over the available objects.
+        for key in keys:
+            obj = key.ReadObj()
+            receivedObjects[key.GetName()] = "Obj name: {}, Obj IsA() Name: {}".format(obj.GetName(), obj.IsA().GetName())
+            success = True
+
+        # Print to log for convenience
+        logger.info(receivedObjects)
 
     return (success, receivedObjects)
 
