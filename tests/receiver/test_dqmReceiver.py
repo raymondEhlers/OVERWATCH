@@ -9,6 +9,8 @@ takes much less time than mocking objects.
 .. code-author: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
 """
 
+from future.utils import iteritems
+
 import pytest
 import os
 import io
@@ -155,14 +157,22 @@ def testPostFile(loggingMixin, sendPostRequest):
         comparisonText = f.read()
     assert comparisonText == fileText
 
-@pytest.mark.parametrize("data, expectedMessage", [
-        ({}, "No file uploaded and the payload was empty"),
-        ({"file": (io.BytesIO(b"Hello world"), "file")}, "Successfully received the file, but the file is not valid! Perhaps it was corrupted?"),
-    ], ids = ["Empty data", "Non-ROOT (text) file"])
-def testPostFileErrors(loggingMixin, sendPostRequest, data, expectedMessage):
-    """ Test possible errors that could occur when sending the file. """
+@pytest.mark.parametrize("data, expectedMessage, addToHeaders", [
+        ({}, "No file uploaded and the payload was empty", {}),
+        ({"file": (io.BytesIO(b"Hello world"), "file")}, "Successfully received the file, but the file is not valid! Perhaps it was corrupted?", {}),
+        ({}, ["invalid literal for int() with base 10: 'Hello world'"], {"runNumber": "Hello world"}),  #  The data here doesn't matter, so we leave it blank.
+        ({}, ["invalid literal for int() with base 10: 'Hello world'"], {"timeStamp": "Hello world"}),  #  The data here doesn't matter, so we leave it blank.
+        ({}, ["invalid literal for int() with base 10: 'Hello world'"], {"dataStatus": "Hello world"}),  #  The data here doesn't matter, so we leave it blank.
+    ], ids = ["Empty data", "Non-ROOT (text) file", "Invalid run number header value", "Invalid time stamp header value", "Invalid data status header value"])
+def testPostFileErrors(loggingMixin, sendPostRequest, data, expectedMessage, addToHeaders):
+    """ Test possible errors that could occur when sending the file.
+
+    This also checks for validation of passed header values.
+    """
     # Setup.
     client, validToken, basePath, filename, fileText, _, headers = sendPostRequest
+    for k, v in iteritems(addToHeaders):
+        headers[k] = v
 
     # First, we test no payload.
     rv = client.post("/rest/api/files",

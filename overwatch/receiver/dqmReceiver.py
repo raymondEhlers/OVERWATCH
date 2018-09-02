@@ -336,6 +336,6 @@ def returnFile(filename):
     # It is extremely important that the directory be an absolute path!
     return send_from_directory(os.path.realpath(receiverParameters["dataFolder"]), filename)
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     # This module shouldn't be executed this way.
     raise RuntimeError("Run with overwatchDQMReceiver instead of directly!")
