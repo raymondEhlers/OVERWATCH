@@ -2,14 +2,15 @@
 
 Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
 
-## [Unreleased]
+## [1.1] - 2 September 2018
 
 ### Added
 
 - Fully document all classes.
 - Update documentation scheme and system (update sphinx, etc)
 - Deploy documentation to Read The Docs.
-- CSRF protection for the web app in preparation for deployment.
+- `CSRF` protection for the web app in preparation for deployment.
+- Tests for `overwatch.base.config` and `overwatch.receiver.dqmReceiver`.
 
 ### Changed
 
@@ -21,6 +22,8 @@ Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
   Anything that will be added should be added explicitly as a keyword argument.
 - Renamed `retrieveHist` -> `retrieveHistogram` in the `trendingObject` for consistency with the histogram
   container. Updated the corresponding classes and documentation.
+- Drop `v` prefix in tags. The actual version we use in python doesn't include the `v`, so including it in the
+  tag makes versioning a bit more difficult for no benefit.
 
 ### Fixed
 
