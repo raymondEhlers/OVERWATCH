@@ -26,6 +26,13 @@ utilities.setupLogging(logger = logger,
 from overwatch.receiver.dqmReceiver import app
 
 def runDevelopment():
+    """ Main entry point for running the DQM receiver development server.
+
+    Args:
+        None.
+    Returns:
+        None.
+    """
     logger.info("Starting dqmReceiver app")
     # Turn on flask debugging
     app.debug = receiverParameters["debug"]

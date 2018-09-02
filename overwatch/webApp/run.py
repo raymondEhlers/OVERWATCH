@@ -67,6 +67,13 @@ if not serverParameters["debug"]:
     #connection.close()
 
 def runDevelopment():
+    """ Main entry point for running the web app development server.
+
+    Args:
+        None.
+    Returns:
+        None.
+    """
     if "pdsf" in socket.gethostname():
         from flup.server.fcgi import WSGIServer
         logger.info("Starting flup WSGI app")

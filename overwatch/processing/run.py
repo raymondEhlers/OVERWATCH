@@ -37,6 +37,13 @@ logger.info(processingParameters)
 from overwatch.processing import processRuns
 
 def run():
+    """ Main entry point for starting ``processAllRuns()``.
+
+    Args:
+        None.
+    Returns:
+        None.
+    """
     # Process all of the run data
     processRuns.processAllRuns()
     # Function calls that be used for debugging
