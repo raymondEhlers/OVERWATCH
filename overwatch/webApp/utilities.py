@@ -89,7 +89,7 @@ class PolymerBundler(webassets.filter.ExternalTool):
             os.path.join(serverParameters["staticFolder"], "{source}".format(**kwargs))
         ]
 
-        logger.debug("Executing polymer filter with execution path \"{exeuctionPath}\" and args {args}".format(executionPath = executionPath, args = args))
+        logger.debug("Executing polymer filter with execution path \"{executionPath}\" and args {args}".format(executionPath = executionPath, args = args))
         output = subprocess.check_output(args, cwd = executionPath)
         if len(output) > 0:
             logger.debug("Received non-zero output string! This means the polymer-bundler filter likely worked!")
