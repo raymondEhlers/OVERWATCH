@@ -1,13 +1,13 @@
 #!/usr/bin/env python
 
-# Tests for the configuration module.
-#
-# Note: These tests are not quite ideal, as they rely on the default implementation
-#       for the configuration and modules (which can change), but the implementation
-#       takes much less time than mocking objects.
-#
-# author: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
-# date: 16 July 2018
+""" Tests for the configuration module.
+
+Note that these tests are not quite ideal, as they rely on the default implementation
+for the configuration and modules (which can change), but using this implementation
+takes much less time than mocking objects.
+
+.. code-author: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
+"""
 
 from future.utils import iteritems
 
@@ -59,7 +59,7 @@ def testFindAvailableRunPages(loggingMixin, yamlConfigForParsingPlugins):
 def testBcrypt(loggingMixin, yamlConfigForParsingPlugins):
     """ Tests for using bcrypt to setup users. """
     parameters = yamlConfigForParsingPlugins
-    expected = {"user" : "pass"}
+    expected = {"user": "pass"}
     assert parameters["bcrypt"].keys() == expected.keys()
     # The hash isn't repeatable, so we just want to be certain that it's hashed.
     assert parameters["bcrypt"]["user"] != expected["user"]

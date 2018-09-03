@@ -1,5 +1,25 @@
 #!/usr/bin/env python
 
+""" Handles deployment and starting of Overwatch and related processes.
+
+It can handle the configuration and execution of:
+
+- ``Overwatch ZMQ receiver``
+- ``Overwatch DQM receiver``
+    - ``Nginx``
+- ``Overwatch processing``
+- ``Overwatch web app``
+    - ``Nginx``
+
+It can also handle receiving SSH Keys and grid certificates passed in via
+environment variables.
+
+Usually, this module is executed directly in docker containers. All options
+are configured via a YAML file.
+
+.. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
+"""
+
 from __future__ import print_function
 from future.utils import iteritems
 
@@ -35,7 +55,7 @@ def checkForProcessPID(processIdentifier):
         processIdentifier(str): String passed to pgrep to identify the process.
     Returns:
         list: PID(s) from pgrep
-        """
+    """
     try:
         res = subprocess.check_output(["pgrep", "-f", "{0}".format(processIdentifier)])
     except subprocess.CalledProcessError as e:
@@ -76,7 +96,7 @@ def killExistingProcess(pidList, processType, processIdentifier, sig = signal.SI
     # If not, throw an error
     pidList = checkForProcessPID(processIdentifier)
     logger.debug("PIDs left after killing processes: {0}".format(pidList))
-    if not pidList is None:
+    if pidList is not None:
         logger.critical("Requested to kill existing \"{0}\" processes, but found PIDs {0} after killing the processes. Please investigate!", processType, pidList)
         sys.exit(2)
 
@@ -118,7 +138,7 @@ startsecs=0
 def tunnel(config, receiver, receiverConfig, supervisord):
     """ Start tunnel """
     processIdentifier = "autossh -L {0}".format(receiverConfig["localPort"])
-    processExists = checkForProcessPID(processIdentifier)
+    processPIDs = checkForProcessPID(processIdentifier)
 
     if config.get("forceRestart", False) or receiverConfig.get("forceRestartTunnel", False):
         processPIDs = killExistingProcess(processPIDs,
@@ -135,32 +155,34 @@ def tunnel(config, receiver, receiverConfig, supervisord):
             # Set the proper permissions
             os.chmod(os.path.dirname(knownHostsPath), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
         # ssh-keyscan -H {address}
-        args = ["ssh-keyscan",
-                "-p {0}".format(config["port"]),
-                "-H",
-                config["address"]
-                ]
+        args = [
+            "ssh-keyscan",
+            "-p {0}".format(config["port"]),
+            "-H",
+            config["address"],
+        ]
         with open(knownHostsPath, "wb") as logFile:
             logger.debug("Starting \"{0}\" with args: {1}".format("SSH Keyscan", args))
-            process = subprocess.Popen(args, stdout=logFile)
+            # This should execute rapidly, so we don't need to check for the process ID.
+            subprocess.Popen(args, stdout=logFile)
 
-    if processExists is None:
+    if processPIDs is None:
         # Create ssh tunnel
         args = [
-                "autossh",
-                "-L {localPort}:localhost:{hltPort}".format(localPort = receiverConfig["localPort"],
-                                                              hltPort = receiverConfig["hltPort"]),
-                "-o ServerAliveInterval=30", # Built-in ssh monitoring option
-                "-o ServerAliveCountMax=3",  # Built-in ssh monitoring option
-                "-p {0}".format(config["port"]),
-                "-l {0}".format(config["username"]),
-                "{0}".format(config["address"]),
-                "-M 0",                      # Disable autossh built-in monitoring
-                "-f",
-                "-N"
-                ]
+            "autossh",
+            "-L {localPort}:localhost:{hltPort}".format(localPort = receiverConfig["localPort"],
+                                                        hltPort = receiverConfig["hltPort"]),
+            "-o ServerAliveInterval=30",  # Built-in ssh monitoring option
+            "-o ServerAliveCountMax=3",   # Built-in ssh monitoring option
+            "-p {0}".format(config["port"]),
+            "-l {0}".format(config["username"]),
+            "{0}".format(config["address"]),
+            "-M 0",                       # Disable autossh built-in monitoring
+            "-f",
+            "-N",
+        ]
         # Official: autossh -o ServerAliveInterval 30 -o ServerAliveCountMax 3 -p ${sshPorts[n]} -f -N -l zmq-tunnel  -L ${internalReceiverPorts[n]}:localhost:${externalReceiverPorts[n]} ${sshServerAddress}
-        process = startProcessWithLog(args = args, name = "{0} SSH Tunnel".format(receiver), logFilename = "{}sshTunnel".format(receiver), supervisord = supervisord, shortExecutionTime = True)
+        startProcessWithLog(args = args, name = "{0} SSH Tunnel".format(receiver), logFilename = "{}sshTunnel".format(receiver), supervisord = supervisord, shortExecutionTime = True)
         # We don't want to check the process status, since autossh will go to the background immediately
 
 def writeSensitiveVariableToFile(config, name, prettyName, defaultWriteLocation):
@@ -177,7 +199,7 @@ def writeSensitiveVariableToFile(config, name, prettyName, defaultWriteLocation)
     # Check that the variable is not empty
     if not sensitiveVariable:
         raise ValueError("Empty {} passed".format(prettyName))
-    print("variableName: {}, {}: {}".format(variableName, prettyName, sensitiveVariable))
+    logger.debug("variableName: {}, {}: {}".format(variableName, prettyName, sensitiveVariable))
 
     # Write to file
     writeLocation = config[name].get("writeLocation", defaultWriteLocation)
@@ -259,7 +281,7 @@ def setupRoot(config):
 def setupEnv(config):
     if "root" in config["env"] and config["env"]["root"]["enabled"]:
         setupRoot(config)
-        print(os.environ)
+        logger.info(os.environ)
 
 def dqmReceiver(config, receiver, receiverConfig):
     """ Start the DQM receiver """
@@ -283,21 +305,21 @@ def dqmReceiver(config, receiver, receiverConfig):
         uwsgi(config = config["receiver"], name = "DQM")
 
         args = [
-                "uwsgi",
-                "--yaml",
-                configFilename
-                ]
+            "uwsgi",
+            "--yaml",
+            configFilename,
+        ]
     else:
         processIdentifier = "overwatchDQMReciever"
 
         args = [
-                "overwatchDQMReciever",
-                ]
+            "overwatchDQMReciever",
+        ]
 
     processPIDs = checkForProcessPID(processIdentifier)
 
     # NOTE: This won't work properly with uwsgi!
-    if not processPIDs is None and (config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None)):
+    if processPIDs is not None and (config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None)):
         logger.debug("Found processPIDs: {0}".format(processPIDs))
         processPIDs = killExistingProcess(processPIDs,
                                           processType = "{0} Receiver".format(receiver),
@@ -331,7 +353,7 @@ def zmqReceiver(config, receiver, receiverConfig, receiverPath):
     #logger.debug("Found processPIDs: {0}".format(processPIDs))
 
     # Check whether we should kill the receivers
-    if not processPIDs is None and (config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None)):
+    if processPIDs is not None and (config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None)):
         logger.debug("Found processPIDs: {0}".format(processPIDs))
         processPIDs = killExistingProcess(processPIDs,
                                           processType = "{0} Receiver".format(receiver),
@@ -341,15 +363,15 @@ def zmqReceiver(config, receiver, receiverConfig, receiverPath):
     if processPIDs is None:
         # Start receiver
         args = [
-                os.path.join(receiverPath, "zmqReceive"),
-                "--subsystem={0}".format(receiver),
-                "--in=REQ>tcp://localhost:{0}".format(receiverConfig["localPort"]),
-                "--dataPath={0}".format(config["receiver"].get("dataPath", "data")),
-                "--verbose=1",
-                "--sleep=60",
-                "--timeout=100",
-                "--select={0}".format(receiverConfig.get("select",""))
-                ]
+            os.path.join(receiverPath, "zmqReceive"),
+            "--subsystem={0}".format(receiver),
+            "--in=REQ>tcp://localhost:{0}".format(receiverConfig["localPort"]),
+            "--dataPath={0}".format(config["receiver"].get("dataPath", "data")),
+            "--verbose=1",
+            "--sleep=60",
+            "--timeout=100",
+            "--select={0}".format(receiverConfig.get("select", "")),
+        ]
         if "additionalOptions" in receiverConfig:
             args.append(receiverConfig["additionalOptions"])
         process = startProcessWithLog(args = args, name = "Receiver", logFilename = "{0}Receiver".format(receiver), supervisord = "supervisord" in config)
@@ -436,17 +458,17 @@ def database(config):
         f.write(zeoConfigFile)
 
     # Start zeo with the config file
-    processPIDs = checkForProcessPID("runzeo -C zeoGenerated.conf".format(receiver))
+    args = [
+        "runzeo",
+        "-C zeoGenerated.conf",
+    ]
+    processIdentifier = " ".join(args)
+    processPIDs = checkForProcessPID(processIdentifier)
     logger.debug("processPIDs: {0}".format(processPIDs))
 
     # Only start if not already running
     if processPIDs is None:
         # Start database
-        args = [
-                "runzeo",
-                "-C zeoGenerated.conf"
-                ]
-
         if not config["avoidNohup"]:
             # Only append "nohup" if it is _NOT_ called from systemd or supervisord
             args = ["nohup"] + args
@@ -483,8 +505,9 @@ def processing(config):
     # Start the processing
     # Use the installed executable
     args = [
-            "overwatchProcessing"
-            ]
+        "overwatchProcessing",
+    ]
+    processIdentifier = " ".join(args)
 
     if not config["avoidNohup"]:
         # Only append "nohup" if it is _NOT_ called from systemd or supervisord
@@ -533,10 +556,10 @@ def webApp(config):
         uwsgi(config, name = "webApp")
 
         args = [
-                "uwsgi",
-                "--yaml",
-                configFilename
-                ]
+            "uwsgi",
+            "--yaml",
+            configFilename,
+        ]
     else:
         # Use flask development server instead
         # Do not use in production!!
@@ -544,13 +567,13 @@ def webApp(config):
 
         # Use the installed executable
         args = [
-                "overwatchWebApp"
-                ]
+            "overwatchWebApp",
+        ]
 
     processPIDs = checkForProcessPID(processIdentifier)
 
     # NOTE: This won't work properly with uwsgi!
-    if not processPIDs is None and (config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None)):
+    if processPIDs is not None and config["webApp"].get("forceRestart", None):
         logger.debug("Found processPIDs: {0}".format(processPIDs))
         processPIDs = killExistingProcess(processPIDs,
                                           processType = "{0} Receiver".format(receiver),
@@ -592,29 +615,29 @@ def uwsgi(config, name):
     # This is the base configuration which sets the default values
     uwsgiConfig = {
         # Socket setup
-        "socket" : "/tmp/{name}.sock",
-        "vacuum" : True,
+        "socket": "/tmp/{name}.sock",
+        "vacuum": True,
         # Stats
-        "stats" : "/tmp/{name}Stats.sock",
+        "stats": "/tmp/{name}Stats.sock",
 
         # Setup
-        "chdir" : "/opt/overwatch",
+        "chdir": "/opt/overwatch",
 
         # App
         # Need either wsgi-file or module!
-        "callable" : "app",
+        "callable": "app",
 
         # Instances
         # Number of processes
-        "processes" : 4,
+        "processes": 4,
         # Number of threads
         "threads": 2,
         # Minimum number of workers to keep at all times
         "cheaper": 2,
 
         # Configure master
-        "master" : True,
-        "master-fifo" : "wsgiMasterFifo{name}"
+        "master": True,
+        "master-fifo": "wsgiMasterFifo{name}",
     }
 
     # Add the custom configuration into the default configuration defined above
@@ -626,7 +649,9 @@ def uwsgi(config, name):
             uwsgiConfig[k] = v.format(name = uwsgiConfigFile.get("name", "webApp"))
 
     # Put dict inside of "uwsgi" block for it to be read properly by uwsgi
-    uwsgiConfig = { "uwsgi" : uwsgiConfig }
+    uwsgiConfig = {
+        "uwsgi": uwsgiConfig
+    }
 
     filename = "{0}.yaml".format(uwsgiName)
     logger.info("Writing configuration file to {0}".format(filename))
@@ -635,8 +660,8 @@ def uwsgi(config, name):
 
 def startNginx(name = "nginx", logFilename = "nginx", supervisord = False):
     args = [
-            "/usr/sbin/nginx"
-            ]
+        "/usr/sbin/nginx",
+    ]
     startProcessWithLog(args = args, name = name, logFilename = logFilename, supervisord = supervisord)
 
 def nginx(config, name):
@@ -710,8 +735,9 @@ def webAppSetup(config):
 
 def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
     """ Start the various parts of Overwatch.
-    
-    Components are only started if they are included in the configuration. """
+
+    Components are only started if they are included in the configuration.
+    """
     # Get configuration
     if fromEnvironment:
         # From environment
@@ -736,8 +762,7 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
     else:
         config["avoidNohup"] = avoidNohup
 
-    logger.info("Config:")
-    pprint.pprint(config)
+    logger.info("Config: {}".format(pprint.pformat(config)))
 
     if "cert" in config and config["cert"]["enabled"]:
         # TODO: Update default location to "~/.globus/overwatchCert.pem" (?)
@@ -770,7 +795,7 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
     # Start supervisord
     if "supervisord" in config and config["supervisord"]:
         # Reload supervisor config
-        process = subprocess.Popen(["supervisorctl", "update"])
+        subprocess.Popen(["supervisorctl", "update"])
 
 def run():
     # Setup command line parser

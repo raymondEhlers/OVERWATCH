@@ -1,8 +1,15 @@
 #!/usr/bin/env python
-""" WSGI server for hists and interactive features with HLT histograms.
+
+""" Web App for serving Overwatch results, as well as access to user defined reprocessing
+and times slices.
+
+This is the main web app executable, so it contains quite some functionality, especially
+that which is not so obvious how to refactor when using flask. Routing is divided up
+into authenticated and unauthenticated views.
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
+
 # For python 3 support
 from __future__ import print_function
 from builtins import range
@@ -10,31 +17,19 @@ from future.utils import iteritems
 
 # General includes
 import os
-import math
 import time
 import zipfile
 import subprocess
 import signal
 import jinja2
 import json
-import collections 
+import collections
+import datetime
 import pkg_resources
 # For server status
 import requests
-# Python logging system
 import logging
-# Setup logger
-if __name__ == "__main__":
-    # By not setting a name, we get everything!
-    #logger = logging.getLogger("")
-    # Alternatively, we could set "webApp" to get everything derived from that
-    #logger = logging.getLogger("webApp")
-    pass
-else:
-    # When imported, we just want it to take on it normal name
-    logger = logging.getLogger(__name__)
-    # Alternatively, we could set "webApp" to get everything derived from that
-    #logger = logging.getLogger("webApp")
+logger = logging.getLogger(__name__)
 
 # Flask
 from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, jsonify, session
@@ -42,6 +37,7 @@ from flask_login import LoginManager, login_user, logout_user, login_required, c
 from flask_bcrypt import Bcrypt
 from flask_zodb import ZODB
 from flask_assets import Environment
+from flask_wtf.csrf import CSRFProtect, CSRFError
 
 # Server configuration
 from ..base import config
@@ -53,11 +49,10 @@ from ..base import utilities as baseUtilities
 from . import routing
 from . import auth
 from . import validation
-from . import utilities
+from . import utilities  # NOQA
 
 # Processing module includes
 from ..processing import processRuns
-from ..processing import qa
 from ..processing import processingClasses
 
 # Flask setup
@@ -69,14 +64,15 @@ db = ZODB(app)
 
 # Set secret key for flask
 if serverParameters["debug"]:
-    # Cannot use the db value here since the reloader will cause it to fail...
+    # Cannot use the db value here since the reloader will cause it to fail.
     app.secret_key = serverParameters["_secretKey"]
 else:
     # Set a temporary secret key. It can be set from the database later
+    # The production key is set in ``overwatch.webApp.run``
     app.secret_key = str(os.urandom(50))
 
 # Enable debugging if set in configuration
-if serverParameters["debug"] == True:
+if serverParameters["debug"] is True:
     app.debug = True
 
 # Setup Bcrypt
@@ -88,27 +84,44 @@ assets = Environment(app)
 # Set the Flask Assets debug mode
 # Note that the bundling is _only_ performed when flask assets is _not_ in debug mode.
 # Thus, we want it to follow the global debug setting unless we explicit set it otherwise.
+# For more information, particularly on debugging, see the web app `README.md`. Further details
+# are included in the web app utilities module where the filter is defined.
 app.config["ASSETS_DEBUG"] = serverParameters["flaskAssetsDebug"] if not serverParameters["flaskAssetsDebug"] is None else serverParameters["debug"]
-"""
-Some notes on webassets:
- - Most filters, including this one, won't build in debug mode!
- - Disable caching with the below lines. It is useful for debugging: 
-
->>> assets.cache = False
->>> assets.manifest = False
-
- - To debug, you still need to delete and touch the relevant files in between each change. Usually, that means:
-   - Deleting the file in the gen/ folder
-   - Removing the static/.webassets folder if it exists
-   - Update or otherwise touch the file of interest
- - Each Asset won't be built until first access of the particular file. Access the associated urls of the
-   asset to force it to built immediately (will still only be built if needed or forced by following the 
-   debug procedure above).
-
->>> print(assets["polymerBundle"].urls())
-"""
-# Load bunldes from configuration file
+# Load bundles from configuration file
 assets.from_yaml(pkg_resources.resource_filename("overwatch.webApp", "flaskAssets.yaml"))
+
+# Setup CSRF protection via flask-wtf
+csrf = CSRFProtect(app)
+# Setup custom error handling to use the error template.
+@app.errorhandler(CSRFError)
+def handleCSRFError(error):
+    """ Handle CSRF error.
+
+    Takes advantage of the property of the ``CSRFError`` class which will return a string
+    description when called with ``str()``.
+
+    Note:
+        The only requests that could fail due to a CSRF token issue are those made with AJAX,
+        so it is reasonable to return an AJAX formatted response.
+
+    Note:
+        For the error format in ``errors``, see the :doc:`web app README </webAppReadme>`.
+
+    Args:
+        error (CSRFError): Error object raised during as CSRF validation failure.
+    Returns:
+        str: ``json`` encoded response containing the error.
+    """
+    # Define the error in the proper format.
+    # Also provide some additional error information.
+    errors = {"CSRF Error": [
+        error,
+        "Your page was manipulated. Please contact the admin."
+    ]}
+    # We don't have any drawer content
+    drawerContent = ""
+    mainContent = render_template("errorMainContent.html", errors = errors)
+    return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
 # Setup login manager
 loginManager = LoginManager()
@@ -117,27 +130,45 @@ loginManager.init_app(app)
 # Tells the manager where to redirect when login is required.
 loginManager.login_view = "login"
 
-###################################################
 @loginManager.user_loader
 def load_user(user):
-    """ Used to remember the user so that they don't need to login again each time they visit the site. """
+    """ Used to retrieve a remembered user so that they don't need to login again each time they visit the site.
+
+    Args:
+        user (str): Username to retrieve.
+    Returns:
+        auth.User: The user stored in the database which corresponds to the given username, or
+            ``None`` if it doesn't exist.
+    """
     return auth.User.getUser(user, db)
 
 ######################################################################################################
 # Unauthenticated Routes
 ######################################################################################################
 
-###################################################
 @app.route("/", methods=["GET", "POST"])
 def login():
     """ Login function. This is is the first page the user sees.
+
     Unauthenticated users are also redirected here if they try to access something restricted.
     After logging in, it should then forward them to resource they requested.
+
+    Note:
+        Function args are provided through the flask request object.
+
+    Args:
+        ajaxRequest (bool): True if the response should be via AJAX.
+        previousUsername (str): The username that was previously used to login. Used to check when
+            automatic login should be performed (if it's enabled).
+    Returns:
+        response: Response based on the provided request. Possible responses included validating
+            and logging in the user, rejecting invalid user credentials, or redirecting unauthenticated
+            users from a page which requires authentication (it will redirect back after login).
     """
-    logger.debug("request.args: {0}".format(request.args))
-    logger.debug("request.form: {0}".format(request.form))
+    # Retrieve args
+    logger.debug("request.args: {args}".format(args = request.args))
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
-    previousUsername = validation.extractValueFromNextOrRequest("previousUsername")
+    previousUsername = validation.extractValueFromNextOrRequest("previousUsername", request.args)
 
     errorValue = None
     nextValue = routing.getRedirectTarget()
@@ -145,6 +176,7 @@ def login():
     # Check for users and notify if there are none!
     if "users" not in db["config"] or not db["config"]["users"]:
         logger.fatal("No users found in database!")
+        # This is just for developer convenience.
         if serverParameters["debug"]:
             # It should be extremely unlikely for this condition to be met!
             logger.warning("Since we are debugging, adding users to the database automatically!")
@@ -166,18 +198,20 @@ def login():
                 # Login the user into flask
                 login_user(validUser, remember=True)
 
-                flash("Login Success for {0}.".format(validUser.id))
-                logger.info("Login Success for {0}.".format(validUser.id))
+                message = "Login Success for {id}.".format(id = validUser.id)
+                flash(message)
+                logger.info(message)
 
                 return routing.redirectBack("index")
             else:
                 errorValue = "Login failed with invalid credentials"
 
     if previousUsername == serverParameters["defaultUsername"]:
-        logger.debug("Equal!")
-    logger.debug("serverParameters[defaultUsername]: {0}".format(serverParameters["defaultUsername"]))
-    # If we are not authenticated and we have a default username set and the previous username is 
+        logger.debug("Previous username is the same as the default username!")
+    logger.debug("serverParameters[defaultUsername]: {defaultUsername}".format(defaultUsername = serverParameters["defaultUsername"]))
+    # If we are not authenticated and we have a default username set and the previous username is not the default.
     if not current_user.is_authenticated and serverParameters["defaultUsername"] and previousUsername != serverParameters["defaultUsername"]:
+        # In this case, we want to perform an automatic login.
         # Clear previous flashes which will be confusing to the user
         # See: https://stackoverflow.com/a/19525521
         session.pop('_flashes', None)
@@ -186,31 +220,43 @@ def login():
         # Login the user into flask
         login_user(defaultUser, remember=True)
         # Note for the user
-        logger.info("Logged into user \"{0}\" automatically!".format(current_user.id))
-        flash("Logged into user \"{0}\" automatically!".format(current_user.id))
+        logger.info("Logged into user \"{id}\" automatically!".format(id = current_user.id))
+        flash("Logged into user \"{id}\" automatically!".format(id = current_user.id))
 
     # If we visit the login page, but we are already authenticated, then send to the index page.
     if current_user.is_authenticated:
-        logger.info("Redirecting logged in user \"{0}\" to index...".format(current_user.id))
+        logger.info("Redirecting logged in user \"{id}\" to the index page.".format(id = current_user.id))
         return redirect(url_for("index", ajaxRequest = json.dumps(ajaxRequest)))
 
-    if ajaxRequest == False:
+    if ajaxRequest is False:
         return render_template("login.html", error=errorValue, nextValue=nextValue)
     else:
         drawerContent = ""
         mainContent = render_template("loginMainContent.html", error=errorValue, nextValue=nextValue)
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
-###################################################
 @app.route("/logout")
 @login_required
 def logout():
-    """ Logout function.
+    """ Logs out an authenticated user.
 
-    NOTE:
-        Careful in changing the routing, as this is hard coded in :func:`~webApp.routing.redirectBack()`!
+    Once completed, it will always redirect to back to ``login()``. If the user then logs in,
+    they will be redirected back to index. Some care is required to handle all of the edge cases
+    - these are handled via careful redirection in ``login()`` and the ``routing`` module.
 
-    Redirects back to :func:`.login`, which willl redirect back to index if the user is logged in.
+    Warning:
+        Careful in making changes to the routing related to function, as it is hard coded
+        in ```routing.redirectBack()``!
+
+    Note:
+        ``previousUsername`` is provided to the next request so we can do the right thing on
+        automatic login. In that case, we want to provide automatic login, but also allow the opportunity
+        to logout and then explicitly login with different credentials.
+
+    Args:
+        None
+    Returns:
+        Response: Redirect back to the login page.
     """
     previousUsername = current_user.id
     logout_user()
@@ -218,66 +264,92 @@ def logout():
     flash("User logged out!")
     return redirect(url_for("login", previousUsername = previousUsername))
 
-###################################################
 @app.route("/contact")
 def contact():
-    """ Simple contact page so we can provide support in the future."""
+    """ Simple contact page so we can provide general information and support to users.
+
+    Also exposes useful links for development (for test data), and system status information
+    to administrators (which must authenticate as such).
+
+    Note:
+        Function args are provided through the flask request object.
+
+    Args:
+        ajaxRequest (bool): True if the response should be via AJAX.
+    Returns:
+        Response: Contact page populated via template.
+    """
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
-    if ajaxRequest == False:
-        return render_template("contact.html")
+    # Provide current year for copyright information
+    currentYear = datetime.datetime.utcnow().year
+    if ajaxRequest is False:
+        return render_template("contact.html", currentYear = currentYear)
     else:
         drawerContent = ""
-        mainContent = render_template("contactMainContent.html")
+        mainContent = render_template("contactMainContent.html", currentYear = currentYear)
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
-###################################################
-@app.route("/favicon.ico")
-def favicon():
-    """ Browsers always try to load the Favicon, so this suppresses the errors about not finding one.
-
-    However, the real way that this is generally loaded is via code in layout template!
-    """
-    return redirect(url_for("static", filename="icons/favicon.ico"))
-
-###################################################
-@app.route("/statusQuery", methods=["POST"])
+@app.route("/status", methods=["GET"])
 def statusQuery():
-    """ Respond to a status query (separated so that it doesn't require a login!) """
+    """ Returns the status of the Overwatch server instance.
 
+    This can be accessed by a GET request. If the request is successful, it will response with "Alive"
+    and the response code 200. If it didn't work properly, then the response won't come through properly,
+    indicating that an action must be taken to restart the web app.
+
+    Note:
+        It doesn't require authentication to simply the process of querying it. This should be fine
+        because the information that the web app is up isn't sensitive.
+
+    Args:
+        None
+    Returns:
+        Response: Contains a string, "Alive", and a 200 response code to indicate that the web app is still up.
+            If the database is somehow not available, it will return "DB failed" and a 500 response code.
+            A response timeout indicates that the web app is somehow down.
+    """
     # Responds to requests from other OVERWATCH servers to display the status of the site
-    return "Alive"
-
-###################################################
-@app.route("/health")
-def health():
-    """ Respond to health request to note that the web app is still alive. """
-    # TODO: Increase sophistication of checks here!
-    returnCode = 500
-    # Check that DB is alive
+    response = "DB failed", 500
     if db:
-        returnCode = 200
-
-    return "", returnCode
+        response = "Alive", 200
+    return response
 
 ######################################################################################################
 # Authenticated Routes
 ######################################################################################################
 
-###################################################
 @app.route("/monitoring", methods=["GET"])
 @login_required
 def index():
-    """ This is the main page for logged in users. It always redirects to the run list.
-    
+    """ This is run list, which is the main page for logged in users.
+
+    The run list shows all available runs, which links to available subsystem histograms, as well
+    as the underlying root files. The current status of data taking, as extracted from when the
+    last file was received, is displayed in the drawer, as well as some links down the page to
+    allow runs to be moved through quickly. The main content is paginated in a fairly rudimentary
+    manner (it should be sufficient for our purposes). We have selected to show 50 runs per page,
+    which seems to be a reasonable balance between showing too much or too little information. This
+    can be tuned further if necessary.
+
+    Note:
+        Function args are provided through the flask request object.
+
+    Args:
+        ajaxRequest (bool): True if the response should be via AJAX.
+        runOffset (int): Number of runs to offset into the run list. Default: 0.
+    Returns:
+        Response: The main index page populated via template.
     """
-    logger.debug("request.args: {0}".format(request.args))
+    logger.debug("request.args: {args}".format(args = request.args))
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
+    # We only use this once and there isn't much complicated, so we just perform the validation here.
+    runOffset = validation.convertRequestToPositiveInteger(paramName = "runOffset", source = request.args)
 
     runs = db["runs"]
 
     # Determine if a run is ongoing
-    # To do so, we need the most recent run
+    # To do so, we need the most recent run (regardless of which runs we selected to display)
     mostRecentRun = runs[runs.keys()[-1]]
     runOngoing = mostRecentRun.isRunOngoing()
     if runOngoing:
@@ -285,68 +357,106 @@ def index():
     else:
         runOngoingNumber = ""
 
-    # Number of runs
+    # Determine number of runs to display
+    # We select a default of 50 runs per page. Too many might be unreasonable.
+    numberOfRunsToDisplay = 50
+    # Restrict the runs that we are going to display to those that are included in our requested range.
+    # It is reversed because we process the earliest runs first. However, the reversed object isn't scriptable,
+    # so it must be converted to a list to slice it.
+    # +1 on the upper limit so that the 50 is inclusive
+    runsToUse = list(reversed(runs.values()))[runOffset:runOffset + numberOfRunsToDisplay + 1]
+    logger.debug("runOffset: {}, numberOfRunsToDisplay: {}".format(runOffset, numberOfRunsToDisplay))
+    # Total number of runs, which should be displayed at the bottom.
     numberOfRuns = len(runs.keys())
-    # We want approximately 15 anchors
-    # NOTE: We need to round it to an int to ensure that mod works.
-    anchorFrequency = int(math.ceil(numberOfRuns/15.0))
 
-    if ajaxRequest != True:
-        return render_template("runList.html", drawerRuns = reversed(runs.values()),
-                                mainContentRuns = reversed(runs.values()),
-                                runOngoing = runOngoing,
-                                runOngoingNumber = runOngoingNumber,
-                                subsystemsWithRootFilesToShow = serverParameters["subsystemsWithRootFilesToShow"],
-                                anchorFrequency = anchorFrequency)
+    # We want 10 anchors
+    # NOTE: We need to convert it to an int to ensure that the mod call in the template works.
+    anchorFrequency = int(numberOfRunsToDisplay / 10.0)
+
+    if ajaxRequest is not True:
+        return render_template("runList.html", drawerRuns = runsToUse,
+                               mainContentRuns = runsToUse,
+                               runOngoing = runOngoing,
+                               runOngoingNumber = runOngoingNumber,
+                               subsystemsWithRootFilesToShow = serverParameters["subsystemsWithRootFilesToShow"],
+                               anchorFrequency = anchorFrequency,
+                               runOffset = runOffset, numberOfRunsToDisplay = numberOfRunsToDisplay,
+                               totalNumberOfRuns = numberOfRuns)
     else:
-        drawerContent = render_template("runListDrawer.html", runs = reversed(runs.values()), runOngoing = runOngoing,
-                                         runOngoingNumber = runOngoingNumber, anchorFrequency = anchorFrequency)
-        mainContent = render_template("runListMainContent.html", runs = reversed(runs.values()), runOngoing = runOngoing,
-                                       runOngoingNumber = runOngoingNumber,
-                                       subsystemsWithRootFilesToShow = serverParameters["subsystemsWithRootFilesToShow"],
-                                       anchorFrequency = anchorFrequency)
+        drawerContent = render_template("runListDrawer.html", runs = runsToUse, runOngoing = runOngoing,
+                                        runOngoingNumber = runOngoingNumber, anchorFrequency = anchorFrequency)
+        mainContent = render_template("runListMainContent.html", runs = runsToUse, runOngoing = runOngoing,
+                                      runOngoingNumber = runOngoingNumber,
+                                      subsystemsWithRootFilesToShow = serverParameters["subsystemsWithRootFilesToShow"],
+                                      anchorFrequency = anchorFrequency,
+                                      runOffset = runOffset, numberOfRunsToDisplay = numberOfRunsToDisplay,
+                                      totalNumberOfRuns = numberOfRuns)
 
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
-###################################################
 @app.route("/Run<int:runNumber>/<string:subsystemName>/<string:requestedFileType>", methods=["GET"])
 @login_required
 def runPage(runNumber, subsystemName, requestedFileType):
-    """ Serves the run pages and root files for a request run
-    
-    """
-    # Setup runDir
-    runDir = "Run{0}".format(runNumber)
+    """ Serves the run pages and root files for a request run.
 
-    # Setup db information
+    This is really the main function for serving information in Overwatch. The run page provides subsystem
+    specific histograms and information to the user. Time slices and user directed reprocessing is also
+    made available through this page. If a subsystem has made a customized run page, this will automatically
+    be served. If they haven't, then a default page will be provided.
+
+    This function serves both run pages, which display histograms, as well as root files pages, which provide
+    direct access to the underlying root files. Since they require similar information, it is convenient to
+    provide access to both of them from one function.
+
+    Note:
+        Some function args (after the first 3) are provided through the flask request object.
+
+    Warning:
+        Careful if changing the routing for this function, as the display swtich for the time slices button
+        in the web app depends on "runPage" being in this route. If this is changed, then the ``js`` also needs
+        to be changed.
+
+    Args:
+        runNumber (int): Run number of interest.
+        subsystemName (str): Name of the subsystem of interest.
+        requestedFileType (str): Type of file in which we are interested. Can be either ``runPage`` (corresponding to a
+            run page) or ``rootFiles`` (corresponding to access to the underlying root files).
+        jsRoot (bool): True if the response should use jsRoot instead of images.
+        ajaxRequest (bool): True if the response should be via AJAX.
+        requestedHistGroup (str): Name of the requested hist group. It is fine for it to be an empty string.
+        requestedHist (str): Name of the requested histogram. It is fine for it to be an empty string.
+    Returns:
+        Response: A run page or root files page populated via template.
+    """
+    # Setup runDir and db information
+    runDir = "Run{runNumber}".format(runNumber = runNumber)
     runs = db["runs"]
 
+    # Validation for all passed values
     (error, run, subsystem, requestedFileType, jsRoot, ajaxRequest, requestedHistGroup, requestedHist, timeSliceKey, timeSlice) = validation.validateRunPage(runDir, subsystemName, requestedFileType, runs)
 
     # This will only work if all of the values are properly defined.
     # Otherwise, we just skip to the end to return the error to the user.
     if error == {}:
-        # Sets the filenames for the json and img files
+        # Sets the filenames for the json and image files
         # Create these templates here so we don't have inside of the template
-        jsonFilenameTemplate = os.path.join(subsystem.jsonDir, "{0}.json")
+        jsonFilenameTemplate = os.path.join(subsystem.jsonDir, "{}.json")
         if timeSlice:
-            jsonFilenameTemplate = jsonFilenameTemplate.format(timeSlice.filenamePrefix + ".{0}")
-        imgFilenameTemplate = os.path.join(subsystem.imgDir, "{0}." + serverParameters["fileExtension"])
+            jsonFilenameTemplate = jsonFilenameTemplate.format(timeSlice.filenamePrefix + ".{}")
+        imgFilenameTemplate = os.path.join(subsystem.imgDir, "{}." + serverParameters["fileExtension"])
 
         # Print request status
-        logger.debug("request: {0}".format(request.args))
-        logger.debug("runDir: {0}, subsytsem: {1}, requestedFileType: {2}, "
-              "ajaxRequest: {3}, jsRoot: {4}, requestedHistGroup: {5}, requestedHist: {6}, "
-              "timeSliceKey: {7}, timeSlice: {8}".format(runDir, subsystemName, requestedFileType,
-               ajaxRequest, jsRoot, requestedHistGroup, requestedHist, timeSliceKey, timeSlice))
-
-        # TEMP
-        logger.debug("subsystem.timeSlices: {0}".format(subsystem.timeSlices))
-        # END TEMP
+        logger.debug("request: {}".format(request.args))
+        logger.debug("runDir: {}, subsystem: {}, requestedFileType: {}, "
+                     "ajaxRequest: {}, jsRoot: {}, requestedHistGroup: {}, requestedHist: {}, "
+                     "timeSliceKey: {}, timeSlice: {}".format(runDir, subsystemName, requestedFileType,
+                                                              ajaxRequest, jsRoot,
+                                                              requestedHistGroup, requestedHist,
+                                                              timeSliceKey, timeSlice))
     else:
-        logger.warning("Error: {0}".format(error))
+        logger.warning("Error on run page: {error}".format(error = error))
 
-    if ajaxRequest != True:
+    if ajaxRequest is not True:
         if error == {}:
             if requestedFileType == "runPage":
                 # Attempt to use a subsystem specific run page if available
@@ -354,6 +464,8 @@ def runPage(runNumber, subsystemName, requestedFileType):
                 if runPageName not in serverParameters["availableRunPageTemplates"]:
                     runPageName = runPageName.replace(subsystemName, "")
 
+                # We use try here because it's possible for this page not to exist if ``availableRunPageTemplates``
+                # is not determined properly due to other files interfering..
                 try:
                     returnValue = render_template(runPageName, run = run, subsystem = subsystem,
                                                   selectedHistGroup = requestedHistGroup, selectedHist = requestedHist,
@@ -361,23 +473,23 @@ def runPage(runNumber, subsystemName, requestedFileType):
                                                   imgFilenameTemplate = imgFilenameTemplate,
                                                   jsRoot = jsRoot, timeSlice = timeSlice)
                 except jinja2.exceptions.TemplateNotFound as e:
-                    error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
+                    error.setdefault("Template Error", []).append("Request template: \"{}\", but it was not found!".format(e.name))
             elif requestedFileType == "rootFiles":
                 # Subsystem specific run pages are not available since they don't seem to be necessary
                 returnValue = render_template("rootfiles.html", run = run, subsystem = subsystemName)
             else:
                 # Redundant, but good to be careful
-                error.setdefault("Template Error", []).append("Request page: \"{0}\", but it was not found!".format(requestedFileType))
+                error.setdefault("Template Error", []).append("Request page: \"{}\", but it was not found!".format(requestedFileType))
 
         if error != {}:
-            logger.warning("error: {0}".format(error))
+            logger.warning("error: {error}".format(error = error))
             returnValue = render_template("error.html", errors = error)
 
         return returnValue
     else:
         if error == {}:
             if requestedFileType == "runPage":
-               # Drawer
+                # Drawer
                 runPageDrawerName = subsystemName + "runPageDrawer.html"
                 if runPageDrawerName not in serverParameters["availableRunPageTemplates"]:
                     runPageDrawerName = runPageDrawerName.replace(subsystemName, "")
@@ -386,6 +498,9 @@ def runPage(runNumber, subsystemName, requestedFileType):
                 if runPageMainContentName not in serverParameters["availableRunPageTemplates"]:
                     runPageMainContentName = runPageMainContentName.replace(subsystemName, "")
 
+                # We use try here because it's possible for this page not to exist if ``availableRunPageTemplates``
+                # is not determined properly due to other files interfering..
+                # If either one fails, we want to jump right to the template error.
                 try:
                     drawerContent = render_template(runPageDrawerName, run = run, subsystem = subsystem,
                                                     selectedHistGroup = requestedHistGroup, selectedHist = requestedHist,
@@ -398,133 +513,118 @@ def runPage(runNumber, subsystemName, requestedFileType):
                                                   imgFilenameTemplate = imgFilenameTemplate,
                                                   jsRoot = jsRoot, timeSlice = timeSlice)
                 except jinja2.exceptions.TemplateNotFound as e:
-                    error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
+                    error.setdefault("Template Error", []).append("Request template: \"{}\", but it was not found!".format(e.name))
             elif requestedFileType == "rootFiles":
                 drawerContent = ""
                 mainContent = render_template("rootfilesMainContent.html", run = run, subsystem = subsystemName)
             else:
                 # Redundant, but good to be careful
-                error.setdefault("Template Error", []).append("Request page: \"{0}\", but it was not found!".format(requestedFileType))
+                error.setdefault("Template Error", []).append("Request page: \"{}\", but it was not found!".format(requestedFileType))
 
         if error != {}:
-            logger.warning("error: {0}".format(error))
+            logger.warning("error: {error}".format(error = error))
             drawerContent = ""
-            mainContent =  render_template("errorMainContent.html", errors = error)
+            mainContent = render_template("errorMainContent.html", errors = error)
 
-        # Includes hist group and hist name for time slices since it is easier to pass it here than parse the get requests. Otherwise, they are ignored.
+        # Includes hist group and hist name for time slices since it is easier to pass it here than parse the GET requests. Otherwise, they are ignored.
         return jsonify(drawerContent = drawerContent,
                        mainContent = mainContent,
                        timeSliceKey = json.dumps(timeSliceKey),
                        histName = requestedHist,
                        histGroup = requestedHistGroup)
 
-###################################################
 @app.route("/monitoring/protected/<path:filename>")
 @login_required
 def protected(filename):
-    """ Serves the actual files.
+    """ Serves the underlying files.
 
-    Based on the suggestion described here: https://stackoverflow.com/a/27611882
+    This function is response for actually making files available. Ideally, these would be served via
+    the production web server, but since access to the data requires authentication, we instead have
+    to provide access via this function. To provide this function, we utilized the approach
+    `described here <https://stackoverflow.com/a/27611882>`_.
 
     Note:
-        This ignores GET parameters. However, they can be useful to pass here to prevent something
-        from being cached, such as a QA image which has the same name, but has changed since last
-        being served.
+        This function ignores GET parameters. This is done intentionally to allow for avoiding problematic
+        caching by a browser. To avoid this caching, simply pass an additional get parameter after the
+        filename which varies when we need to avoid the cache. This is particularly useful for time slices,
+        where the name could be the same, but the information has changed since last being served.
 
+    Args:
+        filename (str): Path to the file to be served.
+    Returns:
+        Response: File with the proper headers.
     """
-    logger.debug("filename: {0}".format(filename))
-    logger.debug("request.args: {0}".format(request.args))
+    logger.debug("filename: {filename}".format(filename = filename))
     # Ignore the time GET parameter that is sometimes passed- just to avoid the cache when required
     #if request.args.get("time"):
     #    print "timeParameter:", request.args.get("time")
     return send_from_directory(os.path.realpath(serverParameters["protectedFolder"]), filename)
 
-###################################################
-@app.route("/docs/<path:filename>")
-@login_required
-def docs(filename):
-    """ Serve the documentation.
-
-    """
-    if os.path.isfile(os.path.join(serverParameters["docsBuildFolder"], filename)):
-        # Serve the docs
-        return send_from_directory(os.path.realpath(serverParameters["docsBuildFolder"]), filename)
-    else:
-        # If it isn't built for some reason, tell the user what happened
-        flash(filename + " not available! Docs are probably not built. Contact the admins!")
-        return redirect(url_for("contact"))
-
-###################################################
-@app.route("/doc/rebuild")
-@login_required
-def rebuildDocs():
-    """ Rebuild the docs based on the most recent source files.
-
-    The link is only available to the admin user.
-    """
-    if current_user.id == "emcalAdmin":
-        # Cannot get the actual output, as it seems to often crash the process
-        # I think this is related to the auto-reload in debug mode
-        #buildResult = subprocess.check_output(["make", "-C", serverParameters["docsFolder"], "html"])
-        #print buildResult
-        #flash("Doc build output: " + buildResult)
-
-        # Run the build command 
-        subprocess.call(["make", "-C", serverParameters["docsFolder"], "html"])
-
-        # Flash the result
-        flash("Docs rebuilt")
-
-    else:
-        # Flash to inform the user
-        flash("Regular users are not allowed to rebuild the docs.")
-
-    # Return to where the build command was called
-    return redirect(url_for("contact"))
-
-###################################################
 @app.route("/timeSlice", methods=["GET", "POST"])
 @login_required
 def timeSlice():
-    """ Handles time slice requests.
+    """ Handles time slice and user reprocessing requests.
 
-    In the case of a GET request, it will throw an error, since the interface is built into the header of each
-    individual run page. In the case of a POST request, it handles, validates, and processes the timing request,
-    rendering the result template and returning the user to the same spot as in the previous page.
+    This is the main function for serving user requests. This function calls out directly to the processing module
+    to perform the actual time slice or reprocessing request. It provides access to this functionality through
+    the interface built into the header of the run page. In the case of a POST request, it handles, validates,
+    and processes the timing request, rendering the result template and returning the user to the same spot as
+    in the previous page. A GET request is invalid and will return an error (but the route itself is allowed
+    to check that it is handled correctly).
 
+    This request should always be submitted via AJAX.
+
+    Note:
+        Function args are provided through the flask request object.
+
+    Args:
+        jsRoot (bool): True if the response should use jsRoot instead of images.
+        minTime (float): Minimum time for the time slice.
+        maxTime (float): Maximum time for the time slice.
+        runDir (str): String containing the run number. For an example run 123456, it should be
+            formatted as ``Run123456``.
+        subsystemName (str): The current subsystem in the form of a three letter, all capital name (ex. ``EMC``).
+        scaleHists (str): True if the hists should be scaled by the number of events. Converted from string to bool.
+        hotChannelThreshold (int): Value of the hot channel threshold.
+        histGroup (str): Name of the requested hist group. It is fine for it to be an empty string.
+        histName (str): Name of the requested histogram. It is fine for it to be an empty string.
+    Returns:
+        Response: A run page template populated with information from a newly processed time slice (via a redirect
+            to ``runPage()``). In case of error(s), returns the error message(s).
     """
-    #logger.debug("request.args: {0}".format(request.args))
-    logger.debug("request.form: {0}".format(request.form))
-    # We don't get ajaxRequest because this request should always be made via ajax
+    logger.debug("request.form: {}".format(request.form))
+    # We don't get ``ajaxRequest`` because this request should always be made via AJAX.
     jsRoot = validation.convertRequestToPythonBool("jsRoot", request.form)
 
     if request.method == "POST":
         # Get the runs
         runs = db["runs"]
 
-        # Validates the request
+        # Validates the request.
         (error, minTime, maxTime, runDir, subsystem, histGroup, histName, inputProcessingOptions) = validation.validateTimeSlicePostRequest(request, runs)
 
         if error == {}:
-            # Print input values
-            logger.debug("minTime: {0}".format(minTime))
-            logger.debug("maxTime: {0}".format(maxTime))
-            logger.debug("runDir: {0}".format(runDir))
-            logger.debug("subsystem: {0}".format(subsystem))
-            logger.debug("histGroup: {0}".format(histGroup))
-            logger.debug("histName: {0}".format(histName))
+            # Print input values for help in debugging.
+            logger.debug("minTime: {minTime}".format(minTime = minTime))
+            logger.debug("maxTime: {maxTime}".format(maxTime = maxTime))
+            logger.debug("runDir: {runDir}".format(runDir = runDir))
+            logger.debug("subsystem: {subsystem}".format(subsystem = subsystem))
+            logger.debug("histGroup: {histGroup}".format(histGroup = histGroup))
+            logger.debug("histName: {histName}".format(histName = histName))
 
             # Process the time slice
             returnValue = processRuns.processTimeSlices(runs, runDir, minTime, maxTime, subsystem, inputProcessingOptions)
+            logger.info("returnValue: {}".format(returnValue))
+            logger.debug("runs[runDir].subsystems[subsystem].timeSlices: {}".format(runs[runDir].subsystems[subsystem].timeSlices))
 
-            logger.info("returnValue: {0}".format(returnValue))
-            logger.debug("runs[runDir].subsystems[subsystem].timeSlices: {0}".format(runs[runDir].subsystems[subsystem].timeSlices))
-
+            # A normal return value should be a time slice key as a string. We can continue as expected.
+            # However, if we received an error, we expect some sort of dictionary (mapping). We handle that below.
             if not isinstance(returnValue, collections.Mapping):
                 timeSliceKey = returnValue
-                #if timeSliceKey == "fullProcessing":
-                #    timeSliceKey = None
-                # We always want to use ajax here
+
+                # Passed off the result to render via the run page since we a time slice just modifies
+                # the content which is displayed there.
+                # We always want to use AJAX here
                 return redirect(url_for("runPage",
                                         runNumber = runs[runDir].runNumber,
                                         subsystemName = subsystem,
@@ -538,29 +638,38 @@ def timeSlice():
                 # Fall through to return an error
                 error = returnValue
 
-        logger.info("Time slices error:", error)
+        logger.info("Time slices error: {error}".format(error = error))
         drawerContent = ""
-        mainContent = render_template("errorMainContent.html", errors=error)
+        mainContent = render_template("errorMainContent.html", errors = error)
 
-        # We always want to use ajax here
-        return jsonify(mainContent = mainContent, drawerContent = "")
-
+        # We always want to use AJAX here
+        return jsonify(drawerContent = drawerContent, mainContent = mainContent)
     else:
         return render_template("error.html", errors={"error": ["Need to access through a run page!"]})
 
-###################################################
-#@app.route("/trending/<string:subsystemName>", methods=["GET", "POST"])
-@app.route("/trending", methods=["GET", "POST"])
+@app.route("/trending", methods=["GET"])
 @login_required
 def trending():
-    """ Trending visualization.
+    """ Route to provide visualization of trending information.
 
+    This method provides functionality similar to that of a run page, but focused instead on displaying
+    trending information. In particular, it displays trended objects from all subsystems, including
+    those generated through the trending subsystem.
+
+    Note:
+        Function args are provided through the flask request object.
+
+    Args:
+        jsRoot (bool): True if the response should use jsRoot instead of images.
+        ajaxRequest (bool): True if the response should be via AJAX.
+        subsystemName (str): Name of the requested subsystem. It is fine for it to be an empty string.
+        histName (str): Name of the requested histogram. It is fine for it to be an empty string.
+    Returns:
+        Response: Trending information template populated with trended objects.
     """
-    error = {}
-
-    logger.debug("request: {0}".format(request.args))
+    logger.debug("request: {}".format(request.args))
     # Validate request
-    (error, subsystemName, requestedHist, jsRoot, ajaxRequest) = validation.validateTrending()
+    (error, subsystemName, requestedHist, jsRoot, ajaxRequest) = validation.validateTrending(request)
 
     # Create trending container from stored trending information
     trendingContainer = processingClasses.trendingContainer(db["trending"])
@@ -573,11 +682,12 @@ def trending():
                 break
 
     # Template paths to the individual files
-    imgFilenameTemplate = os.path.join(trendingContainer.imgDir % {"subsystem" : subsystemName}, "{0}." + serverParameters["fileExtension"])
-    jsonFilenameTemplate = os.path.join(trendingContainer.jsonDir % {"subsystem" : subsystemName}, "{0}.json")
+    imgFilenameTemplate = os.path.join(trendingContainer.imgDir % {"subsystem": subsystemName}, "{}." + serverParameters["fileExtension"])
+    jsonFilenameTemplate = os.path.join(trendingContainer.jsonDir % {"subsystem": subsystemName}, "{}.json")
 
-    if ajaxRequest != True:
+    if ajaxRequest is not True:
         if error == {}:
+            # There isn't any reason to think that the template won't be found, but it doesn't hurt to account for it.
             try:
                 returnValue = render_template("trending.html", trendingContainer = trendingContainer,
                                               selectedHistGroup = subsystemName, selectedHist = requestedHist,
@@ -585,15 +695,16 @@ def trending():
                                               imgFilenameTemplate = imgFilenameTemplate,
                                               jsRoot = jsRoot)
             except jinja2.exceptions.TemplateNotFound as e:
-                error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
+                error.setdefault("Template Error", []).append("Request template: \"{}\", but it was not found!".format(e.name))
 
         if error != {}:
-            logger.warning("error: {0}".format(error))
+            logger.warning("error: {error}".format(error = error))
             returnValue = render_template("error.html", errors = error)
 
         return returnValue
     else:
         if error == {}:
+            # There isn't any reason to think that the template won't be found, but it doesn't hurt to account for it.
             try:
                 drawerContent = render_template("trendingDrawer.html", trendingContainer = trendingContainer,
                                                 selectedHistGroup = subsystemName, selectedHist = requestedHist,
@@ -606,12 +717,12 @@ def trending():
                                               imgFilenameTemplate = imgFilenameTemplate,
                                               jsRoot = jsRoot)
             except jinja2.exceptions.TemplateNotFound as e:
-                error.setdefault("Template Error", []).append("Request template: \"{0}\", but it was not found!".format(e.name))
+                error.setdefault("Template Error", []).append("Request template: \"{}\", but it was not found!".format(e.name))
 
         if error != {}:
-            logger.warning("error: {0}".format(error))
+            logger.warning("error: {error}".format(error = error))
             drawerContent = ""
-            mainContent =  render_template("errorMainContent.html", errors = error)
+            mainContent = render_template("errorMainContent.html", errors = error)
 
         # Includes hist group and hist name for time slices since it is easier to pass it here than parse the get requests. Otherwise, they are ignored.
         return jsonify(drawerContent = drawerContent,
@@ -619,65 +730,99 @@ def trending():
                        histName = requestedHist,
                        histGroup = subsystemName)
 
-###################################################
 @app.route("/testingDataArchive")
 @login_required
 def testingDataArchive():
-    """ Creates a zip archive to download data for QA function testing.
+    """ Provides a zip archive of test data for Overwatch development.
 
-    It will return at most the 5 most recent runs. The archive contains the combined file for all subsystems.
+    This function will look through at most the 5 most recent runs, looking for the minimum number of files
+    necessary for running Overwatch successfully. These files will be zipped up and provided to the user.
+    The minimum files are the combined file, and the most recent file received for the subsystem (they are
+    usually the same, but it is easier to include both). If possible, an additional file is included for testing
+    the time slice functionality. It may not always be available if runs are extremely short. The zip archive will
+    include all subsystems which are available.
 
-    NOTE:
-        Careful in changing the routing, as this is hard coded in :func:`~webApp.routing.redirectBack()`!
+    Note:
+        It is not guaranteed that every subsystem will be in the most recent 5 runs, since there could be a number
+        of standalone runs for a single subsystem in a row. In such a case, the easiest course of action is to wait
+        a few hours until more runs have been started.
+
+    Warning:
+        Careful in changing the routing for this function, as the name of it is hard coded in
+        ``webApp.routing.redirectBack()``. This hard coding is to avoid a loop where the user is stuck accessing
+        this file after logging in.
 
     Args:
         None
-
     Returns:
-        redirect: Redirects to the newly created file.
+        redirect: Redirect to the newly created file.
     """
     # Get db
     runs = db["runs"]
     runList = runs.keys()
 
-    # Retreive at most 5 files
+    # Retrieve at most 5 files
+    numberOfFilesToDownload = 5
     if len(runList) < 5:
         numberOfFilesToDownload = len(runList)
-    else:
-        numberOfFilesToDownload = 5
 
-    # Create zip file. It is stored in the root of the data directory
+    # Create zip file. It will be stored in the root of the data directory.
+    # It is fine to be overwritten because it can always be recreated.
     zipFilename = "testingDataArchive.zip"
-    zipFile = zipfile.ZipFile(os.path.join(serverParameters["protectedFolder"], zipFilename), "w")
-    logger.info("Creating zipFile at %s" % os.path.join(serverParameters["protectedFolder"], zipFilename))
+    with zipfile.ZipFile(os.path.join(serverParameters["protectedFolder"], zipFilename), "w") as zipFile:
+        logger.info("Creating zipFile at %s" % os.path.join(serverParameters["protectedFolder"], zipFilename))
 
-    # Add files to the zip file
-    runKeys = runs.keys()
-    for i in range(1, numberOfFilesToDownload+1):
-        run = runs[runKeys[-1*i]]
-        for subsystem in run.subsystems.values():
-            # Write files to the zip file
-            # Combined file
-            zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.combinedFile.filename))
-            # Uncombined file
-            zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.files[subsystem.files.keys()[-1]].filename))
-
-    # Finish with the zip file
-    zipFile.close()
+        # Add files to the zip file
+        runKeys = runs.keys()
+        # Write the files in reverse order. However, this is fine because the order doesn't make a difference
+        # in the final archive.
+        for i in range(-1 * numberOfFilesToDownload, 0):
+            run = runs[runKeys[i]]
+            for subsystem in run.subsystems.values():
+                # Write files to the zip file
+                # Combined file
+                zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.combinedFile.filename))
+                # Uncombined file. This is the last file that was received from the subsystem.
+                zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.files[subsystem.files.keys()[-1]].filename))
+                # We select 4 as an arbitrary point to ensure that there is some different between the data stored
+                # in it and the combined file.
+                if len(subsystem.files) > 4:
+                    # Write an additional file for testing time slices.
+                    zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.files[subsystem.files.keys()[-5]].filename))
 
     # Return with a download link
     return redirect(url_for("protected", filename=zipFilename))
 
-###################################################
 @app.route("/status")
 @login_required
 def status():
-    """ Returns the status of the OVERWATCH sites """
+    """ Query and determine the status of the Overwatch sites.
 
-    # Get db
+    This function takes advantage of the status functionality of the web app to determine the state of any
+    deployed web apps that are specified in the web app config. This is achieved by sending requests to all
+    other sites and then aggregating the results. Each request is allowed a 0.5 second timeout.
+
+    This functionality will only work if the web app is accessible from the site where this is run. This may
+    not always be the case.
+
+    Note:
+        Since the GET requests are blocking, it can appear that the web app is hanging. However, this is
+        just due to the time that the requests take.
+
+    Warning:
+        This can behave somewhat strangely using the flask development server, especially if there is reloading.
+        If possible, it is best to run with ``uwsgi`` for testing of this function.
+
+    Note:
+        Function args are provided through the flask request object.
+
+    Args:
+        ajaxRequest (bool): True if the response should be via AJAX.
+    Returns:
+        Response: Status template populated with the status of Overwatch sites specified in the configuration.
+    """
+    # Setup
     runs = db["runs"]
-
-    # Display the status page from the other sites
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
     # Where the statuses will be collected
@@ -692,14 +837,14 @@ def status():
     else:
         runOngoingNumber = ""
     # Add to status
-    statuses["Ongoing run?"] = "{0} {1}".format(runOngoing, runOngoingNumber)
+    statuses["Ongoing run?"] = "{runOngoing} {runOngoingNumber}".format(runOngoing = runOngoing, runOngoingNumber = runOngoingNumber)
 
     if "config" in db and "receiverLogLastModified" in db["config"]:
         receiverLogLastModified = db["config"]["receiverLogLastModified"]
         lastModified = time.time() - receiverLogLastModified
         # Display in minutes
-        lastModified = int(lastModified//60)
-        lastModifiedMessage = "{0} minutes ago".format(lastModified)
+        lastModified = int(lastModified // 60)
+        lastModifiedMessage = "{lastModified} minutes ago".format(lastModified = lastModified)
     else:
         lastModified = -1
         lastModifiedMessage = "Error! Could not retrieve receiver log information!"
@@ -707,32 +852,31 @@ def status():
     statuses["Last requested data"] = lastModifiedMessage
 
     # Determine server statuses
-    # TODO: Consider reducing the max number of retries
+    exceptionErrorMessage = "Request to \"{site}\" at \"{url}\" {errorType} with error message {e}!"
     sites = serverParameters["statusRequestSites"]
     for site, url in iteritems(sites):
         serverError = {}
         statusResult = ""
         try:
-            serverRequest = requests.post(url + "/status", timeout = 0.5)
+            serverRequest = requests.get(url + "/status", timeout = 0.5)
             if serverRequest.status_code != 200:
-                serverError.setdefault("Request error", []).append("Request to \"{0}\" at \"{1}\" returned error response {2}!".format(site, url, serverRequest.status_code))
+                serverError.setdefault("Request error", []).append("Request to \"{}\" at \"{}\" returned error response {}!".format(site, url, serverRequest.status_code))
             else:
                 statusResult = "Site is up!"
         except requests.exceptions.Timeout as e:
-            serverError.setdefault("Timeout error", []).append("Request to \"{0}\" at \"{1}\" timed out with error {2}!".format(site, url, e))
+            serverError.setdefault("Timeout error", []).append(exceptionErrorMessage.format(site = site, url = url, errorType = "timed out", e = e))
         except requests.exceptions.ConnectionError as e:
-            serverError.setdefault("Connection error", []).append("Request to \"{0}\" at \"{1}\" had a connection error with message {2}!".format(site, url, e))
+            serverError.setdefault("Connection error", []).append(exceptionErrorMessage.format(site = site, url = url, errorType = "had a connection error", e = e))
         except requests.exceptions.RequestException as e:
-            serverError.setdefault("General Requests error", []).append("Request to \"{0}\" at \"{1}\" had a general requests error with message {2}!".format(site, url, e))
+            serverError.setdefault("General Requests error", []).append(exceptionErrorMessage.format(site = site, url = url, errorType = "had a general requests error", e = e))
 
-        # Return error if one occurred
+        # Store the error if one occurred
         if serverError != {}:
             statusResult = serverError
-
         # Add to status
         statuses[site] = statusResult
 
-    if ajaxRequest == False:
+    if ajaxRequest is False:
         return render_template("status.html", statuses = statuses)
     else:
         drawerContent = ""
@@ -740,11 +884,29 @@ def status():
 
         return jsonify(drawerContent = drawerContent, mainContent = mainContent)
 
-###################################################
 @app.route("/upgradeDocker")
 @login_required
 def upgradeDocker():
-    """ Kill supervisord in the docker image (so that it will be upgrade with the new version by offline). """
+    """ Kill ``supervisord`` in the docker image so the docker image will stop.
+
+    On the ALICE offline infrastructure, a stopped docker image will cause the image to be upgraded and restarted.
+    Thus, we can intentionally stop the image indirectly by killing the supervisor process to force an upgrade.
+
+    Note:
+        This operation requires administrative rights (as the ``emcalAdmin`` user).
+
+    Warning:
+        This is untested and is unsupported in any other infrastructure! It is experimental as of August 2018.
+
+    Note:
+        Function args are provided through the flask request object.
+
+    Args:
+        ajaxRequest (bool): True if the response should be via AJAX.
+    Returns:
+        Response or None: Likely a timeout if the function was successful, or a response with an error message
+            if the function was unsuccessful.
+    """
     # Display the status page from the other sites
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
@@ -754,12 +916,12 @@ def upgradeDocker():
 
     try:
         if os.environ["deploymentOption"]:
-            logger.info("Running docker in deployment mode {0}".format(os.environ["deploymentOption"]))
+            logger.info("Running docker in deployment mode {}".format(os.environ["deploymentOption"]))
     except KeyError:
         error.setdefault("User error", []).append("Must be in a docker container to run this!")
 
     if error == {}:
-        # Attempt to kill supervisord
+        # Attempt to kill `supervisord`
         # Following: https://stackoverflow.com/a/2940878
         p = subprocess.Popen(['ps', '-A'], stdout=subprocess.PIPE)
         out, err = p.communicate()
@@ -770,23 +932,21 @@ def upgradeDocker():
                 pid = int(line.split(None, 1)[0])
                 # Send TERM
                 os.kill(pid, signal.SIGTERM)
-                # NOTE: If this succeeds, then nothing will be sent because the process will be dead...
-                error.setdefault("Signal Sent", []).append("Sent TERM signal to line with \"{0}\"".format(line))
+                # NOTE: If this succeeds, then nothing will be sent because the process will be dead.
+                error.setdefault("Signal Sent", []).append("Sent TERM signal to process with \"{line}\"".format(line = line))
 
-        # Give a note if nothing happened....
+        # Give a note if nothing happened.
         if error == {}:
-            error.setdefault("No response", []).append("Should have some response by now, but there is none. It seems that the supervisord process cannot be found!")
+            error.setdefault("No response", []).append("Should have some response by now, but there is none. It seems that the `supervisord` process cannot be found!")
 
-    # Co-opt error output here since it is probably not worth a new page yet...
-    if ajaxRequest == True:
-        logger.warning("error: {0}".format(error))
+    # Co-opt error output here since it is not worth a new template.
+    if ajaxRequest is True:
+        logger.warning("error: {error}".format(error = error))
         drawerContent = ""
-        mainContent =  render_template("errorMainContent.html", errors = error)
+        mainContent = render_template("errorMainContent.html", errors = error)
 
-        # We always want to use ajax here
-        return jsonify(mainContent = mainContent, drawerContent = "")
+        # We always want to use AJAX here
+        return jsonify(drawerContent = drawerContent, mainContent = mainContent)
     else:
         return render_template("error.html", errors = error)
 
-if __name__ == "__main__":
-    pass

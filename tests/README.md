@@ -1,4 +1,4 @@
-# Testing
+# Testing Overwatch
 
 Tests are implemented using `pytest`. As of July 2018, they don't have extensive coverage, but should be
 expanded upon when making code improvements. For running tests, you should run them from the `tests` folder!
@@ -7,8 +7,10 @@ against reference values!
 
 To execute the testing, I tend to use something like:
 
-`pytest -l --cov=overwatch.base --cov-report html . --durations=5`
+```bash
+$ pytest -l --cov=overwatch --cov-report html . --durations=5
+```
 
 This assumes you are running from the `tests` folder (as suggested above) and will be report on which tests
-are the slowest as well as provide a coverage report for (in this case) the `overwatch.base` module. This can
-be adapted as desired.
+are the slowest as well as provide a coverage report for (in this case) the entire `overwatch` module. This
+can be adapted as desired.

@@ -1,3 +1,4 @@
+# Configu webassets through this external configuration
 # Bundle polymer components together
 polymerBundle:
     filters: "PolymerBundler"
@@ -6,6 +7,7 @@ polymerBundle:
         - "polymerComponents.html"
 # Minify JS
 minJS:
+    # rjsmin is built in
     filters: "rjsmin"
     output: "gen/shared.min.js"
     contents:

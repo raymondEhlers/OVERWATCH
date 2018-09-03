@@ -8,8 +8,8 @@ from overwatch.base import config
 # For configuring logger
 from overwatch.base import utilities
 (receiverParameters, filesRead) = config.readConfig(config.configurationType.receiver)
-print("Configuration files read: {0}".format(filesRead))
-print("receiverParameters: {0}".format(pprint.pformat(receiverParameters)))
+print("Configuration files read: {filesRead}".format(filesRead = filesRead))
+print("receiverParameters: {receiverParameters}".format(receiverParameters = pprint.pformat(receiverParameters)))
 
 # By not setting a name, we get everything!
 logger = logging.getLogger("")
@@ -17,18 +17,30 @@ logger = logging.getLogger("")
 #logger = logging.getLogger("reciever")
 
 # Setup logger
-utilities.setupLogging(logger, receiverParameters["loggingLevel"], receiverParameters["debug"], "dqmReceiver")
+utilities.setupLogging(logger = logger,
+                       logLevel = receiverParameters["loggingLevel"],
+                       debug = receiverParameters["debug"],
+                       logFilename = "dqmReceiver")
 
 # Imports are below here so that they can be logged
 from overwatch.receiver.dqmReceiver import app
 
 def runDevelopment():
+    """ Main entry point for running the DQM receiver development server.
+
+    Args:
+        None.
+    Returns:
+        None.
+    """
     logger.info("Starting dqmReceiver app")
     # Turn on flask debugging
     app.debug = receiverParameters["debug"]
     # Careful with threaded, but it can be useful to test the status page, since the post request succeeds!
     app.run(host=receiverParameters["receiverIP"],
-            port=receiverParameters["receiverPort"])#, threaded=True)
+            port=receiverParameters["receiverPort"],
+            #threaded=True
+            )
 
 if __name__ == "__main__":
     runDevelopment()

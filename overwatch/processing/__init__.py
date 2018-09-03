@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 """ Main package supporting processing.
 
 These modules contain most of the code that actually processes ROOT files.
@@ -9,8 +10,8 @@ Everything is configured by the settings in config.yaml
 """
 
 __all__ = [
-           "mergeFiles",
-           "processRus",
-           "processingClasses",
-           "qa"
-          ]
+    "mergeFiles",
+    "processRuns",
+    "processingClasses",
+    "pluginManager",
+]

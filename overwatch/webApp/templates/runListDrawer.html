@@ -13,12 +13,12 @@
 <paper-listbox>
     {% for run in runs -%}
         {%- if loop.index % anchorFrequency == 0 %}
-            {# NOTE: The order of the runs make look wrong, but the run numbers are still in the right order. #}
+            {# NOTE: The order of the runs might look wrong, but the run numbers are still in the right order. #}
             <a href="#{{ run.runDir  }}" tabindex=-1>
                 <paper-item>
                     <paper-item-body two-line>
                         <div>{{ run.prettyName }}</div>
-                        <div secondary>{{ run.timeStamp() }}</div>
+                        <div secondary>{{ run.startOfRunTimeStamp() }}</div>
                     </paper-item-body>
                 </paper-item>
             </a>

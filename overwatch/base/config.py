@@ -1,14 +1,15 @@
 #!/usr/bin/env python
 
-# Handles configuration of overwatch via yaml. Configurations are built
-# in a hierarchy, with the base configuration providing the first layer,
-# and building up further until the specified module.
-#
-# yaml parsing plugins are also specified here. This breaks the abstraction
-# a little bit, but it makes things much simpler, so it's worth the trade-off.
-#
-# author: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
-# date: 16 July 2018
+""" Handles configuration of overwatch via yaml.
+
+Configurations are built in a hierarchy, with the base configuration providing
+the first layer, and building up further until the specified module.
+
+YAML parsing plugins are also specified here. This breaks the abstraction
+a little bit, but it makes things much simpler, so it's worth the trade-off.
+
+.. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
+"""
 
 import aenum
 import ruamel.yaml as yaml
@@ -25,7 +26,7 @@ class configurationType(aenum.OrderedEnum):
     """ Specifies the module ordering for loading of configurations.
 
     It is also used to specify the maximum level for which a config should be loaded.
-    For example, if `webApp` is specified, it should load all configurations, while
+    For example, if ``webApp`` is specified, it should load all configurations, while
     for processing, everything but processing should be loaded.
 
     The numerical values of this enum basically specify the dependencies of the package.
@@ -40,12 +41,12 @@ class configurationType(aenum.OrderedEnum):
     webApp = 4
 
 def joinPaths(loader, node):
-    """ Join elements of a list into a path using `os.path.join`.
-    Specified by `!joinPaths` (defined on registration below).
+    """ Join elements of a list into a path using ``os.path.join``.
+    Specified by ``!joinPaths`` (defined on registration below).
 
-    Inspired by: https://stackoverflow.com/a/23212524
+    Inspired by `here <https://stackoverflow.com/a/23212524>`__.
 
-    Could similarly use `!!python/object/apply:os.path.join`, with the downside of allowing lots of
+    Could similarly use ``!!python/object/apply:os.path.join``, with the downside of allowing lots of
     arbitrary code execution since you cannot use safe_load. Instead, we write this simple function
     and then explicitly make only this function available via the SafeLoader.
 
@@ -63,7 +64,7 @@ yaml.SafeLoader.add_constructor('!joinPaths', joinPaths)
 def determineRunPageTemplates(loader, node):
     """ Determine which subsystems have run page templates on startup by determining the filenames of
     each run pages templates. We will later check for a subsystem specific filename is this list.
-    Specified by `!findRunPageTemplates` (defined on registration below) and should be defined with the
+    Specified by ``!findRunPageTemplates`` (defined on registration below) and should be defined with the
     path to the templates directory.
 
     Since this is run from the root directory, we need to go into the "webApp" directory to find the templates!
@@ -95,19 +96,19 @@ bcryptLogRounds = 12
 
 def bcrypt(loader, node):
     """ Hash any given passwords according to the provided number of rounds.
-    Specified by `!bcrypt` (defined on registration below).
+    Specified by ``!bcrypt`` (defined on registration below).
 
     Block should look like:
 
-    ```{yaml}
-    bcryptExampleBlock: !bcrypt
-        # Could be defined elsewhere and referenced using an anchor here
-        bcryptLogRounds: 12
-        user1: "password1"
-        user2: "password2"
-    ```
+    .. code-block:: yaml
 
-    The block will result in two users, `user1` and `user2` being added to the database.
+        bcryptExampleBlock: !bcrypt
+            # Could be defined elsewhere and referenced using an anchor here
+            bcryptLogRounds: 12
+            user1: "password1"
+            user2: "password2"
+
+    The block will result in two users, ``user1`` and ``user2`` being added to the database.
     Their passwords will be the hash of the given strings using 12 bcrypt log rounds.
 
     Note:
@@ -135,10 +136,10 @@ yaml.SafeLoader.add_constructor('!bcrypt', bcrypt)
 
 def secretKey(loader, node):
     """ Determine the secret key for signing cookies in the webApp.
-    Specified by `!secretKey` (defined on registration below).
+    Specified by ``!secretKey`` (defined on registration below).
 
     If a value is already specified, that value is simply used. However, if an invalid value is passed
-    (for example, `None`), a value is generated according to the best practices recommendation of the
+    (for example, ``None``), a value is generated according to the best practices recommendation of the
     flask developers.
 
     Args:
@@ -182,28 +183,29 @@ def readConfigFiles(fileList):
     return (configs, filesRead)
 
 def readConfig(configType):
-    """ Main function to read the Overwatch configuration. It looks for values in a set of configuration
-    files according to the module that is specified.
+    """ Main function to read the Overwatch configuration.
 
-    The configuration file must be named `config.yaml`. The files are read in such an order that values
-    specified in later packages will override earlier ones. For example, `webApp` depends on `processing`,
+    It looks for values in a set of configuration files according to the module that is specified.
+
+    The configuration file must be named ``config.yaml``. The files are read in such an order that values
+    specified in later packages will override earlier ones. For example, ``webApp`` depends on ``processing``,
     so if we specify different values for the same key in both module configurations, the value in the
-    `webApp` config will be used.
+    ``webApp`` config will be used.
 
     In additional to looking in Overwatch modules, it also looks for a configuration in the current working
     directory, as well as in the user home directory.
 
-    The current (July 2018) order of override priority from highest to lowest is:
+    The current (as of August 2018) order of override priority from highest to lowest is:
 
-    ```
-    local directory
-    user home directory
-    webApp
-    processing
-    receiver
-    api
-    base
-    ```
+    .. code-block:: none
+
+        Current working directory
+        User home directory
+        overwatch.webApp
+        overwatch.processing
+        overwatch.receiver
+        overwatch.api
+        overwatch.base
 
     (this basically follows the dependency tree).
 
@@ -223,12 +225,12 @@ def readConfig(configType):
     #     defined in the config in the package base directory.
     # For more on pkg_resources, see: https://stackoverflow.com/a/5601839
     fileList = [
-            # Config file in the local directory where it is run
-            "config.yaml",
-            # Config in the home directory
-            # Ensures that we have "WebApp" here.
-            os.path.expandvars("~/.overwatch{0}").format(configType.name[0].upper() + configType.name[1:]),
-        ]
+        # Config file in the local directory where it is run
+        "config.yaml",
+        # Config in the home directory
+        # Ensures that we have "WebApp" here.
+        os.path.expandvars("~/.overwatch{0}").format(configType.name[0].upper() + configType.name[1:]),
+    ]
     # Reversed so the modules are added in the proper order (ie. following the dependencies)
     for val in reversed(configurationType):
         # Retrieve and store the configuration of the requested object depends on that configuration
@@ -258,7 +260,7 @@ def readConfig(configType):
 
     return (globalConfig, filesRead)
 
-if __name__ == "__main__": # pragma: no cover
+if __name__ == "__main__":  # pragma: no cover
     """ Load basic configuration for testing (although unit tests would be preferred in the future). """
     # Setup logging
     # Provides a warning if there are no handlers
@@ -270,5 +272,5 @@ if __name__ == "__main__": # pragma: no cover
     logger.setLevel("DEBUG")
 
     # Load configuration
-    config,_ = readConfig(configurationType.processing)
+    config, _ = readConfig(configurationType.processing)
     logger.info("Final config: {0}".format(pprint.pformat(config)))

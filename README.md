@@ -3,6 +3,7 @@
 # ALICE Overwatch
 
 [![DOI](https://zenodo.org/badge/50686415.svg)](https://zenodo.org/badge/latestdoi/50686415)
+[![Documentation Status](https://readthedocs.org/projects/overwatch/badge/?version=latest)](https://overwatch.readthedocs.io/en/latest/?badge=latest)
 
 Welcome to ALICE Overwatch[\*](#name-meaning), a project to provide real-time online data monitoring and
 quality assurance using timestamped data from the ALICE High Level Trigger (HLT) and Data Quality Monitoring (DQM).
@@ -20,10 +21,10 @@ To setup for local development is fairly straightforward.
 ```bash
 $ git clone https://github.com/raymondEhlers/OVERWATCH.git overwatch
 $ cd overwatch
-# Probably best to do this in a virtualenv
-$ pip install -r requirements.txt
 # Install webApp static data (Google Polymer and jsRoot)
 $ cd overwatch/webApp/static && bower install && git clone https://github.com/root-project/jsroot.git jsRoot && cd -
+# Probably best to do this in a virtualenv. The overwatch setup.py can't install this automatically.
+$ pip install git+https://github.com/SpotlightKid/flask-zodb.git
 # Install for local development
 $ pip install -e .
 ```
@@ -61,8 +62,10 @@ date.
 
 To use most parts of the Overwatch project, you need some data provided by the HLT. The latest five runs of data
 received by Overwatch can be accessed
-[here](https://aliceoverwatch.physics.yale.edu/testingDataArchive). The login credentials are available on
-the [ALICE TWiki](https://twiki.cern.ch/twiki/bin/view/ALICE/L1TriggerMonitoring).
+[here](https://aliceoverwatch.physics.yale.edu/testingDataArchive). The login credentials are available on the
+[ALICE TWiki](https://twiki.cern.ch/twiki/bin/view/ALICE/L1TriggerMonitoring). It includes at least the
+combined file and the file from which it is built. If the run is sufficiently long, it will include an
+additional file for testing of the time slice functionality.
 
 ### Process the data with `overwatchProcessing`
 
@@ -138,13 +141,14 @@ c++
 zmqReceiver
 ```
 
-Further information on each component is available in the sections below.
+Further information on each component is available in the sections below. More detailed technical information
+is available in the READMEs for each package, as well as in the code documentation.
 
 ## Overwatch Processing
 
 The main processing component of Overwatch is responsible for transforming the received data into a viewable
 form, while also extracting derived quantities and performing checks for alarms. The main processing module is
-written in python and depends heavily on PyRoot, with some functionality implemented through numpy. The module
+written in python and depends heavily on PyROOT, with some functionality implemented through numpy. The module
 is located in `overwatch/processing`, with the file `processRuns.py` driving the processing.
 
 At a high level, the processing pipeline looks like:
@@ -249,6 +253,11 @@ The image can then be run with something like (using an external configuration f
 ```bash
 $ docker run -d -v data:/overwatch/data -e config="$(config.yaml)" rehlers/overwatch
 ```
+
+## Update Users in the Database
+
+This is a simple utility to update the users in the ZODB database. It can be called via `overwatchUpdateUsers`
+(it takes no arguments). It will use the username/password values stored in the `config.yaml`.
 
 # Citation
 

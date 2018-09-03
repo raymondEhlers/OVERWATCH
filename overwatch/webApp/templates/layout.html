@@ -65,8 +65,6 @@
 
         {# Mobile support -#}
         <meta name="viewport" content="width=device-width, initial-scale=1">
-        {#- Disable favicon request. See: https://stackoverflow.com/a/13416784 -#}
-        {#- <!--<link rel="icon" type="image/png" href="data:image/png;base64,iVBORw0KGgo=">--> -#}
         {#- Favicon support from: realfavicongenerator.net #}
         <link rel="apple-touch-icon" sizes="180x180" href="/static/icons/apple-touch-icon.png?v=2">
         <link rel="icon" type="image/png" href="/static/icons/favicon-32x32.png?v=2" sizes="32x32">
@@ -136,7 +134,8 @@
                 </paper-item>
                 {%- endif -%}
             </paper-listbox>
-            <paper-toggle-button id="jsRootToggle">jsroot</paper-toggle-button>
+            <!-- NOTE: This defines the default for JSRoot and AJAX! -->
+            <paper-toggle-button id="jsRootToggle" checked>jsroot</paper-toggle-button>
             <paper-toggle-button id="ajaxToggle" checked>AJAX</paper-toggle-button>
         </paper-dialog>
 
@@ -174,16 +173,16 @@
             <!-- Ensures that we can scroll in the header! -->
             <div class="scrollableContainer">
                 <div class="mainContentContainer">
-                    {# Flashes from: http://flask.pocoo.org/docs/0.10/patterns/flashing/ #}
-                    {% with messages = get_flashed_messages() %}
-                        {% if messages %}
+                    {#- Flashes from: http://flask.pocoo.org/docs/0.10/patterns/flashing/ -#}
+                    {% with messages = get_flashed_messages() -%}
+                        {%- if messages -%}
                             <div class=flashes id="flashes">
-                                {% for message in messages %}
+                                {% for message in messages -%}
                                 <p>{{ message.replace("\n", "<br />") | safe }}</p>
-                                {% endfor %}
+                                {%- endfor %}
                             </div>
-                        {% endif %}
-                    {% endwith %}
+                        {%- endif -%}
+                    {%- endwith %}
                     <a class="anchor" name="topOfPage"></a>
                     <div id="mainContent" class="linksToIntercept">
                         {% block mainContent %}{% endblock %}
@@ -213,6 +212,7 @@
             <input id="timeSlicesFormHistName" name="histName" type="hidden" value="val"/>
             <input id="timeSlicesFormRunDir" name="runDir" type="hidden" value="val"/>
             <input id="timeSlicesFormSubsystem" name="subsystem" type="hidden" value="val"/>
+            <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
             <div class="buttons">
                 <paper-button dialog-dismiss>Cancel</paper-button>
                 <paper-button id="submitTimeSlices" dialog-confirm>Accept</paper-button>
@@ -224,12 +224,25 @@
 {# Defines direct access to the body block #}
 {% block body %}{% endblock %}
 
-{# Previously loaded scripts on DOM ready (which will fire before onLoad()) #}
-{# See (answer and comments): https://stackoverflow.com/a/2414766 #}
-{# Hoewver, with Polymer, we should instead wait for WebComponentsReady! #}
+{#- Previously loaded scripts on DOM ready (which will fire before onLoad()) #}
+{#- See (answer and comments): https://stackoverflow.com/a/2414766 #}
+{#- Hoewver, with Polymer, we should instead wait for WebComponentsReady! -#}
 <script type="text/javascript">
     document.addEventListener("WebComponentsReady", function() {
         {% block pageReadyForJS %}{% endblock %}
+    });
+</script>
+
+{#- Add CSRF protection to all jQuery AJAX requests -#}
+{#- From: https://flask-wtf.readthedocs.io/en/stable/csrf.html -#}
+<script type="text/javascript">
+    var csrf_token = "{{ csrf_token() }}";
+    $.ajaxSetup({
+        beforeSend: function(xhr, settings) {
+            if (!/^(GET|HEAD|OPTIONS|TRACE)$/i.test(settings.type) && !this.crossDomain) {
+                xhr.setRequestHeader("X-CSRFToken", csrf_token);
+            }
+        }
     });
 </script>
     </body>

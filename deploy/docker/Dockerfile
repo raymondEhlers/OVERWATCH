@@ -25,7 +25,7 @@ WORKDIR ${OVERWATCH_ROOT}
 # Size increase here is mainly due to the numpy dependency
 RUN git clone https://github.com/raymondEhlers/OVERWATCH.git . \
         && pip install --upgrade pip \
-        && pip install -r requirements.txt \
+        && pip install -e ".[tests, docs]" \
         && mkdir -p receiver/build && cd receiver/build \
         && cmake "../" -DCMAKE_INSTALL_PREFIX="/opt/receiver" -DZEROMQ="/usr" \
         && make install
@@ -62,12 +62,11 @@ RUN git fetch && echo "" && echo "" && git checkout deploy2017 && git pull
 # Ensure that the proper configuration file is setup. The values should already be in the file!
 #RUN cp /opt/overwatch/deploy/configOVERWATCH_stub.sh /opt/overwatch/deploy/configOVERWATCH.sh
 # Check for whether we are running with debug!
-# TODO: Compile overwatch docs so that they are accessible for a docker hosted site!
 
 # Install OVERWATCH and the related scripts
 # TODO: Move this up if possible
 # NOTE: It must be done _after_ install the jsRoot dependencies
-RUN pip install -e .
+#RUN pip install -e .
 
 # Configure nginx
 # Make NGINX run on the foreground and remove default site config

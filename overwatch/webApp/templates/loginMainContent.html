@@ -16,6 +16,7 @@
         Password:<br>
         <input type="password" name="password"><br>
         <input type="hidden" value="{{ nextValue or '' }}" name="next">
+        <input type="hidden" name="csrf_token" value="{{ csrf_token() }}"/>
         <input value="Login" type="submit" />
     </form>
 {% endif %}
