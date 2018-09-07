@@ -23,10 +23,15 @@ project = 'ALICE Overwatch'
 copyright = '2015-2018, Raymond Ehlers, James Mulligan'
 author = 'Raymond Ehlers, James Mulligan'
 
+def getVersion():
+    versionModule = {}
+    with open(os.path.join("..", "overwatch", "version.py")) as f:
+        exec(f.read(), versionModule)
+    return versionModule["__version__"]
 # The short X.Y version
-version = '1.0'
+version = getVersion()
 # The full version, including alpha/beta/rc tags
-release = 'v1.0'
+release = getVersion()
 
 
 # -- General configuration ---------------------------------------------------
