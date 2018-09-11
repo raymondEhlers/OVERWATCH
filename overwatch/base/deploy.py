@@ -39,22 +39,33 @@ logger = logging.getLogger("")
 # Convenience
 import pprint
 
-# Utility function to handle expanding environmental variables from YAML
 def expandEnvironmentalVars(loader, node):
+    """ Expand the environment variables in a scalar (str) value while reading the YAML config.
+
+    This plugs into the YAML loader that is responsible for loading the deployment information from
+    the YAML configuration file.
+
+    Args:
+        loader (yaml.Loader): YAML loader which is parsing the configuration.
+        node (SequenceNode): Node containing the list of the paths to join together.
+    Returns:
+        str: The scalar value (str) with any recognized environment variables expanded. The expansion
+            is performed using ``os.path.expandvars``.
+    """
     val = loader.construct_scalar(node)
     # Need to strip "\n" due to it being inserted when variables are expanded
     val = os.path.expandvars(val).replace("\n", "")
     return str(val)
-
+# Add the plugin into the loader.
 yaml.SafeLoader.add_constructor('!expandVars', expandEnvironmentalVars)
 
 def checkForProcessPID(processIdentifier):
-    """ Check for a process by a process identifier string via pgrep.
+    """ Check for a process by a process identifier string via ``pgrep``.
 
     Args:
         processIdentifier(str): String passed to pgrep to identify the process.
     Returns:
-        list: PID(s) from pgrep
+        list: PID(s) from ``pgrep``.
     """
     try:
         res = subprocess.check_output(["pgrep", "-f", "{0}".format(processIdentifier)])
@@ -103,6 +114,25 @@ def killExistingProcess(pidList, processType, processIdentifier, sig = signal.SI
     return pidList
 
 def startProcessWithLog(args, name, logFilename, supervisord = False, shortExecutionTime = False):
+    """ Start (or otherwise setup) the process with the given arguments and log the output.
+
+    For a normal process, we configure it to log to the given filename and start it immediately. In the case that the
+    process should be launched with ``supervisord``, the process won't be launched immediately.  Instead, the process
+    and log information will be appended to the existing ``supervisord`` configuration.
+
+    Args:
+        args (list): List of arguments used to start the process.
+        name (str): Name of the process that we are starting. It doesn't need to be the executable name,
+            as it's just used for informational purposes.
+        logFilename (str): Filename for the log file.
+        supervisord (bool): True if the process launching should be configured for ``supervisord``.
+            This means that the process won't be started immediately.
+        shortExecutionTime (bool): True if the process will execute and completed quickly. In this case, we don't want
+            ``supervisord`` to restart the process immediately.
+    Returns:
+        subprocess.Popen or None: If the process is started immediately, then we return the ``Popen`` class associated
+            with the started process. Otherwise, we return None.
+    """
     if supervisord:
         process = """
 [program:{name}]
@@ -136,7 +166,7 @@ startsecs=0
     return process
 
 def tunnel(config, receiver, receiverConfig, supervisord):
-    """ Start tunnel """
+    """ Create ssh tunnel with ``autossh``. """
     processIdentifier = "autossh -L {0}".format(receiverConfig["localPort"])
     processPIDs = checkForProcessPID(processIdentifier)
 
