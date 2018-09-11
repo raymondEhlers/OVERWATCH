@@ -23,3 +23,11 @@ def generalHLTOptions(subsystem, hist, processingOptions):
 def findFunctionsForHLTHistogram(subsystem, hist):
     # General HLT Options
     hist.functionsToApply.append(generalHLTOptions)
+
+from ..trendingClasses import createIfNotExist
+
+def defineHLTTrendingObjects(trending, *args, **kwargs):
+    names = [['hist_test', "test", ["fHistSPDclusters_SPDrawSize"]],
+             ['TestHist', 'ttttt', ["fHistSSDclusters_SDDclusters"]]
+             ]
+    return createIfNotExist(trending, names)

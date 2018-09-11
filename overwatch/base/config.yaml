@@ -8,7 +8,7 @@ debug: false
 #: List of subsystems.
 #: Each subsystem listed here will have an individual page for their respective histograms.
 #: The HLT _MUST_ be included here!
-# By using set, we 
+# By using set, we
 subsystemList: &subsystemList
     - "EMC"
     - "TPC"
