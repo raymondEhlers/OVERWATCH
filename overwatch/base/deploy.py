@@ -154,12 +154,12 @@ startsecs=0
         process = process.format(name = logFilename,
                                  command = " ".join(args))
         # Write the particular config
-        with open("supervisord.conf", "ab") as f:
+        with open("supervisord.conf", "a") as f:
             f.write(process)
         # process is not meaningful here, so it won't be launched until the end
         process = None
     else:
-        with open("{0}.log".format(logFilename), "wb") as logFile:
+        with open("{0}.log".format(logFilename), "w") as logFile:
             logger.debug("Starting \"{0}\" with args: {1}".format(name, args))
             process = subprocess.Popen(args, stdout=logFile, stderr=subprocess.STDOUT)
 
@@ -191,7 +191,7 @@ def tunnel(config, receiver, receiverConfig, supervisord):
             "-H",
             config["address"],
         ]
-        with open(knownHostsPath, "wb") as logFile:
+        with open(knownHostsPath, "w") as logFile:
             logger.debug("Starting \"{0}\" with args: {1}".format("SSH Keyscan", args))
             # This should execute rapidly, so we don't need to check for the process ID.
             subprocess.Popen(args, stdout=logFile)
@@ -241,7 +241,7 @@ def writeSensitiveVariableToFile(config, name, prettyName, defaultWriteLocation)
     # Ensure that we don't overwrite an existing file!
     if os.path.exists(writeLocation):
         raise IOError("File at {0} already exists and will not be overwritten!".format(writeLocation))
-    with open(writeLocation, "wb") as f:
+    with open(writeLocation, "w") as f:
         f.write(sensitiveVariable)
 
     if name == "sshKey":
@@ -286,7 +286,7 @@ supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
 # Use a unix:// URL  for a unix socket
 serverurl = unix:///tmp/supervisor.sock
 """
-        with open(filename, "wb+") as f:
+        with open(filename, "w+") as f:
             f.write(mainConfig)
     else:
         logger.info("Supervisord config already exists - skipping creation.")
@@ -484,7 +484,7 @@ def database(config):
                )
 
     # Write config
-    with open("zeoGenerated.conf", "wb") as f:
+    with open("zeoGenerated.conf", "w") as f:
         f.write(zeoConfigFile)
 
     # Start zeo with the config file
@@ -519,9 +519,9 @@ def writeCustomConfig(config, filename = "config.yaml"):
     if "customConfig" in config:
         if os.path.exists(filename):
             # Append if it already exists
-            mode = "ab"
+            mode = "a"
         else:
-            mode = "wb"
+            mode = "w"
 
         # Write out configuration
         with open(filename, mode) as f:
@@ -685,7 +685,7 @@ def uwsgi(config, name):
 
     filename = "{0}.yaml".format(uwsgiName)
     logger.info("Writing configuration file to {0}".format(filename))
-    with open(filename, "wb") as f:
+    with open(filename, "w") as f:
         yaml.dump(uwsgiConfig, f, default_flow_style = False)
 
 def startNginx(name = "nginx", logFilename = "nginx", supervisord = False):
@@ -720,7 +720,7 @@ server {
             if not os.path.exists(path):
                 os.makedirs(path)
 
-    with open(os.path.join(nginxSitesPath, "{0}Nginx.conf".format(name)), "wb") as f:
+    with open(os.path.join(nginxSitesPath, "{0}Nginx.conf".format(name)), "w") as f:
         f.write(mainNginxConfig)
 
     gzipConfig = """
@@ -752,7 +752,7 @@ gzip_types
     image/x-icon;
 """
 
-    with open(os.path.join(nginxConfigPath, "gzip.conf"), "wb") as f:
+    with open(os.path.join(nginxConfigPath, "gzip.conf"), "w") as f:
         f.write(gzipConfig)
 
 def webAppSetup(config):
@@ -776,7 +776,7 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
     else:
         # From file
         logger.info("Loading configuration from file \"{}\"".format(configFilename))
-        with open(configFilename, "rb") as f:
+        with open(configFilename, "r") as f:
             config = yaml.load(f, Loader=yaml.SafeLoader)
 
     # Setup
