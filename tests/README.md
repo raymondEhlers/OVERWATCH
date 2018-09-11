@@ -14,3 +14,6 @@ $ pytest -l --cov=overwatch --cov-report html . --durations=5
 This assumes you are running from the `tests` folder (as suggested above) and will be report on which tests
 are the slowest as well as provide a coverage report for (in this case) the entire `overwatch` module. This
 can be adapted as desired.
+
+You can skip slow tests (those related to intentionally failing copy tests) with the additional argument `-m
+"not slow"`.
