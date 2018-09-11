@@ -248,7 +248,7 @@ def processTrending(outputFormatting, trending, processingOptions = None):
     logger.debug("trending.trendingObjects: {}".format(trending.trendingObjects["TPC"]))
     for subsystemName, subsystem in iteritems(trending.trendingObjects):
         logger.debug("{}: subsystem from trending: {}".format(subsystemName, subsystem))
-        for name, trendingObject in iteritems(subsystem):
+        for trendingObject in itervalues(subsystem):
             hist = trendingObject.hist
             hist.retrieveHistogram(trending = trending, ROOT = ROOT)
             logger.debug("trendingObject: {}, hist: {}, hist.histName: {}, hist.hist: {}".format(trendingObject, hist, hist.histName, hist.hist))
@@ -590,9 +590,9 @@ def processTimeSlices(runs, runDir, minTimeRequested, maxTimeRequested, subsyste
     # Merge the files that are included in the time slice.
     # Return if there were errors in merging
     try:
-        errors = mergeFiles.merge(processingParameters["dirPrefix"], run, subsystem,
-                                  cumulativeMode = processingParameters["cumulativeMode"],
-                                  timeSlice = timeSlice)
+        mergeFiles.merge(processingParameters["dirPrefix"], run, subsystem,
+                         cumulativeMode = processingParameters["cumulativeMode"],
+                         timeSlice = timeSlice)
     except ValueError as e:
         # Return the merge error to the user.
         # We want to return a list, so we just return all of the args.
@@ -867,7 +867,7 @@ def processAllRuns():
 
                 logger.info("Creating subsystem {subsystem} in {runDir}".format(subsystem = subsystem, runDir = runDir))
                 # Retrieve the files for a given subsystem directory.
-                [filenamesDict, runLength] = utilities.createFileDictionary(processingParameters["dirPrefix"], runDir, fileLocationSubsystem)
+                [filenamesDict, _] = utilities.createFileDictionary(processingParameters["dirPrefix"], runDir, fileLocationSubsystem)
                 # We want them to be ordered by time stamp.
                 sortedKeys = sorted(filenamesDict.keys())
                 # Extract information necessary for creating the subsystem.
