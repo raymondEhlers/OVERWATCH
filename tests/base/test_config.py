@@ -96,7 +96,7 @@ def testReadConfig(loggingMixin, configType, configTypeString):
         configTypeForReadingConfig = configType.name
     (parameters, filesRead) = config.readConfig(configTypeForReadingConfig)
 
-    filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), "testFiles", "{}ConfigRef.txt".format(configType.name))
+    filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), "configTestFiles", "{}ConfigRef.yaml".format(configType.name))
 
     # We need to treat whether the file exists with a bit of care.
     # NOTE: Since the parametization causes this to run mulitple times, some will pass and
