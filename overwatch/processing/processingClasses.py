@@ -418,7 +418,7 @@ class histogramContainer(persistent.Persistent):
         """
         returnValue = True
         if fIn:
-            if not self.histList is None:
+            if self.histList is not None:
                 if len(self.histList) > 1:
                     self.hist = ROOT.THStack(self.histName, self.histName)
                     for name in self.histList:
@@ -437,7 +437,7 @@ class histogramContainer(persistent.Persistent):
                     else:
                         returnValue = False
                 else:
-                    logger.warning("histList for hist {} is defined, but is empty".format(next(iter(self.histList))))
+                    logger.warning("histList for hist ? is defined, but is empty")
                     returnValue = False
             else:
                 logger.debug("HistName: {0}".format(self.histName))

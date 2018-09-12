@@ -10,7 +10,6 @@ from __future__ import print_function
 import os
 import sys
 import logging
-
 # Setup logger
 logger = logging.getLogger(__name__)
 
@@ -19,15 +18,13 @@ import importlib
 import inspect
 
 # Configuration
-# from config.processingParams import processingParameters
+#from config.processingParams import processingParameters
 from ..base import config
-
 (processingParameters, filesRead) = config.readConfig(config.configurationType.processing)
 
 # Get the current module
 # Used to load functions from other moudles and then look them up.
 currentModule = sys.modules[__name__]
-
 
 ###################################################
 def createHistGroups(subsystem):
@@ -52,7 +49,6 @@ def createHistGroups(subsystem):
     logger.info("Could not find histogram group creation function for subsystem {0}".format(subsystem.subsystem))
     return False
 
-
 ###################################################
 def createAdditionalHistograms(subsystem):
     """ Properly routes additional histogram creation functions for each subsystem
@@ -68,9 +64,7 @@ def createAdditionalHistograms(subsystem):
         logger.info("Found additional histogram creation function for subsystem {}".format(subsystem.subsystem))
         histogramCreationFunction(subsystem)
     else:
-        logger.info(
-            "Could not find additional histogram creation function for subsystem {}.".format(subsystem.subsystem))
-
+        logger.info("Could not find additional histogram creation function for subsystem {}.".format(subsystem.subsystem))
 
 ###################################################
 def createHistogramStacks(subsystem):
@@ -92,7 +86,6 @@ def createHistogramStacks(subsystem):
         for k in subsystem.histsInFile.keys():
             subsystem.histsAvailable[k] = subsystem.histsInFile[k]
 
-
 ###################################################
 def setHistogramOptions(subsystem):
     """ Properly routes histogram options function for each subsystem
@@ -108,7 +101,6 @@ def setHistogramOptions(subsystem):
         histogramOptionsFunction(subsystem)
     else:
         logger.info("Could not find histogram options function for subsystem {0}.".format(subsystem.subsystem))
-
 
 ###################################################
 def findFunctionsForHist(subsystem, hist):
@@ -126,7 +118,6 @@ def findFunctionsForHist(subsystem, hist):
         findFunction(subsystem, hist)
     else:
         logger.info("Could not find histogram function for subsystem {0}".format(subsystem.subsystem))
-
 
 ###################################################
 def defineTrendingObjects(subsystem):
@@ -146,11 +137,10 @@ def defineTrendingObjects(subsystem):
 
     return trending
 
-
 ###################################################
 # Load detector functions from other modules
 ###################################################
-# print dir(currentModule)
+#print dir(currentModule)
 # For more details on how this is possible, see: https://stackoverflow.com/a/3664396
 logger.info("\nLoading modules for detectors:")
 
@@ -163,13 +153,13 @@ for subsystem in subsystems:
 
     # Ensure that the module exists before trying to load it
     if os.path.exists(os.path.join(os.path.dirname(__file__), "detectors", "{0}.py".format(subsystem))):
-        # print("file exists, qa __name__: {0}".format(__name__))
+        #print("file exists, qa __name__: {0}".format(__name__))
         # Import module dynamically
         # Using absolute import
-        # subsystemModule = importlib.import_module("%s.%s.%s.%s" % ("overwatch", "processing", "detectors", subsystem))
+        #subsystemModule = importlib.import_module("%s.%s.%s.%s" % ("overwatch", "processing", "detectors", subsystem))
         # Using relative import
-        subsystemModule = importlib.import_module(".detectors.{0}".format(subsystem), package="overwatch.processing")
-        # logger.info(dir(subsystemModule))
+        subsystemModule = importlib.import_module(".detectors.{0}".format(subsystem), package = "overwatch.processing")
+        #logger.info(dir(subsystemModule))
 
         # Loop over all functions from the dynamically loaded module
         # See: https://stackoverflow.com/a/4040709

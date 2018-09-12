@@ -174,7 +174,7 @@ class FilesAccess(flask_restful.Resource):
             #payloadFile.save(outputPath)
 
             with openFile(outputPath, "w+") as f:
-                f.write(payloadFile.read())
+                f.write(payloadFile.read().encode())
 
             savedFile = True
         else:

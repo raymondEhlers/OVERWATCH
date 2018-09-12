@@ -24,6 +24,7 @@ def findFunctionsForHLTHistogram(subsystem, hist):
     # General HLT Options
     hist.functionsToApply.append(generalHLTOptions)
 
+
 from ..trendingClasses import createIfNotExist
 
 def defineHLTTrendingObjects(trending, *args, **kwargs):

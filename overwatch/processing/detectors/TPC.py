@@ -93,11 +93,11 @@ def createAdditionalTPCHistograms(subsystem):
     #if hist.histName in (inputHistName for _, inputHistName in names):
     for histName, inputHistName in names:
         # Look for the hist name in our list above
-        if hist.histName in inputHistName:
+        if histName in inputHistName:
             # Assign the projection functions (and label for convenience)
             for label, projFunction in ("aSide", aSideProjectToXZ, "cSide", cSideProjectToXZ):
                 # For example, "hist1_aSide"
-                histName = "{histName}_{label}",format(histName = histName, label = label)
+                histName = "{histName}_{label}".format(histName = histName, label = label)
                 histCont = processingClasses.histogramContainer(histName = histName, histList = [inputHistName])
                 histCont.projectionFunctionsToApply.append(projFunction)
                 subsystem.histsAvailable[histName] = histCont

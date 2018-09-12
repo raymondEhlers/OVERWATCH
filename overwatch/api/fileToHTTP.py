@@ -2,12 +2,11 @@
 
 import requests
 import json
-import io as StringIO
+from io import StringIO
 import os
 import contextlib
 import tempfile
 
-import rootpy
 import rootpy.io
 import rootpy.ROOT as ROOT
 
@@ -54,8 +53,8 @@ def putFile(filename, file = None, localFilename = None):
 
 @contextlib.contextmanager
 def FileInMemory(filename, writeFile = False):
+    fileInMemory = StringIO()
     try:
-        fileInMemory = StringIO.StringIO()
         yield getFile(filename = filename, fileObject = fileInMemory)
         print("Successfully completed FileInMemory")
     except IOError as e:
@@ -69,8 +68,7 @@ def FileInMemory(filename, writeFile = False):
             (success, status, returnValue) = putFile(filename = filename, file = fileInMemory)
             print("Successfully wrote file")
     finally:
-        if fileInMemory:
-            fileInMemory.close()
+        fileInMemory.close()
         print("Finally exiting from FileInMemory")
 
 # See: https://stackoverflow.com/a/28401296
