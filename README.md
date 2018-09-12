@@ -1,6 +1,8 @@
-<img src="doc/logo/overwatchLogo.v1.png" width="75%" />
+<img src="https://cdn.rawgit.com/raymondEhlers/overwatch/37bc6f47/doc/logo/overwatchLogo.v1.png" width="75%" />
 
 # ALICE Overwatch
+
+[![DOI](https://zenodo.org/badge/50686415.svg)](https://zenodo.org/badge/latestdoi/50686415)
 
 Welcome to ALICE Overwatch[\*](#name-meaning), a project to provide real-time online data monitoring and
 quality assurance using timestamped data from the ALICE High Level Trigger (HLT) and Data Quality Monitoring (DQM).
@@ -13,7 +15,7 @@ Along with a variety of dependencies which can be handled by pip, ROOT is requir
 
 ### Local development
 
-To setup for local development is also straightforward.
+To setup for local development is fairly straightforward.
 
 ```bash
 $ git clone https://github.com/raymondEhlers/OVERWATCH.git overwatch
@@ -22,19 +24,36 @@ $ cd overwatch
 $ pip install -r requirements.txt
 # Install webApp static data (Google Polymer and jsRoot)
 $ cd overwatch/webApp/static && bower install && git clone https://github.com/root-project/jsroot.git jsRoot && cd -
-# Install for local development.
+# Install for local development
 $ pip install -e .
 ```
 
 ### Docker Image
 
-A docker image is available on Docker Hub under the name `rehlers/overwatch`. Be certain to mount a directory
-containing data into the image so it can be used! Note that you will likely want to use this image interactively (-it)
-and may want to remove the container when you are done (--rm). If the data is in a folder called `data`, it should look something like:
+As an alternative for advanced users or deployments, a docker image is available on Docker Hub under the name
+`rehlers/overwatch`. Be certain to mount a directory containing data into the image so it can be used! Note
+that you will likely want to use this image interactively (-it) and may want to remove the container when you
+are done (--rm). If the data is in a folder called `data`, it should look something like:
 
 ```bash
 $ docker run -it --rm -v data:/overwatch/data rehlers/overwatch /bin/bash
 ```
+
+### Installation only for running Overwatch
+
+For just running Overwatch (ie. performing no development at all), it is also available on
+[PyPI](https://pypi.org/project/aliceOverwatch/) to install via pip.
+
+```bash
+# Required as a prerequisite since it is not available on PyPI.
+$ pip install git+https://github.com/SpotlightKid/flask-zodb.git
+# Install the final package
+$ pip install aliceOverwatch
+```
+
+Note that the Overwatch package on PyPI includes all of `JSRoot` and Polymer components so that it can run out
+of the box! While this is useful, it is important to remember that these dependencies must also be kept up to
+date.
 
 ## Using Overwatch
 
@@ -75,8 +94,6 @@ For the webApp, add something similar to the following to your `config.yaml`:
 ```yaml
 # Define users for local usage
 _users: !bcrypt
-    bcryptLogRounds: *bcryptLogRounds
-    # You can change these values as desired
     # The key, (below is "username") is the the name of your user, while the value, (below is "password") is your password
     username: "password"
 # Continue to keep debug: true . It often helps with ZODB difficulties.
@@ -100,10 +117,11 @@ configuration file.
     - [Data Receivers](#overwatch-receivers)
 2. [Overwatch Configuration](#overwatch-configuration)
 3. [Overwatch Deployment](#overwatch-deployment)
+4. [Citation](#citation)
 
 # Overwatch Architecture
 
-![](doc/images/overwatchArch.png)
+![](https://cdn.rawgit.com/raymondEhlers/overwatch/37bc6f47/doc/images/overwatchArch.png)
 
 The Overwatch architecture is as shown above. Incoming data is handled by the receivers, which then make that data
 available to be processed by the processing module. The output of the processing is then visualized via the WebApp.
@@ -142,12 +160,12 @@ Each detector (also known as a subsystem) is given the opportunity to plug into 
 
 ## Overwatch WebApp
 
-![An Overwatch run page](doc/images/overwatch.upgrade.runPage.png)
+![An Overwatch run page](https://cdn.rawgit.com/raymondEhlers/overwatch/37bc6f47/doc/images/overwatch.upgrade.runPage.png)
 
 The web app visualizes the information provided by the processing. The WebApp is based on flask and serves
 the various forms of visualization, as well as providing an interface to request on-demand processing of the
 data with customized parameters. Note that this causes a direct dependence on the processing module. The main
-mode of visualization is via json files displayed using JSRoot, which provides interactivity with the data.
+mode of visualization is via json files displayed using `JSRoot`, which provides interactivity with the data.
 
 ## Overwatch Data Receivers
 
@@ -230,6 +248,22 @@ The image can then be run with something like (using an external configuration f
 
 ```bash
 $ docker run -d -v data:/overwatch/data -e config="$(config.yaml)" rehlers/overwatch
+```
+
+# Citation
+
+Please cite Overwatch as:
+
+```
+@misc{raymond_ehlers_2018_1309376,
+  author       = {Raymond Ehlers and
+                  James Mulligan},
+  title        = {ALICE Overwatch v1.0},
+  month        = jul,
+  year         = 2018,
+  doi          = {10.5281/zenodo.1309376},
+  url          = {https://doi.org/10.5281/zenodo.1309376}
+}
 ```
 
 ## Name Meaning

@@ -18,6 +18,7 @@ import signal
 import jinja2
 import json
 import collections 
+import pkg_resources
 # For server status
 import requests
 # Python logging system
@@ -79,7 +80,7 @@ if serverParameters["debug"] == True:
     app.debug = True
 
 # Setup Bcrypt
-app.config["BCRYPT_LOG_ROUNDS"] = serverParameters["bcryptLogRounds"]
+app.config["BCRYPT_LOG_ROUNDS"] = config.bcryptLogRounds
 bcrypt = Bcrypt(app)
 
 # Setup flask assets
@@ -107,7 +108,7 @@ Some notes on webassets:
 >>> print(assets["polymerBundle"].urls())
 """
 # Load bunldes from configuration file
-assets.from_yaml(os.path.join(os.path.dirname(__file__), "flaskAssets.yaml"))
+assets.from_yaml(pkg_resources.resource_filename("overwatch.webApp", "flaskAssets.yaml"))
 
 # Setup login manager
 loginManager = LoginManager()

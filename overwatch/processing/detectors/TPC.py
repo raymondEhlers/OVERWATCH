@@ -14,6 +14,7 @@ import logging
 # Setup logger
 logger = logging.getLogger(__name__)
 
+# Used for sorting and generating html
 from .. import processingClasses
 
 from ..trendingClasses import TrendingObjectMean, createIfNotExist
@@ -53,13 +54,13 @@ def findFunctionsForTPCHistogram(subsystem, hist):
     #if hist.histName in names:
     #    hist.functionsToApply.append(restrictRangeAndProjectTo1D)
 
-    names = ["TPCQA/h_tpc_track_pos_recvertex_3_5_6",
-             "TPCQA/h_tpc_track_neg_recvertex_3_5_6",
-             "TPCQA/h_tpc_track_pos_recvertex_4_5_6",
-             "TPCQA/h_tpc_track_neg_recvertex_4_5_6"]
-    if hist.histName in names:
-        hist.functionsToApply.append(aSideProjectToXZ)
-        hist.functionsToApply.append(cSideProjectToXZ)
+    #names = ["TPCQA/h_tpc_track_pos_recvertex_3_5_6",
+    #         "TPCQA/h_tpc_track_neg_recvertex_3_5_6",
+    #         "TPCQA/h_tpc_track_pos_recvertex_4_5_6",
+    #         "TPCQA/h_tpc_track_neg_recvertex_4_5_6"]
+    #if hist.histName in names:
+    #    hist.functionsToApply.append(aSideProjectToXZ)
+    #    hist.functionsToApply.append(cSideProjectToXZ)
 
 def createTPCHistogramGroups(subsystem):
     # Sort the filenames of the histograms into catagories for better presentation
@@ -83,6 +84,24 @@ def createTPCHistogramGroups(subsystem):
         subsystem.histGroups.append(processingClasses.histogramGroupContainer("Non TPC", ""))
 
 def createAdditionalTPCHistograms(subsystem):
+    # Of the form ("Histogram name", "input histogram name")
+    names = [("hist1", "TPCQA/h_tpc_track_pos_recvertex_3_5_6"),
+             ("hist2", "TPCQA/h_tpc_track_neg_recvertex_3_5_6"),
+             ("hist3", "TPCQA/h_tpc_track_pos_recvertex_4_5_6"),
+             ("hist4", "TPCQA/h_tpc_track_neg_recvertex_4_5_6")]
+
+    #if hist.histName in (inputHistName for _, inputHistName in names):
+    for histName, inputHistName in names:
+        # Look for the hist name in our list above
+        if hist.histName in inputHistName:
+            # Assign the projection functions (and label for convenience)
+            for label, projFunction in ("aSide", aSideProjectToXZ, "cSide", cSideProjectToXZ):
+                # For example, "hist1_aSide"
+                histName = "{histName}_{label}",format(histName = histName, label = label)
+                histCont = processingClasses.histogramContainer(histName = histName, histList = [inputHistName])
+                histCont.projectionFunctionsToApply.append(projFunction)
+                subsystem.histsAvailable[histName] = histCont
+
     # DCA vs Phi
     # NOTE: This is just an example and may not be the right histogram!
     histCont = processingClasses.histogramContainer("dcaVsPhi", ["TPCQA/h_tpc_track_all_recvertex_4_5_7"])
@@ -111,17 +130,13 @@ def cSideProjectToXZ(subsystem, hist, processingOptions):
     return projectToXZ(subsystem, hist, processingOptions, aSide = False)
 
 def projectToXZ(subsystem, hist, processingOptions, aSide):
-    if aSide:
-        hist.hist.GetYaxis().SetRangeUser(0, 1)
+    if aSide == True:
+        hist.hist.GetYaxis().SetRangeUser(15, 29)
     else:
-        hist.hist.GetYaxis().SetRangeUser(-1, 0)
-
-    # TODO: Reset range after projection (if needed)!!
+        hist.hist.GetYaxis().SetRangeUser(0, 14)
 
     # Project to xz
     tempHist = hist.hist.Project3D("xz")
     tempHist.SetName("{0}_xz".format(hist.hist.GetName()))
 
-    # TODO: Create histogram container and save the projected hist
-    #       Include axis labels, etc
-
+    return temphist
