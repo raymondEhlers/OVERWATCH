@@ -44,26 +44,20 @@ def testDetermineFilesToMove(loggingMixin, dataHandlingSetup):
 
     assert filenames == ["accepted.root"]
 
-def testCopyFilesToEOS(loggingMixin, dataHandlingSetup):
-    """ Test the driver function for copying files to EOS.
+def checkTransferredFiles(source, destination, filenames):
+    """ Helper function to check that files were successfully transferred based on their file contents.
 
-    For simpliciy, we simply copy the files locally.
+    Args:
+        source (str): Path to the source directory where the files are stored locally.
+        destination (str): Path to the destination directory where the file are copied.
+        filenames (list): Files that were copied and should be checked.
+    Returns:
+        None. Assertions are made in this function.
     """
-    directory, destination = dataHandlingSetup
-    filenames = dataHandling.determineFilesToMove(directory = directory)
-    failedFilenames = dataHandling.copyFilesToEOS(directory = directory,
-                                                  eosDirectory = destination,
-                                                  filenames = filenames)
-
-    # Nothing should have failed here.
-    assert failedFilenames == []
-
-    # Check the copied file(s).
-    # We currently have just one.
     for filename in filenames:
         sourceFileContents = ""
         destinationFileContents = ""
-        with open(os.path.join(directory, filename), "r") as f:
+        with open(os.path.join(source, filename), "r") as f:
             sourceFileContents = f.read()
         with open(os.path.join(destination, filename), "r") as f:
             destinationFileContents = f.read()
@@ -72,18 +66,92 @@ def testCopyFilesToEOS(loggingMixin, dataHandlingSetup):
         assert sourceFileContents != "" and destinationFileContents != ""
         assert sourceFileContents == destinationFileContents
 
+@pytest.mark.parametrize("func", [
+        dataHandling.copyFilesToOverwatchSites,
+        dataHandling.copyFilesToEOS,
+    ], ids = ["Overwatch sites", "EOS"])
+def testCopyFilesToOverwatchSites(loggingMixin, dataHandlingSetup, func):
+    """ Test for copying files.
+
+    For simplicity in testing, we simply copy the files locally.
+    """
+    directory, destination = dataHandlingSetup
+    filenames = dataHandling.determineFilesToMove(directory = directory)
+    # Remove existing files in the destination to ensure that rsync copies properly.
+    # Otherwise, it will not copy any files, which will appear to fail, but only because
+    # the destination file already exists.
+    for f in filenames:
+        filename = os.path.join(destination, f)
+        if os.path.exists(filename):
+            os.remove(os.path.join(destination, f))
+    # Move files using rsync.
+    failedFilenames = func(directory = directory,
+                           destination = destination,
+                           filenames = filenames)
+
+    # Nothing should have failed here.
+    assert failedFilenames == []
+
+    # Check the copied file(s).
+    # We currently have just one.
+    checkTransferredFiles(source = directory,
+                          destination = destination,
+                          filenames = filenames)
+
+#@pytest.mark.slow
+#def testCopyFilesToOverwatchSitesFailure(loggingMixin, dataHandlingSetup):
+#    """ Test failure of copying by providing an invalid destination.
+#
+#    This test is slow because it has to try the copy (but will eventually fail).
+#    """
+#    directory, destination = dataHandlingSetup
+#    filenames = dataHandling.determineFilesToMove(directory = directory)
+#    # We cannot just set an invalid destination because rsync will create that directory.
+#    filenames = [os.path.join("invalid") for f in filenames]
+#    failedFilenames = dataHandling.copyFilesToOverwatchSites(directory = directory,
+#                                                             destination = destination,
+#                                                             filenames = filenames)
+#
+#    # All of the files should have failed.
+#    assert failedFilenames == filenames
+
+#def testCopyFilesToEOS(loggingMixin, dataHandlingSetup):
+#    """ Test the driver function for copying files to EOS.
+#
+#    For simplicity, we simply copy the files locally.
+#    """
+#    directory, destination = dataHandlingSetup
+#    filenames = dataHandling.determineFilesToMove(directory = directory)
+#    failedFilenames = dataHandling.copyFilesToEOS(directory = directory,
+#                                                  destination = destination,
+#                                                  filenames = filenames)
+#
+#    # Nothing should have failed here.
+#    assert failedFilenames == []
+#
+#    # Check the copied file(s).
+#    # We currently have just one.
+#    checkTransferredFiles(source = directory,
+#                          destination = destination,
+#                          filenames = filenames)
+
 @pytest.mark.slow
-def testCopyFilesToEOSFailure(loggingMixin, dataHandlingSetup):
-    """ Test failure of copying by providing an invalid destination. 
+@pytest.mark.parametrize("func", [
+        dataHandling.copyFilesToOverwatchSites,
+        dataHandling.copyFilesToEOS,
+    ], ids = ["Overwatch sites", "EOS"])
+def testCopyFilesFailure(loggingMixin, dataHandlingSetup, func):
+    """ Test failure of copying by providing invalid input files.
 
     This test is slow because it has to try the copy (but will eventually fail).
     """
-
     directory, destination = dataHandlingSetup
     filenames = dataHandling.determineFilesToMove(directory = directory)
-    failedFilenames = dataHandling.copyFilesToEOS(directory = directory,
-                                                  eosDirectory = "invalid",
-                                                  filenames = filenames)
+    # We cannot just set an invalid destination because rsync will create that directory.
+    filenames = [os.path.join("invalid") for f in filenames]
+    failedFilenames = func(directory = directory,
+                           destination = destination,
+                           filenames = filenames)
 
     # All of the files should have failed.
     assert failedFilenames == filenames
