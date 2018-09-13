@@ -66,11 +66,11 @@ def checkTransferredFiles(source, destination, filenames):
         assert sourceFileContents != "" and destinationFileContents != ""
         assert sourceFileContents == destinationFileContents
 
-@pytest.mark.parametrize("func", [
+@pytest.mark.parametrize("transferFunction", [
         dataHandling.copyFilesToOverwatchSites,
         dataHandling.copyFilesToEOS,
     ], ids = ["Overwatch sites", "EOS"])
-def testCopyFilesToOverwatchSites(loggingMixin, dataHandlingSetup, func):
+def testCopyFilesToOverwatchSites(loggingMixin, dataHandlingSetup, transferFunction):
     """ Test for copying files.
 
     For simplicity in testing, we simply copy the files locally.
@@ -85,9 +85,9 @@ def testCopyFilesToOverwatchSites(loggingMixin, dataHandlingSetup, func):
         if os.path.exists(filename):
             os.remove(os.path.join(destination, f))
     # Move files using rsync.
-    failedFilenames = func(directory = directory,
-                           destination = destination,
-                           filenames = filenames)
+    failedFilenames = transferFunction(directory = directory,
+                                       destination = destination,
+                                       filenames = filenames)
 
     # Nothing should have failed here.
     assert failedFilenames == []
@@ -98,49 +98,12 @@ def testCopyFilesToOverwatchSites(loggingMixin, dataHandlingSetup, func):
                           destination = destination,
                           filenames = filenames)
 
-#@pytest.mark.slow
-#def testCopyFilesToOverwatchSitesFailure(loggingMixin, dataHandlingSetup):
-#    """ Test failure of copying by providing an invalid destination.
-#
-#    This test is slow because it has to try the copy (but will eventually fail).
-#    """
-#    directory, destination = dataHandlingSetup
-#    filenames = dataHandling.determineFilesToMove(directory = directory)
-#    # We cannot just set an invalid destination because rsync will create that directory.
-#    filenames = [os.path.join("invalid") for f in filenames]
-#    failedFilenames = dataHandling.copyFilesToOverwatchSites(directory = directory,
-#                                                             destination = destination,
-#                                                             filenames = filenames)
-#
-#    # All of the files should have failed.
-#    assert failedFilenames == filenames
-
-#def testCopyFilesToEOS(loggingMixin, dataHandlingSetup):
-#    """ Test the driver function for copying files to EOS.
-#
-#    For simplicity, we simply copy the files locally.
-#    """
-#    directory, destination = dataHandlingSetup
-#    filenames = dataHandling.determineFilesToMove(directory = directory)
-#    failedFilenames = dataHandling.copyFilesToEOS(directory = directory,
-#                                                  destination = destination,
-#                                                  filenames = filenames)
-#
-#    # Nothing should have failed here.
-#    assert failedFilenames == []
-#
-#    # Check the copied file(s).
-#    # We currently have just one.
-#    checkTransferredFiles(source = directory,
-#                          destination = destination,
-#                          filenames = filenames)
-
 @pytest.mark.slow
-@pytest.mark.parametrize("func", [
+@pytest.mark.parametrize("transferFunction", [
         dataHandling.copyFilesToOverwatchSites,
         dataHandling.copyFilesToEOS,
     ], ids = ["Overwatch sites", "EOS"])
-def testCopyFilesFailure(loggingMixin, dataHandlingSetup, func):
+def testCopyFilesFailure(loggingMixin, dataHandlingSetup, transferFunction):
     """ Test failure of copying by providing invalid input files.
 
     This test is slow because it has to try the copy (but will eventually fail).
@@ -149,7 +112,7 @@ def testCopyFilesFailure(loggingMixin, dataHandlingSetup, func):
     filenames = dataHandling.determineFilesToMove(directory = directory)
     # We cannot just set an invalid destination because rsync will create that directory.
     filenames = [os.path.join("invalid") for f in filenames]
-    failedFilenames = func(directory = directory,
+    failedFilenames = transferFunction(directory = directory,
                            destination = destination,
                            filenames = filenames)
 
