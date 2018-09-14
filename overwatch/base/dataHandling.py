@@ -15,6 +15,7 @@ we use solves our problem just as well, but is also much easier to write and mai
 # Python 2/3 support
 from __future__ import print_function
 from future.utils import iteritems
+from future.utils import itervalues
 
 # General
 import os
@@ -47,7 +48,8 @@ def retry(tries, delay = 3, backoff = 2):
 
         t = delay * backoff^(nTry)
 
-    where :math:`nTry` is the trial that we are on.
+    where :math:`nTry` is the trial that we are on. Note that 2 retries corresponds to three function
+    calls - the original call, and then up to two retries if the calls fail.
 
     Original decorator from the `Python wiki <https://wiki.python.org/moin/PythonDecoratorLibrary#Retry>`__,
     and using some additional improvements `here <https://www.saltycrane.com/blog/2009/11/trying-out-retry-decorator-python/>`__,
@@ -55,8 +57,8 @@ def retry(tries, delay = 3, backoff = 2):
 
     Args:
         tries (int): Number of times to retry.
-        delay (int): Delay in seconds for the initial retry. Default: 3.
-        backoff (int): Amount to multiply the delay by between each retry. See the formula above.
+        delay (float): Delay in seconds for the initial retry. Default: 3.
+        backoff (float): Amount to multiply the delay by between each retry. See the formula above.
     Returns:
         bool: True if the function succeeded.
     """
@@ -116,7 +118,7 @@ def determineFilesToMove(directory):
     """
     return [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f)) and ".root" in f]
 
-@retry(tries = 3)
+@retry(tries = parameters["dataTransferRetries"])
 def rsyncFilesFromFilelist(directory, destination, filelistFilename, transferredFilenames):
     """ Transfer files via rsync based on a list of filenames in a given file.
 
@@ -138,7 +140,7 @@ def rsyncFilesFromFilelist(directory, destination, filelistFilename, transferred
     # Check destination value. If we are testing, it doesn't need to have the ":", but for normal operation,
     # it usually will.
     if ":" not in destination:
-        logger.warning("Expected, but did not find, \":\" in the remote path.")
+        logger.warning("Expected, but did not find, \":\" in the destination path \"{destination}\".".format(destination = destination))
 
     # Needed so that rsync will transfer to that directory!
     if not destination.endswith("/"):
@@ -165,7 +167,7 @@ def rsyncFilesFromFilelist(directory, destination, filelistFilename, transferred
     logger.debug("Args: {rsync}".format(rsync = rsync))
     try:
         result = subprocess.check_output(args = rsync, universal_newlines = True)
-    except subprocess.CalledProcessError as e:
+    except subprocess.CalledProcessError:
         # The call failed for some reason. We want to handle it.
         logger.debug("rsync call failed!")
         return False
@@ -198,6 +200,7 @@ def copyFilesToOverwatchSites(directory, destination, filenames):
         list: Filenames for all of the files which **failed**.
     """
     # TODO: Determine receiver last modified times.
+    # TODO: Notify the Overwatch sites about the new files
 
     # First write the filenames out to a temp file so we can pass them to rsync.
     with tempfile.NamedTemporaryFile() as f:
@@ -220,11 +223,11 @@ def copyFilesToOverwatchSites(directory, destination, filenames):
         failedFilenames = list(set(filenames) - set(transferredFilenames))
         return [] if success else failedFilenames
 
-@retry(tries = 3)
+@retry(tries = parameters["dataTransferRetries"])
 def copyFileToEOSWithRoot(directory, destination, filename):
     """ Copy a given file to EOS using ROOT capabilities.
 
-    We include the possibility to show the ROOT cp progress bar if we are in debug mode.
+    We include the possibility to show the ROOT ``cp`` progress bar if we are in debug mode.
 
     Args:
         directory (str): Path to the directory where the files are stored locally.
@@ -274,6 +277,8 @@ def copyFilesToEOS(directory, destination, filenames):
 def processReceivedFiles():
     """ Main driver function for receiver file processing and moving.
 
+    This function relies on the values of "receiverData", "receiverDataTempStorage", "dataTransferLocations".
+
     Note:
         Configuration is controlled via the Overwatch YAML configuration system. In particular,
         the options relevant here are defined in the base module.
@@ -281,69 +286,77 @@ def processReceivedFiles():
     Args:
         None.
     Returns:
-        None.
+        tuple: (successfullyTransferred, failedFilenames) where successfullyTransferred (list) is the
+            filenames of the files which were successfully transferred, and failedFilenames (dict) is the
+            filenames which failed to be transferred, with the keys as the site names and the values as the
+            filenames.
     """
     # These are just raw filenames.
-    filenames = determineFilesToMove(directory = parameters["receiverData"])
+    filenamesToTransfer = determineFilesToMove(directory = parameters["receiverData"])
 
-    if not filenames:
+    if not filenamesToTransfer:
         logger.info("No new files found. Returning.")
         return
 
-    # Copy files via rsync
-    # TODO: Fill in parameters
-    rsyncFailedFilenames = copyFilesToOverwatchSites(directory = directory,
-                                                     destination = parameters[""],
-                                                     filenames = filenames)
+    failedFilenames = {}
+    for siteName, destination in iteritems(parameters["dataTransferLocations"]):
+        transferFunc = copyFilesToOverwatchSites
+        if "EOS" in siteName:
+            transferFunc = copyFilesToEOS
+        # Perform the actual transfer for each configured location.
+        # We need to keep track of which files failed to transfer to which sites.
+        failedFilenames[siteName] = transferFunc(directory = parameters["receiverData"],
+                                                 destination = destination,
+                                                 filenames = filenamesToTransfer)
 
-    # TODO: Notify the Overwatch sites about the new files
+    # Handle filenames which haven't been deleted.
+    # We only need to do this if there are some which failed.
+    # We also keep track of which failed for logging.
+    totalFailedFilenames = set()
+    if any(itervalues(failedFilenames)):
+        # Copy to a safe temporary location for storage until they can be dealt with.
+        # We make a copy and store them separately because the same file could have failed for multiple
+        # transfers. However, we shouldn't lose much in storage because these aren't intended to stay a
+        # long time.
+        for siteName, filenames in iteritems(failedFilenames):
+            totalFailedFilenames.update(filenames)
+            # Create the storage location if necessary and copy the files to it.
+            storagePath = os.path.join(parameters["receiverDataTempStorage"], siteName)
+            if not os.path.exists(storagePath):
+                os.makedirs(storagePath)
 
-    # Copy files to EOS
-    eosFailedFilenames = copyFilesToEOS(directory = parameters["receiverData"],
-                                        destination = parameters["eosDirPrefix"],
-                                        filenames = filenames)
+            for f in filenames:
+                try:
+                    shutil.copy2(os.path.join(parameters["receiverData"], f), os.path.join(storagePath, f))
+                except shutil.Error as e:
+                    # Log the exception (so it will get logged and sent via mail when appropriate), and then
+                    # re-raise it so it doesn't get lost.
+                    logger.critical("Error in copying the failed transfer files. Error: {e}".format(e = e))
+                    # raise with no arguments re-raises the last exception.
+                    raise
 
-    # Determine the definitive set of failed files
-    # NOTE: We shouldn't have any duplicate filenames, so set shouldn't do anything
-    #       beyond making it possible to call union.
-    failedFilenames = set(rsyncFailedFilenames) | set(eosFailedFilenames)
+            # Sanity check that the files were successfully copied.
+            # There can be other files in the directory, so we just need to be certain that the filenames
+            # that we are handling here are actually copied.
+            assert set(filenames).issubset(os.listdir(storagePath))
 
-    # Only delete files if none have failed.
-    if failedFilenames:
-        # Move to a safer location
-        for f in failedFilenames:
-            # TODO: Define this directory in parameters
-            shutil.move(f, os.path.join(parameters["tempStorageData"], f))
+            # By logging, it will be sent to the admins when appropriate.
+            logger.warning("Files failed to copy for site name {siteName}. Filenames: {filenames}".format(siteName = siteName, filenames = filenames))
 
-        # Keep track of which ones failed in which case.
-        # rsync
-        with open(os.path.join(parameters["tempStroageData"], "rsyncFailedFilenames.txt"), "a") as f:
-            f.write("\n".join(rsyncFailedFilenames))
-
-        # EOS
-        with open(os.path.join(parameters["tempStroageData"], "eosFailedFilenames.txt"), "a") as f:
-            f.write("\n".join(eosFailedFilenames))
-
-        # By logging, it will be sent to the admins when appropriate.
-        logger.warning("Files failed to copy!\nrsyncFailedFilenames: {rsyncFailedFilenames}\neosFailedFilenames: {eosFailedFilenames}".format(rsyncFailedFilenames = rsyncFailedFilenames, eosFailedFilenames = eosFailedFilenames))
-
-    # Determine which files we can safely remove
-    successfullyTransferred = set(filenames) - set(failedFilenames)
-
-    # Store the successful files transferred.
+    # Log which filenames were transferred successfully.
+    # We will eventually want to return a list instead of a set, so we just convert it here.
+    successfullyTransferred = list(set(filenamesToTransfer) - totalFailedFilenames)
     logger.info("Successfully transferred: {successfullyTransferred}".format(successfullyTransferred = successfullyTransferred))
 
-    if failedFilenames:
-        # Sanity check
-        assert len(filenames) == len(successfullyTransferred) + len(failedFilenames)
-
-    # Protect from data loss when testing
+    # Now we can safely remove all files, because any that have failed have already been copied.
+    # Protect from data loss when debugging.
     if parameters["debug"] is False:
-        for f in filenames:
-            os.remove(f)
+        for f in filenamesToTransfer:
+            os.remove(os.path.join(parameters["receiverData"], f))
     else:
-        for f in filenames:
-            shutil.move(f, os.path.join[parameters["debugStorage"], f])
+        logger.debug("Files to remove: {filenamesToTransfer}".format(filenamesToTransfer = filenamesToTransfer))
+
+    return (successfullyTransferred, failedFilenames)
 
 # TODO: Add some monitoring information and send summary emails each day. This way, I'll know that
 #       Overwatch is still operating properly.
