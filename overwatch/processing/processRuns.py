@@ -997,11 +997,6 @@ def processAllRuns():
 
     logger.info("Finished trending processing!")
 
-    # Send data via `rsync` (if necessary)
-    if processingParameters["sendData"]:
-        logger.info("Preparing to send data")
-        utilities.rsyncData(processingParameters["dirPrefix"], processingParameters["remoteUsername"], processingParameters["remoteSystems"], processingParameters["remoteFileLocations"])
-
     # Update receiver last modified time if the log exists
     # This allows to keep track of when we last processed a new file.
     # However, it requires that the receiver log file is available on the same machine as where the processing
