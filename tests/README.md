@@ -17,3 +17,11 @@ can be adapted as desired.
 
 You can skip slow tests (those related to intentionally failing copy tests) with the additional argument `-m
 "not slow"`.
+
+## Configuration system reference YAML files
+
+These configuration reference files depend on the default configuration values. Thus, if you add, remove, or
+modify any default configuration values in any of the modules, it will cause these tests to fail. To resolve
+this issue, delete `overwatch/tests/base/configTestFiles/*.yaml` and run `test_config.py` **twice**. If it
+still fails, then the tests have actually failed. Check that you haven't introduced a bug or that you didn't
+pick up your local `config.yaml` when creating the reference files.

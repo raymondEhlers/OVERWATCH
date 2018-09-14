@@ -1,6 +1,8 @@
 apiToken: abcdefghi
 cumulativeMode: true
 dataFolder: data
+dataTransferLocations: {EOS: /eos/experiment/alice/overwatch/, site1: ''}
+dataTransferRetries: 2
 databaseLocation: file://data/overwatch.fs
 debug: false
 dirPrefix: data
@@ -10,13 +12,10 @@ forceRecreateSubsystem: false
 forceReprocessRuns: []
 forceReprocessing: false
 loggingLevel: INFO
+receiverData: data
+receiverDataTempStorage: data/tempStorage
 receiverIP: 127.0.0.1
 receiverPort: 8080
-remoteFileLocations:
-  data: [/opt/www/aliceoverwatch/data/]
-remoteSystems: [aliceoverwatch.physics.yale.edu]
-remoteUsername: ''
-sendData: false
 staticFolder: static
 subsystemList: &id001 [EMC, TPC, HLT]
 subsystemsWithRootFilesToShow: *id001
