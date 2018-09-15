@@ -54,7 +54,9 @@ def testFindAvailableRunPages(loggingMixin, yamlConfigForParsingPlugins):
     # Use pkg_resources to make sure we don't end up with the wrong resources (and to ensure that the tests
     # are cwd independent).
     expected = [name for name in pkg_resources.resource_listdir("overwatch.webApp", "templates") if "runPage" in name]
-    assert parameters["runPageTemplates"] == expected
+    # Apparently the order of these lists can vary between different systems. We don't care about the order
+    # - just the values themselves - so we compare them as sets, which don't depend on order.
+    assert set(parameters["runPageTemplates"]) == set(expected)
 
 def testBcrypt(loggingMixin, yamlConfigForParsingPlugins):
     """ Tests for using bcrypt to setup users. """
