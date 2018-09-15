@@ -121,6 +121,7 @@ setup(
             "pytest",
             "pytest-cov",
             "pytest-mock",
+            "coveralls",
         ],
         "docs": [
             "sphinx",

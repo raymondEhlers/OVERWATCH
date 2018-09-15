@@ -14,5 +14,5 @@ before_script:
     - docker run -v ${PWD}:/opt/overwatch rehlers/overwatch /bin/bash -c "pip install -e .[tests,dev]; cd tests; pytest -l --cov=overwatch --cov-report coveralls --cov-branch . --durations=5"
 script:
     - flake8 overwatch
-#after_success:
-#  - coveralls
+after_success:
+    - coveralls
