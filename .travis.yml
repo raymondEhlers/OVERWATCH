@@ -3,11 +3,15 @@ python:
     - "2.7"
     # 3.7 doesn't run flake8 or other things cleanly at the moment.
     - "3.6"
+sudo: required
+services:
+    - docker
+before_install:
+    - docker pull rehlers/overwatch
 install: "pip install -e .[tests,dev]"
-#before_script:
-#    # Some examples below
-#    - cp .env.example .env
-#    - python manage.py migrate
+before_script:
+    # Run the tests inside of the docker image, but since we've mounted the directory, the results are avaialble outside of the image.
+    - docker run -v ${PWD}:/opt/overwatch rehlers/overwatch /bin/bash -c "pip install -e .[tests,dev]; cd tests; pytest -l --cov=overwatch --cov-report coveralls --cov-branch . --durations=5"
 script:
     - flake8 overwatch
 #after_success:
