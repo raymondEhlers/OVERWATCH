@@ -11,7 +11,7 @@ before_install:
 install: "pip install -e .[tests,dev]"
 before_script:
     # Run the tests inside of the docker image, but since we've mounted the directory, the results are avaialble outside of the image.
-    - docker run -v ${PWD}:/opt/overwatch rehlers/overwatch /bin/bash -c "pip install -e .[tests,dev]; cd tests; pytest -l --cov=overwatch --cov-report coveralls --cov-branch . --durations=5"
+    - docker run -v ${PWD}:/opt/overwatch rehlers/overwatch /bin/bash -c "pip install --upgrade -e .[tests,dev]; cd tests; pytest -l --cov=overwatch --cov-report html --cov-branch . --durations=5"
 script:
     - flake8 overwatch
 after_success:
