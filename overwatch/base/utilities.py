@@ -200,6 +200,9 @@ def rsyncData(dirPrefix, username, remoteSystems, remoteFileLocations):
 def setupLogging(logger, logLevel, debug, logFilename):
     """ General function to setup the proper logging outputs for an executable.
 
+    Creates loggers for logging to stdout, rotating file, and email (for warning or above logs).
+    They are enabled depending on the configuration.
+
     Args:
         logger (logging.Logger): Logger to be configured. This should be the logger of the executable.
         logLevel (int): Logging level. Select from any of the options defined in the logging module.
@@ -218,6 +221,9 @@ def setupLogging(logger, logLevel, debug, logFilename):
         # It doesn't exist
         dockerDeploymentOption = ""
 
+    # We use some of the basic parameters for configuration, so we need to grab them now.
+    parameters, _ = config.readConfig(config.configurationType.base)
+
     # Configure logger
     # Logging level for root logger
     logger.setLevel(logLevel)
@@ -226,47 +232,58 @@ def setupLogging(logger, logLevel, debug, logFilename):
     logFormatStr = "%(asctime)s %(levelname)s: %(message)s [in %(module)s:%(lineno)d]"
     logFormat = logging.Formatter(logFormatStr)
 
-    # For docker, we log to stdout so that supervisor is able to handle the logging
-    if debug is True or dockerDeploymentOption:
-        # Log to stdout
-        handler = logging.StreamHandler(sys.stdout)
-        handler.setLevel(logLevel)
-        handler.setFormatter(logFormat)
-        logger.addHandler(handler)
-        logger.debug("Added streaming handler to logging!")
-    else:
-        # Log to file
-        # Will be a maximum of 5 MB, rotating with 10 files
-        handler = logging.handlers.RotatingFileHandler(os.path.join("deploy", "{}.log".format(logFilename)),
+    # We setup all streams and then decide which to configure based on our deployment mode.
+    # Log stream to stdout
+    streamHandler = logging.StreamHandler(sys.stdout)
+    streamHandler.setLevel(logLevel)
+    streamHandler.setFormatter(logFormat)
+
+    # Log to file
+    # Will be a maximum of 5 MB, rotating with 10 files
+    # We will store the log in the ``data/logs`` dir. We'll create it if necessary.
+    logDirPath = os.path.join(parameters["dataFolder"], "logs")
+    if not os.path.exists(logDirPath):
+        os.makedirs(logDirPath)
+    logFilename = os.path.join(logDirPath, "{logFilename}.log".format(logFilename = logFilename))
+    fileHandler = logging.handlers.RotatingFileHandler(logFilename,
                                                        maxBytes = 5000000,
                                                        backupCount = 10)
-        handler.setLevel(logLevel)
-        handler.setFormatter(logFormat)
-        logger.addHandler(handler)
+    fileHandler.setLevel(logLevel)
+    fileHandler.setFormatter(logFormat)
+
+    # Log to email
+    # See: http://flask.pocoo.org/docs/1.0/errorhandling/
+    #      and http://flask.pocoo.org/docs/1.0/logging/#logging
+    emailHandler = logging.handlers.SMTPHandler(mailhost = "smtp.cern.ch",
+                                                fromaddr = "error@aliceoverwatch.cern.ch",
+                                                toaddrs = parameters["emailLoggerAddresses"],
+                                                subject = "OVERWATCH Failed")
+    emailHandler.setLevel(logLevel)
+    emailLogFormatStr = """
+    Message type:       %(levelname)s
+    Location:           %(pathname)s:%(lineno)d
+    Module:             %(module)s
+    Function:           %(funcName)s
+    Time:               %(asctime)s
+
+    Message:
+
+    %(message)s
+    """
+    emailLogFormat = logging.Formatter(emailLogFormatStr)
+    emailHandler.setFormatter(emailLogFormat)
+
+    # For docker, we log to stdout so that supervisor is able to handle the logging
+    if debug is True or dockerDeploymentOption:
+        logger.addHandler(streamHandler)
+        logger.debug("Added streaming handler to logging!")
+    else:
+        logger.addHandler(fileHandler)
         logger.debug("Added file handler to logging!")
 
-        # Sent issues through email
-        # See: http://flask.pocoo.org/docs/0.10/errorhandling/
-        notifyAddresses = []
-        handler = logging.handlers.SMTPHandler("smtp.cern.ch",
-                                               "error@aliceoverwatch.cern.ch",
-                                               notifyAddresses, "OVERWATCH Failed")
-        handler.setLevel(logging.WARNING)
-        logFormatStr = """
-        Message type:       %(levelname)s
-        Location:           %(pathname)s:%(lineno)d
-        Module:             %(module)s
-        Function:           %(funcName)s
-        Time:               %(asctime)s
-
-        Message:
-
-        %(message)s
-        """
-        logFormat = logging.Formatter(logFormatStr)
-        handler.setFormatter(logFormat)
-        # TODO: Properly configure so that it can be added as a handler!
-        #logger.addHandler(handler)
+    # Also allow for the possibility of the sending email with higher priority warnings.
+    if parameters["emailLogger"]:
+        logger.addHandler(emailHandler)
         logger.debug("Added mailer handler to logging!")
 
     # Be sure to propagate messages from modules

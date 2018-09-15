@@ -5,6 +5,7 @@ availableRunPageTemplates: [runPage.html, runPageDrawer.html, runPageMainContent
 basePath: ''
 cumulativeMode: true
 dataFolder: data
+dataHandlingTimeToSleep: 20
 dataTransferLocations: {EOS: /eos/experiment/alice/overwatch/, site1: ''}
 dataTransferRetries: 2
 databaseLocation: file://data/overwatch.fs
@@ -13,6 +14,8 @@ defaultUsername: ''
 dirPrefix: data
 docsBuildFolder: doc/build/html
 docsFolder: doc
+emailLogger: false
+emailLoggerAddresses: ['']
 fileExtension: png
 flaskAssetsDebug: null
 forceNewMerge: false

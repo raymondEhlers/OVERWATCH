@@ -7,6 +7,13 @@
 
 # Set debug
 debug: false
+# Set the logging level.
+loggingLevel: "INFO"
+# Enable sending warning level logs via email.
+emailLogger: False
+# Determine where the emailed logs should be sent. There can be more than one recipient.
+emailLoggerAddresses:
+    - ""
 
 # List of subsystems.
 # Each subsystem listed here will have an individual page for their respective histograms.
@@ -52,10 +59,10 @@ dataTransferLocations:
     EOS :  "/eos/experiment/alice/overwatch/"
 # Number of times we should try to transfer data when the transfer fails.
 dataTransferRetries: 2
+# Time in seconds to wait between checking for new files
+dataHandlingTimeToSleep: 20
 
 # The file extension to use when printing ROOT files.
 fileExtension: "png"
 
-# Set the logging level.
-loggingLevel: "INFO"
 
