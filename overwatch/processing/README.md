@@ -157,7 +157,7 @@ the flow of histograms within members of the `subsystemContainer` during the pro
 follows (each named dictionary is a member of `subsystemContainer`):
 
 - When histograms are first loaded from a file, they are stored in the `histsInFile` dictionary.
-- When new histograms are created, they are stored in the `histsAvailable` dictionary. 
+- When new histograms are created, they are stored in the `histsAvailable` dictionary.
 - When creating histogram stacks, all histograms of interest need to be moved from `histsInFile` to
   `histsAvailable`. At that point, `histsAvailable` should contain all histograms which we wish to process,
   whether they are from the input file or were created afterwards.

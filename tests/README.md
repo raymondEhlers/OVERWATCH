@@ -8,12 +8,12 @@ against reference values!
 To execute the testing, I tend to use something like:
 
 ```bash
-$ pytest -l --cov=overwatch --cov-report html . --durations=5
+$ pytest -l --cov=overwatch --cov-report html --cov-branch . --durations=5
 ```
 
 This assumes you are running from the `tests` folder (as suggested above) and will be report on which tests
-are the slowest as well as provide a coverage report for (in this case) the entire `overwatch` module. This
-can be adapted as desired.
+are the slowest as well as provide a coverage report for (in this case) the entire `overwatch` module. The
+branch coverage is particularly useful to help avoid missing coverage over control flow.
 
 You can skip slow tests (those related to intentionally failing copy tests) with the additional argument `-m
 "not slow"`.

@@ -45,7 +45,7 @@ class baseTrendingObject(object):
     """
     def __init__(self):
         pass
-    
+
     def initialize(self, config):
         """ Initialize any objects needed for trending.
 
@@ -59,7 +59,7 @@ class baseTrendingObject(object):
         """
         # As an example
         return ROOT.TGraph(config["nPoints"])
-    
+
     def process(self, config, hist):
         """ Process the given object and extract a trended value.
 
@@ -88,7 +88,7 @@ class baseTrendingObject(object):
             ROOT.TCanvaS: Modified canvas.
         """
         pass
-    
+
     def cleanup(self):
         """ Cleanup any objects that were created.
 
@@ -155,7 +155,7 @@ Configuration repo):
 testAlarm:
     # Can store other options here...
     # o2Config is stored as a string by YAML.
-	o2Config: |
+    o2Config: |
         {"equipment_1", Branch
           {
             {"enabled", true},
@@ -181,7 +181,7 @@ testAlarm:
 ```
 
 Then, we load the value with `o2Config = parameters["testAlarm"]["o2Config"]` and figure out how to parse it.
-Perhaps we can just write directly around the configuration system. 
+Perhaps we can just write directly around the configuration system.
 
 Alternatively, we can just implement this in YAML and then write a simple utility to be able write out the O2
 configuration when we are ready.

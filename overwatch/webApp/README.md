@@ -92,13 +92,13 @@ Error handling is built into most routes, so errors will usually be handled seam
 
 Overwatch depends on `webassets` to deploy compiled and minimized files. In particular, the `js` is minimized,
 and `polymer-bundler` is employed to compile all of the polymer components into one minimized file to reduce
-the number of HTTP requests. 
+the number of HTTP requests.
 
 A few number of important notes on usage are below:
 
 - Most filters, including the `polymer-bundler` and `rjsmin` filters, won't build in debug mode!
 - Disable caching with the below lines. Put these lines in `overwatch.webApp.webApp` or `overewatch.webApp.run`.
-  It is useful for debugging: 
+  It is useful for debugging:
 
     ```python
     >>> assets.cache = False
@@ -115,7 +115,7 @@ A few number of important notes on usage are below:
   the `flaskAssetsDebug` field in the YAML configuration. This allows debug information to flow while still
   causing the filters to run.
 - Each Asset won't be built until first access of the particular file. Access the associated `urls` of the
-  asset to force it to built immediately (will still only be built if needed or forced by following the 
+  asset to force it to built immediately (will still only be built if needed or forced by following the
   debug procedure above).
 
     ```python
