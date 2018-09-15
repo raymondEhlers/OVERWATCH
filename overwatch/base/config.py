@@ -81,9 +81,12 @@ def determineRunPageTemplates(loader, node):
     path = ["overwatch", "webApp"]
     path.extend(seq)
 
-    # We need the last part of the part to be separate for calling resource_listdir, so we join everything
-    # up to that last value, and then past the last value separately.
+    # We need the last part of the path to be separate for calling resource_listdir, so we join everything
+    # up to that last value, and then pass the last value separately.
     returnList = [name for name in pkg_resources.resource_listdir(".".join(path[:-1]), path[-1]) if "runPage" in name]
+    # Apparently the order can vary from system to system. This order doesn't matter, but for consistency,
+    # we'll sort it. This will ensure that stored test configurations will match on any system.
+    returnList = sorted(returnList)
     #logger.debug("returnList: {0}".format(returnList))
     return returnList
 # Register the defined function

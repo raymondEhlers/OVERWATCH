@@ -8,7 +8,7 @@ services:
     - docker
 before_install:
     - docker pull rehlers/overwatch
-install: "pip install -e .[tests,dev]"
+install: "pip install --upgrade -e .[tests,dev]"
 before_script:
     # Run the tests inside of the docker image, but since we've mounted the directory, the results are avaialble outside of the image.
     - docker run -v ${PWD}:/opt/overwatch rehlers/overwatch /bin/bash -c "pip install --upgrade -e .[tests,dev]; cd tests; pytest -l --cov=overwatch --cov-report html --cov-branch . --durations=5"
