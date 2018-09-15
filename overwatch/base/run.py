@@ -1,9 +1,9 @@
 #!/usr/bin/env python
 
-""" Minimal executable to launch processing.
+""" Minimal executable to launch base module functionality.
 
 ``__main__`` is implemented to allow for this function to be executed directly,
-while ``run()`` is defined to allow for execution via ``entry_points`` defined
+while ``run*()`` is defined to allow for execution via ``entry_points`` defined
 in the python package setup.
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
@@ -37,10 +37,15 @@ from overwatch.base import dataHandling
 def runReceiverDataHandling():
     """ Run function for handling and transfering receiver data. """
     killer = utilities.gracefulKiller()
+    logger.info("Starting receiver data handling.")
     while True:
-        time.sleep(parameters["dataHandlingTimeToSleep"])
         dataHandling.processReceivedFiles()
-        # Exit out if we received the signal.
+        # Kill it afterwards if we signal it in the middle of the function.
+        if killer.killNow is True:
+            break
+        time.sleep(parameters["dataHandlingTimeToSleep"])
+        # Also check right after sleep to let us kill it before executing the function again
+        # if so desired.
         if killer.killNow is True:
             break
 

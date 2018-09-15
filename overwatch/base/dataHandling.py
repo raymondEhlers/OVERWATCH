@@ -269,7 +269,7 @@ def copyFilesToEOS(directory, destination, filenames):
 
 def storeFailedFiles(siteName, filenames):
     """ Store failed files in a safe place for later transfer.
-    
+
     This function should be called for each site. Each site maintains a different directory as different
     files could fail for different sites.
 

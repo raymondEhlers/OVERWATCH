@@ -277,15 +277,15 @@ def setupLogging(logger, logLevel, debug, logFilename):
     # For docker, we log to stdout so that supervisor is able to handle the logging
     if debug is True or dockerDeploymentOption:
         logger.addHandler(streamHandler)
-        logger.debug("Added streaming handler to logging!")
+        logger.info("Added streaming handler to logging!")
     else:
         logger.addHandler(fileHandler)
-        logger.debug("Added file handler to logging!")
+        logger.info("Added file handler to logging!")
 
     # Also allow for the possibility of the sending email with higher priority warnings.
     if parameters["emailLogger"]:
         logger.addHandler(emailHandler)
-        logger.debug("Added mailer handler to logging!")
+        logger.info("Added mailer handler to logging!")
 
     # Be sure to propagate messages from modules
     #processRunsLogger = logging.getLogger("processRuns")
@@ -583,4 +583,5 @@ class gracefulKiller(object):
 
     def exitGracefully(self, signum, frame):
         """ Handle the signal by storing that it was sent, allowing the run function to exit. """
+        logger.info("Received signal. Passing on to executing function...")
         self.killNow = True
