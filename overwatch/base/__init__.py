@@ -8,4 +8,5 @@
 __all__ = [
     "config",
     "utilities",
+    "dataHandling",
 ]

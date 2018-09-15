@@ -1,6 +1,9 @@
 #!/usr/bin/env python
 
-""" Handle and move files from the receiver(s).
+""" Handle and move files from the receiver(s) to Overwatch sites and EOS.
+
+This simple module is responsible for moving data which is provided by the receiver to other
+sites. It will retry a few times if sites are unavailable.
 
 We take a simple approach of determine which files to transfer, and then moving them to the
 appropriate locations. We could try to use something like ``watchdog`` to do something more
@@ -31,8 +34,6 @@ import ROOT
 # Logging
 import logging
 logger = logging.getLogger(__name__)
-
-# TODO: Fully setup logging using utils.
 
 # Config
 from . import config
@@ -266,13 +267,40 @@ def copyFilesToEOS(directory, destination, filenames):
 
     return failedFilenames
 
-# Steps:
-# - Enumerate the available files.
-# - rsync the files to other sites.
-#   - Somehow signal that we have new files. Touch a file? Write what was transferred?
-# - Copy those files to EOS.
-# - If both of the above were successful, then delete the local files
-# - Otherwise, move the unsuccessful files to another directory to keep them around. Still delete any successful files
+def storeFailedFiles(siteName, filenames):
+    """ Store failed files in a safe place for later transfer.
+    
+    This function should be called for each site. Each site maintains a different directory as different
+    files could fail for different sites.
+
+    Args:
+        siteName (str): Name of the site for which the files failed to transfer.
+        filenames (list): Filenames which failed to transfer.
+    Returns:
+        None.
+    """
+    # Create the storage location if necessary and copy the files to it.
+    storagePath = os.path.join(parameters["receiverDataTempStorage"], siteName)
+    if not os.path.exists(storagePath):
+        os.makedirs(storagePath)
+
+    for f in filenames:
+        try:
+            shutil.copy2(os.path.join(parameters["receiverData"], f), os.path.join(storagePath, f))
+        except shutil.Error as e:
+            # Log the exception (so it will get logged and sent via mail when appropriate), and then
+            # re-raise it so it doesn't get lost.
+            logger.critical("Error in copying the failed transfer files. Error: {e}".format(e = e))
+            # raise with no arguments re-raises the last exception.
+            raise
+
+    # Sanity check that the files were successfully copied.
+    # There can be other files in the directory, so we just need to be certain that the filenames
+    # that we are handling here are actually copied.
+    assert set(filenames).issubset(os.listdir(storagePath))
+
+    # By logging, it will be sent to the admins when appropriate.
+    logger.warning("Files failed to copy for site name {siteName}. Filenames: {filenames}".format(siteName = siteName, filenames = filenames))
 
 def processReceivedFiles():
     """ Main driver function for receiver file processing and moving.
@@ -320,28 +348,7 @@ def processReceivedFiles():
         # long time.
         for siteName, filenames in iteritems(failedFilenames):
             totalFailedFilenames.update(filenames)
-            # Create the storage location if necessary and copy the files to it.
-            storagePath = os.path.join(parameters["receiverDataTempStorage"], siteName)
-            if not os.path.exists(storagePath):
-                os.makedirs(storagePath)
-
-            for f in filenames:
-                try:
-                    shutil.copy2(os.path.join(parameters["receiverData"], f), os.path.join(storagePath, f))
-                except shutil.Error as e:
-                    # Log the exception (so it will get logged and sent via mail when appropriate), and then
-                    # re-raise it so it doesn't get lost.
-                    logger.critical("Error in copying the failed transfer files. Error: {e}".format(e = e))
-                    # raise with no arguments re-raises the last exception.
-                    raise
-
-            # Sanity check that the files were successfully copied.
-            # There can be other files in the directory, so we just need to be certain that the filenames
-            # that we are handling here are actually copied.
-            assert set(filenames).issubset(os.listdir(storagePath))
-
-            # By logging, it will be sent to the admins when appropriate.
-            logger.warning("Files failed to copy for site name {siteName}. Filenames: {filenames}".format(siteName = siteName, filenames = filenames))
+            storeFailedFiles(siteName = siteName, filenames = filenames)
 
     # Log which filenames were transferred successfully.
     # We will eventually want to return a list instead of a set, so we just convert it here.
