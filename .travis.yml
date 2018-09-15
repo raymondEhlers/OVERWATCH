@@ -1,0 +1,14 @@
+language: python
+python:
+    - "2.7"
+    # 3.7 doesn't run flake8 or other things cleanly at the moment.
+    - "3.6"
+install: "pip install -e .[tests,dev]"
+#before_script:
+#    # Some examples below
+#    - cp .env.example .env
+#    - python manage.py migrate
+script:
+    - flake8 overwatch
+#after_success:
+#  - coveralls

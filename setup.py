@@ -129,5 +129,8 @@ setup(
             # Allow markdown tables to be used
             "sphinx_markdown_tables",
         ]
+        "dev": [
+            "flake8",
+        ]
     }
 )
