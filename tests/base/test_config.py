@@ -125,5 +125,13 @@ def testReadConfig(loggingMixin, configType, configTypeString):
         for k, v in iteritems(paramUsers):
             assert v[:lengthToCheck] == expectedUsers[k][:lengthToCheck]
 
+    # Apparently the order of these lists can vary between different systems. We don't care about the order
+    # - just the values themselves - so we compare them as sets, which don't depend on order.
+    paramTemplates = parameters.pop("availableRunPageTemplates", None)
+    expectedTemplates = expected.pop("availableRunPageTemplates", None)
+    # It won't always exist, so we need to check for it first.
+    if paramTemplates:
+        assert set(paramTemplates) == set(expectedTemplates)
+
     # Everything else should be identical.
     assert parameters == expected
