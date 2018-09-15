@@ -18,6 +18,7 @@ from calendar import timegm
 from subprocess import call
 import shutil
 import numpy as np
+import signal
 
 # ZODB
 import ZODB
@@ -547,3 +548,39 @@ def removeOldestValueAndInsert(arr, value):
 
     return arr
 
+#############
+# Run helpers
+#############
+class gracefulKiller(object):
+    """ Helper class to gracefully handle a kill signal.
+
+    We handle ``SIGINT`` (for example, sent by ctrl-c) and ``SIGTERM`` (for example, sent by docker).
+
+    This class is adapted from the solution described `here <https://stackoverflow.com/a/31464349>`__.
+
+    In the run module, it is expected to have some kind of code similar to below:
+
+    .. code:: python
+
+        killer = gracefulKiller()
+        while True:
+            time.sleep(1)
+            # Do something
+            if killer.killNow:
+                break
+
+    Args:
+        None.
+
+    Attributes:
+        killNow (bool): True if we have received a kill signal and execution should be stopped. Default: ``False``.
+    """
+    killNow = False
+
+    def __init__(self):
+        signal.signal(signal.SIGINT, self.exitGracefully)
+        signal.signal(signal.SIGTERM, self.exitGracefully)
+
+    def exitGracefully(self, signum, frame):
+        """ Handle the signal by storing that it was sent, allowing the run function to exit. """
+        self.killNow = True
