@@ -36,18 +36,11 @@ from overwatch.base import dataHandling
 
 def runReceiverDataHandling():
     """ Run function for handling and transfering receiver data. """
-    killer = utilities.gracefulKiller()
+    handler = utilities.handleSignals()
     logger.info("Starting receiver data handling.")
-    while True:
+    while not handler.exit.is_set():
         dataHandling.processReceivedFiles()
-        # Kill it afterwards if we signal it in the middle of the function.
-        if killer.killNow is True:
-            break
-        time.sleep(parameters["dataHandlingTimeToSleep"])
-        # Also check right after sleep to let us kill it before executing the function again
-        # if so desired.
-        if killer.killNow is True:
-            break
+        handler.exit.wait(parameters["dataHandlingTimeToSleep"])
 
 if __name__ == "__main__":
     runReceiverDataHandling()

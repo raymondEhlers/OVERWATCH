@@ -19,6 +19,7 @@ from subprocess import call
 import shutil
 import numpy as np
 import signal
+import threading
 
 # ZODB
 import ZODB
@@ -551,31 +552,31 @@ def removeOldestValueAndInsert(arr, value):
 #############
 # Run helpers
 #############
-class gracefulKiller(object):
+class handleSignals(object):
     """ Helper class to gracefully handle a kill signal.
 
     We handle ``SIGINT`` (for example, sent by ctrl-c) and ``SIGTERM`` (for example, sent by docker).
 
-    This class is adapted from the solution described `here <https://stackoverflow.com/a/31464349>`__.
+    This class is adapted from the solution described `here <https://stackoverflow.com/a/31464349>`__,
+    and improved with the information `here <https://stackoverflow.com/a/46346184>`__.
 
     In the run module, it is expected to have some kind of code similar to below:
 
     .. code:: python
 
-        killer = gracefulKiller()
-        while True:
-            time.sleep(1)
+        handler = handleSignals()
+        while not handler.exit.is_set():
             # Do something
-            if killer.killNow:
-                break
+            handler.exit.wait(parameters["dataHandlingTimeToSleep"])
 
     Args:
         None.
 
     Attributes:
-        killNow (bool): True if we have received a kill signal and execution should be stopped. Default: ``False``.
+        exit (threading.Event): Event to manage when we've received a signal. ``exit.set()`` is called
+            when a signal is received, and can be checked via ``is_set()``.
     """
-    killNow = False
+    exit = threading.Event()
 
     def __init__(self):
         signal.signal(signal.SIGINT, self.exitGracefully)
@@ -584,4 +585,4 @@ class gracefulKiller(object):
     def exitGracefully(self, signum, frame):
         """ Handle the signal by storing that it was sent, allowing the run function to exit. """
         logger.info("Received signal. Passing on to executing function...")
-        self.killNow = True
+        self.exit.set()
