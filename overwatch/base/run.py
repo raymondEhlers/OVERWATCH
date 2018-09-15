@@ -10,7 +10,6 @@ in the python package setup.
 """
 
 import pprint
-import time
 import logging
 # We want to log everything, so we give it empty quotes.
 logger = logging.getLogger("")

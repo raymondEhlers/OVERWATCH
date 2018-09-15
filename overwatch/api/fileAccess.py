@@ -113,7 +113,7 @@ class FilesAccess(flask_restful.Resource):
         print(next(itervalues(subsystemContainer.files)).filename)
         try:
             requestedFile = next(fileContainer for fileContainer in subsystemContainer.files.values() if fileContainer.filename.split("/")[-1] == filename)
-        except StopIteration as e:
+        except StopIteration:
             print("Stop iteration error!")
             response = responseForSendingFile(additionalHeaders = responseHeaders)
             response.headers["error"] = "Could not find requested file {0}".format(filename)
