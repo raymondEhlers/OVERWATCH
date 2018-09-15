@@ -365,5 +365,3 @@ def processReceivedFiles():
 
     return (successfullyTransferred, failedFilenames)
 
-# TODO: Add some monitoring information and send summary emails each day. This way, I'll know that
-#       Overwatch is still operating properly.

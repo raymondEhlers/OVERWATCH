@@ -18,6 +18,14 @@ branch coverage is particularly useful to help avoid missing coverage over contr
 You can skip slow tests (those related to intentionally failing copy tests) with the additional argument `-m
 "not slow"`.
 
+## Installing the test dependencies
+
+Beyond ROOT (which is of course required), the python test dependencies can be installed with
+
+```bash
+$ pip install -e .[tests]
+```
+
 ## Configuration system reference YAML files
 
 These configuration reference files depend on the default configuration values. Thus, if you add, remove, or

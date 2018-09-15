@@ -53,6 +53,7 @@ receiverDataTempStorage: !joinPaths
     - "tempStorage"
 dataTransferLocations:
     # Overwatch sites, where the data will be transferred via rsync.
+    # Entries are of the form "siteName : path"
     # The values must be valid rsync paths (ie. "a@b:/path/to/dir")
     site1 : ""
     # EOS. If "EOS" is in the name, we will transfer the files via EOS.
