@@ -92,6 +92,8 @@ def testRetryDecorator(loggingMixin, mocker):
     # Mock an object so we can count how often it is called.
     # We set the return value to be false to ensure that it is retried.
     m = mocker.MagicMock(return_value = False)
+    # This attribute is needed for python 2 compatibility. Otherwise, functools will fail when wrapping the object.
+    m.__name__ = "mock"
     # Shorter delay to save some time!
     testFunc = dataHandling.retry(tries = 2, delay = 0.5)(m)
     arg = "hello"
