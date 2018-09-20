@@ -21,6 +21,7 @@ are configured via a YAML file.
 """
 
 from __future__ import print_function
+from builtins import super
 from future.utils import iteritems
 
 import os
@@ -33,6 +34,9 @@ import sys
 import time
 import ruamel.yaml as yaml
 import collections
+# Help for handling supervisor configurations.
+import inspect
+import configparser
 
 logger = logging.getLogger("")
 
@@ -59,111 +63,284 @@ def expandEnvironmentalVars(loader, node):
 # Add the plugin into the loader.
 yaml.SafeLoader.add_constructor('!expandVars', expandEnvironmentalVars)
 
-def checkForProcessPID(processIdentifier):
-    """ Check for a process by a process identifier string via ``pgrep``.
+class executable(object):
+    """ Base executable class.
 
     Args:
-        processIdentifier(str): String passed to pgrep to identify the process.
-    Returns:
-        list: PID(s) from ``pgrep``.
-    """
-    try:
-        res = subprocess.check_output(["pgrep", "-f", "{0}".format(processIdentifier)])
-    except subprocess.CalledProcessError as e:
-        if e.returncode == 1:
-            logger.info("Process identifier \"{0}\" not found".format(processIdentifier))
-            return None
-        else:
-            logger.critical("Unknown return code of \"{0}\" for command \"{1}\", with output \"{2}".format(e.returncode, e.cmd, e.output))
-            sys.exit(e.returncode)
-    # Convert from bytes to string when returning
-    # Each entry is on a new line (and we must check for empty lines)
-    pids = res.decode("utf-8").split("\n")
-    pids = [int(pid) for pid in pids if pid != ""]
-    if len(pids) > 1:
-        logger.warning("Multiple PIDs associated with this receiver!")
-    return pids
-    # sshProcesses=$(pgrep -f "autossh -L ${internalReceiverPorts[n]}")
-
-def killExistingProcess(pidList, processType, processIdentifier, sig = signal.SIGINT):
-    """ Kill processes by PID. The kill signal will be sent to the entire process group.
-
-    Args:
-        pidList (list): List of PIDs to be killed.
-        processType (str): Name of the processes being killed.
-        processIdentifier (str): String used to identify the processes that are being killed.
-        sig (int): Signal to be sent to the processes. Default: signal.SIGINT
-    Returns:
-        list: PID(s) left after killing the processes. Note that any list which is not None will throw a fatal error
-    """
-    logger.debug("Killing existing {0} processes with PID(s) {1}".format(processType, pidList))
-    for pid in pidList:
-        # TODO: Check if -1 is needed (I think killpg handles sending the signal to the entire process group)
-        logger.debug("Killing process {0}".format(pid))
-        # TODO: killpg doesn't work. It claims that the process doesn't exist. Investigate this further...
-        os.kill(pid, sig)
-
-    # Check that killing the process was successful
-    # If not, throw an error
-    pidList = checkForProcessPID(processIdentifier)
-    logger.debug("PIDs left after killing processes: {0}".format(pidList))
-    if pidList is not None:
-        logger.critical("Requested to kill existing \"{0}\" processes, but found PIDs {0} after killing the processes. Please investigate!", processType, pidList)
-        sys.exit(2)
-
-    return pidList
-
-def startProcessWithLog(args, name, logFilename, supervisord = False, shortExecutionTime = False):
-    """ Start (or otherwise setup) the process with the given arguments and log the output.
-
-    For a normal process, we configure it to log to the given filename and start it immediately. In the case that the
-    process should be launched with ``supervisord``, the process won't be launched immediately.  Instead, the process
-    and log information will be appended to the existing ``supervisord`` configuration.
-
-    Args:
-        args (list): List of arguments used to start the process.
         name (str): Name of the process that we are starting. It doesn't need to be the executable name,
-            as it's just used for informational purposes.
-        logFilename (str): Filename for the log file.
-        supervisord (bool): True if the process launching should be configured for ``supervisord``.
-            This means that the process won't be started immediately.
-        shortExecutionTime (bool): True if the process will execute and completed quickly. In this case, we don't want
-            ``supervisord`` to restart the process immediately.
-    Returns:
-        subprocess.Popen or None: If the process is started immediately, then we return the ``Popen`` class associated
-            with the started process. Otherwise, we return None.
+                as it's just used for informational purposes.
+        description (str): ...
+        args (list): List of arguments used to start the process.
+        config (dict): ...
+    Attributes:
+        args (list): List of arguments to be executed.
+        ...
+
     """
-    if supervisord:
-        process = """
-[program:{name}]
-command={command}
-redirect_stderr=true
-# 5 MB log file with 10 backup files
-stdout_logfile_maxbytes=500000
-stdout_logfile_backups=10"""
+    def __init__(self, name, description, args, config):
+        self.name = name
+        # TODO: Was processType
+        self.description = description
+        self.args = args
+        self.config = config
 
-        if shortExecutionTime:
-            process += """
-autorestart=false
-startsecs=0
-"""
+        # Will be derived from the arguments once they have been fully formatting.
+        self.processIdentifier = None
+
+    # TODO: checkForProcessPID -> getProcessPID
+    def getProcessPID(self):
+        """ Retrieve the process PID via ``pgrep`` for a process identifier by a given identifier.
+
+        Note:
+            Uniqueness requirement ... Should it be?
+
+        Args:
+            None.
+            processIdentifier(str): String passed to pgrep to identify the process.
+        Returns:
+            list: PID(s) from ``pgrep``.
+
+        Raises:
+            ValueError: If the process called returns a error code other than 0 (which indicates
+                success) or 1 (which indicates that the process was not found).
+            RuntimeError: If we return more than one PID for the given process identifier.
+        """
+        # TODO: Changed None -> [] as a return value, so watch out for explicit checks!
+        try:
+            res = subprocess.check_output(["pgrep", "-f", self.processIdentifier], universal_newlines = True)
+        except subprocess.CalledProcessError as e:
+            if e.returncode == 1:
+                logger.info("Process associated with identifier '{processIdentifier}' was not found".format(processIdentifier = self.processIdentifier))
+                return []
+            else:
+                raise ValueError("Unknown return code of '{returnCode}' for command '{cmd}', with output '{output}'".format(returnCode = e.returncode, cmd = e.cmd, output = e.output))
+        # Retrieve each PID as an entry in a list by strip out trailing "\n" (which is returned when
+        # using `universal_newlines`), and then splitting on each new line.
+        PIDs = res.strip("\n").split("\n")
+        PIDs = [int(pid) for pid in PIDs if pid != ""]
+
+        # TODO: If multiple PIDs is fine, then add an option for when this can happen.
+        if len(PIDs) > 1:
+            raise RuntimeError("Multiple PIDs {pids} found for process with identifier {processIdentifier}!".format(processIdentifier = self.processIdentifier))
+        return PIDs
+
+    def killExistingProcess(self, PIDs, sig = signal.SIGINT):
+        """ Kill processes by PID. The kill signal will be sent to the entire process group.
+
+        Args:
+            sig (signal.Signals): Signal to be sent to the processes. Default: signal.SIGINT
+        Returns:
+            None.
+
+        Raises:
+            RuntimeError: If the process identifier is found to still have an associated PID after attempting
+                to kill the process.
+        """
+        PIDs = self.getProcessPID()
+        logger.debug("Killing existing {description} processes with PID(s) {PIDs}".format(description = self.description, PIDs = PIDs))
+        for pid in PIDs:
+            # TODO: Check if -1 is needed (I think killpg handles sending the signal to the entire process group)
+            logger.debug("Killing process with PID {pid}".format(pid = pid))
+            # TODO: killpg doesn't work. It claims that the process doesn't exist. Investigate this further...
+            os.kill(pid, sig)
+
+        # Check that killing the process was successful
+        # If not, throw an error
+        PIDs = self.getProcessPID()
+        logger.debug("PIDs left after killing processes: {PIDs}".format(PIDs = PIDs))
+        if PIDs:
+            raise RuntimeError("Requested to kill existing '{description}' processes, but found PIDs {PIDs} after killing the processes. Please investigate!".format(description = self.description, PIDs = PIDs))
+
+    def startProcessWithLog(self, logFilename, supervisord = False, shortExecutionTime = False):
+        """ Start (or otherwise setup) the process with the given arguments and log the output.
+
+        For a normal process, we configure it to log to the given filename and start it immediately. In the case that
+        the process should be launched with ``supervisord``, the process won't be launched immediately.  Instead, the
+        process and log information will be appended to the existing ``supervisord`` configuration.
+
+        Args:
+            logFilename (str): Filename for the log file.
+            supervisord (bool): True if the process launching should be configured for ``supervisord``.
+                This means that the process won't be started immediately.
+            shortExecutionTime (bool): True if the process will execute and completed quickly. In this case, we don't
+                want ``supervisord`` to restart the process immediately.
+        Returns:
+            subprocess.Popen or None: If the process is started immediately, then we return the ``Popen`` class
+                associated with the started process. Otherwise, we return None.
+        """
+        if supervisord:
+            # String version
+            process = """
+                [program:{name}]
+                command={command}
+                # Redirect the stderr into the stdout.
+                redirect_stderr=true
+                # 5 MB log file with 10 backup files.
+                stdout_logfile_maxbytes=500000
+                stdout_logfile_backups=10
+            """
+            # To cleanup the shared indentation of the above string, we use ``inspect.cleandoc()``.
+            # This is preferred over ``textwrap.dedent()`` because it will still work even if there
+            # is a string on the first line (which has a different indentation that we want to ignore).
+            process = inspect.cleandoc(process)
+
+            # If using configparser
+            #process = configparser.ConfigParser()
+            #programIdentifier = "program:{name}".format(name = name)
+            #options = {
+            #    "command": " ".join(self.args),
+            #    # Redirect the stderr into the stdout.
+            #    "redirect_stderr": True,
+            #    # 5 MB log file with 10 backup files.
+            #    "stdout_logfile_maxbytes": 500000,
+            #    "stdout_logfile_backups": 10,
+            #}
+
+            if shortExecutionTime:
+                process += "\nautorestart=false"
+                process += "\nstartsecs=0"
+                # If using configparser
+                #options.update({
+                #    "autorestart": False,
+                #    "startsecs": 0,
+                #})
+
+            # Using logFilename to ensure that the name is more descriptive
+            process = process.format(name = logFilename,
+                                     command = " ".join(self.args))
+
+            # If using configparser
+            #process[programIdentifier] = options
+
+            # Write the particular config
+            with open("supervisord.conf", "a") as f:
+                f.write(process)
+                # If using configparser
+                #process.write(f)
+            # The return value is not really meaningful in this case, since it won't be launched until the end.
+            process = None
         else:
-            process += "\n"
+            with open("{logFilename}.log".format(logFilename = logFilename), "w") as logFile:
+                logger.debug("Starting '{name}' with args: {args}".format(name = self.name, args = self.args))
+                # Redirect stderr to stdout so the information isn't lost.
+                process = subprocess.Popen(self.args,
+                                           stdout = logFile,
+                                           stderr = subprocess.STDOUT)
 
-        # Using logFilename to ensure that the name is more descriptive
-        process = process.format(name = logFilename,
-                                 command = " ".join(args))
-        # Write the particular config
-        with open("supervisord.conf", "a") as f:
-            f.write(process)
-        # process is not meaningful here, so it won't be launched until the end
-        process = None
-    else:
-        with open("{0}.log".format(logFilename), "w") as logFile:
-            logger.debug("Starting \"{0}\" with args: {1}".format(name, args))
-            process = subprocess.Popen(args, stdout=logFile, stderr=subprocess.STDOUT)
+        return process
 
-    return process
+    def setup(self):
+        """ Prepare for calling this executable.
+
+        Here we setup the arguments for the executable using values in the config and we determine the
+        ``processIdentifier``, which is a unique string which identifies the process (to be used to check
+        if it already exists). It may need to include arguments to be unique, which will then depend on the
+        order in which the process arguments are defined. It is determined by the fully formatted arguments.
+
+        Args:
+            None
+        Returns:
+            None
+        """
+        # Determine the function arguments based on the config and setup.
+        self.formatArgs()
+        # Since the arguments are now fully determine, we can now determine the process identifier.
+        # In principle, this can overridden by the user by setting the attribute.
+        if not self.processIdentifier:
+            self.processIdentifier = " ".join(self.args)
+
+    def formatArgs(self):
+        """ Determine the arguments for the executable based on the given configuration. """
+        self.args = [arg.format(**self.config) for arg in self.args]
+
+    def run(self):
+        """ Driver function for running executables. """
+        # Handle configuration, etc.
+        self.setup()
+        # Check for existing process
+        # TODO: Maybe only do this sometimes??
+        #if config.get("forceRestart", False) or receiverConfig.get("forceRestartTunnel", False):
+        if self.config("forceRestart", False):
+            self.killExistingProcess()
+        # Actually execute the process
+        process = self.startProcessWithLog()
+
+class uwsgiExecutable(executable):
+    """
+
+    Note:
+        Relies on the following parameters in the config.
+
+    """
+    def __init__(self, name, description, config):
+        args = [...]
+        super().__init__(args = args,
+                config = confg)
+
+class autosshExecutable(executable):
+    """ ``autossh`` executable.
+
+    Args:
+        name (str):
+        description (str):
+        config ()
+        localPort (int): Port where the HLT data should be made available on the local system.
+        hltPort (int): Port where the HLT data is available on the remote system.
+        port (int): SSH connection port.
+        username (str): SSH connection username.
+        address (str): SSH connection address.
+
+    """
+    def __init__(self, description, config):
+        name = "autossh"
+        args = [
+            "autossh",
+            "-L {localPort}:localhost:{hltPort}",
+            "-o ServerAliveInterval=30",  # Built-in ssh monitoring option
+            "-o ServerAliveCountMax=3",   # Built-in ssh monitoring option
+            "-p {port}",
+            "-l {username}",
+            "{address}",
+            "-M 0",                       # Disable autossh built-in monitoring
+            "-f",
+            "-N",
+        ]
+        description = "{receiver} autossh tunnel".format(receiver = receiver)
+        #processIdentifier = "autossh -L {localPort}".format(**self.config)
+        super().__init__(name = name,
+                         description = description,
+                         args = args,
+                         config = config)
+
+    def setup(self):
+        """
+
+        """
+        super().setup()
+        # Ensure that the known_hosts file is populated if it wasn't already
+        knownHostsPath = os.path.expandvars(os.path.join("$HOME", ".ssh", "known_hosts")).replace("\n", "")
+        logger.debug("Checking for known_hosts file at {knownHostsPath}".format(knownHostsPath = knownHostsPath))
+        if not os.path.exists(knownHostsPath):
+            if not os.path.exists(os.path.dirname(knownHostsPath)):
+                os.makedirs(os.path.dirname(knownHostsPath))
+                # Set the proper permissions
+                os.chmod(os.path.dirname(knownHostsPath), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+            # ssh-keyscan -H {address}
+            args = [
+                "ssh-keyscan",
+                "-p {0}".format(config["port"]),
+                "-H",
+                config["address"],
+            ]
+            with open(knownHostsPath, "w") as logFile:
+                logger.debug("Starting \"{0}\" with args: {1}".format("SSH Keyscan", args))
+                # This should execute rapidly, so we don't need to check for the process ID.
+                subprocess.Popen(args, stdout=logFile)
+
+class enviornmentVariables():
+    pass
+
+_available_executables = []
 
 def tunnel(config, receiver, receiverConfig, supervisord):
     """ Create ssh tunnel with ``autossh``. """
@@ -175,26 +352,6 @@ def tunnel(config, receiver, receiverConfig, supervisord):
                                           processType = "{0} SSH Tunnel".format(receiver),
                                           processIdentifier = processIdentifier)
         # processPIDs will be None if the processes were killed successfully
-
-    # Ensure that the known_hosts file is populated if it wasn't already
-    knownHostsPath = os.path.expandvars(os.path.join("$HOME", ".ssh", "known_hosts")).replace("\n", "")
-    logger.debug("Checking for known_hosts file at {}".format(knownHostsPath))
-    if not os.path.exists(knownHostsPath):
-        if not os.path.exists(os.path.dirname(knownHostsPath)):
-            os.makedirs(os.path.dirname(knownHostsPath))
-            # Set the proper permissions
-            os.chmod(os.path.dirname(knownHostsPath), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
-        # ssh-keyscan -H {address}
-        args = [
-            "ssh-keyscan",
-            "-p {0}".format(config["port"]),
-            "-H",
-            config["address"],
-        ]
-        with open(knownHostsPath, "w") as logFile:
-            logger.debug("Starting \"{0}\" with args: {1}".format("SSH Keyscan", args))
-            # This should execute rapidly, so we don't need to check for the process ID.
-            subprocess.Popen(args, stdout=logFile)
 
     if processPIDs is None:
         # Create ssh tunnel
@@ -767,11 +924,19 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
     """ Start the various parts of Overwatch.
 
     Components are only started if they are included in the configuration.
+
+    Args:
+        configFilename (str): Filename of the configuration.
+        fromEnvironment (str): Name of the environment variable which contains the configuration as a string. This
+            is usually created by reading a config file into the variable with ``var=$(cat deployConfig.yaml)``.
+        avoidNohup (bool): If true, ``nohup`` (which is used to run processes in the background) should not be used.
+    Returns:
+        None.
     """
     # Get configuration
     if fromEnvironment:
         # From environment
-        logger.info("Loading configuration from environment variable \"{}\"".format(fromEnvironment))
+        logger.info("Loading configuration from environment variable '{fromEnvironment}'".format(fromEnvironment = fromEnvironment))
         config = yaml.load(os.environ[fromEnvironment], Loader=yaml.SafeLoader)
     else:
         # From file
