@@ -715,6 +715,9 @@ def processAllRuns():
 
     # Setup trending
     if processingParameters["trending"]:
+        from .trending.manager import TrendingManager
+        trendMan = TrendingManager(dbRoot, processingParameters)  # TODO test
+
         trendingContainer = processingClasses.trendingContainer(dbRoot["trending"])
         # Subsystem specific trending histograms
         # TDG corresponds to general trending histograms (perhaps between two subsystem)

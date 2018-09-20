@@ -50,10 +50,9 @@ class TrendingObjectMean(processingClasses.trendingObject):
 
 def createIfNotExist(trending, names):
     for name, title, histNames in names:
-        # Create it if it doesn't exist
-        if not name in trending.keys():
+        # Create it if it doesn't exist-
+        if name not in trending.keys():
             # Define new trending histogram
-
             trending[name] = TrendingObjectMean(name, title, histNames)
 
     return trending
