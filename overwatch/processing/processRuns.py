@@ -342,7 +342,7 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
         return ("fullProcessing", False, None)
 
     # If input time range out of range, return 0
-    logger.info("Filtering time window! Min:{0}, Max: {1}".format(minTimeMinutes,maxTimeMinutes)) 
+    logger.info("Filtering time window! Min:{0}, Max: {1}".format(minTimeMinutes,maxTimeMinutes))
     if minTimeMinutes < 0:
         logger.info("Minimum input time less than 0!")
         return (None, None, {"Request Error": ["Miniumum input time of \"{0}\" is less than 0!".format(minTimeMinutes)]})
@@ -367,7 +367,7 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
 
     # Sort files by time
     filesToMerge.sort(key=lambda x: x.fileTime)
-    
+
     #logger.info("filesToMerge: {0}, times: {1}".format(filesToMerge, [x.fileTime for x in filesToMerge]))
 
     # Get min and max time stamp remaining
@@ -613,7 +613,7 @@ def processAllRuns():
         # This will be a slow process, so the results should be stored
         for runDir in utilities.findCurrentRunDirs(dirPrefix):
             # Create run object
-            runs[runDir] = processingClasses.runContainer( runDir = runDir, 
+            runs[runDir] = processingClasses.runContainer( runDir = runDir,
                                                            fileMode = processingParameters["cumulativeMode"])
 
         # Find files and create subsystems
@@ -718,6 +718,7 @@ def processAllRuns():
         from .trending.manager import TrendingManager
         trendMan = TrendingManager(dbRoot, processingParameters)  # TODO test
 
+        # TODO remove following lines
         trendingContainer = processingClasses.trendingContainer(dbRoot["trending"])
         # Subsystem specific trending histograms
         # TDG corresponds to general trending histograms (perhaps between two subsystem)
@@ -725,6 +726,7 @@ def processAllRuns():
             trendingObjects = qa.defineTrendingObjects(subsystem)
             trendingContainer.addSubsystemTrendingObjects(subsystem, trendingObjects, forceRecreateSubsystem = processingParameters["forceRecreateSubsystem"])
     else:
+        trendMan = None
         trendingContainer = None
 
     # Determine which runs to process
@@ -742,9 +744,6 @@ def processAllRuns():
                                 subsystem,
                                 forceRecreateSubsystem = processingParameters["forceRecreateSubsystem"],
                                 trendingContainer = trendingContainer)
-                if trendingContainer and not trendingContainer.updateToDate:
-                    # Loop over process root file with various until it is up to date
-                    pass
             else:
                 # We often want to skip this point since most runs will not need to be processed most times
                 logger.debug("Don't need to process {0}. It has already been processed".format(run.prettyName))
@@ -754,15 +753,14 @@ def processAllRuns():
 
     logger.info("Finished processing!")
 
-    if trendingContainer:
-        # Run trending once we have gotten to the most recent run
+    # Run trending once we have gotten to the most recent run
+    if trendMan:
         logger.info("About to process trending")
+        trendMan.processTrending()
         processTrending(outputFormatting = outputFormattingSave,
                         trending = trendingContainer,
                         forceRecreateSubsystem = processingParameters["forceRecreateSubsystem"])
-
-        # Commit after we have successfully processed the trending
-        transaction.commit()
+        transaction.commit()  # Commit after we have successfully processed the trending
 
     logger.info("Finishing trending")
 
