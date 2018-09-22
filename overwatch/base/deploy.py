@@ -124,9 +124,11 @@ class executable(object):
         shortExecutionTime (bool): True if the executable executes and completes quickly. In this case, supervisord
             need special options to ensure that it doesn't think that the executable failed immediately and should be
             restarted.
-        logFilename (str): Filename for the log file. Default: "{name}.log".
+        logFilename (str): Filename for the log file. Default: ``{name}.log``.
         runInForeground (bool): True if the process should be run in the foreground. This means that process will
-            be blocking. Note that this option is not meaningful if supervisord is being used. Default: False.
+            be blocking. Note that this option is not meaningful if supervisord is being used. Default: ``False``.
+        executeTask (bool): Whether the executable should actually be executed. Set via the "enabled" field of
+            the config. Default: ``False``.
     """
     # Avoid having to set this for every object given that it should be the same for (nearly) every one.
     supervisord = False
@@ -144,7 +146,6 @@ class executable(object):
         self.shortExecutionTime = shortExecutionTime
         self.logFilename = "{name}.log".format(name = self.name)
         self.runInForeground = self.config.get("runInForeground", False)
-        # TODO: Add enable vs disable from config
         self.executeTask = self.config.get("enabled", False)
 
     # TODO: checkForProcessPID -> getProcessPID
@@ -312,6 +313,11 @@ class executable(object):
         """
         # Handle configuration, etc.
         self.setup()
+
+        # Bail out immediately after task setup if the task is not supposed to be executed.
+        if self.executeTask is False:
+            return None
+
         # Check for existing process
         # TODO: Maybe only do this sometimes??
         #if config.get("forceRestart", False) or receiverConfig.get("forceRestartTunnel", False):
@@ -331,7 +337,7 @@ class executable(object):
         # process is not None, so we can use that as a proxy for whether to check for successful execution.
         # TODO: Maybe only do this sometimes?? Set via config?
         if process and self.shortExecutionTime is False:
-            PIDs = self.checkForProcessPID()
+            PIDs = self.getProcessPID()
             if not PIDs:
                 raise RuntimeError("Failed to find the executed process with identifier {processIdentifier}".format(processIdentifier = self.processIdentifier))
 
@@ -353,8 +359,6 @@ class sshKnownHostsExecutable(executable):
 
     Attributes:
         knownHostsPath (str): Path to the known hosts file. Assumed to be at ``$HOME/.ssh/known_hosts``.
-        runExecutable (bool): Will actually run the executable if ``True``. Should only be run if the ``known_hosts``
-            file doesn't exist. Default: ``False``.
     """
     def __init__(self, config):
         name = "ssh-keyscan"
@@ -369,12 +373,15 @@ class sshKnownHostsExecutable(executable):
                          description = description,
                          args = args,
                          config = config)
+        # The information should stored be in the $HOME/.ssh/known_hosts
         self.knownHostsPath = os.path.expandvars(os.path.join("$HOME", ".ssh", "known_hosts")).replace("\n", "")
-        self.runExecutable = False
+        # This will execute rather quickly.
+        self.shortExecutionTime = True
 
     def setup(self):
-        """
+        """ Setup creating the known_hosts file.
 
+        In particular, the executable should only be run if the ``known_hosts`` file doesn't exist.
         """
         logger.debug("Checking for known_hosts file at {knownHostsPath}".format(knownHostsPath = self.knownHostsPath))
         if not os.path.exists(self.knownHostsPath):
@@ -384,24 +391,9 @@ class sshKnownHostsExecutable(executable):
                 # Set the proper permissions
                 os.chmod(os.path.dirname(self.knownHostsPath), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
 
-            self.runExecutable = True
+            self.executeTask = True
         # Take advantage of the log file to write the process output to the known_hosts file.
         self.logFilename = self.knownHostsPath
-
-    def startProcessWithLog(self):
-        """
-
-        """
-        if self.runExecutable:
-            return super().startProcessWithLog()
-
-            #with open(knownHostsPath, "w") as logFile:
-            #    logger.debug("Starting \"{0}\" with args: {1}".format("SSH Keyscan", args))
-            #    # This should execute rapidly, so we don't need to check for the process ID.
-            #    subprocess.Popen(args, stdout=logFile)
-
-        # If not executing, we have nothing to return.
-        return None
 
 class autosshExecutable(executable):
     """ Start ``autossh`` to create a SSH tunnel.
@@ -410,9 +402,7 @@ class autosshExecutable(executable):
         Arguments after ``config`` are values which will be used for formatting and are required in the config.
 
     Args:
-        name (str):
-        description (str):
-        config ()
+        config (dict): Configuration for the executable.
         localPort (int): Port where the HLT data should be made available on the local system.
         hltPort (int): Port where the HLT data is available on the remote system.
         port (int): SSH connection port.
