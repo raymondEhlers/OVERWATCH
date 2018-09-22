@@ -108,6 +108,7 @@ class executable(object):
         config (dict): Configuration for the executable.
         runInForeground (bool): True if the process should be run in the foreground. This means that process will
             be blocking. Note that this option is not meaningful if supervisord is being used. Default: False.
+        enabled (bool): True if the task should actually be executed.
     Attributes:
         name (str): Name of the process that we are starting. It doesn't need to be the executable name,
                 as it's just used for informational purposes.
@@ -143,6 +144,8 @@ class executable(object):
         self.shortExecutionTime = shortExecutionTime
         self.logFilename = "{name}.log".format(name = self.name)
         self.runInForeground = self.config.get("runInForeground", False)
+        # TODO: Add enable vs disable from config
+        self.executeTask = self.config.get("enabled", False)
 
     # TODO: checkForProcessPID -> getProcessPID
     def getProcessPID(self):
@@ -209,7 +212,7 @@ class executable(object):
         if PIDs:
             raise RuntimeError("Requested to kill existing '{description}' processes, but found PIDs {PIDs} after killing the processes. Please investigate!".format(description = self.description, PIDs = PIDs))
 
-    def startProcessWithLog(self, logFilename, supervisord = False, shortExecutionTime = False):
+    def startProcessWithLog(self):
         """ Start (or otherwise setup) the process with the given arguments and log the output.
 
         For a normal process, we configure it to log to the given filename and start it immediately. In the case that
@@ -217,7 +220,7 @@ class executable(object):
         process and log information will be appended to the existing ``supervisord`` configuration.
 
         Args:
-
+            None.
         Returns:
             subprocess.Popen or None: If the process is started immediately, then we return the ``Popen`` class
                 associated with the started process. Otherwise, we return None.
@@ -641,6 +644,34 @@ class processing(executable):
         """
         writeCustomConfig(self.config["additionalOptions"])
 
+class webApp(executable):
+    """ Start the web app.
+
+    Note:
+        Arguments after ``config`` are values which will be used for formatting and are required in the config.
+
+    Args:
+        config (dict): Configuration for the executable.
+        additionalConfig (dict): Additional options to added to the processing configuration.
+    """
+    def __init__(self, config):
+        name = "webApp"
+        description = "Overwatch webApp"
+        args = [
+            "overwatchProcessing",
+        ]
+        super().__init__(name = name,
+                         description = description,
+                         args = args,
+                         config = config)
+
+    def setup(self):
+        """ Setup required for Overwatch web app.
+
+        In particular, we write any passed custom configuration options out to an Overwatch YAML config file.
+        """
+        writeCustomConfig(self.config["additionalOptions"])
+
 class uwsgiExecutable(executable):
     """ Create a ``uwsgi`` based executable.
 
@@ -934,10 +965,10 @@ def uwsgi(config, name):
     # This is the base configuration which sets the default values
     uwsgiConfig = {
         # Socket setup
-        "socket": "/tmp/{name}.sock",
+        "socket": "/tmp/uwsgi/{name}.sock",
         "vacuum": True,
         # Stats
-        "stats": "/tmp/{name}Stats.sock",
+        "stats": "/tmp/uwsgi/{name}Stats.sock",
 
         # Setup
         "chdir": "/opt/overwatch",
