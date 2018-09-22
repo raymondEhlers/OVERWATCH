@@ -639,6 +639,82 @@ class webApp(executable):
         """
         writeCustomConfig(self.config["additionalOptions"])
 
+class supervisord(executable):
+    """ Start ``supervisord`` to manage processes.
+
+    We don't need options for this executable. It is either going to be launched or it isn't.
+
+    Note:
+        Don't use ``run()`` for this executable. Instead, the setup and execution steps should be
+        performed separately because the basic config is needed at the beginning, while the final execution
+        is needed at the end.
+
+    Args:
+        *args (list): Absorb extra arguments.
+        **kwargs (dict): Absorb extra arguments.
+    """
+    def __init__(self, *args, **kwargs):
+        name = "supervisord"
+        description = "Supervisord"
+        args = [
+            "supervisorctl",
+            "update",
+        ]
+        super().__init__(name = name,
+                         description = description,
+                         args = args,
+                         config = {})
+
+    def setup(self):
+        """ Setup required for the ``supervisord`` executable.
+
+        In particular, we need to write out the main configuration.
+        """
+        # Write to the supervisord config
+        filename = "supervisord.conf"
+        if not os.path.exists(filename):
+            logger.info("Creating supervisord main config")
+            # Write the main config
+            config = configparser.ConfigParser()
+            # Main supervisord configuration
+            config["supervisord"] = {
+                "nodaemon": True,
+                # Take advantage of the overwatch data directory.
+                "logfile": "data/logs/supervisord.log",
+                "childlogdir": "data/logs",
+                # 5 MB log file with 10 backup files
+                "logfile_maxbytes": 5000000,
+                "logfile_backups": 10,
+            }
+            # Unix http server monitoring options
+            config["unix_http_server"] = {
+                # Path to the socket file
+                "file": "/tmp/sockets/supervisor.sock",
+                # Socket file mode (default 0700)
+                "chmod": "0700",
+            }
+            # These options section must remain in the config file for RPC
+            # (supervisorctl/web interface) to work, additional interfaces may be
+            # added by defining them in separate ``rpcinterface: sections``
+            config["rpcinterface:supervisor"] = {
+                "supervisor.rpcinterface_factory": "supervisor.rpcinterface:make_main_rpcinterface",
+            }
+            # supervisorctl options
+            config["supervisorctl"] = {
+                # Use a unix:// URL  for a unix socket
+                "serverurl": "unix:///tmp/supervisor.sock",
+            }
+
+            # Write out the final config.
+            with open(filename, "w+") as f:
+                config.write(f)
+        else:
+            logger.info("Supervisord config already exists - skipping creation.")
+
+    def run(self):
+        """ We want to run in separate steps, so this function shouldn't be used. """
+        raise NotImplementedError("The supervisord executable should be run in multiple steps.")
+
 class uwsgiExecutable(executable):
     """ Create a ``uwsgi`` based executable.
 
@@ -691,44 +767,6 @@ def writeSensitiveVariableToFile(config, name, prettyName, defaultWriteLocation)
     elif name == "cert":
         # Set the file permissions to 400
         os.chmod(writeLocation, stat.S_IRUSR)
-
-def setupSupervisord(config):
-    # Write to the supervisord config
-    filename = "supervisord.conf"
-    if not os.path.exists(filename):
-        logger.info("Creating supervisord main config")
-        # Write the main config
-        # TODO: Automatically determine the logfile and childlodir paths so that it works anywhere
-        mainConfig = """
-[supervisord]
-nodaemon=true
-# Use the overwatch data directory
-logfile=/opt/overwatch/data/supervisord.log
-childlogdir=/opt/overwatch/data/
-# 5 MB log file with 10 backup files
-logfile_maxbytes=5000000
-logfile_backups=10
-
-[unix_http_server]
-# (the path to the socket file)
-file=/tmp/supervisor.sock
-# socket file mode (default 0700)
-chmod=0700
-
-# the below section must remain in the config file for RPC
-# (supervisorctl/web interface) to work, additional interfaces may be
-# added by defining them in separate rpcinterface: sections
-[rpcinterface:supervisor]
-supervisor.rpcinterface_factory = supervisor.rpcinterface:make_main_rpcinterface
-
-[supervisorctl]
-# Use a unix:// URL  for a unix socket
-serverurl = unix:///tmp/supervisor.sock
-"""
-        with open(filename, "w+") as f:
-            f.write(mainConfig)
-    else:
-        logger.info("Supervisord config already exists - skipping creation.")
 
 def setupRoot(config):
     rootConfig = config["env"]["root"]
