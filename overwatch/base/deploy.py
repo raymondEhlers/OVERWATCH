@@ -226,54 +226,31 @@ class executable(object):
                 associated with the started process. Otherwise, we return None.
         """
         if self.supervisord:
-            # String version
-            process = """
-                [program:{name}]
-                command={command}
+            # Use configparser to create the configuration from a dict.
+            process = configparser.ConfigParser()
+            programIdentifier = "program:{name}".format(name = self.name)
+            options = {
+                "command": " ".join(self.args),
                 # Redirect the stderr into the stdout.
-                redirect_stderr=true
+                "redirect_stderr": True,
                 # 5 MB log file with 10 backup files.
-                stdout_logfile_maxbytes=500000
-                stdout_logfile_backups=10
-            """
-            # To cleanup the shared indentation of the above string, we use ``inspect.cleandoc()``.
-            # This is preferred over ``textwrap.dedent()`` because it will still work even if there
-            # is a string on the first line (which has a different indentation that we want to ignore).
-            process = inspect.cleandoc(process)
-
-            # If using configparser
-            #process = configparser.ConfigParser()
-            #programIdentifier = "program:{name}".format(name = name)
-            #options = {
-            #    "command": " ".join(self.args),
-            #    # Redirect the stderr into the stdout.
-            #    "redirect_stderr": True,
-            #    # 5 MB log file with 10 backup files.
-            #    "stdout_logfile_maxbytes": 500000,
-            #    "stdout_logfile_backups": 10,
-            #}
+                "stdout_logfile_maxbytes": 500000,
+                "stdout_logfile_backups": 10,
+            }
 
             # Prevents supervisord from immediately restarting a process which executes quickly.
             if self.shortExecutionTime:
-                process += "\nautorestart=false"
-                process += "\nstartsecs=0"
-                # If using configparser
-                #options.update({
-                #    "autorestart": False,
-                #    "startsecs": 0,
-                #})
+                options.update({
+                    "autorestart": False,
+                    "startsecs": 0,
+                })
 
-            process = process.format(name = self.name,
-                                     command = " ".join(self.args))
-
-            # If using configparser
-            #process[programIdentifier] = options
-
-            # Write the particular config
+            # Store the final configuration under the particular process identifier and write out the config.
+            process[programIdentifier] = options
+            # Append so that other processes can also be included.
             with open("supervisord.conf", "a") as f:
-                f.write(process)
-                # If using configparser
-                #process.write(f)
+                process.write(f)
+
             # The return value is not really meaningful in this case, since it won't be launched until the end.
             process = None
         else:
