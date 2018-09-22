@@ -2,6 +2,8 @@
 
 """ Handles deployment and starting of Overwatch and related processes.
 
+TODO: Update
+
 It can handle the configuration and execution of:
 
 - ``Overwatch ZMQ receiver``
@@ -32,6 +34,7 @@ import argparse
 import subprocess
 import sys
 import time
+import warnings
 import ruamel.yaml as yaml
 import collections
 # Help for handling supervisor configurations.
@@ -63,20 +66,54 @@ def expandEnvironmentalVars(loader, node):
 # Add the plugin into the loader.
 yaml.SafeLoader.add_constructor('!expandVars', expandEnvironmentalVars)
 
+def writeCustomConfig(configToWrite, filename = "config.yaml"):
+    """ Write out a custom Overwatch configuration file.
+
+    First, we read in any existing configuration, and then we update that configuration
+    with the newly provided one, rewriting the entire config file.
+
+    Args:
+        configToWrite (dict): Configuration to be written.
+        filename (str): Filename of the configuration file. Default: "config.yaml".
+    Returns:
+        None.
+    """
+    config = {}
+    if os.path.exists(filename):
+        with open(filename, "r") as f:
+            with warnings.catch_warnings():
+                warnings.simplefilter("ignore")
+                config = yaml.load(f, Loader = yaml.SafeLoader)
+
+    # Add our new options in.
+    config.update(configToWrite)
+
+    # Write out configuration.
+    # We overwrite the previous config because we already loaded it in, so in effect we are appending
+    # (but we reduplication of options)
+    with open(filename, "w") as f:
+        yaml.dump(config, f, default_flow_style = False)
+
 class executable(object):
     """ Base executable class.
+
+    Note:
+        Arguments after ``config`` are values which are set via the config.
 
     Args:
         name (str): Name of the process that we are starting. It doesn't need to be the executable name,
                 as it's just used for informational purposes.
-        description (str): ...
+        description (str): Description of the process for clearer display, etc.
         args (list): List of arguments used to start the process.
         config (dict): Configuration for the executable.
+        runInForeground (bool): True if the process should be run in the foreground. This means that process will
+            be blocking. Note that this option is not meaningful if supervisord is being used. Default: False.
     Attributes:
-        name (str): ...
-        description (str): ...
+        name (str): Name of the process that we are starting. It doesn't need to be the executable name,
+                as it's just used for informational purposes.
+        description (str): Description of the process for clearer display, etc.
         args (list): List of arguments to be executed.
-        config (dict): ...
+        config (dict): Configuration for the executable.
         processIdentifier (str): A unique string which identifies the process (to be used to check if it already
             exists). It may need to include arguments to be unique, which will then depend on the order in which
             the process arguments are defined. It is determined by the fully formatted arguments.
@@ -87,10 +124,12 @@ class executable(object):
             need special options to ensure that it doesn't think that the executable failed immediately and should be
             restarted.
         logFilename (str): Filename for the log file. Default: "{name}.log".
+        runInForeground (bool): True if the process should be run in the foreground. This means that process will
+            be blocking. Note that this option is not meaningful if supervisord is being used. Default: False.
     """
     # Avoid having to set this for every object given that it should be the same for (nearly) every one.
+    supervisord = False
 
-    self.supervisord = False
     def __init__(self, name, description, args, config, supervisord, shortExecutionTime):
         self.name = name
         self.description = description
@@ -103,6 +142,7 @@ class executable(object):
         # Additional options
         self.shortExecutionTime = shortExecutionTime
         self.logFilename = "{name}.log".format(name = self.name)
+        self.runInForeground = self.config.get("runInForeground", False)
 
     # TODO: checkForProcessPID -> getProcessPID
     def getProcessPID(self):
@@ -220,7 +260,7 @@ class executable(object):
                 #    "startsecs": 0,
                 #})
 
-            process = process.format(name = name,
+            process = process.format(name = self.name,
                                      command = " ".join(self.args))
 
             # If using configparser
@@ -244,7 +284,7 @@ class executable(object):
         return process
 
     def setup(self):
-        """ Prepare for calling this executable.
+        """ Prepare for calling the executable.
 
         Here we setup the arguments for the executable using values in the config and we determine the
         ``processIdentifier``.
@@ -295,8 +335,15 @@ class executable(object):
         # Check for existing process
         # TODO: Maybe only do this sometimes??
         #if config.get("forceRestart", False) or receiverConfig.get("forceRestartTunnel", False):
-        if self.config("forceRestart", False):
+        if self.config.get("forceRestart", False):
             self.killExistingProcess()
+
+        # If we are not using supervisord and we want to launch multiple process, they must be
+        # launched with `nohup` so they run in the background.
+        if self.supervisord is False or self.config["foreground"] is True:
+            self.args = ["nohup"] + self.args
+
+        # TODO: Perhaps we can skip this if it already exists and we don't want to force restart?
         # Actually execute the process
         process = self.startProcessWithLog()
 
@@ -323,6 +370,7 @@ class sshKnownHostsExecutable(executable):
         config (dict): Configuration for the executable.
         port (int): SSH connection port.
         address (str): SSH connection address.
+
     Attributes:
         knownHostsPath (str): Path to the known hosts file. Assumed to be at ``$HOME/.ssh/known_hosts``.
         runExecutable (bool): Will actually run the executable if ``True``. Should only be run if the ``known_hosts``
@@ -376,7 +424,7 @@ class sshKnownHostsExecutable(executable):
         return None
 
 class autosshExecutable(executable):
-    """ ``autossh`` executable to create a SSH tunnel.
+    """ Start ``autossh`` to create a SSH tunnel.
 
     Note:
         Arguments after ``config`` are values which will be used for formatting and are required in the config.
@@ -390,10 +438,10 @@ class autosshExecutable(executable):
         port (int): SSH connection port.
         username (str): SSH connection username.
         address (str): SSH connection address.
-
     """
-    def __init__(self, description, config):
-        name = "autossh"
+    def __init__(self, config):
+        name = "autossh_{receiver}"
+        description = "{receiver} autossh tunnel".format(receiver = receiver)
         args = [
             "autossh",
             "-L {localPort}:localhost:{hltPort}",
@@ -406,7 +454,6 @@ class autosshExecutable(executable):
             "-f",
             "-N",
         ]
-        description = "{receiver} autossh tunnel".format(receiver = receiver)
         super().__init__(name = name,
                          description = description,
                          args = args,
@@ -416,13 +463,7 @@ class autosshExecutable(executable):
         self.shortExecutionTime = True
 
     def setup(self):
-        """ Setup the ``autossh`` tunnel by additionally setting up the known_hosts file.
-
-        Args:
-            None.
-        Returns:
-            None.
-        """
+        """ Setup the ``autossh`` tunnel by additionally setting up the known_hosts file. """
         # Call the base class setup first so that all of the variables are fully initialized and formatted.
         super().setup()
         # For the tunnel to be created successfully, we need to add the address of the SSH server
@@ -431,12 +472,179 @@ class autosshExecutable(executable):
         knownHosts = sshKnownHostsExecutable(config = self.config)
         knownHosts.run()
 
+class zmqReceiver(executable):
+    """ Start the ZMQ receiver.
+
+    Note:
+        Arguments after ``config`` are values which will be used for formatting and are required in the config.
+
+    Args:
+        config (dict): Configuration for the executable.
+        receiver (str): Three letter subsystem name. For example, ``EMC``.
+        localPort (int): Port where the HLT data should be made available on the local system.
+        dataPath (str): Path to where the data should be stored.
+        select (str): Selection string for the receiver.
+        additionalOptions (list): Additional options to be passed to the receiver.
+    """
+    def __init__(self, config):
+        name = "zmqReceiver_{receiver}"
+        description = "ZMQ Receiver for the {receiver} subsystem"
+        # From official script:
+        # zmqReceive --in=REQ>tcp://localhost:60323 --verbose=1 --sleep=60 --timeout=100 --select= --subsystem=TPC
+        # From this script:
+        # zmqReceive --subsystem=EMC --in=REQ>tcp://localhost:60321 --verbose=1 --sleep=60 --timeout=100 --select=
+        #
+        # NOTE: We don't need to escape most quotes!
+        # TODO: Remove the receiverConfig dependence.
+        args = [
+            os.path.join(receiverPath, "zmqReceive"),
+            "--subsystem={receiver}".format(receiver),
+            "--in=REQ>tcp://localhost:{localPort}".format(receiverConfig["localPort"]),
+            "--dataPath={dataPath}".format(config["receiver"].get("dataPath", "data")),
+            "--verbose=1",
+            "--sleep=60",
+            "--timeout=100",
+            "--select={select}".format(select = receiverConfig.get("select", "")),
+        ]
+        super().__init__(name = name,
+                         description = description,
+                         args = args,
+                         config = config)
+
+    def setup(self):
+        """ Setup required for the ZMQ receiver.
+
+        In particular, we add any additionally requested receiver options from the configuration,
+        as well as setting up the SSH tunnel.
+        """
+        # Call the base class setup first so that all of the variables are fully initialized and formatted.
+        super().setup()
+
+        # Append any additional options that might be defined in the config.
+        # We do this after the base class setup so it doesn't pollute the process identifier since custom
+        # options may vary from execution to execution.
+        if "additionalOptions" in self.config:
+            additionalOptions = self.config["additionalOptions"]
+            logger.debug("Adding additional receiver options: {additionalOptions}".format(additionalOptions = additionalOptions))
+            self.args.append(additionalOptions)
+
+        # Setup the autossh tunnel if required.
+        if self.config["tunnel"]:
+            tunnel = autosshExecutable(config = self.config)
+            tunnel.run()
+
+        # Conditions for run?
+        #if processPIDs is not None and (config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None)):
+
+class zodbDatabase(executable):
+    """ Start the ZODB database.
+
+    Note:
+        Arguments after ``config`` are values which will be used for formatting and are required in the config.
+
+    Args:
+        config (dict): Configuration for the executable.
+        address (str): IP address for the database.
+        port (int): Port for the database.
+        databasePath (str): Path to where the database file should be stored.
+        logFile (str): Filename and full path to the log file.
+        logFormat (str): Format of the log. Default: "%(asctime)s %(message)s"
+
+    Attributes:
+        configFilename (str): Location where the generated configuration file should be stored. Default: ...
+    """
+    def __init__(self, config):
+        name = "zodb"
+        description = "ZODB database"
+        # Set the default location of the config file in the configuration if not specified.
+        # We have it set in the class so that is is easily accessible, but we have it set
+        # TODO: Put this is the data directory or something similar??
+        #       Perhaps a "data/config" directory?
+        self.configFilename = "database.conf"
+        self.config["configFilename"] = self.configFilename
+        args = [
+            "runzeo",
+            "-C {configFilename}".format(configFilename = self.configFilename),
+        ]
+        # Set the default log format in the config if not specified.
+        if "logForamt" not in config:
+            config["logFormat"] = "%(asctime)s %(message)s"
+        super().__init__(name = name,
+                         description = description,
+                         args = args,
+                         config = config)
+
+    def setup(self):
+        """ Setup required for the ZODB database. """
+        # Call the base class setup first so that all of the variables are fully initialized and formatted.
+        super().setup()
+
+        self.createZEOConfig()
+
+    def createZEOConfig(self):
+        """ Create the database ZEO config file. """
+        # Create the main config. Unfortunately, the configuration file format is custom, so we cannot use
+        # another module such as ``configparser`` to generate the config. Consequently, we just use a string.
+        zeoConfig = """
+        <zeo>
+            address {ipAddress}:{port}
+        </zeo>
+
+        <filestorage>
+            path {databasePath}
+        </filestorage>
+
+        <eventlog>
+            <logfile>
+                path {logFile}
+                format {logFormat}
+            </logfile>
+        </eventlog>
+        """
+        # Fill in the values.
+        zeoConfig = zeoConfig.format(**self.config)
+
+        # Complete the process by cleaning up the config and writing it.
+        # To cleanup the shared indentation of the above string, we use ``inspect.cleandoc()``.
+        # This is preferred over ``textwrap.dedent()`` because it will still work even if there
+        # is a string on the first line (which has a different indentation that we want to ignore).
+        zeoConfig = inspect.cleandoc(zeoConfig)
+
+        with open(self.configFilename, "w") as f:
+            f.write(zeoConfig)
+
+class processing(executable):
+    """ Start Overwatch processing.
+
+    Note:
+        Arguments after ``config`` are values which will be used for formatting and are required in the config.
+
+    Args:
+        config (dict): Configuration for the executable.
+        additionalConfig (dict): Additional options to added to the processing configuration.
+    """
+    def __init__(self, config):
+        name = "processing"
+        description = "Overwatch processing"
+        args = [
+            "overwatchProcessing",
+        ]
+        super().__init__(name = name,
+                         description = description,
+                         args = args,
+                         config = config)
+
+    def setup(self):
+        """ Setup required for Overwatch processing.
+
+        In particular, we write any passed custom configuration options out to an Overwatch YAML config file.
+        """
+        writeCustomConfig(self.config["additionalOptions"])
+
 class uwsgiExecutable(executable):
     """ Create a ``uwsgi`` based executable.
 
     Args:
-
-    Returns:
     """
     def __init__(self, name, description, config):
         args = [...]
@@ -531,7 +739,7 @@ def setupRoot(config):
         thisRootPath = os.path.join(rootConfig["script"], "bin", "thisroot.sh")
         # Run thisroot.sh, extract the environment, and then set the python environment to those values
         # See: https://stackoverflow.com/a/3505826
-        command = ["bash", "-c", "source {}  && env".format(thisRootPath)]
+        command = ["bash", "-c", "source {thisRootPath} && env".format(thisRootPath = thisRootPath)]
 
         proc = subprocess.Popen(command, stdout = subprocess.PIPE)
 
@@ -605,62 +813,6 @@ def dqmReceiver(config, receiver, receiverConfig):
         else:
             logger.info("Success!")
 
-def zmqReceiver(config, receiver, receiverConfig, receiverPath):
-    processIdentifier = "zmqReceive --subsystem={0}".format(receiver)
-
-    # Start tunnel if requested
-    if receiverConfig["tunnel"]:
-        tunnel(config = config["tunnel"], receiver = receiver, receiverConfig = receiverConfig, supervisord = "supervisord" in config)
-
-    processPIDs = checkForProcessPID(processIdentifier)
-    #logger.debug("Found processPIDs: {0}".format(processPIDs))
-
-    # Check whether we should kill the receivers
-    if processPIDs is not None and (config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None)):
-        logger.debug("Found processPIDs: {0}".format(processPIDs))
-        processPIDs = killExistingProcess(processPIDs,
-                                          description = "{0} Receiver".format(receiver),
-                                          processIdentifier = processIdentifier)
-        # processPIDs will be None if the processes were killed successfully
-
-    if processPIDs is None:
-        # Start receiver
-        args = [
-            os.path.join(receiverPath, "zmqReceive"),
-            "--subsystem={0}".format(receiver),
-            "--in=REQ>tcp://localhost:{0}".format(receiverConfig["localPort"]),
-            "--dataPath={0}".format(config["receiver"].get("dataPath", "data")),
-            "--verbose=1",
-            "--sleep=60",
-            "--timeout=100",
-            "--select={0}".format(receiverConfig.get("select", "")),
-        ]
-        if "additionalOptions" in receiverConfig:
-            args.append(receiverConfig["additionalOptions"])
-        process = startProcessWithLog(args = args, name = "Receiver", logFilename = "{0}Receiver".format(receiver), supervisord = "supervisord" in config)
-        #--verbose=1 --sleep=60 --timeout=100 --select="" --subsystem="${subsystems[n]}" ${additionalOptions}
-
-        # From official script:
-        # zmqReceive --in=REQ>tcp://localhost:60323 --verbose=1 --sleep=60 --timeout=100 --select= --subsystem=TPC
-        # From this script:
-        # zmqReceive --subsystem=EMC --in=REQ>tcp://localhost:60321 --verbose=1 --sleep=60 --timeout=100 --select=
-        #
-        # --> Don't need to escape most quotes!
-
-        # Check for receiver to ensure that it didn't just die immediately due to bad arguments, etc.
-
-        if process:
-            logger.info("Check that the process launched successfully...")
-            time.sleep(1.5)
-            processPIDs = checkForProcessPID(processIdentifier)
-            if processPIDs is None:
-                logger.critical("No process found corresponding to the just launched receiver! Check the log files!")
-                sys.exit(2)
-            else:
-                logger.info("Success!")
-    else:
-        logger.info("Skipping receiver \"{0}\" since it already exists!".format(receiver))
-
 def receiver(config):
     """ Start receivers """
     # Add receiver to path
@@ -691,102 +843,6 @@ def receiver(config):
             dqmReceiver(config = config, receiver = receiver, receiverConfig = receiverConfig)
         else:
             zmqReceiver(config = config, receiver = receiver, receiverConfig = receiverConfig, receiverPath = receiverPath)
-
-def database(config):
-    """ Start the database on it's own. """
-    zeoConfigFile = """
-<zeo>
-    address {ipAddress}:{port}
-</zeo>
-
-<filestorage>
-    path {databasePath}
-</filestorage>
-
-<eventlog>
-    <logfile>
-        path {logFile}
-        format {logFormat}
-    </logfile>
-</eventlog>
-    """.format(ipAddress = config["ipAddress"],
-               port = config["port"],
-               databasePath = config["databasePath"],
-               logFile = config["logFile"],
-               logFormat = config.get("logFormat", "%(asctime)s %(message)s")
-               )
-
-    # Write config
-    with open("zeoGenerated.conf", "w") as f:
-        f.write(zeoConfigFile)
-
-    # Start zeo with the config file
-    args = [
-        "runzeo",
-        "-C zeoGenerated.conf",
-    ]
-    processIdentifier = " ".join(args)
-    processPIDs = checkForProcessPID(processIdentifier)
-    logger.debug("processPIDs: {0}".format(processPIDs))
-
-    # Only start if not already running
-    if processPIDs is None:
-        # Start database
-        if not config["avoidNohup"]:
-            # Only append "nohup" if it is _NOT_ called from systemd or supervisord
-            args = ["nohup"] + args
-
-        process = startProcessWithLog(args = args, name = "ZODB", logFilename = "ZODB")
-
-        if process:
-            logger.info("Check that the process launched successfully...")
-            time.sleep(1.5)
-            processPIDs = checkForProcessPID(processIdentifier)
-            if processPIDs is None:
-                logger.critical("No process found corresponding to the just launched ZODB database! Check the log files!")
-                sys.exit(2)
-            else:
-                logger.info("Success!")
-
-def writeCustomConfig(config, filename = "config.yaml"):
-    if "customConfig" in config:
-        if os.path.exists(filename):
-            # Append if it already exists
-            mode = "a"
-        else:
-            mode = "w"
-
-        # Write out configuration
-        with open(filename, mode) as f:
-            yaml.dump(config["customConfig"], f, default_flow_style = False)
-
-def processing(config):
-    """ Start processing. """
-    # Write out custom configuration
-    writeCustomConfig(config["processing"])
-
-    # Start the processing
-    # Use the installed executable
-    args = [
-        "overwatchProcessing",
-    ]
-    processIdentifier = " ".join(args)
-
-    if not config["avoidNohup"]:
-        # Only append "nohup" if it is _NOT_ called from systemd or supervisord
-        args = ["nohup"] + args
-
-    process = startProcessWithLog(args = args, name = "Processing", logFilename = "processing")
-
-    if process:
-        logger.info("Check that the process launched successfully...")
-        time.sleep(1.5)
-        processPIDs = checkForProcessPID(processIdentifier)
-        if processPIDs is None:
-            logger.critical("No process found corresponding to the just launched processing! Check the log files!")
-            sys.exit(2)
-        else:
-            logger.info("Success!")
 
 def webApp(config):
     """ Setup and start web app.
