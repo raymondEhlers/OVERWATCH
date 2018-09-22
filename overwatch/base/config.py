@@ -13,9 +13,7 @@ a little bit, but it makes things much simpler, so it's worth the trade-off.
 
 import aenum
 import ruamel.yaml as yaml
-import sys
 import os
-import pprint
 import pkg_resources
 from flask_bcrypt import generate_password_hash
 import warnings
@@ -260,17 +258,3 @@ def readConfig(configType):
 
     return (globalConfig, filesRead)
 
-if __name__ == "__main__":  # pragma: no cover
-    """ Load basic configuration for testing (although unit tests would be preferred in the future). """
-    # Setup logging
-    # Provides a warning if there are no handlers
-    logging.raiseExceptions = True
-    formatter = logging.Formatter("[%(levelname)s] %(message)s")
-    streamHandler = logging.StreamHandler(sys.stdout)
-    streamHandler.setFormatter(formatter)
-    logger.addHandler(streamHandler)
-    logger.setLevel("DEBUG")
-
-    # Load configuration
-    config, _ = readConfig(configurationType.processing)
-    logger.info("Final config: {0}".format(pprint.pformat(config)))
