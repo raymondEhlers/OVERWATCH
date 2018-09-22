@@ -71,15 +71,28 @@ class executable(object):
                 as it's just used for informational purposes.
         description (str): ...
         args (list): List of arguments used to start the process.
-        config (dict): ...
+        config (dict): Configuration for the executable.
     Attributes:
+        name (str): ...
+        description (str): ...
         args (list): List of arguments to be executed.
-        ...
-
+        config (dict): ...
+        processIdentifier (str): A unique string which identifies the process (to be used to check if it already
+            exists). It may need to include arguments to be unique, which will then depend on the order in which
+            the process arguments are defined. It is determined by the fully formatted arguments.
+        supervisord (bool): True if the process launching should be configured for ``supervisord``.
+            This means that the process won't be started immediately. Note that this is a class variable, so
+            we only need to set it once when starting the deployment.
+        shortExecutionTime (bool): True if the executable executes and completes quickly. In this case, supervisord
+            need special options to ensure that it doesn't think that the executable failed immediately and should be
+            restarted.
+        logFilename (str): Filename for the log file. Default: "{name}.log".
     """
-    def __init__(self, name, description, args, config):
+    # Avoid having to set this for every object given that it should be the same for (nearly) every one.
+
+    self.supervisord = False
+    def __init__(self, name, description, args, config, supervisord, shortExecutionTime):
         self.name = name
-        # TODO: Was processType
         self.description = description
         self.args = args
         self.config = config
@@ -87,16 +100,20 @@ class executable(object):
         # Will be derived from the arguments once they have been fully formatting.
         self.processIdentifier = None
 
+        # Additional options
+        self.shortExecutionTime = shortExecutionTime
+        self.logFilename = "{name}.log".format(name = self.name)
+
     # TODO: checkForProcessPID -> getProcessPID
     def getProcessPID(self):
         """ Retrieve the process PID via ``pgrep`` for a process identifier by a given identifier.
 
         Note:
-            Uniqueness requirement ... Should it be?
+            TODO: Uniqueness requirement ... Should it be?
 
         Args:
             None.
-            processIdentifier(str): String passed to pgrep to identify the process.
+            processIdentifier (str): String passed to pgrep to identify the process.
         Returns:
             list: PID(s) from ``pgrep``.
 
@@ -119,9 +136,10 @@ class executable(object):
         PIDs = res.strip("\n").split("\n")
         PIDs = [int(pid) for pid in PIDs if pid != ""]
 
-        # TODO: If multiple PIDs is fine, then add an option for when this can happen.
+        # We generally only expect one PID, so we should raise an issue clearly if we find more than one.
+        # If multiple PIDs is fine, then we can add an option for when this can happen.
         if len(PIDs) > 1:
-            raise RuntimeError("Multiple PIDs {pids} found for process with identifier {processIdentifier}!".format(processIdentifier = self.processIdentifier))
+            raise RuntimeError("Multiple PIDs {PIDs} found for process with identifier {processIdentifier}!".format(PIDs = PIDs, processIdentifier = self.processIdentifier))
         return PIDs
 
     def killExistingProcess(self, PIDs, sig = signal.SIGINT):
@@ -159,16 +177,12 @@ class executable(object):
         process and log information will be appended to the existing ``supervisord`` configuration.
 
         Args:
-            logFilename (str): Filename for the log file.
-            supervisord (bool): True if the process launching should be configured for ``supervisord``.
-                This means that the process won't be started immediately.
-            shortExecutionTime (bool): True if the process will execute and completed quickly. In this case, we don't
-                want ``supervisord`` to restart the process immediately.
+
         Returns:
             subprocess.Popen or None: If the process is started immediately, then we return the ``Popen`` class
                 associated with the started process. Otherwise, we return None.
         """
-        if supervisord:
+        if self.supervisord:
             # String version
             process = """
                 [program:{name}]
@@ -196,7 +210,8 @@ class executable(object):
             #    "stdout_logfile_backups": 10,
             #}
 
-            if shortExecutionTime:
+            # Prevents supervisord from immediately restarting a process which executes quickly.
+            if self.shortExecutionTime:
                 process += "\nautorestart=false"
                 process += "\nstartsecs=0"
                 # If using configparser
@@ -205,8 +220,7 @@ class executable(object):
                 #    "startsecs": 0,
                 #})
 
-            # Using logFilename to ensure that the name is more descriptive
-            process = process.format(name = logFilename,
+            process = process.format(name = name,
                                      command = " ".join(self.args))
 
             # If using configparser
@@ -220,7 +234,7 @@ class executable(object):
             # The return value is not really meaningful in this case, since it won't be launched until the end.
             process = None
         else:
-            with open("{logFilename}.log".format(logFilename = logFilename), "w") as logFile:
+            with open(self.logFilename, "w") as logFile:
                 logger.debug("Starting '{name}' with args: {args}".format(name = self.name, args = self.args))
                 # Redirect stderr to stdout so the information isn't lost.
                 process = subprocess.Popen(self.args,
@@ -233,9 +247,7 @@ class executable(object):
         """ Prepare for calling this executable.
 
         Here we setup the arguments for the executable using values in the config and we determine the
-        ``processIdentifier``, which is a unique string which identifies the process (to be used to check
-        if it already exists). It may need to include arguments to be unique, which will then depend on the
-        order in which the process arguments are defined. It is determined by the fully formatted arguments.
+        ``processIdentifier``.
 
         Args:
             None
@@ -243,18 +255,41 @@ class executable(object):
             None
         """
         # Determine the function arguments based on the config and setup.
-        self.formatArgs()
+        self.formatMembers()
         # Since the arguments are now fully determine, we can now determine the process identifier.
         # In principle, this can overridden by the user by setting the attribute.
         if not self.processIdentifier:
             self.processIdentifier = " ".join(self.args)
 
-    def formatArgs(self):
-        """ Determine the arguments for the executable based on the given configuration. """
+    def formatMembers(self):
+        """ Determine the description and arguments for the executable based on the given configuration.
+
+        This formatting is done by generically providing all arguments in the config to the format each string.
+
+        Note:
+            This formatting will fail if a particular key doesn't exist!
+
+        Args:
+            None
+        Returns:
+            None. Modifies the ``name``, ``description``, ``args``, and ``logFilename`` member variables.
+        """
+        self.name = self.name.format(**self.config)
+        self.description = self.description.format(**self.config)
         self.args = [arg.format(**self.config) for arg in self.args]
+        self.logFilename = self.logFilename.format(**self.config)
 
     def run(self):
-        """ Driver function for running executables. """
+        """ Driver function for running executables.
+
+        The options that are executed here depend heavily on the provided YAML config.
+        TODO: Document options here...
+
+        Args:
+            None.
+        Returns:
+            None.
+        """
         # Handle configuration, etc.
         self.setup()
         # Check for existing process
@@ -265,20 +300,86 @@ class executable(object):
         # Actually execute the process
         process = self.startProcessWithLog()
 
-class uwsgiExecutable(executable):
-    """
+        # Check the output to see if we've succeeded. If it was executed (ie. we are not using ``supervisord``),
+        # process is not None, so we can use that as a proxy for whether to check for successful execution.
+        # TODO: Maybe only do this sometimes?? Set via config?
+        if process and self.shortExecutionTime is False:
+            PIDs = self.checkForProcessPID()
+            if not PIDs:
+                raise RuntimeError("Failed to find the executed process with identifier {processIdentifier}".format(processIdentifier = self.processIdentifier))
+
+class sshKnownHostsExecutable(executable):
+    """ Create a SSH ``known_hosts`` file with the SSH address in the configuration.
 
     Note:
-        Relies on the following parameters in the config.
+        If the known_hosts file exists, it is assumed to have the address already and is not created! If this is
+        problematic in the future, we could instead amend to the file. However, in that case, it will be important
+        to check for duplicates.
 
+    Note:
+        Arguments after ``config`` are values which will be used for formatting and are required in the config.
+
+    Args:
+        config (dict): Configuration for the executable.
+        port (int): SSH connection port.
+        address (str): SSH connection address.
+    Attributes:
+        knownHostsPath (str): Path to the known hosts file. Assumed to be at ``$HOME/.ssh/known_hosts``.
+        runExecutable (bool): Will actually run the executable if ``True``. Should only be run if the ``known_hosts``
+            file doesn't exist. Default: ``False``.
     """
-    def __init__(self, name, description, config):
-        args = [...]
-        super().__init__(args = args,
-                config = confg)
+    def __init__(self, config):
+        name = "ssh-keyscan"
+        description = "Use ssh-keyscan to add addresses to the known_hosts file."
+        args = [
+            "ssh-keyscan",
+            "-p {port}",
+            "-H",
+            "{address}",
+        ]
+        super().__init__(name = name,
+                         description = description,
+                         args = args,
+                         config = config)
+        self.knownHostsPath = os.path.expandvars(os.path.join("$HOME", ".ssh", "known_hosts")).replace("\n", "")
+        self.runExecutable = False
+
+    def setup(self):
+        """
+
+        """
+        logger.debug("Checking for known_hosts file at {knownHostsPath}".format(knownHostsPath = self.knownHostsPath))
+        if not os.path.exists(self.knownHostsPath):
+            directoryName = os.path.dirname(self.knownHostsPath)
+            if not os.path.exists(directoryName):
+                os.makedirs(directoryName)
+                # Set the proper permissions
+                os.chmod(os.path.dirname(self.knownHostsPath), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+
+            self.runExecutable = True
+        # Take advantage of the log file to write the process output to the known_hosts file.
+        self.logFilename = self.knownHostsPath
+
+    def startProcessWithLog(self):
+        """
+
+        """
+        if self.runExecutable:
+            return super().startProcessWithLog()
+
+            #with open(knownHostsPath, "w") as logFile:
+            #    logger.debug("Starting \"{0}\" with args: {1}".format("SSH Keyscan", args))
+            #    # This should execute rapidly, so we don't need to check for the process ID.
+            #    subprocess.Popen(args, stdout=logFile)
+
+        # If not executing, we have nothing to return.
+        return None
 
 class autosshExecutable(executable):
-    """ ``autossh`` executable.
+    """ ``autossh`` executable to create a SSH tunnel.
+
+    Note:
+        Arguments after ``config`` are values which will be used for formatting and are required in the config.
 
     Args:
         name (str):
@@ -306,71 +407,46 @@ class autosshExecutable(executable):
             "-N",
         ]
         description = "{receiver} autossh tunnel".format(receiver = receiver)
-        #processIdentifier = "autossh -L {localPort}".format(**self.config)
         super().__init__(name = name,
                          description = description,
                          args = args,
                          config = config)
 
-    def setup(self):
-        """
+        # This will execute rather quickly.
+        self.shortExecutionTime = True
 
+    def setup(self):
+        """ Setup the ``autossh`` tunnel by additionally setting up the known_hosts file.
+
+        Args:
+            None.
+        Returns:
+            None.
         """
+        # Call the base class setup first so that all of the variables are fully initialized and formatted.
         super().setup()
-        # Ensure that the known_hosts file is populated if it wasn't already
-        knownHostsPath = os.path.expandvars(os.path.join("$HOME", ".ssh", "known_hosts")).replace("\n", "")
-        logger.debug("Checking for known_hosts file at {knownHostsPath}".format(knownHostsPath = knownHostsPath))
-        if not os.path.exists(knownHostsPath):
-            if not os.path.exists(os.path.dirname(knownHostsPath)):
-                os.makedirs(os.path.dirname(knownHostsPath))
-                # Set the proper permissions
-                os.chmod(os.path.dirname(knownHostsPath), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
-            # ssh-keyscan -H {address}
-            args = [
-                "ssh-keyscan",
-                "-p {0}".format(config["port"]),
-                "-H",
-                config["address"],
-            ]
-            with open(knownHostsPath, "w") as logFile:
-                logger.debug("Starting \"{0}\" with args: {1}".format("SSH Keyscan", args))
-                # This should execute rapidly, so we don't need to check for the process ID.
-                subprocess.Popen(args, stdout=logFile)
+        # For the tunnel to be created successfully, we need to add the address of the SSH server
+        # to the known_hosts file, so we create it here. In principle, this isn't safe if we're not in
+        # a safe environment, but this should be fine for our purposes.
+        knownHosts = sshKnownHostsExecutable(config = self.config)
+        knownHosts.run()
+
+class uwsgiExecutable(executable):
+    """ Create a ``uwsgi`` based executable.
+
+    Args:
+
+    Returns:
+    """
+    def __init__(self, name, description, config):
+        args = [...]
+        super().__init__(args = args,
+                         config = config)
 
 class enviornmentVariables():
     pass
 
 _available_executables = []
-
-def tunnel(config, receiver, receiverConfig, supervisord):
-    """ Create ssh tunnel with ``autossh``. """
-    processIdentifier = "autossh -L {0}".format(receiverConfig["localPort"])
-    processPIDs = checkForProcessPID(processIdentifier)
-
-    if config.get("forceRestart", False) or receiverConfig.get("forceRestartTunnel", False):
-        processPIDs = killExistingProcess(processPIDs,
-                                          processType = "{0} SSH Tunnel".format(receiver),
-                                          processIdentifier = processIdentifier)
-        # processPIDs will be None if the processes were killed successfully
-
-    if processPIDs is None:
-        # Create ssh tunnel
-        args = [
-            "autossh",
-            "-L {localPort}:localhost:{hltPort}".format(localPort = receiverConfig["localPort"],
-                                                        hltPort = receiverConfig["hltPort"]),
-            "-o ServerAliveInterval=30",  # Built-in ssh monitoring option
-            "-o ServerAliveCountMax=3",   # Built-in ssh monitoring option
-            "-p {0}".format(config["port"]),
-            "-l {0}".format(config["username"]),
-            "{0}".format(config["address"]),
-            "-M 0",                       # Disable autossh built-in monitoring
-            "-f",
-            "-N",
-        ]
-        # Official: autossh -o ServerAliveInterval 30 -o ServerAliveCountMax 3 -p ${sshPorts[n]} -f -N -l zmq-tunnel  -L ${internalReceiverPorts[n]}:localhost:${externalReceiverPorts[n]} ${sshServerAddress}
-        startProcessWithLog(args = args, name = "{0} SSH Tunnel".format(receiver), logFilename = "{}sshTunnel".format(receiver), supervisord = supervisord, shortExecutionTime = True)
-        # We don't want to check the process status, since autossh will go to the background immediately
 
 def writeSensitiveVariableToFile(config, name, prettyName, defaultWriteLocation):
     """ Write SSH key or certificate from environment variable to file. """
@@ -509,7 +585,7 @@ def dqmReceiver(config, receiver, receiverConfig):
     if processPIDs is not None and (config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None)):
         logger.debug("Found processPIDs: {0}".format(processPIDs))
         processPIDs = killExistingProcess(processPIDs,
-                                          processType = "{0} Receiver".format(receiver),
+                                          description = "{0} Receiver".format(receiver),
                                           processIdentifier = processIdentifier)
         # processPIDs will be None if the processes were killed successfully
 
@@ -543,7 +619,7 @@ def zmqReceiver(config, receiver, receiverConfig, receiverPath):
     if processPIDs is not None and (config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None)):
         logger.debug("Found processPIDs: {0}".format(processPIDs))
         processPIDs = killExistingProcess(processPIDs,
-                                          processType = "{0} Receiver".format(receiver),
+                                          description = "{0} Receiver".format(receiver),
                                           processIdentifier = processIdentifier)
         # processPIDs will be None if the processes were killed successfully
 
@@ -763,7 +839,7 @@ def webApp(config):
     if processPIDs is not None and config["webApp"].get("forceRestart", None):
         logger.debug("Found processPIDs: {0}".format(processPIDs))
         processPIDs = killExistingProcess(processPIDs,
-                                          processType = "{0} Receiver".format(receiver),
+                                          description = "{0} Receiver".format(receiver),
                                           processIdentifier = processIdentifier)
         # processPIDs will be None if the processes were killed successfully
 
