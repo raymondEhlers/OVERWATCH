@@ -715,6 +715,97 @@ class supervisord(executable):
         """ We want to run in separate steps, so this function shouldn't be used. """
         raise NotImplementedError("The supervisord executable should be run in multiple steps.")
 
+class nginx(executable):
+    """ Start ``nginx`` to serve a uwsgi based web app.
+
+    Note:
+        Arguments after ``config`` are values which will be used for formatting and are required in the config.
+
+    Note:
+        It is generally recommended to run ``nginx`` in a separate container, but this option is maintained
+        for situations where that is not possible.
+
+    Args:
+        config (dict): Configuration for the executable.
+    """
+    def __init__(self, config):
+        name = "nginx"
+        description = "NGINX web server for a uwsgi web app"
+        args = [
+            "/usr/sbin/nginx",
+        ]
+        super().__init__(name = name,
+                         description = description,
+                         args = args,
+                         config = config)
+
+    def setup(self):
+        """ Setup required for the ``nginx`` executable.
+
+        In particular, we need to write out the main configuration, as well as the ``gzip`` configuration.
+        """
+        mainNginxConfig = """
+        server {
+            listen 80 default_server;
+            # "_" is a wildcard for all possible server names
+            server_name _;
+            location / {
+                include uwsgi_params;
+                uwsgi_pass unix:///tmp/%(name)s.sock;
+            }
+        }"""
+        mainNginxConfig = mainNginxConfig % {"name": self.name}
+        mainNginxConfig = inspect.cleandoc(mainNginxConfig)
+
+        nginxBasePath = self.config.get("basePath", "/etc/nginx")
+        nginxConfigPath = os.path.join(nginxBasePath, self.config.get("configPath", "conf.d"))
+        nginxSitesPath = os.path.join(nginxBasePath, self.config.get("sitesPath", "sites-enabled"))
+
+        # Create folders that don't exist
+        # But don't mess with this if it's in `/etc/nginx`
+        if nginxBasePath != "/etc/nginx":
+            paths = [nginxBasePath, nginxConfigPath, nginxSitesPath]
+            for path in paths:
+                if not os.path.exists(path):
+                    os.makedirs(path)
+
+        with open(os.path.join(nginxSitesPath, "{0}Nginx.conf".format(self.name)), "w") as f:
+            f.write(mainNginxConfig)
+
+        gzipConfig = """
+        # GZip configuration
+        # Already setup in main config!
+        #gzip on;
+        #gzip_disable "msie6";
+
+        gzip_vary on;
+        gzip_proxied any;
+        gzip_comp_level 6;
+        gzip_buffers 16 8k;
+        gzip_http_version 1.1;
+        gzip_min_length 256;
+        gzip_types
+            text/plain
+            text/css
+            application/json
+            application/x-javascript
+            text/xml
+            application/xml
+            application/xml+rss
+            application/javascript
+            text/javascript
+            application/vnd.ms-fontobject
+            application/x-font-ttf
+            font/opentype
+            image/svg+xml
+            image/x-icon;
+        """
+
+        # Cleanup and write the gzip config.
+        gzipConfig = inspect.cleandoc(gzipConfig)
+        with open(os.path.join(nginxConfigPath, "gzip.conf"), "w") as f:
+            f.write(gzipConfig)
+
 class uwsgiExecutable(executable):
     """ Create a ``uwsgi`` based executable.
 
@@ -1012,73 +1103,6 @@ def uwsgi(config, name):
     logger.info("Writing configuration file to {0}".format(filename))
     with open(filename, "w") as f:
         yaml.dump(uwsgiConfig, f, default_flow_style = False)
-
-def startNginx(name = "nginx", logFilename = "nginx", supervisord = False):
-    args = [
-        "/usr/sbin/nginx",
-    ]
-    startProcessWithLog(args = args, name = name, logFilename = logFilename, supervisord = supervisord)
-
-def nginx(config, name):
-    """ Setup and launch nginx. """
-    mainNginxConfig = """
-server {
-    listen 80 default_server;
-    # "_" is a wildcard for all possible server names
-    server_name _;
-    location / {
-        include uwsgi_params;
-        uwsgi_pass unix:///tmp/%(name)s.sock;
-    }
-}"""
-    mainNginxConfig = mainNginxConfig % {"name": name}
-
-    nginxBasePath = config["webServer"].get("basePath", "/etc/nginx")
-    nginxConfigPath = os.path.join(nginxBasePath, config["webServer"].get("configPath", "conf.d"))
-    nginxSitesPath = os.path.join(nginxBasePath, config["webServer"].get("sitesPath", "sites-enabled"))
-
-    # Create folders that dont' exist
-    # But don't mess with this if it's in /etc/nginx
-    if nginxBasePath != "/etc/nginx":
-        paths = [nginxBasePath, nginxConfigPath, nginxSitesPath]
-        for path in paths:
-            if not os.path.exists(path):
-                os.makedirs(path)
-
-    with open(os.path.join(nginxSitesPath, "{0}Nginx.conf".format(name)), "w") as f:
-        f.write(mainNginxConfig)
-
-    gzipConfig = """
-# GZip configuration
-# Already setup in main config!
-#gzip on;
-#gzip_disable "msie6";
-
-gzip_vary on;
-gzip_proxied any;
-gzip_comp_level 6;
-gzip_buffers 16 8k;
-gzip_http_version 1.1;
-gzip_min_length 256;
-gzip_types
-    text/plain
-    text/css
-    application/json
-    application/x-javascript
-    text/xml
-    application/xml
-    application/xml+rss
-    application/javascript
-    text/javascript
-    application/vnd.ms-fontobject
-    application/x-font-ttf
-    font/opentype
-    image/svg+xml
-    image/x-icon;
-"""
-
-    with open(os.path.join(nginxConfigPath, "gzip.conf"), "w") as f:
-        f.write(gzipConfig)
 
 def webAppSetup(config):
     """ Setup web app by installing bower components (polymer) and jsroot.
