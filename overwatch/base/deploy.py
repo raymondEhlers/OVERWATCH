@@ -524,14 +524,10 @@ class zodbDatabase(executable):
         configFilename (str): Location where the generated configuration file should be stored. Default: ...
     """
     def __init__(self, config):
+        # TODO: Can we remove the log file here and just handle the log in supervisord?
         name = "zodb"
         description = "ZODB database"
-        # Set the default location of the config file in the configuration if not specified.
-        # We have it set in the class so that is is easily accessible, but we have it set
-        # TODO: Put this is the data directory or something similar??
-        #       Perhaps a "data/config" directory?
-        self.configFilename = "database.conf"
-        self.config["configFilename"] = self.configFilename
+        self.configFilename = "data/config/database.conf"
         args = [
             "runzeo",
             "-C {configFilename}".format(configFilename = self.configFilename),
@@ -549,10 +545,6 @@ class zodbDatabase(executable):
         # Call the base class setup first so that all of the variables are fully initialized and formatted.
         super().setup()
 
-        self.createZEOConfig()
-
-    def createZEOConfig(self):
-        """ Create the database ZEO config file. """
         # Create the main config. Unfortunately, the configuration file format is custom, so we cannot use
         # another module such as ``configparser`` to generate the config. Consequently, we just use a string.
         zeoConfig = """
@@ -754,15 +746,16 @@ class nginx(executable):
                 uwsgi_pass unix:///tmp/%(name)s.sock;
             }
         }"""
+        # Use "%" formatting because the `nginx` config uses curly brackets.
         mainNginxConfig = mainNginxConfig % {"name": self.name}
         mainNginxConfig = inspect.cleandoc(mainNginxConfig)
 
+        # Determine the path to the main config file.
         nginxBasePath = self.config.get("basePath", "/etc/nginx")
         nginxConfigPath = os.path.join(nginxBasePath, self.config.get("configPath", "conf.d"))
         nginxSitesPath = os.path.join(nginxBasePath, self.config.get("sitesPath", "sites-enabled"))
 
-        # Create folders that don't exist
-        # But don't mess with this if it's in `/etc/nginx`
+        # Create folders that don't exist, but don't mess with this if it's in `/etc/nginx`.
         if nginxBasePath != "/etc/nginx":
             paths = [nginxBasePath, nginxConfigPath, nginxSitesPath]
             for path in paths:
@@ -1061,10 +1054,10 @@ def uwsgi(config, name):
     # This is the base configuration which sets the default values
     uwsgiConfig = {
         # Socket setup
-        "socket": "/tmp/uwsgi/{name}.sock",
+        "socket": "/tmp/sockets/wsgi_{name}.sock",
         "vacuum": True,
         # Stats
-        "stats": "/tmp/uwsgi/{name}Stats.sock",
+        "stats": "/tmp/sockets/wsgi_{name}_stats.sock",
 
         # Setup
         "chdir": "/opt/overwatch",
@@ -1081,7 +1074,7 @@ def uwsgi(config, name):
         # Minimum number of workers to keep at all times
         "cheaper": 2,
 
-        # Configure master
+        # Configure master fifo
         "master": True,
         "master-fifo": "wsgiMasterFifo{name}",
     }
