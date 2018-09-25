@@ -455,6 +455,7 @@ class zmqReceiver(executable):
         dataPath (str): Path to where the data should be stored.
         select (str): Selection string for the receiver.
         additionalOptions (list): Additional options to be passed to the receiver.
+        receiverPath (str): Path to directory which contains the receiver. Default: "receiver/bin".
     """
     def __init__(self, config):
         name = "zmqReceiver_{receiver}"
@@ -465,16 +466,15 @@ class zmqReceiver(executable):
         # zmqReceive --subsystem=EMC --in=REQ>tcp://localhost:60321 --verbose=1 --sleep=60 --timeout=100 --select=
         #
         # NOTE: We don't need to escape most quotes!
-        # TODO: Remove the receiverConfig dependence.
         args = [
-            os.path.join(receiverPath, "zmqReceive"),
-            "--subsystem={receiver}".format(receiver),
-            "--in=REQ>tcp://localhost:{localPort}".format(receiverConfig["localPort"]),
-            "--dataPath={dataPath}".format(config["receiver"].get("dataPath", "data")),
+            "zmqReceive",
+            "--subsystem={receiver}".format(self.config["receiver"]),
+            "--in=REQ>tcp://localhost:{localPort}".format(self.config["localPort"]),
+            "--dataPath={dataPath}".format(self.config.get("dataPath", "data")),
             "--verbose=1",
             "--sleep=60",
             "--timeout=100",
-            "--select={select}".format(select = receiverConfig.get("select", "")),
+            "--select={select}".format(select = self.config.get("select", "")),
         ]
         super().__init__(name = name,
                          description = description,
@@ -489,6 +489,17 @@ class zmqReceiver(executable):
         """
         # Call the base class setup first so that all of the variables are fully initialized and formatted.
         super().setup()
+
+        # TODO: Do we want to use a class for adding this to the environment??
+        # Add the executable location to the path if necessary.
+        receiverPath = self.config.get("receiverPath", "receiver/bin")
+        if receiverPath:
+            # Could have environment vars, so we need to expand them.
+            # Need to strip "\n" due to it being inserted when variables are expanded
+            receiverPath = os.path.expandvars(receiverPath).replace("\n", "")
+            logger.debug('Adding receiver path "{receiverPath}" to PATH'.format(receiverPath = receiverPath))
+            # Also remove "\n" at the end of the path variable for clarity
+            os.environ["PATH"] = os.environ["PATH"].rstrip() + os.pathsep + receiverPath
 
         # Append any additional options that might be defined in the config.
         # We do this after the base class setup so it doesn't pollute the process identifier since custom
@@ -601,6 +612,9 @@ class processing(executable):
 
         In particular, we write any passed custom configuration options out to an Overwatch YAML config file.
         """
+        # Call the base class setup first so that all of the variables are fully initialized and formatted.
+        super().setup()
+
         writeCustomConfig(self.config["additionalOptions"])
 
 class webApp(executable):
@@ -617,7 +631,7 @@ class webApp(executable):
         name = "webApp"
         description = "Overwatch webApp"
         args = [
-            "overwatchProcessing",
+            "overwatchWebApp",
         ]
         super().__init__(name = name,
                          description = description,
@@ -630,6 +644,11 @@ class webApp(executable):
         In particular, we write any passed custom configuration options out to an Overwatch YAML config file.
         """
         writeCustomConfig(self.config["additionalOptions"])
+        # Create an underlying uwsgi app to handle the setup and execution.
+        self = uwsgi.createObject(self)
+
+        # We call this last here because we are going to update variables if we use uwsgi for execution.
+        super().setup()
 
 class supervisord(executable):
     """ Start ``supervisord`` to manage processes.
@@ -799,15 +818,119 @@ class nginx(executable):
         with open(os.path.join(nginxConfigPath, "gzip.conf"), "w") as f:
             f.write(gzipConfig)
 
-class uwsgiExecutable(executable):
-    """ Create a ``uwsgi`` based executable.
+class uwsgi(executable):
+    """ Start a ``uwsgi`` executable.
 
-    Args:
+    Note:
+        We take the default initialization from the base class.
     """
-    def __init__(self, name, description, config):
-        args = [...]
-        super().__init__(args = args,
-                         config = config)
+    @classmethod
+    def createObject(cls, obj):
+        """ Create the underlying ``uwsgi`` object if requested in the given executable config.
+
+        Note that this expects a ``uwsgi`` configuration block inside of the executable config.
+
+        Args:
+            cls (uwsgi): uwsgi class which will be used to create a uwsgi executable.
+            obj (executable): Executable which may be run via uwsgi. Its configuration determines where it is
+                utilized.
+        Returns:
+            executable: Updated executable object.
+
+        Raises:
+            KeyError: If the executable config doesn't contain an ``uwsgi`` configuration.
+        """
+        # Config validation
+        if "uwsgi" not in obj.config:
+            raise KeyError('Expected "uwsgi" block in the executable configuration, but none was found!')
+
+        if obj.config["uwsgi"]["enabled"] is True:
+            uwsgiApp = cls(name = obj.name,
+                           description = obj.description,
+                           args = None,
+                           config = obj.config["uwsgi"])
+            # This will create the necessary uwsgi config.
+            uwsgiApp.setup()
+
+            # Extract the newly defined arguments.
+            obj.args = uwsgiApp.args
+
+        # We want to return the object one way or another.
+        return obj
+
+    def setup(self):
+        """ Setup required for executing a web app via ``uwsgi``.
+
+        Raises:
+            KeyError: If ``wsgi-file`` or ``module`` is not specific in the configuration, such that the ``uwsgi``
+                executable cannot not be defined.
+        """
+        filename = "{name}.yaml".format(name = self.name)
+        self.args = [
+            "uwsgi",
+            "--yaml",
+            filename,
+        ]
+
+        # Once we have the arguments defined, we can move setup the base class.
+        super().setup()
+
+        # Define the uwsgi config
+        if "wsgi-file" not in self.config and "module" not in self.config:
+            raise KeyError('Must pass either "wsgi-file" or "module" in the uwsgi configuration!'
+                           '"wsgi-file" corresponds to a path to a python file which contains the app.'
+                           '"module" is the python module path to a module containing the app.')
+
+        # This is the base configuration which sets the default values
+        uwsgiConfig = {
+            # Socket setup
+            "socket": "/tmp/sockets/wsgi_{name}.sock",
+            "vacuum": True,
+            # Stats
+            "stats": "/tmp/sockets/wsgi_{name}_stats.sock",
+
+            # Setup
+            "chdir": "/opt/overwatch",
+
+            # App
+            # Need either wsgi-file or module!
+            "callable": "app",
+
+            # Instances
+            # Number of processes
+            "processes": 4,
+            # Number of threads
+            "threads": 2,
+            # Minimum number of workers to keep at all times
+            "cheaper": 2,
+
+            # Configure master fifo
+            "master": True,
+            "master-fifo": "wsgiMasterFifo{name}",
+        }
+
+        # Add the custom configuration into the default configuration defined above
+        # Just in case "enabled" was stored in the config, remove it now so it's not added to the uwsgi config
+        self.config.pop("enabled", None)
+        uwsgiConfig.update(self.config)
+
+        # Inject name into the various values if needed
+        for k, v in iteritems(uwsgiConfig):
+            if isinstance(v, str):
+                uwsgiConfig[k] = v.format(name = self.name)
+
+        # Put dict inside of "uwsgi" block for it to be read properly by uwsgi
+        uwsgiConfig = {
+            "uwsgi": uwsgiConfig
+        }
+
+        logger.info("Writing configuration file to {filename}".format(filename = filename))
+        with open(filename, "w") as f:
+            yaml.dump(uwsgiConfig, f, default_flow_style = False)
+
+    def run(self):
+        """ This should only be used to help configure another executable. """
+        raise NotImplementedError("The uwsgi object should not be run directly.")
 
 class enviornmentVariables():
     pass
@@ -1034,68 +1157,6 @@ def webApp(config):
             sys.exit(2)
         else:
             logger.info("Success!")
-
-def uwsgi(config, name):
-    """ Write out the configuration file. """
-    # Get the uwsgi user options
-    uwsgiConfigFile = config[name]["uwsgi"]
-    # Not necessarily the same as "name". For example, the DQM receiver has name = "DQM"
-    # and uwsgiName = "dqmReceiver"
-    uwsgiName = uwsgiConfigFile.get("name", "{0}".format(name))
-
-    if "wsgi-file" not in uwsgiConfigFile and "module" not in uwsgiConfigFile:
-        raise KeyError("Must pass either \"wsgi-file\" or \"module\" for the uwsgi configuration!"
-                       " \"wsgi-file\" corresponds to a path to a python file which contains the app."
-                       " \"module\" is the python module path to a module containing the app.")
-
-    if not uwsgiConfigFile["enabled"]:
-        logger.warning("uwsgi configuration present for {0}, but not enabled".format(name))
-
-    # This is the base configuration which sets the default values
-    uwsgiConfig = {
-        # Socket setup
-        "socket": "/tmp/sockets/wsgi_{name}.sock",
-        "vacuum": True,
-        # Stats
-        "stats": "/tmp/sockets/wsgi_{name}_stats.sock",
-
-        # Setup
-        "chdir": "/opt/overwatch",
-
-        # App
-        # Need either wsgi-file or module!
-        "callable": "app",
-
-        # Instances
-        # Number of processes
-        "processes": 4,
-        # Number of threads
-        "threads": 2,
-        # Minimum number of workers to keep at all times
-        "cheaper": 2,
-
-        # Configure master fifo
-        "master": True,
-        "master-fifo": "wsgiMasterFifo{name}",
-    }
-
-    # Add the custom configuration into the default configuration defined above
-    uwsgiConfig.update(uwsgiConfigFile)
-
-    # Inject name into the various values if needed
-    for k, v in iteritems(uwsgiConfig):
-        if isinstance(v, str):
-            uwsgiConfig[k] = v.format(name = uwsgiConfigFile.get("name", "webApp"))
-
-    # Put dict inside of "uwsgi" block for it to be read properly by uwsgi
-    uwsgiConfig = {
-        "uwsgi": uwsgiConfig
-    }
-
-    filename = "{0}.yaml".format(uwsgiName)
-    logger.info("Writing configuration file to {0}".format(filename))
-    with open(filename, "w") as f:
-        yaml.dump(uwsgiConfig, f, default_flow_style = False)
 
 def webAppSetup(config):
     """ Setup web app by installing bower components (polymer) and jsroot.
