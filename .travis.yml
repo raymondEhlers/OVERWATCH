@@ -15,7 +15,7 @@ cache: pip
 before_install:
     - docker pull rehlers/overwatch:latest-py${PYTHON_VERSION}
     # Needed for ZODB python 3 compatibility
-    - if [[ $PYTHON_VERSION == "3."* ]]; pip install git+https://github.com/SpotlightKid/flask-zodb.git; fi
+    - if [[ "${PYTHON_VERSION}" == "3."* ]]; pip install git+https://github.com/SpotlightKid/flask-zodb.git; fi
 install: pip install --upgrade -e .[tests,dev]
 before_script:
     # Runs the tests in a docker container. Necessary because we can't install ROOT easily here.
@@ -37,7 +37,7 @@ after_success:
 before_deploy:
     # Check for the required files and error out in case something when wrong.
     # We only check for a few directories because if they exist, it is likely that everything worked.
-    - [[ -d ${PWD}/overwatch/webApp/static/jsRoot/scripts ]] && [[ -d ${PWD}/overwatch/webApp/static/bower_components/polymer ]]
+    - if [[ -d ${PWD}/overwatch/webApp/static/jsRoot/scripts && -d ${PWD}/overwatch/webApp/static/bower_components/polymer ]]; then true; else false; fi
 deploy:
     - provider: pypi
       user: rehlers
