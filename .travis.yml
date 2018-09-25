@@ -15,7 +15,7 @@ cache: pip
 before_install:
     - docker pull rehlers/overwatch:latest-py${PYTHON_VERSION}
     # Needed for ZODB python 3 compatibility
-    - if [[ "${PYTHON_VERSION}" == "3."* ]]; pip install git+https://github.com/SpotlightKid/flask-zodb.git; fi
+    - if [[ "${PYTHON_VERSION}" == "3."* ]]; then pip install git+https://github.com/SpotlightKid/flask-zodb.git; fi
 install: pip install --upgrade -e .[tests,dev]
 before_script:
     # Runs the tests in a docker container. Necessary because we can't install ROOT easily here.
