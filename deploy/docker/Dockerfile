@@ -106,8 +106,6 @@ RUN npm install -g bower polymer-bundler n \
         && mkdir -p ${OVERWATCH_ROOT}/overwatch/webApp/static/jsRoot/ \
         && cp -r jsroot/scripts ${OVERWATCH_ROOT}/overwatch/webApp/static/jsRoot/. && cp -r jsroot/style ${OVERWATCH_ROOT}/overwatch/webApp/static/jsRoot/. \
         && rm -r /tmp/jsroot
-        # Need to patch JsRootPainter.more.js
-        #&& cd jsroot && git apply ${OVERWATCH_ROOT}/deploy/docker/jsRootPainterMoreDrawPaveFix.patch \
 
 # Configure nginx
 # Make NGINX run on the foreground and remove default site config
