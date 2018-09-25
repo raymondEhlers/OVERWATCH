@@ -86,7 +86,7 @@ WORKDIR ${OVERWATCH_ROOT}
 RUN git clone https://github.com/raymondEhlers/OVERWATCH.git . \
         && pip install --upgrade pip \
         && pip install git+https://github.com/SpotlightKid/flask-zodb.git \
-        && pip install -e ".[tests, docs]" \
+        && pip install -e ".[tests, docs, dev]" \
         && mkdir -p receiver/build && cd receiver/build \
         && cmake "../" -DCMAKE_INSTALL_PREFIX="/opt/receiver" -DZEROMQ="/usr" \
         && make install
