@@ -6,6 +6,8 @@ python:
 sudo: required
 services:
     - docker
+# Use cache with pip to save time.
+cache: pip
 before_install:
     - docker pull rehlers/overwatch
 install: "pip install --upgrade -e .[tests,dev]"
