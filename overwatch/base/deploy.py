@@ -36,8 +36,7 @@ import sys
 import time
 import warnings
 import ruamel.yaml as yaml
-import collections
-# Help for handling supervisor configurations.
+# Help for handling string based configurations.
 import inspect
 import configparser
 
@@ -337,9 +336,11 @@ class executable(object):
         # process is not None, so we can use that as a proxy for whether to check for successful execution.
         # TODO: Maybe only do this sometimes?? Set via config?
         if process and self.shortExecutionTime is False:
+            logger.info("Check that the {name} executable launched successfully...".format(name = self.name))
+            time.sleep(1.5)
             PIDs = self.getProcessPID()
             if not PIDs:
-                raise RuntimeError("Failed to find the executed process with identifier {processIdentifier}".format(processIdentifier = self.processIdentifier))
+                raise RuntimeError("Failed to find the executed process with identifier {processIdentifier}. It appears that it did not execute correctly or already completed.".format(processIdentifier = self.processIdentifier))
 
 class sshKnownHostsExecutable(executable):
     """ Create a SSH ``known_hosts`` file with the SSH address in the configuration.
@@ -411,7 +412,7 @@ class autosshExecutable(executable):
     """
     def __init__(self, config):
         name = "autossh_{receiver}"
-        description = "{receiver} autossh tunnel".format(receiver = receiver)
+        description = "{receiver} autossh tunnel"
         args = [
             "autossh",
             "-L {localPort}:localhost:{hltPort}",
@@ -468,14 +469,28 @@ class zmqReceiver(executable):
         # NOTE: We don't need to escape most quotes!
         args = [
             "zmqReceive",
-            "--subsystem={receiver}".format(self.config["receiver"]),
-            "--in=REQ>tcp://localhost:{localPort}".format(self.config["localPort"]),
-            "--dataPath={dataPath}".format(self.config.get("dataPath", "data")),
+            "--subsystem={receiver}",
+            "--in=REQ>tcp://localhost:{localPort}",
+            "--dataPath={dataPath}",
             "--verbose=1",
             "--sleep=60",
             "--timeout=100",
-            "--select={select}".format(select = self.config.get("select", "")),
+            "--select={select}",
         ]
+        # Ensure that the receiver is formatted properly
+        receiverName = config["receiver"]
+        # By making it upper case
+        receiverName = receiverName.upper()
+        # And ensure that it is the proper length.
+        if len(receiverName) != 3:
+            raise ValueError("Receiver name {receiverName} is not 3 letters long!".format(receiverName = receiverName))
+        # Reassign the final result.
+        config["receiver"] = receiverName
+
+        # Add default values to the config if necessary
+        config["dataPath"] = self.config.get("dataPath", "data")
+        config["select"] = self.config.get("select", "")
+
         super().__init__(name = name,
                          description = description,
                          args = args,
@@ -640,6 +655,40 @@ class webApp(executable):
 
     def setup(self):
         """ Setup required for Overwatch web app.
+
+        In particular, we write any passed custom configuration options out to an Overwatch YAML config file.
+        """
+        writeCustomConfig(self.config["additionalOptions"])
+        # Create an underlying uwsgi app to handle the setup and execution.
+        self = uwsgi.createObject(self)
+
+        # We call this last here because we are going to update variables if we use uwsgi for execution.
+        super().setup()
+
+# TODO: Can we just merge dqmReceiver and uwsgi?
+class dqmReceiver(executable):
+    """ Start the DQM receiver.
+
+    Note:
+        Arguments after ``config`` are values which will be used for formatting and are required in the config.
+
+    Args:
+        config (dict): Configuration for the executable.
+        additionalConfig (dict): Additional options to added to the processing configuration.
+    """
+    def __init__(self, config):
+        name = "dqmReceiver"
+        description = "Overwatch DQM Receiver"
+        args = [
+            "overwatchDQMReciever",
+        ]
+        super().__init__(name = name,
+                         description = description,
+                         args = args,
+                         config = config)
+
+    def setup(self):
+        """ Setup required for Overwatch DQM receiver.
 
         In particular, we write any passed custom configuration options out to an Overwatch YAML config file.
         """
@@ -997,175 +1046,6 @@ def setupEnv(config):
         setupRoot(config)
         logger.info(os.environ)
 
-def dqmReceiver(config, receiver, receiverConfig):
-    """ Start the DQM receiver """
-    # Write out custom config
-    writeCustomConfig(receiverConfig)
-
-    if "uwsgi" in receiverConfig and receiverConfig["uwsgi"]["enabled"]:
-        configFilename = "{0}Receiver.yaml".format(receiver.lower())
-        processIdentifier = "uwsgi --yaml {configFile}".format(configFile = configFilename)
-
-        # Handle nginx setup.
-        # We would only want to start nginx if we are using uwsgi
-        if "webServer" in receiverConfig and receiverConfig["webServer"]:
-            # Configure nginx
-            nginx(config, name = "dqmReceiver")
-
-            # Start nginx
-            startNginx(name = "nginx", logFilename = "nginx", supervisord = "supervisord" in config)
-
-        # Write the uwsgi configuration
-        uwsgi(config = config["receiver"], name = "DQM")
-
-        args = [
-            "uwsgi",
-            "--yaml",
-            configFilename,
-        ]
-    else:
-        processIdentifier = "overwatchDQMReciever"
-
-        args = [
-            "overwatchDQMReciever",
-        ]
-
-    processPIDs = checkForProcessPID(processIdentifier)
-
-    # NOTE: This won't work properly with uwsgi!
-    if processPIDs is not None and (config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None)):
-        logger.debug("Found processPIDs: {0}".format(processPIDs))
-        processPIDs = killExistingProcess(processPIDs,
-                                          description = "{0} Receiver".format(receiver),
-                                          processIdentifier = processIdentifier)
-        # processPIDs will be None if the processes were killed successfully
-
-    if not config["avoidNohup"]:
-        # Only append "nohup" if it is _NOT_ called from systemd or supervisord
-        args = ["nohup"] + args
-
-    process = startProcessWithLog(args, name = "dqmReceiver", logFilename = "dqmReceiver", supervisord = "supervisord" in config)
-
-    if process:
-        logger.info("Check that the process launched successfully...")
-        time.sleep(1.5)
-        processPIDs = checkForProcessPID(processIdentifier)
-        if processPIDs is None:
-            logger.critical("No process found corresponding to the just launched receiver! Check the log files!")
-            sys.exit(2)
-        else:
-            logger.info("Success!")
-
-def receiver(config):
-    """ Start receivers """
-    # Add receiver to path
-    # We also launch the executable with the path to be certain that it launches properly
-    receiverPath = config["receiver"].get("receiverPath", "/opt/receiver/bin")
-    # Need to strip "\n" due to it being inserted when variables are expanded
-    receiverPath = os.path.expandvars(receiverPath).replace("\n", "")
-    logger.debug("Adding receiver path \"{0}\" to PATH".format(receiverPath))
-    # Also remove "\n" at the end of the path variable for clarity
-    os.environ["PATH"] = os.environ["PATH"].rstrip() + os.pathsep + receiverPath
-
-    for receiver, receiverConfig in config["receiver"].items():
-        # Only use iterable collections (which should correspond to a particular receiver config)
-        if not isinstance(receiver, collections.Iterable):
-            #logger.debug("Skipping entry \"{0}\" in the receiver config, as it it doesn't correspond to a iterable detector configuration".format(receiver))
-            continue
-        # Backup check, but could be ignored in the future
-        if len(receiver) != 3:
-            #logger.debug("Skipping entry \"{0}\" in the receiver config, as it it doesn't correspond to a detector".format(receiver))
-            continue
-
-        logger.debug("receiver name: {0}, config: {1}".format(receiver, receiverConfig))
-
-        # Ensure that the detector name is upper case
-        receiver = receiver.upper()
-
-        if receiver == "DQM":
-            dqmReceiver(config = config, receiver = receiver, receiverConfig = receiverConfig)
-        else:
-            zmqReceiver(config = config, receiver = receiver, receiverConfig = receiverConfig, receiverPath = receiverPath)
-
-def webApp(config):
-    """ Setup and start web app.
-
-    Handles running both locally for development, as well as starting uwsgi when required
-    """
-    webAppConfig = config["webApp"]
-
-    # Write out custom configuration
-    writeCustomConfig(config["webApp"])
-
-    # Run webApp setup if necessary
-    if "webAppSetup" in webAppConfig and webAppConfig["webAppSetup"]:
-        webAppSetup(config)
-
-    if "uwsgi" in webAppConfig and webAppConfig["uwsgi"]["enabled"]:
-        configFilename = "{0}".format(webAppConfig.get("wsgiConfigFilename", "webApp.yaml"))
-        processIdentifier = "uwsgi --yaml {0}".format(configFilename)
-
-        # Handle nginx setup.
-        # We would only want to start nginx if we are using uwsgi
-        if "webServer" in webAppConfig and webAppConfig["webServer"]:
-            # Configure nginx
-            nginx(config, name = "webApp")
-
-            # Start nginx
-            startNginx(name = "nginx", logFilename = "nginx", supervisord = "supervisord" in config)
-
-        # Configure uwsgi
-        uwsgi(config, name = "webApp")
-
-        args = [
-            "uwsgi",
-            "--yaml",
-            configFilename,
-        ]
-    else:
-        # Use flask development server instead
-        # Do not use in production!!
-        processIdentifier = "overwatchWebApp"
-
-        # Use the installed executable
-        args = [
-            "overwatchWebApp",
-        ]
-
-    processPIDs = checkForProcessPID(processIdentifier)
-
-    # NOTE: This won't work properly with uwsgi!
-    if processPIDs is not None and config["webApp"].get("forceRestart", None):
-        logger.debug("Found processPIDs: {0}".format(processPIDs))
-        processPIDs = killExistingProcess(processPIDs,
-                                          description = "{0} Receiver".format(receiver),
-                                          processIdentifier = processIdentifier)
-        # processPIDs will be None if the processes were killed successfully
-
-    if not config["avoidNohup"]:
-        # Only append "nohup" if it is _NOT_ called from systemd or supervisord
-        args = ["nohup"] + args
-
-    process = startProcessWithLog(args, name = "webApp", logFilename = "webApp", supervisord = "supervisord" in config)
-
-    if process:
-        logger.info("Check that the process launched successfully...")
-        time.sleep(1.5)
-        processPIDs = checkForProcessPID(processIdentifier)
-        if processPIDs is None:
-            logger.critical("No process found corresponding to the just launched webApp! Check the log files!")
-            sys.exit(2)
-        else:
-            logger.info("Success!")
-
-def webAppSetup(config):
-    """ Setup web app by installing bower components (polymer) and jsroot.
-
-    Polymerizer and minify is handled by webassets.
-    """
-    args = ["./installOverwatchExternalDependencies.sh"]
-    startProcessWithLog(args, name = "Install Overwatch external dependencies", logFilename = "installExternals")
-
 def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
     """ Start the various parts of Overwatch.
 
@@ -1196,7 +1076,7 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
         logger.info("Setting up supervisord")
 
         # Setup
-        setupSupervisord(config)
+        #setupSupervisord(config)
 
         # Must be avoided when using supervisord
         config["avoidNohup"] = True
@@ -1225,7 +1105,8 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
 
     if "receiver" in config and config["receiver"]["enabled"]:
         # Start the receiver(s)
-        receiver(config)
+        #receiver(config)
+        pass
 
     if "processing" in config and config["processing"]["enabled"]:
         processing(config)
