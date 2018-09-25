@@ -63,8 +63,13 @@ from . import mergeFiles
 from . import qa
 from . import processingClasses
 
+from overwatch.processing.trending.manager import TrendingManager
+
 ###################################################
-def processRootFile(filename, outputFormatting, subsystem, processingOptions = None, forceRecreateSubsystem = False, trendingContainer = None):
+def processRootFile(filename, outputFormatting, subsystem, processingOptions=None,
+                    forceRecreateSubsystem=False, trendingContainer=None,
+                    trendingManager=None  # type: TrendingManager
+                    ):
     """ Process a given root file, printing out all histograms.
 
     Args:
@@ -190,7 +195,9 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
             if not retrievedHist:
                 logger.warning("Could not retrieve histogram for hist {}, histList: {}".format(hist.histName, hist.histList))
                 continue
-            processHist(subsystem = subsystem, hist = hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions)
+            processHist(subsystem=subsystem, hist=hist, canvas=canvas, outputFormatting=outputFormatting,
+                        processingOptions=processingOptions, trendingManager=trendingManager)
+
 
 ###################################################
 def processTrending(outputFormatting, trending, processingOptions = None, forceRecreateSubsystem = False):
@@ -231,8 +238,11 @@ def processTrending(outputFormatting, trending, processingOptions = None, forceR
             # ENDTEMP
             processHist(subsystem = trending, hist = hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions, subsystemName = subsystemName)
 
+
 ###################################################
-def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, subsystemName = None):
+def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, subsystemName=None,
+                trendingManager=None,  # type: TrendingManager
+                ):
     # In the case of trending, we have to pass a separate subsystem name because the trending container
     # holds hists from various subsystems
     if subsystemName is None:
@@ -277,6 +287,9 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, su
         logger.debug("Filling trending object {}".format(trendingObject.name))
         trendingObject.fill(hist)
         #func(hist)
+
+    if trendingManager:
+        trendingManager.noticeAboutNewHistogram(hist)
 
     # Filter here for hists in the subsystem if subsystem != fileLocationSubsystem
     # Thus, we can filter the proper subsystems for subsystems that don't have their own data files
@@ -732,18 +745,21 @@ def processAllRuns():
     # Determine which runs to process
     outputFormattingSave = os.path.join("%s", "%s.%s")
     for runDir, run in runs.items():
-        #for subsystem in subsystems:
         for subsystem in run.subsystems.values():
+            runNumber = int(runDir.replace("Run", ""))
+            logger.debug("runDir: {}, reprocessRuns: {}"
+                         .format(runNumber, processingParameters["forceReprocessRuns"]))
             # Process if there is a new file or if forceReprocessing
-            logger.debug("runDir: {}, reprocessRuns: {}".format(runDir.replace("Run", ""), processingParameters["forceReprocessRuns"]))
-            if subsystem.newFile or processingParameters["forceReprocessing"] or int(runDir.replace("Run","")) in processingParameters["forceReprocessRuns"]:
+            if (subsystem.newFile
+                    or processingParameters["forceReprocessing"]
+                    or runNumber in processingParameters["forceReprocessRuns"]):
+
                 # Process combined root file: plot histos and save in imgDir
                 logger.info("About to process {0}, {1}".format(run.prettyName, subsystem.subsystem))
                 processRootFile(os.path.join(processingParameters["dirPrefix"], subsystem.combinedFile.filename),
-                                outputFormattingSave,
-                                subsystem,
-                                forceRecreateSubsystem = processingParameters["forceRecreateSubsystem"],
-                                trendingContainer = trendingContainer)
+                                outputFormattingSave, subsystem,
+                                forceRecreateSubsystem=processingParameters["forceRecreateSubsystem"],
+                                trendingContainer=trendingContainer, trendingManager=trendMan)
             else:
                 # We often want to skip this point since most runs will not need to be processed most times
                 logger.debug("Don't need to process {0}. It has already been processed".format(run.prettyName))
@@ -756,10 +772,10 @@ def processAllRuns():
     # Run trending once we have gotten to the most recent run
     if trendMan:
         logger.info("About to process trending")
-        trendMan.processTrending()
         processTrending(outputFormatting = outputFormattingSave,
                         trending = trendingContainer,
                         forceRecreateSubsystem = processingParameters["forceRecreateSubsystem"])
+        trendMan.processTrending()
         transaction.commit()  # Commit after we have successfully processed the trending
 
     logger.info("Finishing trending")

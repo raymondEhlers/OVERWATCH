@@ -1,20 +1,21 @@
-from persistent.mapping import PersistentMapping
-from persistent import Persistent
-from BTrees.OOBTree import BTree
-import os
-import overwatch.processing.qa as qa
-from .object import TrendingObject
-import overwatch.processing.trending.constants as CON
-import ROOT
-
 import logging
+import os
+
+import ROOT
+from BTrees.OOBTree import BTree
+from persistent import Persistent
+from persistent.mapping import PersistentMapping
+
+import overwatch.processing.qa as qa
+import overwatch.processing.trending.constants as CON
+from overwatch.processing.processingClasses import histogramContainer
+from overwatch.processing.trending.info import TrendingInfo
+from overwatch.processing.trending.object import TrendingObject
 
 logger = logging.getLogger(__name__)
 
 try:
     from typing import *
-
-    TrendingInfo = Tuple[str, str, List[str]]  # internal name, descriptive name, list of histograms
 except ImportError:
     pass
 
@@ -25,6 +26,7 @@ class TrendingManager(Persistent):
         self.subsystem = 'TDG'  # TODO what is this?
         self.parameters = parameters
         self.trendingObjects = None
+        self.histToTrending = {}  # type: Dict[str, List[TrendingObject]]
 
         self.prepareDataBase(CON.TRENDING, dbRoot)
         self.trendingDB = dbRoot[CON.TRENDING]  # type: BTree[str, BTree[str, TrendingObject]]
@@ -58,7 +60,7 @@ class TrendingManager(Persistent):
 
     def _createTrendingObjectsForSubsystem(self, subsystemName):  # type: (str) -> None
         functionName = "get{}TrendingObjectInfo".format(subsystemName)
-        getTrendingObjectInfo = getattr(qa, functionName, None)  # type: Callable[[], TrendingInfo]
+        getTrendingObjectInfo = getattr(qa, functionName, None)  # type: Callable[[], List[TrendingInfo]]
         if getTrendingObjectInfo:
             self.prepareDataBase(subsystemName, self.trendingDB)
             info = getTrendingObjectInfo()
@@ -66,24 +68,35 @@ class TrendingManager(Persistent):
         else:
             logger.info("Could not find {}".format(functionName))
 
-    def _createTrendingObjectFromInfo(self, subsystemName, info):  # type: (str, TrendingInfo) -> None
+    def _createTrendingObjectFromInfo(self, subsystemName, infoList):
+        # type: (str, List[TrendingInfo]) -> None
         success = "Trending object {} from subsystem {} added to the trending manager"
         fail = "Trending object {} (name: {}) already exists in subsystem {}"
 
-        for name, desc, histogramNames in info:
-            if name not in self.trendingDB[subsystemName] or self.parameters[CON.RECREATE]:
-                to = TrendingObject(name, desc, histogramNames, subsystemName, self.parameters)
-                self.trendingDB[subsystemName][name] = to
-                logger.debug(success.format(name, subsystemName))
+        for info in infoList:
+            if info.name not in self.trendingDB[subsystemName] or self.parameters[CON.RECREATE]:
+                to = info.createTrendingClass(subsystemName, self.parameters)
+                self.trendingDB[subsystemName][info.name] = to
+                self.subscribe(to, info.histogramNames)
+
+                logger.debug(success.format(info.name, subsystemName))
             else:
-                logger.debug(fail.format(self.trendingObjects[subsystemName][name], name, subsystemName))
+                logger.debug(fail.format(self.trendingObjects[subsystemName][info.name], info.name, subsystemName))
+
+    def subscribe(self, trendingObject, histogramNames):  # type: (TrendingObject, List[str])->None
+        for histName in histogramNames:
+            try:
+                self.histToTrending[histName].append(trendingObject)
+            except KeyError:
+                self.histToTrending[histName] = [trendingObject]
 
     def resetDB(self):
         self.trendingDB.clear()
 
     def processTrending(self):
         # Cannot have same name as other canvases, otherwise the canvas will be replaced, leading to segfaults
-        canvas = ROOT.TCanvas("processTrendingCanvas", "processTrendingCanvas")
+        canvasName = 'processTrendingCanvas2'  # TODO remove '2'
+        canvas = ROOT.TCanvas(canvasName, canvasName)
 
         for subsystemName, subsystem in self.trendingDB.items():  # type: (str, BTree[str, TrendingObject])
             logger.debug("{}: subsystem from trending: {}".format(subsystemName, subsystem))
@@ -106,3 +119,12 @@ class TrendingManager(Persistent):
                 nonzeroBins.append(index)
         logger.debug("nonzeroBins: {}".format(nonzeroBins))
         logger.debug("values: {}".format(values))
+
+    def noticeAboutNewHistogram(self, hist):  # type: (histogramContainer) -> None
+        try:
+            trendingObjects = self.histToTrending[hist.histName]
+        except KeyError:
+            return
+        else:
+            for trend in trendingObjects:
+                trend.addNewHistogram(hist)

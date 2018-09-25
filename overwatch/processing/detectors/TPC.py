@@ -40,14 +40,14 @@ def defineTPCTrendingObjects(trending, *args, **kwargs):
 
 try:
     from typing import *
-    TrendingInfo = Tuple[str, str, List[str]]  # internal name, descriptive name, list of histograms
 except ImportError:
     pass
-
+from overwatch.processing.trending.info import TrendingInfo
+from overwatch.processing.trending.object import TrendingObject
 
 def getTPCTrendingObjectInfo():  # type: () -> List[TrendingInfo]
     """Data format must be valid - there is no check format - TODO"""
-    names = [
+    trendingInfoList = [
         ("TPCClusterTrending", "<TPC clusters>: (p_{T} > 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_0_5_7_restrictedPtEta"]),
         ("TPCFoundClusters", "<Found/Findable TPC clusters>: (p_{T} > 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_2_5_7_restrictedPtEta"]),
         ("TPCdcaR", "<DCAr> (cm)>: (p_{T}> 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_3_5_7_restrictedPtEta"]),
@@ -58,7 +58,8 @@ def getTPCTrendingObjectInfo():  # type: () -> List[TrendingInfo]
         ("histMpos", "<Multiplicity of pos. tracks>", ["TPCQA/h_tpc_event_recvertex_4"]),
         ("histMneg", "<Multiplicity of neg. tracks>", ["TPCQA/h_tpc_event_recvertex_5"])
     ]
-    return names
+    trendingInfoList = [TrendingInfo(*args+(TrendingObject,)) for args in trendingInfoList]
+    return trendingInfoList
 
 ######################################################################################################
 ######################################################################################################
@@ -146,7 +147,8 @@ def restrictRangeAndProjectTo1D(subsystem, hist, processingOptions):
     logger.debug("Projecting hist {}".format(hist.hist.GetName()))
     tempHist = hist.hist.ProjectionX("{}_{}".format(hist.hist.GetName(), "restrictedPtEta"))
     logger.debug("Projection entries: {}".format(tempHist.GetEntries()))
-    hist.hist = tempHist
+    # hist.hist = tempHist
+    return tempHist
 
 # Helper for projectToXZ
 def aSideProjectToXZ(subsystem, hist, processingOptions):

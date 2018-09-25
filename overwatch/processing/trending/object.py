@@ -9,6 +9,8 @@ import numpy as np
 import overwatch.processing.trending.constants as CON
 
 # https://stackoverflow.com/questions/35673474/using-abc-abcmeta-in-a-way-it-is-compatible-both-with-python-2-7-and-python-3-5/41622155#41622155
+from overwatch.processing.processingClasses import histogramContainer
+
 if sys.version_info >= (3, 4):
     ABC = abc.ABC
 else:
@@ -35,7 +37,7 @@ class TrendingObject:
 
         self.currentEntry = 0
         self.maxEntries = self.parameters.get(CON.ENTRIES, 50)
-        self.values = self.initStartValues()
+        self.trendedValues = self.initStartValues()
 
         self._histogram = None
         self.drawOptions = 'AP'  # Ensure that the axis and points are drawn on the TGraph
@@ -55,14 +57,16 @@ class TrendingObject:
     def retrieveHist(self):
         # Define TGraph
         # TH1's need to be defined more carefully, as they seem to possible cause memory corruption
-        # Multiply by 60.0 because it expects the times in seconds # TODO multiply what?
+        # Multiply by 60.0 because it expects the times in seconds
+        #  TODO multiply what? OK: in old TrendingObject was option SetTimeDisplay
         self._histogram = ROOT.TGraphErrors(self.maxEntries)
         self._histogram.SetName(self.name)
+        self._histogram.GetXaxis().SetTimeDisplay(True)
         self._histogram.SetTitle(self.desc)
 
-        for i in range(len(self.values)):
-            self._histogram.SetPoint(i, i, self.values[i, 0])
-            self._histogram.SetPointError(i, i, self.values[i, 1])
+        for i in range(len(self.trendedValues)):
+            self._histogram.SetPoint(i, i, self.trendedValues[i, 0])
+            self._histogram.SetPointError(i, i, self.trendedValues[i, 1])
 
         return self._histogram
 
@@ -72,15 +76,15 @@ class TrendingObject:
 
         ROOT.gStyle.SetOptTitle(False)  # turn off title #TODO false vs 0?
         hist = self.histogram
+        hist.SetMarkerStyle(ROOT.kFullCircle)
         hist.Draw(self.drawOptions)
 
         # Replace any slashes with underscores to ensure that it can be used safely as a filename
-        outputName = self.name.replace("/", "_")
-        outputName = "{}.{}".format(outputName, self.parameters[CON.EXTENSION])
+        outputNameWithoutExt = self.name.replace("/", "_") + '.{}'
         outputPath = os.path.join(self.parameters[CON.DIR_PREFIX], CON.TRENDING,
-                                  self.subsystemName, '{}', outputName)
-        imgFile = outputPath.format(CON.IMAGE)
-        jsonFile = outputPath.format(CON.JSON)
+                                  self.subsystemName, '{}', outputNameWithoutExt)
+        imgFile = outputPath.format(CON.IMAGE, self.parameters[CON.EXTENSION])
+        jsonFile = outputPath.format(CON.JSON, 'json')
 
         logger.debug("Saving hist to {}".format(imgFile))
         canvas.SaveAs(imgFile)
@@ -96,5 +100,16 @@ class TrendingObject:
         canvas.SetLogy(False)
         canvas.SetLogz(False)
 
-    def fill(self, val):
-        pass  # TODO implement
+    def addNewHistogram(self, hist):  # type: (histogramContainer) -> None
+        if self.currentEntry > self.maxEntries:
+            self.trendedValues = np.delete(self.trendedValues, 0, axis=0)
+        else:
+            self.currentEntry += 1
+
+        newValue = self.getMeasurement(hist)
+        self.trendedValues = np.append(self.trendedValues, [newValue], axis=0)
+
+    @staticmethod
+    def getMeasurement(hist):  # type: (histogramContainer) -> Any
+        value = hist.hist.GetMean(), hist.hist.GetMeanError()
+        return value
