@@ -38,50 +38,43 @@ def trending():
     imgFilenameTemplate = filenameTemplate.format(CON.IMAGE, '{}', serverParameters[CON.EXTENSION])
     jsonFilenameTemplate = filenameTemplate.format(CON.JSON, '{}', 'json')
 
-    if ajaxRequest != True:
-        if error == {}:
-            try:
-                returnValue = render_template("trending.html", trendingManager=trendingManager,
-                                              selectedHistGroup=subsystemName, selectedHist=requestedHist,
-                                              jsonFilenameTemplate=jsonFilenameTemplate,
-                                              imgFilenameTemplate=imgFilenameTemplate,
-                                              jsRoot=jsRoot)
-            except jinja2.exceptions.TemplateNotFound as e:
-                error.setdefault("Template Error", []).append(
-                    "Request template: \"{0}\", but it was not found!".format(e.name))
+    templateKwargs = {
+        'trendingManager': trendingManager,
+        'selectedHistGroup': subsystemName,
+        'selectedHist': requestedHist,
+        'jsonFilenameTemplate': jsonFilenameTemplate,
+        'imgFilenameTemplate': imgFilenameTemplate,
+        'jsRoot': jsRoot,
+    }
 
-        if error != {}:
-            logger.warning("error: {0}".format(error))
-            returnValue = render_template("error.html", errors=error)
-        return returnValue
+    if ajaxRequest:
+        drawerContent = safeRenderTemplate(error, "trendingDrawer.html", **templateKwargs)
+        mainContent = safeRenderTemplate(error, "trendingMainContent.html", **templateKwargs)
+        mainContent = reRenderIfError(error, "errorMainContent.html", mainContent)
 
+        # Includes hist group and hist name for time slices since it is easier
+        # to pass it here than parse the get requests. Otherwise, they are ignored.
+        return jsonify(drawerContent=drawerContent, mainContent=mainContent,
+                       histName=requestedHist, histGroup=subsystemName)
+
+    returnValue = safeRenderTemplate(error, "trending.html", **templateKwargs)
+    returnValue = reRenderIfError(error, "error.html", returnValue)
+    return returnValue
+
+
+def safeRenderTemplate(error, *args, **kwargs):
+    if error != {}:
+        return ''
+    try:
+        return render_template(*args, **kwargs)
+    except jinja2.exceptions.TemplateNotFound as e:
+        error.setdefault("Template Error", []).append(
+            'Request template: "{0}", but it was not found!'.format(e.name))
+        return ''
+
+
+def reRenderIfError(error, template, rendered):
+    if error != {}:
+        return render_template(template, error=error)
     else:
-        drawerContent = ''
-        mainContent = ''
-        if error == {}:
-
-            try:
-                drawerContent = render_template("trendingDrawer.html", trendingManager=trendingManager,
-                                                selectedHistGroup=subsystemName, selectedHist=requestedHist,
-                                                jsonFilenameTemplate=jsonFilenameTemplate,
-                                                imgFilenameTemplate=imgFilenameTemplate,
-                                                jsRoot=jsRoot)
-                mainContent = render_template("trendingMainContent.html", trendingManager=trendingManager,
-                                              selectedHistGroup=subsystemName, selectedHist=requestedHist,
-                                              jsonFilenameTemplate=jsonFilenameTemplate,
-                                              imgFilenameTemplate=imgFilenameTemplate,
-                                              jsRoot=jsRoot)
-            except jinja2.exceptions.TemplateNotFound as e:
-                error.setdefault("Template Error", []).append(
-                    "Request template: \"{0}\", but it was not found!".format(e.name))
-
-        if error != {}:
-            logger.warning("error: {0}".format(error))
-            drawerContent = ""
-            mainContent = render_template("errorMainContent.html", errors=error)
-
-        # Includes hist group and hist name for time slices since it is easier to pass it here than parse the get requests. Otherwise, they are ignored.
-        return jsonify(drawerContent=drawerContent,
-                       mainContent=mainContent,
-                       histName=requestedHist,
-                       histGroup=subsystemName)
+        return rendered
