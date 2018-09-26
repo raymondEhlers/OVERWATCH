@@ -56,5 +56,52 @@ RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
 # which does (but perhaps has more bugs).
 RUN /bin/bash -c 'if [[ "${PYTHON_VERSION}" == "2.7"* ]]; then pip install supervisor; else pip install git+https://github.com/Supervisor/supervisor.git#egg=supervisor; fi'
 
+# Setup directory structure
+ENV SCRATCH /opt/scratch
+RUN mkdir -p ${SCRATCH}
+
+# AliEn Certs needed for EOS
+COPY buildScripts/buildAlienCAs.sh /opt/scratch/buildScripts/buildAlienCAs.sh
+RUN mkdir -p /opt/scratch/alienCAs && cd /opt/scratch/alienCAs \
+        && git clone https://github.com/alisw/alien-cas.git . \
+        && /opt/scratch/buildScripts/buildAlienCAs.sh /opt/scratch/alienCAs /opt/alienCAs \
+        && rm -r /opt/scratch/alienCAs
+
+# Install XRootD
+COPY buildScripts/buildXRootD.sh ${SCRATCH}/buildScripts/buildXRootD.sh
+
+RUN mkdir -p ${SCRATCH}/xrootd && cd ${SCRATCH}/xrootd \
+        && chmod +x ${SCRATCH}/buildScripts/buildXRootD.sh \
+        && git clone https://github.com/xrootd/xrootd.git . \
+        && git checkout tags/v4.8.4 \
+        && mkdir build && cd build \
+        && ${SCRATCH}/buildScripts/buildXRootD.sh ../ /opt/xrootd \
+        && make -j2 install \
+        && rm -r ${SCRATCH}/xrootd
+# Remove src and build files to keep container size down (since we can't cache the build process
+# to speed up later compilation). Someday docker might support such a volume build cache which
+# would make this split into two docker files particularly useful
+
+# Setup environment variables for the build type.
+# We set it here because we only care about the build type for ROOT (not XRootD).
+# For development, it would probably be best to be "RelWithDebInfo"
+ARG ROOT_CMAKE_BUILD_TYPE
+ENV CMAKE_BUILD_TYPE ${ROOT_CMAKE_BUILD_TYPE:-"MINSIZEREL"}
+
+# Install ROOT
+COPY buildScripts/buildRoot.sh ${SCRATCH}/buildScripts/buildRoot.sh
+
+RUN mkdir -p ${SCRATCH}/root && cd ${SCRATCH}/root \
+        && chmod +x ${SCRATCH}/buildScripts/buildRoot.sh \
+        && git clone https://github.com/root-project/root.git src \
+        && cd src && git checkout tags/v6-10-08 && cd .. \
+        && mkdir build && cd build \
+        && ${SCRATCH}/buildScripts/buildRoot.sh ../src /opt/root ${PYTHON_VERSION} \
+        && make -j2 install \
+        && rm -r ${SCRATCH}/root
+# Remove src and build files to keep container size down (since we can't cache the build process
+# to speed up later compilation). Someday docker might support such a volume build cache which
+# would make this split into two docker files particularly useful
+
 # Nothing further is configured here since this is just a base image!
 CMD ["/bin/bash"]

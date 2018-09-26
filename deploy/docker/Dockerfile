@@ -1,64 +1,8 @@
 # Build portion
 # Set the python version here so that we can use it to set the base image. Default to python 2.
 ARG PYTHON_VERSION=2.7.15
-FROM rehlers/overwatch-base:py${PYTHON_VERSION} as builder
-LABEL maintainer="Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University"
-
-# Make the python version available in the container.
-ARG PYTHON_VERSION
-
-# Setup directory structure
-ENV SCRATCH /opt/scratch
-RUN mkdir -p ${SCRATCH}
-
-# Install XRootD
-COPY buildScripts/buildXRootD.sh ${SCRATCH}/buildScripts/buildXRootD.sh
-
-RUN mkdir -p ${SCRATCH}/xrootd && cd ${SCRATCH}/xrootd \
-        && chmod +x ${SCRATCH}/buildScripts/buildXRootD.sh \
-        && git clone https://github.com/xrootd/xrootd.git . \
-        && git checkout tags/v4.8.4 \
-        && mkdir build && cd build \
-        && ${SCRATCH}/buildScripts/buildXRootD.sh ../ /opt/xrootd \
-        && make -j2 install \
-        && rm -r ${SCRATCH}/xrootd
-# Remove src and build files to keep container size down (since we can't cache the build process
-# to speed up later compilation). Someday docker might support such a volume build cache which
-# would make this split into two docker files particularly useful
-
-# Setup environment variables for the build type.
-# For development, it would probably be best to be "RelWithDebInfo"
-ARG ROOT_CMAKE_BUILD_TYPE
-ENV CMAKE_BUILD_TYPE ${ROOT_CMAKE_BUILD_TYPE:-"MINSIZEREL"}
-
-# Install ROOT
-COPY buildScripts/buildRoot.sh ${SCRATCH}/buildScripts/buildRoot.sh
-
-RUN mkdir -p ${SCRATCH}/root && cd ${SCRATCH}/root \
-        && chmod +x ${SCRATCH}/buildScripts/buildRoot.sh \
-        && git clone https://github.com/root-project/root.git src \
-        && cd src && git checkout tags/v6-10-08 && cd .. \
-        && mkdir build && cd build \
-        && ${SCRATCH}/buildScripts/buildRoot.sh ../src /opt/root ${PYTHON_VERSION} \
-        && make -j2 install \
-        && rm -r ${SCRATCH}/root
-# Remove src and build files to keep container size down (since we can't cache the build process
-# to speed up later compilation). Someday docker might support such a volume build cache which
-# would make this split into two docker files particularly useful
-
-# TODO: Move to base...
-RUN apt-get update && apt-get install -y \
-        rsync \
-    && rm -rf /var/lib/apt/lists/*
-# AliEn Certs needed for EOS
-COPY buildScripts/buildAlienCAs.sh /opt/scratch/buildScripts/buildAlienCAs.sh
-RUN mkdir -p /opt/scratch/alienCAs && cd /opt/scratch/alienCAs \
-        && git clone https://github.com/alisw/alien-cas.git . \
-        && /opt/scratch/buildScripts/buildAlienCAs.sh /opt/scratch/alienCAs /opt/alienCAs \
-        && rm -r /opt/scratch/alienCAs
-
-# Standard image
 FROM rehlers/overwatch-base:py${PYTHON_VERSION}
+LABEL maintainer="Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University"
 
 # Make the python version available in the container.
 ARG PYTHON_VERSION
@@ -75,8 +19,11 @@ ENV PYTHONPATH="${ROOTSYS}/lib:${XROOTDSYS}/lib/python${PYTHON_VERSION_X_Y}/site
 # Make the AliEn CAs more easily accessible.
 ENV X509_CERT_DIR="/opt/alienCAs"
 
-# Copy the /opt directory from the build container which contains XRootD and Root.
-COPY --from=builder /opt /opt
+# If we were using multi-stage builds, this would be where we would copy the installed software.
+# However, travis tries to rebuild everything in this Dockerfile, so we need to minimize the build
+# steps here. This means that multi-stage builds don't make sense right now.
+# Copy the /opt directory from the build container which contains AliEn CAs, XRootD, and Root.
+#COPY --from=rehlers/overwatch-base:latest-${PYTHON_VERSION} /opt /opt
 
 # Setup OVERWATCH
 ENV OVERWATCH_ROOT /opt/overwatch
