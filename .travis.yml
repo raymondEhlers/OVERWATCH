@@ -57,6 +57,7 @@ deploy:
       # Variables are defined in the travis CI interface
       # They include: $DOCKER_USERNAME, $DOCKER_PASSWORD
       script: bash deploy/docker/pushToDockerHub.sh
+      # We don't need to skip cleanup here because the docker image is already built!
       on:
           # Build a docker image for master or if it has "-docker" in the branch name.
           all_branches: true

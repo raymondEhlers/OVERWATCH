@@ -38,7 +38,7 @@ that you will likely want to use this image interactively (-it) and may want to 
 are done (--rm). If the data is in a folder called `data`, it should look something like:
 
 ```bash
-$ docker run -it --rm -v data:/overwatch/data rehlers/overwatch /bin/bash
+$ docker run -it --rm -v data:/overwatch/data rehlers/overwatch:latest-py3.6.6 /bin/bash
 ```
 
 ### Installation only for running Overwatch
