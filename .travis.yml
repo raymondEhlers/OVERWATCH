@@ -34,22 +34,25 @@ after_success:
     - cd deploy/docker; docker build -f Dockerfile -t "${DOCKER_USERNAME}/overwatch:${TRAVIS_TAG:=latest}-py${PYTHON_VERSION}-travis" .; cd -
     # Print out to see if we've build it as expected.
     - docker images
-    - echo "Travis tag: ${TRAVIS_TAG}"
+    - echo "Travis tag - $TRAVIS_TAG"
 before_deploy:
     # Check for the required files and error out in case something when wrong.
     # We only check for a few directories because if they exist, it is likely that everything worked.
     - if [[ -d ${PWD}/overwatch/webApp/static/jsRoot/scripts && -d ${PWD}/overwatch/webApp/static/bower_components/polymer ]]; then true; else false; fi
 deploy:
-    - provider: pypi
-      user: rehlers
-      password:
-          secure: jGJTAlpfNsTcZJbU24/m0GjxVzoWKBhKkloaKTqpZkrymDydX5K08DZn/U1y86/8HUB6gCT9L8ecOyecmWjwKQiGYt0wF3lyCjzjwd82nZWeWunsoMkVo9hkWwlh4+7jBd3QdYGH5DpI1DHK2RDwMAN5lUUa+qGTvnZzhxR/DVJcIva9XNFOYNKD6fDr3DvWw25Dhb5xL1ojl0silPYMXu8eXmO+x7Et4bdnzeU5eFZT//IPDJp4OGn1jCy9uXCgvE7s25ScHNPzY7WbTU2L1y07VHBOSPtkT5BIB7/HAipf2ydG7XR2YGl6U3X5cb4eqS4JDh9AUFhP1kNLx1uZWChraqeB7gXCbTcl6hNGNIQ16pEbFuwLaZkbmn75EvVBFkAzM0RpDMr+zCY4Sc0uJnEYj5xX1IDvS4qtAQdr31t0POwtuuUe6S0eL/8ikzGMHuX/OqwSPqlW4vvcvhdJkMwwL5RcJ2icBxuN5mK+JdmgMRHLuSopgA0d7v4Hi3EWPtcmjZ/vcS9gfx3cNQykqHYNCWCwWUaUQgbgn+SUb4efSxvqTtQizU40q9KJRbPEf1mQNFDF8nPb8a2f006LcR9Mnsb4l69azGBCRVTKPcF/UqK+B917pqJmXNOOeNomqHiNaEJej9ADJG0WrM2CqqyGAXye2eZz+iux9V7kKXI=
-      distributions: sdist bdist_wheel
-      # Skip cleanup because we added files from polymer and jsRoot.
-      skip_cleanup: true
-      on:
-          tags: true
+    #- provider: pypi
+    #  user: rehlers
+    #  password:
+    #      secure: jGJTAlpfNsTcZJbU24/m0GjxVzoWKBhKkloaKTqpZkrymDydX5K08DZn/U1y86/8HUB6gCT9L8ecOyecmWjwKQiGYt0wF3lyCjzjwd82nZWeWunsoMkVo9hkWwlh4+7jBd3QdYGH5DpI1DHK2RDwMAN5lUUa+qGTvnZzhxR/DVJcIva9XNFOYNKD6fDr3DvWw25Dhb5xL1ojl0silPYMXu8eXmO+x7Et4bdnzeU5eFZT//IPDJp4OGn1jCy9uXCgvE7s25ScHNPzY7WbTU2L1y07VHBOSPtkT5BIB7/HAipf2ydG7XR2YGl6U3X5cb4eqS4JDh9AUFhP1kNLx1uZWChraqeB7gXCbTcl6hNGNIQ16pEbFuwLaZkbmn75EvVBFkAzM0RpDMr+zCY4Sc0uJnEYj5xX1IDvS4qtAQdr31t0POwtuuUe6S0eL/8ikzGMHuX/OqwSPqlW4vvcvhdJkMwwL5RcJ2icBxuN5mK+JdmgMRHLuSopgA0d7v4Hi3EWPtcmjZ/vcS9gfx3cNQykqHYNCWCwWUaUQgbgn+SUb4efSxvqTtQizU40q9KJRbPEf1mQNFDF8nPb8a2f006LcR9Mnsb4l69azGBCRVTKPcF/UqK+B917pqJmXNOOeNomqHiNaEJej9ADJG0WrM2CqqyGAXye2eZz+iux9V7kKXI=
+    #  distributions: sdist bdist_wheel
+    #  # Skip cleanup because we added files from polymer and jsRoot.
+    #  skip_cleanup: true
+    #  on:
+    #      tags: true
     - provider: script
       # Variables are defined in the travis CI interface
       # They include: $DOCKER_USERNAME, $DOCKER_PASSWORD
       script: bash deploy/docker/pushToDockerHub.sh
+      on:
+          # TODO: Change to master when done
+          branch: "transfer"
