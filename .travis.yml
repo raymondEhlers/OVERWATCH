@@ -34,6 +34,7 @@ after_success:
     - cd deploy/docker; docker build -f Dockerfile -t "${DOCKER_USERNAME}/overwatch:${TRAVIS_TAG:=latest}-py${PYTHON_VERSION}-travis" .; cd -
     # Print out to see if we've build it as expected.
     - docker images
+    - echo "Travis tag: ${TRAVIS_TAG}"
 before_deploy:
     # Check for the required files and error out in case something when wrong.
     # We only check for a few directories because if they exist, it is likely that everything worked.
