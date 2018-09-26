@@ -5,6 +5,10 @@ These functions are important to ensure that only valid values are passed to the
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University 
 
 """
+try:
+    from typing import *
+except ImportError:
+    pass
 
 # General
 import json
@@ -192,11 +196,11 @@ def validateRunPage(runDir, subsystemName, requestedFileType, runs):
     else:
         return (error, None, None, None, None, None, None, None, None, None)
 
+
 ###################################################
-def validateTrending():
-    """
-    Validate requests to the trending page.
-    """
+def validateTrending():  # type: () -> Tuple[dict, Optional[str], Optional[str], Optional[bool], Optional[bool]]
+    """Validate requests to the trending page."""
+
     error = {}
     try:
         # Determine request parameters
@@ -208,8 +212,11 @@ def validateTrending():
         requestedHist = convertRequestToStringWhichMayBeEmpty("histName", request.args)
 
         # subsystemName could be None, so we only check if it exists
-        if subsystemName and not subsystemName in serverParameters["subsystemList"] + ["TDG"]:
+        if subsystemName and subsystemName not in serverParameters["subsystemList"]:
             error.setdefault("Subsystem", []).append("{} is not a valid subsystem!".format(subsystemName))
+        
+        return error, subsystemName, requestedHist, jsRoot, ajaxRequest
+        
     except KeyError as e:
         # Format is:
         # errors = {'hello2': ['world', 'world2'], 'hello': ['world', 'world2']}
@@ -218,10 +225,8 @@ def validateTrending():
     except Exception as e:
         error.setdefault("generalError", []).append("Unknown exception! " + str(e))
 
-    if error == {}:
-        return (error, subsystemName, requestedHist, jsRoot, ajaxRequest)
-    else:
-        return (error, None, None, None, None)
+    return error, None, None, None, None
+
 
 # Validate individual values
 
@@ -236,15 +241,18 @@ def convertRequestToPythonBool(paramName, source):
         paramName (str): Name of the parameter in which we are interested in.
         source (dict): Source of the information. Usually request.args or request.form.
 
+    Returns:
+        object (bool): Parameter as python bool
+
     This function is fairly similar to `convertRequestToStringWhichMayBeEmpty`.
     """
-    paramValue = source.get(paramName, False, type=str)
-    #logger.info("{0}: {1}".format(paramName, paramValue))
-    if paramValue != False:
+    paramValue = source.get(paramName, False)
+    if paramValue:
         paramValue = json.loads(paramValue)
     logger.info("{0}: {1}".format(paramName, paramValue))
 
     return paramValue
+
 
 # Hist name and hist group
 ###################################################
@@ -258,11 +266,13 @@ def convertRequestToStringWhichMayBeEmpty(paramName, source):
         paramName (str): Name of the parameter in which we are interested in.
         source (dict): Source of the information. Usually request.args or request.form.
 
+    Returns:
+        object (str | None): Parameter as python string
+
     This function is fairly similar to `convertRequestToPythonBool`.
     """
-    paramValue = source.get(paramName, None, type=str)
-    #logger.info("{0}: {1}".format(paramName, paramValue))
-    #if paramValue == "" or paramValue == "None" or paramValue == None:
+    paramValue = source.get(paramName, None)
+
     # If we see "None", then we want to be certain that it is None!
     # Otherwise, we will interpret an empty string as a None value!
     if paramValue == "" or paramValue == "None":

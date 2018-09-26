@@ -730,6 +730,7 @@ def processAllRuns():
     if processingParameters["trending"]:
         from .trending.manager import TrendingManager
         trendMan = TrendingManager(dbRoot, processingParameters)  # TODO test
+        trendMan.createTrendingObjects()
 
         # TODO remove following lines
         trendingContainer = processingClasses.trendingContainer(dbRoot["trending"])

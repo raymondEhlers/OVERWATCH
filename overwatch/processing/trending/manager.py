@@ -23,30 +23,29 @@ except ImportError:
 class TrendingManager(Persistent):
 
     def __init__(self, dbRoot, parameters):  # type: (PersistentMapping, dict)->None
-        self.subsystem = 'TDG'  # TODO what is this?
         self.parameters = parameters
-        self.trendingObjects = None
         self.histToTrending = {}  # type: Dict[str, List[TrendingObject]]
 
         self.prepareDataBase(CON.TRENDING, dbRoot)
         self.trendingDB = dbRoot[CON.TRENDING]  # type: BTree[str, BTree[str, TrendingObject]]
 
         self.prepareDirStructure()
-        self.createTrendingObjects()
 
     def prepareDirStructure(self):
-        trendingDir = os.path.join(self.parameters[CON.DIR_PREFIX], CON.TRENDING)
-        imgDir = os.path.join('{}', CON.IMAGE)
-        jsonDir = os.path.join('{}', CON.JSON)
+        trendingDir = os.path.join(self.parameters[CON.DIR_PREFIX], CON.TRENDING, '{}', '{}')
+        imgDir = trendingDir.format('{}', CON.IMAGE)
+        jsonDir = trendingDir.format('{}', CON.JSON)
 
-        for subsystemName in self.parameters[CON.SUBSYSTEMS] + [self.subsystem]:
-            subImgDir = os.path.join(trendingDir, imgDir.format(subsystemName))
+        for subsystemName in self.parameters[CON.SUBSYSTEMS]:
+            subImgDir = imgDir.format(subsystemName)
             if not os.path.exists(subImgDir):
                 os.makedirs(subImgDir)
 
-            subJsonDir = os.path.join(trendingDir, jsonDir.format(subsystemName))
+            subJsonDir = jsonDir.format(subsystemName)
             if not os.path.exists(subJsonDir):
                 os.makedirs(subJsonDir)
+
+            self.prepareDataBase(subsystemName, self.trendingDB)
 
     @staticmethod
     def prepareDataBase(objName, dbPosition):  # type: (str, Persistent)-> None
@@ -54,15 +53,13 @@ class TrendingManager(Persistent):
             dbPosition[objName] = BTree()
 
     def createTrendingObjects(self):
-        self.trendingObjects = {}
-        for subsystem in self.parameters[CON.SUBSYSTEMS] + [self.subsystem]:
+        for subsystem in self.parameters[CON.SUBSYSTEMS]:
             self._createTrendingObjectsForSubsystem(subsystem)
 
     def _createTrendingObjectsForSubsystem(self, subsystemName):  # type: (str) -> None
         functionName = "get{}TrendingObjectInfo".format(subsystemName)
         getTrendingObjectInfo = getattr(qa, functionName, None)  # type: Callable[[], List[TrendingInfo]]
         if getTrendingObjectInfo:
-            self.prepareDataBase(subsystemName, self.trendingDB)
             info = getTrendingObjectInfo()
             self._createTrendingObjectFromInfo(subsystemName, info)
         else:
@@ -71,7 +68,7 @@ class TrendingManager(Persistent):
     def _createTrendingObjectFromInfo(self, subsystemName, infoList):
         # type: (str, List[TrendingInfo]) -> None
         success = "Trending object {} from subsystem {} added to the trending manager"
-        fail = "Trending object {} (name: {}) already exists in subsystem {}"
+        fail = "Trending object {} already exists in subsystem {}"
 
         for info in infoList:
             if info.name not in self.trendingDB[subsystemName] or self.parameters[CON.RECREATE]:
@@ -81,14 +78,11 @@ class TrendingManager(Persistent):
 
                 logger.debug(success.format(info.name, subsystemName))
             else:
-                logger.debug(fail.format(self.trendingObjects[subsystemName][info.name], info.name, subsystemName))
+                logger.debug(fail.format(self.trendingDB[subsystemName][info.name], subsystemName))
 
     def subscribe(self, trendingObject, histogramNames):  # type: (TrendingObject, List[str])->None
         for histName in histogramNames:
-            try:
-                self.histToTrending[histName].append(trendingObject)
-            except KeyError:
-                self.histToTrending[histName] = [trendingObject]
+            self.histToTrending.setdefault(histName, []).append(trendingObject)
 
     def resetDB(self):
         self.trendingDB.clear()

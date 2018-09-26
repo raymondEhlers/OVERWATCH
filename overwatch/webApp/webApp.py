@@ -550,7 +550,7 @@ def timeSlice():
 
 ###################################################
 #@app.route("/trending/<string:subsystemName>", methods=["GET", "POST"])
-@app.route("/trending", methods=["GET", "POST"])
+# @app.route("/trending", methods=["GET", "POST"])
 @login_required
 def trending():
     """ Trending visualization.

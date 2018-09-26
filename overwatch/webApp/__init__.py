@@ -2,7 +2,8 @@
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
+from . import trending
 
 __all__ = [
-           "webApp"
-          ]
+    "webApp"
+]
