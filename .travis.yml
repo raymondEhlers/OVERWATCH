@@ -56,4 +56,5 @@ deploy:
       on:
           # Build a docker image for master or if it has "-docker" in the branch name.
           all_branches: true
-          condition: "${TRAVIS_BRANCH}" =~ =~ [a-zA-Z]+-docker|master
+          # For whatever reason, since Travis is parsing this line, we can't quote the variable here
+          condition: ${TRAVIS_BRANCH} =~ [a-zA-Z]+-docker|master
