@@ -65,18 +65,32 @@ def expandEnvironmentalVars(loader, node):
 # Add the plugin into the loader.
 yaml.SafeLoader.add_constructor('!expandVars', expandEnvironmentalVars)
 
-def writeCustomConfig(configToWrite, filename = "config.yaml"):
+def writeCustomConfig(baseConfig, key = "additionalOptions", filename = "config.yaml"):
     """ Write out a custom Overwatch configuration file.
 
     First, we read in any existing configuration, and then we update that configuration
     with the newly provided one, rewriting the entire config file.
 
+    As an example, for a ``baseConfig`` as
+
+    .. code-block:: yaml
+
+        option1: true
+        myAdditionalOptions:
+            opt2: true
+            opt3: 3
+
+    we would pass in the key name ``myAdditionalOptions``, and it would write ``opt2`` and ``opt3``
+    to ``filename``.
+
     Args:
-        configToWrite (dict): Configuration to be written.
+        baseConfig (dict): Configuration which contains the options dict under a given key.
+        key (str): Name of the dict which contains the additional options. Default: "additionalOptions".
         filename (str): Filename of the configuration file. Default: "config.yaml".
     Returns:
         None.
     """
+    configToWrite = baseConfig.get(key, {})
     # If the configuration is empty, we just won't do anything.
     if configToWrite:
         config = {}
@@ -631,7 +645,7 @@ class dataTransfer(executable):
         # Call the base class setup first so that all of the variables are fully initialized and formatted.
         super().setup()
 
-        writeCustomConfig(self.config.get("additionalOptions", {}))
+        writeCustomConfig(baseConfig = self.config)
 
 # TODO: Can we merge with data handling
 class processing(executable):
@@ -663,7 +677,7 @@ class processing(executable):
         # Call the base class setup first so that all of the variables are fully initialized and formatted.
         super().setup()
 
-        writeCustomConfig(self.config.get("additionalOptions", {}))
+        writeCustomConfig(baseConfig = self.config)
 
 class webApp(executable):
     """ Start the web app.
@@ -692,7 +706,7 @@ class webApp(executable):
         In particular, we write any passed custom configuration options out to an Overwatch YAML config file.
         """
         # Write custom configuration for the DQM receiver.
-        writeCustomConfig(self.config.get("additionalOptions", {}))
+        writeCustomConfig(baseConfig = self.config)
 
         # Create an underlying uwsgi app to handle the setup and execution.
         if "nginx" in self.config:
@@ -735,7 +749,7 @@ class dqmReceiver(executable):
         In particular, we write any passed custom configuration options out to an Overwatch YAML config file.
         """
         # Write custom configuration for the DQM receiver.
-        writeCustomConfig(self.config.get("additionalOptions", {}))
+        writeCustomConfig(baseConfig = self.config)
 
         # Create nginx if requested
         if "nginx" in self.config:
