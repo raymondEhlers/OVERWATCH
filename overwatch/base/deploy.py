@@ -26,6 +26,7 @@ from __future__ import print_function
 from builtins import super
 from future.utils import iteritems
 
+import functools
 import os
 import stat
 import signal
@@ -38,7 +39,12 @@ import warnings
 import ruamel.yaml as yaml
 # Help for handling string based configurations.
 import inspect
-import configparser
+try:
+    # Python 3
+    from configparser import ConfigParser
+except ImportError:
+    # Python 2
+    from ConfigParser import SafeConfigParser as ConfigParser
 
 logger = logging.getLogger("")
 
@@ -64,50 +70,6 @@ def expandEnvironmentalVars(loader, node):
     return str(val)
 # Add the plugin into the loader.
 yaml.SafeLoader.add_constructor('!expandVars', expandEnvironmentalVars)
-
-def writeCustomConfig(baseConfig, key = "additionalOptions", filename = "config.yaml"):
-    """ Write out a custom Overwatch configuration file.
-
-    First, we read in any existing configuration, and then we update that configuration
-    with the newly provided one, rewriting the entire config file.
-
-    As an example, for a ``baseConfig`` as
-
-    .. code-block:: yaml
-
-        option1: true
-        myAdditionalOptions:
-            opt2: true
-            opt3: 3
-
-    we would pass in the key name ``myAdditionalOptions``, and it would write ``opt2`` and ``opt3``
-    to ``filename``.
-
-    Args:
-        baseConfig (dict): Configuration which contains the options dict under a given key.
-        key (str): Name of the dict which contains the additional options. Default: "additionalOptions".
-        filename (str): Filename of the configuration file. Default: "config.yaml".
-    Returns:
-        None.
-    """
-    configToWrite = baseConfig.get(key, {})
-    # If the configuration is empty, we just won't do anything.
-    if configToWrite:
-        config = {}
-        if os.path.exists(filename):
-            with open(filename, "r") as f:
-                with warnings.catch_warnings():
-                    warnings.simplefilter("ignore")
-                    config = yaml.load(f, Loader = yaml.SafeLoader)
-
-        # Add our new options in.
-        config.update(configToWrite)
-
-        # Write out configuration.
-        # We overwrite the previous config because we already loaded it in, so in effect we are appending
-        # (but we reduplication of options)
-        with open(filename, "w") as f:
-            yaml.dump(config, f, default_flow_style = False)
 
 class executable(object):
     """ Base executable class.
@@ -243,7 +205,7 @@ class executable(object):
         """
         if self.supervisord:
             # Use configparser to create the configuration from a dict.
-            process = configparser.ConfigParser()
+            process = ConfigParser()
             programIdentifier = "program:{name}".format(name = self.name)
             options = {
                 "command": " ".join(self.args),
@@ -617,26 +579,13 @@ class zodb(executable):
         with open(self.configFilename, "w") as f:
             f.write(zeoConfig)
 
-class dataTransfer(executable):
-    """ Start data handling and transfer from the receiver node to EOS and Overwatch sites.
+class overwatchExecutable(executable):
+    """ Starts an Overwatch (ie python-based) based executable.
 
-    Note:
-        Arguments after ``config`` are values which will be used for formatting and are required in the config.
+    In the config, it looks for:
 
-    Args:
-        config (dict): Configuration for the executable.
+    - additionalConfig (dict): Additional options to added to the YAML configuration.
     """
-    def __init__(self, config):
-        name = "dataTransfer"
-        description = "Overwatch receiver data transfer"
-        args = [
-            "overwatchReceiverDataHandling",
-        ]
-        super().__init__(name = name,
-                         description = description,
-                         args = args,
-                         config = config)
-
     def setup(self):
         """ Setup required for Overwatch data handling and transfer.
 
@@ -645,113 +594,70 @@ class dataTransfer(executable):
         # Call the base class setup first so that all of the variables are fully initialized and formatted.
         super().setup()
 
-        writeCustomConfig(baseConfig = self.config)
+        self.writeCustomConfig()
 
-# TODO: Can we merge with data handling
-class processing(executable):
-    """ Start Overwatch processing.
+    def writeCustomConfig(self, key = "additionalOptions", filename = "config.yaml"):
+        """ Write out a custom Overwatch configuration file.
 
-    Note:
-        Arguments after ``config`` are values which will be used for formatting and are required in the config.
+        First, we read in any existing configuration, and then we update that configuration
+        with the newly provided one, rewriting the entire config file.
 
-    Args:
-        config (dict): Configuration for the executable.
-        additionalConfig (dict): Additional options to added to the processing configuration.
-    """
-    def __init__(self, config):
-        name = "processing"
-        description = "Overwatch processing"
-        args = [
-            "overwatchProcessing",
-        ]
-        super().__init__(name = name,
-                         description = description,
-                         args = args,
-                         config = config)
+        As an example, for a ``config`` as
 
-    def setup(self):
-        """ Setup required for Overwatch processing.
+        .. code-block:: yaml
 
-        In particular, we write any passed custom configuration options out to an Overwatch YAML config file.
+            option1: true
+            myAdditionalOptions:
+                opt2: true
+                opt3: 3
+
+        we would pass in the key name ``myAdditionalOptions``, and it would write ``opt2`` and ``opt3``
+        to ``filename``.
+
+        Args:
+            key (str): Name of the dict which contains the additional options. Default: "additionalOptions".
+            filename (str): Filename of the configuration file. Default: "config.yaml".
+        Returns:
+            None.
         """
-        # Call the base class setup first so that all of the variables are fully initialized and formatted.
-        super().setup()
+        configToWrite = self.config.get(key, {})
+        # If the configuration is empty, we just won't do anything.
+        if configToWrite:
+            config = {}
+            if os.path.exists(filename):
+                with open(filename, "r") as f:
+                    with warnings.catch_warnings():
+                        warnings.simplefilter("ignore")
+                        config = yaml.load(f, Loader = yaml.SafeLoader)
 
-        writeCustomConfig(baseConfig = self.config)
+            # Add our new options in.
+            config.update(configToWrite)
 
-class webApp(executable):
-    """ Start the web app.
+            # Write out configuration.
+            # We overwrite the previous config because we already loaded it in, so in effect we are appending
+            # (but we reduplication of options)
+            with open(filename, "w") as f:
+                yaml.dump(config, f, default_flow_style = False)
 
-    Note:
-        Arguments after ``config`` are values which will be used for formatting and are required in the config.
+class overwatchFlaskExecutable(overwatchExecutable):
+    """ Start an Overwatch Flask executable.
 
-    Args:
-        config (dict): Configuration for the executable.
-        additionalConfig (dict): Additional options to added to the processing configuration.
+    Used for starting the web app and the DQM receiver - both of these are flask based.
+
+    In the config, it looks for:
+
+    - additionalConfig (dict): Additional options to added to the YAML configuration.
     """
-    def __init__(self, config):
-        name = "webApp"
-        description = "Overwatch web app"
-        args = [
-            "overwatchWebApp",
-        ]
-        super().__init__(name = name,
-                         description = description,
-                         args = args,
-                         config = config)
-
     def setup(self):
-        """ Setup required for Overwatch web app.
+        """ Setup required for an Overwatch flask executable.
 
-        In particular, we write any passed custom configuration options out to an Overwatch YAML config file.
+        In particular, we write any passed custom configuration options out to an Overwatch YAML config file,
+        as well as potentially setup ``uwsgi`` and/or setup and run ``nginx``.
         """
-        # Write custom configuration for the DQM receiver.
-        writeCustomConfig(baseConfig = self.config)
+        # Write custom configuration for the overwatch executable.
+        self.writeCustomConfig()
 
         # Create an underlying uwsgi app to handle the setup and execution.
-        if "nginx" in self.config:
-            if self.config["nginx"]["enabled"] is True:
-                server = nginx(self.config["nginx"])
-                server.setup()
-                server.run()
-
-        # Create an underlying uwsgi app to handle the setup and execution.
-        self = uwsgi.createObject(self)
-
-        # We call this last here because we are going to update variables if we use uwsgi for execution.
-        super().setup()
-
-# TODO: Can we just merge dqmReceiver and uwsgi?
-class dqmReceiver(executable):
-    """ Start the DQM receiver.
-
-    Note:
-        Arguments after ``config`` are values which will be used for formatting and are required in the config.
-
-    Args:
-        config (dict): Configuration for the executable.
-        additionalConfig (dict): Additional options to added to the processing configuration.
-    """
-    def __init__(self, config):
-        name = "dqmReceiver"
-        description = "Overwatch DQM Receiver"
-        args = [
-            "overwatchDQMReciever",
-        ]
-        super().__init__(name = name,
-                         description = description,
-                         args = args,
-                         config = config)
-
-    def setup(self):
-        """ Setup required for Overwatch DQM receiver.
-
-        In particular, we write any passed custom configuration options out to an Overwatch YAML config file.
-        """
-        # Write custom configuration for the DQM receiver.
-        writeCustomConfig(baseConfig = self.config)
-
-        # Create nginx if requested
         if "nginx" in self.config:
             if self.config["nginx"]["enabled"] is True:
                 server = nginx(self.config["nginx"])
@@ -800,7 +706,7 @@ class supervisor(executable):
         if not os.path.exists(filename):
             logger.info("Creating supervisord main config")
             # Write the main config
-            config = configparser.ConfigParser()
+            config = ConfigParser()
             # Main supervisord configuration
             config["supervisord"] = {
                 "nodaemon": True,
@@ -964,7 +870,7 @@ class uwsgi(executable):
         if "uwsgi" not in obj.config:
             raise KeyError('Expected "uwsgi" block in the executable configuration, but none was found!')
 
-        if obj.config["uwsgi"]["enabled"] is True:
+        if obj.config["uwsgi"].get("enabled", False) is True:
             uwsgiApp = cls(name = obj.name,
                            description = obj.description,
                            args = None,
@@ -1159,7 +1065,7 @@ class environment(executable):
         We generically add these environment variables, as well as explicitly checking for those
         related to EOS.
         """
-        # TODO: Check for EOS?
+        # TODO: Check for EOS variables?
 
         for k, v in iteritems(self.config["vars"]):
             # Not necessarily a problem, but I want to make the user aware.
@@ -1172,10 +1078,32 @@ _available_executables = {
     "zodb": zodb,
     "autossh": autossh,
     "zmqReceiver": zmqReceiver,
-    "dqmReceiver": dqmReceiver,
-    "processing": processing,
-    "webApp": webApp,
-    "dataTransfer": dataTransfer,
+    "dataTransfer": functools.partial(overwatchExecutable,
+                                      name = "dataTransfer",
+                                      description = "Overwatch receiver data transfer",
+                                      args = [
+                                          "overwatchReceiverDataHandling",
+                                      ]),
+    "processing": functools.partial(overwatchExecutable,
+                                    name = "processing",
+                                    description = "Overwatch processing",
+                                    args = [
+                                        "overwatchProcessing",
+                                    ]),
+    #"webApp": webApp,
+    #"dqmReceiver": dqmReceiver,
+    "webApp": functools.partial(overwatchFlaskExecutable,
+                                name = "webApp",
+                                description = "Overwatch web app",
+                                args = [
+                                    "overwatchWebApp",
+                                ]),
+    "dqmReceiver": functools.partial(overwatchFlaskExecutable,
+                                     name = "dqmReceiver",
+                                     description = "Overwatch DQM receiver",
+                                     args = [
+                                         "overwatchDQMReciever",
+                                     ]),
 }
 
 def retrieveExecutable(name):
@@ -1263,10 +1191,12 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
         pass
 
     if "processing" in config and config["processing"]["enabled"]:
-        processing(config)
+        #processing(config)
+        pass
 
     if "webApp" in config and config["webApp"]["enabled"]:
-        webApp(config)
+        #webApp(config)
+        pass
 
     # Start supervisord
     if "supervisord" in config and config["supervisord"]:

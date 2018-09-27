@@ -33,22 +33,33 @@ def testFailedKillingProces(loggingMixin, setupExecutable):
     """ Test for the various error modes when killing a process. """
     pass
 
-overwatchExecutableResult = collections.namedtuple("overwatchExecutableResult", ["name", "description", "args"])
-@pytest.mark.parametrize("executableType, expected", [
-        ("dataTransfer", overwatchExecutableResult(name = "dataTransfer",
-                                                   description = "Overwatch receiver data transfer",
-                                                   args = ["overwatchReceiverDataHandling"])),
-        ("processing", overwatchExecutableResult(name = "processing",
-                                                 description = "Overwatch processing",
-                                                 args = ["overwatchProcessing"])),
-        #("webApp", overwatchExecutableResult(name = "webApp",
-        #                                         description = "Overwatch web app",
-        #                                         args = ["overwatchWebApp"])),
-    ], ids = ["Data transfer", "Processing",])
-        #"Web App", "Web App - uwsgi" , "Web App - uwsgi + nginx", "DQM Receiver"])
-def testDataTransferExectuable(loggingMixin, executableType, expected):
+overwatchExecutableResult = collections.namedtuple("overwatchExecutableResult", ["name", "description", "args", "config"])
+@pytest.mark.parametrize("executableType, config, expected", [
+        ("dataTransfer", {},
+         overwatchExecutableResult(name = "dataTransfer",
+                                   description = "Overwatch receiver data transfer",
+                                   args = ["overwatchReceiverDataHandling"],
+                                   config = {})),
+        ("processing", {},
+         overwatchExecutableResult(name = "processing",
+                                   description = "Overwatch processing",
+                                   args = ["overwatchProcessing"],
+                                   config = {})),
+        ("webApp", {"uwsgi": {}},
+         overwatchExecutableResult(name = "webApp",
+                                   description = "Overwatch web app",
+                                   args = ["overwatchWebApp"],
+                                   config = {})),
+        ("dqmReceiver", {"uwsgi": {}},
+         overwatchExecutableResult(name = "dqmReceiver",
+                                   description = "Overwatch DQM receiver",
+                                   args = ["overwatchDQMReciever"],
+                                   config = {})),
+    ], ids = ["Data transfer", "Processing", "Web App", "DQM Receiver"])
+        #"Web App - uwsgi" , "Web App - uwsgi + nginx", "DQM Receiver - uwsgi", "DQM Receiver - uwsgi + nginx"])
+def testDataTransferExectuable(loggingMixin, executableType, config, expected):
     """ Test the properties of Overwatch based exectuables. """
-    executable = deploy.retrieveExecutable(executableType)(config = {})
+    executable = deploy.retrieveExecutable(executableType)(config = config)
 
     # Perform task setup.
     executable.setup()
