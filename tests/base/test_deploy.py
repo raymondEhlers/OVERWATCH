@@ -20,8 +20,28 @@ import ruamel.yaml as yaml
 
 from overwatch.base import deploy
 
-def testWriteCustomConfig(loggingMixin):
-    pass
+def testExpandEnvironmentVars(loggingMixin):
+    """ Test the YAML constructor to expand environment vars. """
+    testYaml = """
+    normalVar: 3
+    normalWithDollarSign: "$ Hello World"
+    environmentVar: !expandVars $HOME
+    expandedWithoutVar: !expandVars "Hello world"
+    """
+    # Setup the YAML to be read from a stream
+    s = StringIO()
+    s.write(testYaml)
+    s.seek(0)
+
+    # Need to use the YAML from the deploy module to ensure that the constructor is loaded properly.
+    config = deploy.yaml.load(s, Loader = yaml.SafeLoader)
+
+    assert config["normalVar"] == 3
+    # Should have no impact because it explicitly needs to be tagged (a `$` on it's own is not enough)
+    assert config["normalWithDollarSign"] == "$ Hello World"
+    assert config["environmentVar"] == os.environ["HOME"]
+    # Should have no impact because there are no envrionment ars
+    assert config["expandedWithoutVar"] == "Hello world"
 
 @pytest.fixture
 def setupBasicExecutable(loggingMixin, mocker):
