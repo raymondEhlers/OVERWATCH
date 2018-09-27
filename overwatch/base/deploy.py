@@ -77,21 +77,23 @@ def writeCustomConfig(configToWrite, filename = "config.yaml"):
     Returns:
         None.
     """
-    config = {}
-    if os.path.exists(filename):
-        with open(filename, "r") as f:
-            with warnings.catch_warnings():
-                warnings.simplefilter("ignore")
-                config = yaml.load(f, Loader = yaml.SafeLoader)
+    # If the configuration is empty, we just won't do anything.
+    if configToWrite:
+        config = {}
+        if os.path.exists(filename):
+            with open(filename, "r") as f:
+                with warnings.catch_warnings():
+                    warnings.simplefilter("ignore")
+                    config = yaml.load(f, Loader = yaml.SafeLoader)
 
-    # Add our new options in.
-    config.update(configToWrite)
+        # Add our new options in.
+        config.update(configToWrite)
 
-    # Write out configuration.
-    # We overwrite the previous config because we already loaded it in, so in effect we are appending
-    # (but we reduplication of options)
-    with open(filename, "w") as f:
-        yaml.dump(config, f, default_flow_style = False)
+        # Write out configuration.
+        # We overwrite the previous config because we already loaded it in, so in effect we are appending
+        # (but we reduplication of options)
+        with open(filename, "w") as f:
+            yaml.dump(config, f, default_flow_style = False)
 
 class executable(object):
     """ Base executable class.
@@ -132,7 +134,7 @@ class executable(object):
     # Avoid having to set this for every object given that it should be the same for (nearly) every one.
     supervisord = False
 
-    def __init__(self, name, description, args, config, supervisord, shortExecutionTime):
+    def __init__(self, name, description, args, config):
         self.name = name
         self.description = description
         self.args = args
@@ -142,7 +144,7 @@ class executable(object):
         self.processIdentifier = None
 
         # Additional options
-        self.shortExecutionTime = shortExecutionTime
+        self.shortExecutionTime = False
         self.logFilename = "{name}.log".format(name = self.name)
         self.runInForeground = self.config.get("runInForeground", False)
         self.executeTask = self.config.get("enabled", False)
@@ -629,7 +631,7 @@ class dataTransfer(executable):
         # Call the base class setup first so that all of the variables are fully initialized and formatted.
         super().setup()
 
-        writeCustomConfig(self.config["additionalOptions"])
+        writeCustomConfig(self.config.get("additionalOptions", {}))
 
 # TODO: Can we merge with data handling
 class processing(executable):
@@ -661,7 +663,7 @@ class processing(executable):
         # Call the base class setup first so that all of the variables are fully initialized and formatted.
         super().setup()
 
-        writeCustomConfig(self.config["additionalOptions"])
+        writeCustomConfig(self.config.get("additionalOptions", {}))
 
 class webApp(executable):
     """ Start the web app.
@@ -675,7 +677,7 @@ class webApp(executable):
     """
     def __init__(self, config):
         name = "webApp"
-        description = "Overwatch webApp"
+        description = "Overwatch web app"
         args = [
             "overwatchWebApp",
         ]
@@ -690,7 +692,7 @@ class webApp(executable):
         In particular, we write any passed custom configuration options out to an Overwatch YAML config file.
         """
         # Write custom configuration for the DQM receiver.
-        writeCustomConfig(self.config["additionalOptions"])
+        writeCustomConfig(self.config.get("additionalOptions", {}))
 
         # Create an underlying uwsgi app to handle the setup and execution.
         if "nginx" in self.config:
@@ -733,7 +735,7 @@ class dqmReceiver(executable):
         In particular, we write any passed custom configuration options out to an Overwatch YAML config file.
         """
         # Write custom configuration for the DQM receiver.
-        writeCustomConfig(self.config["additionalOptions"])
+        writeCustomConfig(self.config.get("additionalOptions", {}))
 
         # Create nginx if requested
         if "nginx" in self.config:
@@ -1159,7 +1161,37 @@ _available_executables = {
     "dqmReceiver": dqmReceiver,
     "processing": processing,
     "webApp": webApp,
+    "dataTransfer": dataTransfer,
 }
+
+def retrieveExecutable(name):
+    """ Retrieve an expected by name.
+
+    This is an extremely minimal helper function to allow for flexibility in the future.
+
+    The available executables are:
+
+    - environment
+    - zodb
+    - autossh
+    - zmqReceiver
+    - dqmReceiver
+    - processing
+    - webApp
+    - dataTransfer
+
+    Args:
+        name (str): Name of the executable "type". For example, "processing" for Overwatch processing.
+            An extensive list is in this docstring.
+    Returns:
+        executable: The requested executable.
+
+    Raises:
+        ValueError: If the requested executable doesn't exist.
+    """
+    if name not in _available_executables:
+        raise ValueError("Executable {name} is invalid.".format(name = name))
+    return _available_executables[name]
 
 def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
     """ Start the various parts of Overwatch.
