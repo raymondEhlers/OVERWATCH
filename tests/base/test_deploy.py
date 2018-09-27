@@ -7,6 +7,11 @@
 
 import pytest
 import os
+try:
+    # For whatever reason, import StringIO from io doesn't behave nicely in python 2.
+    from StringIO import StringIO
+except ImportError:
+    from io import StringIO
 import collections
 import logging
 logger = logging.getLogger(__name__)
@@ -65,47 +70,54 @@ def setupOverwatchExecutable(loggingMixin):
     )
     executable = deploy.overwatchExecutable(**expected._asdict())
 
-    # First write the existing config (may be empty)
-    directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "deployConfig")
-    # Ensure that it exists.
-    if not os.path.exists(directory):
-        os.makedirs(directory)
-    filename = os.path.join(directory, "config.yaml")
-
-    yield executable, expected, filename
-
-    # Cleanup the config (if it was created) so we can start clean for the next test.
-    if os.path.exists(filename):
-        os.remove(filename)
+    yield executable, expected
 
 @pytest.mark.parametrize("existingConfig", [
         {},
         {"existingOption": True},
         {"opt2": False},
     ], ids = ["Config from scratch", "Appending to non-overlapping values", "Update overlapping values"])
-def testWriteCustomOverwatchConfig(setupOverwatchExecutable, existingConfig):
+def testWriteCustomOverwatchConfig(setupOverwatchExecutable, existingConfig, mocker):
     """ Test writing a custom Overwtach config. """
-    executable, expected, configFilename = setupOverwatchExecutable
+    executable, expected = setupOverwatchExecutable
 
-    # Write the existing config
-    if existingConfig:
-        with open(configFilename, "w") as f:
-            yaml.dump(existingConfig, f, default_flow_style = False)
-
-    executable.filename = configFilename
-
-    # Run the setup to write the configuration
-    executable.setup()
-
-    # Read in the config to check the result
-    with open(configFilename, "r") as f:
-        customConfig = yaml.load(f, Loader = yaml.SafeLoader)
+    filename = "config.yaml"
+    executable.filename = filename
 
     # Determine the expected result
     expectedConfig = existingConfig.copy()
     expectedConfig.update(expected.config["additionalOptions"])
 
-    assert customConfig == expectedConfig
+    # Need to encode the exsting config with yaml so that we can input a string...
+    inputStr = StringIO()
+    yaml.dump(existingConfig, inputStr, default_flow_style = False)
+    inputStr.seek(0)
+
+    # Mock checking for a file
+    mExists = mocker.MagicMock(return_value = (existingConfig != {}))
+    mocker.patch("os.path.exists", mExists)
+    # Mock opening the file
+    mFile = mocker.mock_open(read_data = inputStr.read())
+    mocker.patch("overwatch.base.deploy.open", mFile)
+    # Mock yaml.dump so we can check what was written.
+    # (We can't check the write directly because dump writes many times!)
+    mYaml = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.yaml.dump", mYaml)
+
+    # Perform the actual setup
+    executable.setup()
+
+    # Should both read and write from here
+    if existingConfig != {}:
+        mFile.assert_any_call(filename, "r")
+    mFile.assert_called_with(filename, "w")
+
+    # Confirm that we've written the right information
+    mYaml.assert_called_once_with(expectedConfig, mFile(), default_flow_style = False)
+
+    # Necessary to ensure that profiling works (it seems that it runs before all mocks are cleared)
+    # Probably something to do with mocking open
+    mocker.stopall()
 
 @pytest.mark.parametrize("executableType, config, expected", [
         ("dataTransfer", {},
