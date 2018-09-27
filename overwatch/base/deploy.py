@@ -601,6 +601,37 @@ class zodb(executable):
         with open(self.configFilename, "w") as f:
             f.write(zeoConfig)
 
+class dataTransfer(executable):
+    """ Start data handling and transfer from the receiver node to EOS and Overwatch sites.
+
+    Note:
+        Arguments after ``config`` are values which will be used for formatting and are required in the config.
+
+    Args:
+        config (dict): Configuration for the executable.
+    """
+    def __init__(self, config):
+        name = "dataTransfer"
+        description = "Overwatch receiver data transfer"
+        args = [
+            "overwatchReceiverDataHandling",
+        ]
+        super().__init__(name = name,
+                         description = description,
+                         args = args,
+                         config = config)
+
+    def setup(self):
+        """ Setup required for Overwatch data handling and transfer.
+
+        In particular, we write any passed custom configuration options out to an Overwatch YAML config file.
+        """
+        # Call the base class setup first so that all of the variables are fully initialized and formatted.
+        super().setup()
+
+        writeCustomConfig(self.config["additionalOptions"])
+
+# TODO: Can we merge with data handling
 class processing(executable):
     """ Start Overwatch processing.
 
