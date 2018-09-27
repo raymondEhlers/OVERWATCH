@@ -100,6 +100,7 @@ class TrendingObject:
         canvas.SetLogy(False)
         canvas.SetLogz(False)
 
+    # @abc.abstractmethod
     def addNewHistogram(self, hist):  # type: (histogramContainer) -> None
         if self.currentEntry > self.maxEntries:
             self.trendedValues = np.delete(self.trendedValues, 0, axis=0)
