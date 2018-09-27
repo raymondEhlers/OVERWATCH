@@ -42,7 +42,7 @@ import inspect
 try:
     # Python 3
     from configparser import ConfigParser
-except ImportError:
+except ImportError:  # pragma: no cover . Py2 will cover this, but not p3. Either way, it's not interesting, so ignore it.
     # Python 2
     from ConfigParser import SafeConfigParser as ConfigParser
 
@@ -586,6 +586,11 @@ class overwatchExecutable(executable):
 
     - additionalConfig (dict): Additional options to added to the YAML configuration.
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Add the filename so that it can be modified later if so desired.
+        self.filename = "config.yaml"
+
     def setup(self):
         """ Setup required for Overwatch data handling and transfer.
 
@@ -594,9 +599,10 @@ class overwatchExecutable(executable):
         # Call the base class setup first so that all of the variables are fully initialized and formatted.
         super().setup()
 
+        # Write out the custom config
         self.writeCustomConfig()
 
-    def writeCustomConfig(self, key = "additionalOptions", filename = "config.yaml"):
+    def writeCustomConfig(self):
         """ Write out a custom Overwatch configuration file.
 
         First, we read in any existing configuration, and then we update that configuration
@@ -612,20 +618,18 @@ class overwatchExecutable(executable):
                 opt3: 3
 
         we would pass in the key name ``myAdditionalOptions``, and it would write ``opt2`` and ``opt3``
-        to ``filename``.
+        to ``self.filename``.
 
         Args:
-            key (str): Name of the dict which contains the additional options. Default: "additionalOptions".
-            filename (str): Filename of the configuration file. Default: "config.yaml".
         Returns:
             None.
         """
-        configToWrite = self.config.get(key, {})
+        configToWrite = self.config.get("additionalOptions", {})
         # If the configuration is empty, we just won't do anything.
         if configToWrite:
             config = {}
-            if os.path.exists(filename):
-                with open(filename, "r") as f:
+            if os.path.exists(self.filename):
+                with open(self.filename, "r") as f:
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore")
                         config = yaml.load(f, Loader = yaml.SafeLoader)
@@ -636,7 +640,7 @@ class overwatchExecutable(executable):
             # Write out configuration.
             # We overwrite the previous config because we already loaded it in, so in effect we are appending
             # (but we reduplication of options)
-            with open(filename, "w") as f:
+            with open(self.filename, "w") as f:
                 yaml.dump(config, f, default_flow_style = False)
 
 class overwatchFlaskExecutable(overwatchExecutable):
