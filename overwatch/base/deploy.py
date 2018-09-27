@@ -2,16 +2,16 @@
 
 """ Handles deployment and starting of Overwatch and related processes.
 
-TODO: Update
-
 It can handle the configuration and execution of:
 
-- ``Overwatch ZMQ receiver``
-- ``Overwatch DQM receiver``
-    - ``Nginx``
-- ``Overwatch processing``
-- ``Overwatch web app``
-    - ``Nginx``
+- ``autossh`` for SSH tunnels.
+- ``ZODB`` for the Overwatch Database
+- Overwatch ZMQ receiver
+- Overwatch DQM receiver
+    - Via ``uswgi``, ``uwsgi`` behind ``nginx`` or directly.
+- Overwatch processing
+- Overwatch web app
+    - Via ``uswgi``, ``uwsgi`` behind ``nginx`` or directly.
 
 It can also handle receiving SSH Keys and grid certificates passed in via
 environment variables.
@@ -396,7 +396,7 @@ class sshKnownHostsExecutable(executable):
         # Take advantage of the log file to write the process output to the known_hosts file.
         self.logFilename = self.knownHostsPath
 
-class autosshExecutable(executable):
+class autossh(executable):
     """ Start ``autossh`` to create a SSH tunnel.
 
     Note:
@@ -526,13 +526,13 @@ class zmqReceiver(executable):
 
         # Setup the autossh tunnel if required.
         if self.config["tunnel"]:
-            tunnel = autosshExecutable(config = self.config)
+            tunnel = autossh(config = self.config)
             tunnel.run()
 
         # Conditions for run?
         #if processPIDs is not None and (config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None)):
 
-class zodbDatabase(executable):
+class zodb(executable):
     """ Start the ZODB database.
 
     Note:
@@ -658,7 +658,16 @@ class webApp(executable):
 
         In particular, we write any passed custom configuration options out to an Overwatch YAML config file.
         """
+        # Write custom configuration for the DQM receiver.
         writeCustomConfig(self.config["additionalOptions"])
+
+        # Create an underlying uwsgi app to handle the setup and execution.
+        if "nginx" in self.config:
+            if self.config["nginx"]["enabled"] is True:
+                server = nginx(self.config["nginx"])
+                server.setup()
+                server.run()
+
         # Create an underlying uwsgi app to handle the setup and execution.
         self = uwsgi.createObject(self)
 
@@ -692,15 +701,24 @@ class dqmReceiver(executable):
 
         In particular, we write any passed custom configuration options out to an Overwatch YAML config file.
         """
+        # Write custom configuration for the DQM receiver.
         writeCustomConfig(self.config["additionalOptions"])
+
+        # Create nginx if requested
+        if "nginx" in self.config:
+            if self.config["nginx"]["enabled"] is True:
+                server = nginx(self.config["nginx"])
+                server.setup()
+                server.run()
+
         # Create an underlying uwsgi app to handle the setup and execution.
         self = uwsgi.createObject(self)
 
         # We call this last here because we are going to update variables if we use uwsgi for execution.
         super().setup()
 
-class supervisord(executable):
-    """ Start ``supervisord`` to manage processes.
+class supervisor(executable):
+    """ Start ``supervisor`` (through ``supervisord``) to manage processes.
 
     We don't need options for this executable. It is either going to be launched or it isn't.
 
@@ -776,17 +794,22 @@ class supervisord(executable):
         raise NotImplementedError("The supervisord executable should be run in multiple steps.")
 
 class nginx(executable):
-    """ Start ``nginx`` to serve a uwsgi based web app.
+    """ Start ``nginx`` to serve a ``uwsgi`` based web app.
 
     Note:
         Arguments after ``config`` are values which will be used for formatting and are required in the config.
 
     Note:
         It is generally recommended to run ``nginx`` in a separate container, but this option is maintained
-        for situations where that is not possible.
+        for situations where that is not possible. When run separately, we connect to the web app via an http socket,
+        while When run together, we connect to the ``uwsgi`` web app via a socket.
 
     Args:
         config (dict): Configuration for the executable.
+        name (str): Name of web app (especially the socket) which will be behind the ``nginx`` server.
+        basePath (str): Path to the ``nginx`` settings and configuration directory. Default: "/etc/nginx".
+        configPath (str): Path to the main ``nginx`` configuration directory. Default: "${basePath}/conf.d".
+        sitesPath (str): Path to the ``nginx`` sites directory. Default: "${basePath}/sites-enabled".
     """
     def __init__(self, config):
         name = "nginx"
@@ -802,7 +825,8 @@ class nginx(executable):
     def setup(self):
         """ Setup required for the ``nginx`` executable.
 
-        In particular, we need to write out the main configuration, as well as the ``gzip`` configuration.
+        In particular, we need to write out the main configuration (which directs to the socket to which traffic
+        should be passed), as well as the ``gzip`` configuration.
         """
         mainNginxConfig = """
         server {
@@ -811,7 +835,7 @@ class nginx(executable):
             server_name _;
             location / {
                 include uwsgi_params;
-                uwsgi_pass unix:///tmp/%(name)s.sock;
+                uwsgi_pass unix:///tmp/sockets/%(name)s.sock;
             }
         }"""
         # Use "%" formatting because the `nginx` config uses curly brackets.
@@ -984,67 +1008,127 @@ class uwsgi(executable):
 class enviornmentVariables():
     pass
 
-_available_executables = []
+class environment(executable):
+    """ Setup and create the necessary environment for execution.
 
-def writeSensitiveVariableToFile(config, name, prettyName, defaultWriteLocation):
-    """ Write SSH key or certificate from environment variable to file. """
-    # Check name value (also acts as proxy for the other values)
-    if name != "sshKey" and name != "cert":
-        raise ValueError("Name \"{}\" is unrecognized! Aborting")
+    Args:
 
-    #sensitiveVariable = getSensitiveVariableConfigurationValues(config, name = name, prettyName = prettyName)
-    logger.info("Writing {} from environment variable to file".format(prettyName))
-    # Get variable from environment
-    variableName = config[name].get("variableName", name)
-    sensitiveVariable = os.environ[variableName]
-    # Check that the variable is not empty
-    if not sensitiveVariable:
-        raise ValueError("Empty {} passed".format(prettyName))
-    logger.debug("variableName: {}, {}: {}".format(variableName, prettyName, sensitiveVariable))
+    """
+    def __init__(self, config):
+        name = "environment"
+        description = "Setup and create the necessary execution environment"
+        args = []
+        super().__init__(name = name,
+                         description = description,
+                         args = args,
+                         config = config)
 
-    # Write to file
-    writeLocation = config[name].get("writeLocation", defaultWriteLocation)
-    # Expand filename
-    writeLocation = os.path.expanduser(os.path.expandvars(writeLocation))
-    if not os.path.exists(os.path.dirname(writeLocation)):
-        os.makedirs(os.path.dirname(writeLocation))
+    def setup(self):
+        """ Setup for creating the execution environment.
 
-    # Ensure that we don't overwrite an existing file!
-    if os.path.exists(writeLocation):
-        raise IOError("File at {0} already exists and will not be overwritten!".format(writeLocation))
-    with open(writeLocation, "w") as f:
-        f.write(sensitiveVariable)
+        In particular, we write our sensitive environment variables and configure ROOT.
+        """
+        super().setup()
 
-    if name == "sshKey":
-        # Set the file permissions to 600
-        os.chmod(writeLocation, stat.S_IRUSR | stat.S_IWUSR)
-        # Set the folder permissions to 700
-        os.chmod(os.path.dirname(writeLocation), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
-    elif name == "cert":
-        # Set the file permissions to 400
-        os.chmod(writeLocation, stat.S_IRUSR)
+        #if "cert" in config and config["cert"]["enabled"]:
+        # TODO: Update default location to "~/.globus/overwatchCert.pem" (?)
+        self.writeSensitiveVariableToFile(name = "cert",
+                                          prettyName = "certificate",
+                                          defaultWriteLocation = "overwatchCert.pem")
 
-def setupRoot(config):
-    rootConfig = config["env"]["root"]
+        #if "sshKey" in config and config["sshKey"]["enabled"]:
+        # TODO: Update default write location to "~/ssh/id_rsa" (?)
+        self.writeSensitiveVariableToFile(name = "sshKey",
+                                          prettyName = "SSH key",
+                                          defaultWriteLocation = "overwatch.id_rsa")
 
-    if rootConfig["script"] and rootConfig["enabled"]:
-        thisRootPath = os.path.join(rootConfig["script"], "bin", "thisroot.sh")
-        # Run thisroot.sh, extract the environment, and then set the python environment to those values
-        # See: https://stackoverflow.com/a/3505826
-        command = ["bash", "-c", "source {thisRootPath} && env".format(thisRootPath = thisRootPath)]
+        # Setup environment
+        self.setupRoot()
+        self.setupEnvironmentVars()
 
-        proc = subprocess.Popen(command, stdout = subprocess.PIPE)
+    def writeSensitiveVariableToFile(self, name, prettyName, defaultWriteLocation):
+        """ Write SSH key or certificate from environment variable to file. """
+        # Check name value (also acts as proxy for the other values)
+        if name != "sshKey" and name != "cert":
+            raise ValueError("Name \"{}\" is unrecognized! Aborting")
 
-        # Load into the environment
-        # Note that this doesn't propagate to the shell where this was executed!
-        for line in proc.stdout:
-            (key, _, value) = line.partition("=")
-            os.environ[key] = value
+        #sensitiveVariable = getSensitiveVariableConfigurationValues(config, name = name, prettyName = prettyName)
+        logger.info("Writing {} from environment variable to file".format(prettyName))
+        # Get variable from environment
+        variableName = self.config[name].get("variableName", name)
+        sensitiveVariable = os.environ[variableName]
+        # Check that the variable is not empty
+        if not sensitiveVariable:
+            raise ValueError("Empty {} passed".format(prettyName))
+        logger.debug("variableName: {}, {}: {}".format(variableName, prettyName, sensitiveVariable))
 
-def setupEnv(config):
-    if "root" in config["env"] and config["env"]["root"]["enabled"]:
-        setupRoot(config)
-        logger.info(os.environ)
+        # Write to file
+        writeLocation = self.config[name].get("writeLocation", defaultWriteLocation)
+        # Expand filename
+        writeLocation = os.path.expanduser(os.path.expandvars(writeLocation))
+        if not os.path.exists(os.path.dirname(writeLocation)):
+            os.makedirs(os.path.dirname(writeLocation))
+
+        # Ensure that we don't overwrite an existing file!
+        if os.path.exists(writeLocation):
+            raise IOError("File at {0} already exists and will not be overwritten!".format(writeLocation))
+        with open(writeLocation, "w") as f:
+            f.write(sensitiveVariable)
+
+        if name == "sshKey":
+            # Set the file permissions to 600
+            os.chmod(writeLocation, stat.S_IRUSR | stat.S_IWUSR)
+            # Set the folder permissions to 700
+            os.chmod(os.path.dirname(writeLocation), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+        elif name == "cert":
+            # Set the file permissions to 400
+            os.chmod(writeLocation, stat.S_IRUSR)
+
+    def setupRoot(self):
+        """ Setup ROOT in our execution environment.
+
+        This is done by executing ``thisroot.sh``, capturing the output, and then assigning the updated
+        environment to our current environment variables.
+        """
+        # We only want to add ROOT to the path, etc, if it's not already setup.
+        # If ``ROOTSYS`` is setup, it's a pretty good bet that everything else is setup.
+        if "ROOTSYS" not in os.environ:
+            thisRootPath = os.path.join(self.config["root"]["path"], "bin", "thisroot.sh")
+            # Run thisroot.sh, extract the environment, and then set the python environment to those values
+            # See: https://stackoverflow.com/a/3505826
+            command = ["bash", "-c", "source {thisRootPath} && env".format(thisRootPath = thisRootPath)]
+
+            proc = subprocess.Popen(command, stdout = subprocess.PIPE)
+
+            # Load into the environment
+            # Note that this doesn't propagate to the shell where this was executed!
+            for line in proc.stdout:
+                (key, _, value) = line.partition("=")
+                os.environ[key] = value
+
+    def setupEnvironment(self):
+        """ Setup execution environment.
+
+        We generically add these environment variables, as well as explicitly checking for those
+        related to EOS.
+        """
+        # TODO: Check for EOS?
+
+        for k, v in iteritems(self.config["vars"]):
+            # Not necessarily a problem, but I want to make the user aware.
+            if k in os.environ:
+                logger.warning("Environment variable {k} is already set to {val}. It is being updated to {v}".format(k = k, val = os.environ["k"], v = v))
+            os.environ[k] = v
+
+_available_executables = {
+    "environment": environment,
+    "zodb": zodb,
+    "autossh": autossh,
+    "zmqReceiver": zmqReceiver,
+    "dqmReceiver": dqmReceiver,
+    "processing": processing,
+    "webApp": webApp,
+}
 
 def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
     """ Start the various parts of Overwatch.
@@ -1086,22 +1170,15 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
     logger.info("Config: {}".format(pprint.pformat(config)))
 
     if "cert" in config and config["cert"]["enabled"]:
-        # TODO: Update default location to "~/.globus/overwatchCert.pem" (?)
-        writeSensitiveVariableToFile(config = config,
-                                     name = "cert",
-                                     prettyName = "certificate",
-                                     defaultWriteLocation = "overwatchCert.pem")
+        pass
 
     if "sshKey" in config and config["sshKey"]["enabled"]:
-        # TODO: Update default write location to "~/ssh/id_rsa" (?)
-        writeSensitiveVariableToFile(config = config,
-                                     name = "sshKey",
-                                     prettyName = "SSH key",
-                                     defaultWriteLocation = "overwatch.id_rsa")
+        pass
 
     # Setup environment
     if "env" in config and config["env"]["enabled"]:
-        setupEnv(config)
+        #setupEnv(config)
+        pass
 
     if "receiver" in config and config["receiver"]["enabled"]:
         # Start the receiver(s)
