@@ -43,21 +43,45 @@ def testExpandEnvironmentVars(loggingMixin):
     # Should have no impact because there are no envrionment ars
     assert config["expandedWithoutVar"] == "Hello world"
 
+#: Simple named tuple to contain the execution expectations.
+executableExpected = collections.namedtuple("executableExpected", ["name", "description", "args", "config"])
+
 @pytest.fixture
 def setupBasicExecutable(loggingMixin, mocker):
     """ Fixture to setup an executable object. """
     expected = {
-        "name": "testExecutable",
-        "description": "Basic exectuable for testing",
-        "args": ["exec", "arg1", "arg2"],
-        "config": {},
+        "name": "{label}Executable",
+        "description": "Basic executable for {label}ing",
+        "args": ["exec", "arg1", "arg2", "test{hello}"],
+        "config": {"hello": "world", "label": "test"},
     }
     executable = deploy.executable(**expected)
 
+    for k in ["name", "description"]:
+        expected[k] = expected[k].format(**expected["config"])
+    expected["args"] = [arg.format(**expected["config"]) for arg in expected["args"]]
+    expected = executableExpected(**expected)
     return executable, expected
 
+@pytest.mark.parametrize("processIdentifier", [
+    "",
+    "unique process identnfier"
+    ], ids = ["Default process identifier", "Unique process identifier"])
+def testSetupExecutable(setupBasicExecutable, processIdentifier):
+    """ Test setting up a basic executable. """
+    executable, expected = setupBasicExecutable
+
+    executable.processIdentifier = processIdentifier
+    executable.setup()
+
+    assert executable.name == expected.name
+    assert executable.description == expected.description
+    assert executable.args == expected.args
+    assert executable.config == expected.config
+    assert executable.processIdentifier == (processIdentifier if processIdentifier else " ".join(expected.args))
+
 def testGetProcessPID(setupBasicExecutable):
-    """ Test getting the PID identified by the exectuable properties. """
+    """ Test getting the PID identified by the executable properties. """
     pass
 
 def testKillingProcess(setupBasicExecutable):
@@ -67,10 +91,6 @@ def testKillingProcess(setupBasicExecutable):
 def testFailedKillingProces(setupBasicExecutable):
     """ Test for the various error modes when killing a process. """
     pass
-
-
-#: Simple named tuple to contain the execution result.
-overwatchExecutableResult = collections.namedtuple("overwatchExecutableResult", ["name", "description", "args", "config"])
 
 @pytest.fixture
 def setupOverwatchExecutable(loggingMixin):
@@ -82,9 +102,9 @@ def setupOverwatchExecutable(loggingMixin):
         tuple: (overwatchExecutable, expected) where ``overwatchExecutable`` (overwatchExecutable) is the
             created overwatch executable, and ``expected`` (dict) are the expected outputs.
     """
-    expected = overwatchExecutableResult(
+    expected = executableExpected(
         name = "testExecutable",
-        description = "Basic exectuable for testing",
+        description = "Basic executable for testing",
         args = ["exec", "arg1", "arg2"],
         config = {"additionalOptions": {"opt1": {"a", "b"}, "opt2": True}}
     )
@@ -141,29 +161,29 @@ def testWriteCustomOverwatchConfig(setupOverwatchExecutable, existingConfig, moc
 
 @pytest.mark.parametrize("executableType, config, expected", [
         ("dataTransfer", {},
-         overwatchExecutableResult(name = "dataTransfer",
-                                   description = "Overwatch receiver data transfer",
-                                   args = ["overwatchReceiverDataHandling"],
-                                   config = {})),
+         executableExpected(name = "dataTransfer",
+                            description = "Overwatch receiver data transfer",
+                            args = ["overwatchReceiverDataHandling"],
+                            config = {})),
         ("processing", {},
-         overwatchExecutableResult(name = "processing",
-                                   description = "Overwatch processing",
-                                   args = ["overwatchProcessing"],
-                                   config = {})),
+         executableExpected(name = "processing",
+                            description = "Overwatch processing",
+                            args = ["overwatchProcessing"],
+                            config = {})),
         ("webApp", {"uwsgi": {}},
-         overwatchExecutableResult(name = "webApp",
-                                   description = "Overwatch web app",
-                                   args = ["overwatchWebApp"],
-                                   config = {})),
+         executableExpected(name = "webApp",
+                            description = "Overwatch web app",
+                            args = ["overwatchWebApp"],
+                            config = {})),
         ("dqmReceiver", {"uwsgi": {}},
-         overwatchExecutableResult(name = "dqmReceiver",
-                                   description = "Overwatch DQM receiver",
-                                   args = ["overwatchDQMReciever"],
-                                   config = {})),
+         executableExpected(name = "dqmReceiver",
+                            description = "Overwatch DQM receiver",
+                            args = ["overwatchDQMReciever"],
+                            config = {})),
     ], ids = ["Data transfer", "Processing", "Web App", "DQM Receiver"])
         #"Web App - uwsgi" , "Web App - uwsgi + nginx", "DQM Receiver - uwsgi", "DQM Receiver - uwsgi + nginx"])
-def testDataTransferExectuable(loggingMixin, executableType, config, expected):
-    """ Test the properties of Overwatch based exectuables. """
+def testDataTransferExecutable(loggingMixin, executableType, config, expected):
+    """ Test the properties of Overwatch based executables. """
     executable = deploy.retrieveExecutable(executableType)(config = config)
 
     # Perform task setup.
