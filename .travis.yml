@@ -33,10 +33,14 @@ after_success:
     # Information about test coverage
     - coveralls
     # Build the docker image
-    # This will work for both tags and standard buidls. However, we must skip it for PRs.
+    # This will work for both tags and standard buidls. The build is performed for PRs, but it won't be deplyoed.
+    # First, determine the Overwatch branch. If ${TRAVIS_BRANCH} is the same as ${TRAVIS_TAG}, then means that we're
+    # working with a tag and we should use the master branch (which won't be available under $TRAVIS_BRANCH because
+    # the branch is not available when building a tag). Otherwise, we just use $TRAVIS_BRANCH
+    - if [[ ${TRAVIS_BRANCH} == ${TRAVIS_TAG} ]]; then OVERWATCH_BRANCH="master"; else OVERWATCH_BRANCH=${TRAVIS_BRANCH}; fi
     # NOTE: To be clear about what is done here, we set PYTHON_VERSION in the docker build to the variable
     #       ${DOCKER_PYTHON_VERSION}.
-    - cd deploy/docker; docker build --build-arg PYTHON_VERSION=${DOCKER_PYTHON_VERSION} -f Dockerfile -t "${DOCKER_USERNAME}/overwatch:${TRAVIS_TAG:-latest}-py${DOCKER_PYTHON_VERSION}" .; cd -
+    - cd deploy/docker; docker build --build-arg PYTHON_VERSION=${DOCKER_PYTHON_VERSION} --build-arg OVERWATCH_BRANCH=${OVERWATCH_BRANCH} -f Dockerfile -t "${DOCKER_USERNAME}/overwatch:${TRAVIS_TAG:-latest}-py${DOCKER_PYTHON_VERSION}" .; cd -
     # Print out to see if we've build it as expected.
     - docker images
 before_deploy:

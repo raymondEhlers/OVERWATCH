@@ -7,6 +7,12 @@ LABEL maintainer="Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University"
 # Make the python version available in the container.
 ARG PYTHON_VERSION
 
+# Allow Overwatch branch to be set from the args.
+# Used to checkout the proper branch when building on travis. For example, if branch "test-docker" is built
+# on travis, then we want it to build the latest docker image using that branch.
+# Defaults to master when used below if not specified.
+ARG OVERWATCH_BRANCH="master"
+
 # Setup ENV for XRootD, Root, etc
 ENV XROOTDSYS="/opt/xrootd"
 ENV ROOTSYS="/opt/root"
@@ -31,6 +37,7 @@ WORKDIR ${OVERWATCH_ROOT}
 # Download OVERWATCH, setup the needed python packages, and compile the reciever
 # Size increase here is mainly due to the numpy dependency
 RUN git clone https://github.com/raymondEhlers/OVERWATCH.git . \
+        && git checkout origin/${OVERWATCH_BRANCH} \
         && pip install --upgrade pip \
         && pip install git+https://github.com/SpotlightKid/flask-zodb.git \
         && pip install -e ".[tests, docs, dev]" \
