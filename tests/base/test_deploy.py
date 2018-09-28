@@ -12,6 +12,7 @@ try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
+import subprocess
 import collections
 import logging
 logger = logging.getLogger(__name__)
@@ -80,9 +81,70 @@ def testSetupExecutable(setupBasicExecutable, processIdentifier):
     assert executable.config == expected.config
     assert executable.processIdentifier == (processIdentifier if processIdentifier else " ".join(expected.args))
 
-def testGetProcessPID(setupBasicExecutable):
-    """ Test getting the PID identified by the executable properties. """
-    pass
+@pytest.mark.parametrize("pid", [
+    [],
+    [1234],
+    ], ids = ["No PIDs", "One PID"])
+def testGetProcessPID(setupBasicExecutable, pid, mocker):
+    """ Test of getting the process PID identified by the executable properties. """
+    executable, expected = setupBasicExecutable
+    executable.setup()
+
+    # Preprocess the PID input. We don't do it above so it's easier to read here.
+    inputPID = "\n".join((str(p) for p in pid)) + "\n"
+
+    # Test getting a process ID. We mock it up.
+    m = mocker.MagicMock(return_value = inputPID)
+    mocker.patch("overwatch.base.deploy.subprocess.check_output", m)
+
+    outputPID = executable.getProcessPID()
+
+    assert outputPID == pid
+
+@pytest.mark.parametrize("returnCode", [
+    1,
+    3
+    ], ids = ["No process found", "Unknown error"])
+def testGetProcessPIDSubprocessFailure(setupBasicExecutable, mocker, returnCode):
+    """ Test for subprocess failure when getting the process PID. """
+    pid = [1234]
+    executable, expected = setupBasicExecutable
+    executable.setup()
+
+    # Preprocess the PID input. We don't do it above so it's easier to read here.
+    inputPID = "\n".join((str(p) for p in pid)) + "\n"
+
+    # Test getting a process ID. We mock it up.
+    m = mocker.MagicMock()
+    m.side_effect = subprocess.CalledProcessError(returncode = returnCode, cmd = executable.args)
+    mocker.patch("overwatch.base.deploy.subprocess.check_output", m)
+
+    if returnCode == 1:
+        outputPID = executable.getProcessPID()
+        assert outputPID == []
+    else:
+        with pytest.raises(subprocess.CalledProcessError) as exceptionInfo:
+            outputPID = executable.getProcessPID()
+
+        assert exceptionInfo.value.returncode == returnCode
+
+def testGetProcessPIDFailure(setupBasicExecutable, mocker):
+    """ Test failure modes of getting the process PID. """
+    pid = [1234, 5678]
+    executable, expected = setupBasicExecutable
+    executable.setup()
+
+    # Preprocess the PID input. We don't do it above so it's easier to read here.
+    inputPID = "\n".join((str(p) for p in pid)) + "\n"
+
+    # Test getting a process ID. We mock it up.
+    m = mocker.MagicMock(return_value = inputPID)
+    mocker.patch("overwatch.base.deploy.subprocess.check_output", m)
+
+    with pytest.raises(ValueError) as exceptionInfo:
+        outputPID = executable.getProcessPID()
+    # We don't need to check the exact message.
+    assert "Multiple PIDs" in exceptionInfo.value.args[0]
 
 def testKillingProcess(setupBasicExecutable):
     """ Test killing the process identified by the executable. """

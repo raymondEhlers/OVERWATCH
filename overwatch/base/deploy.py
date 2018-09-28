@@ -125,25 +125,23 @@ class executable(object):
         self.runInForeground = self.config.get("runInForeground", False)
         self.executeTask = self.config.get("enabled", False)
 
-    # TODO: checkForProcessPID -> getProcessPID
     def getProcessPID(self):
         """ Retrieve the process PID via ``pgrep`` for a process identifier by a given identifier.
 
         Note:
-            TODO: Uniqueness requirement ... Should it be?
+            Since the arguments should be unique, it is expected that only 0 or 1 PID can be returned.
+            In the case of more than that, an exception is raised.
 
         Args:
             None.
-            processIdentifier (str): String passed to pgrep to identify the process.
         Returns:
             list: PID(s) from ``pgrep``.
 
         Raises:
-            ValueError: If the process called returns a error code other than 0 (which indicates
+            subprocess.CalledProcessError: If the process called returns a error code other than 0 (which indicates
                 success) or 1 (which indicates that the process was not found).
-            RuntimeError: If we return more than one PID for the given process identifier.
+            ValueError: If we return more than one PID for the given process identifier.
         """
-        # TODO: Changed None -> [] as a return value, so watch out for explicit checks!
         try:
             res = subprocess.check_output(["pgrep", "-f", self.processIdentifier], universal_newlines = True)
         except subprocess.CalledProcessError as e:
@@ -151,7 +149,7 @@ class executable(object):
                 logger.info("Process associated with identifier '{processIdentifier}' was not found".format(processIdentifier = self.processIdentifier))
                 return []
             else:
-                raise ValueError("Unknown return code of '{returnCode}' for command '{cmd}', with output '{output}'".format(returnCode = e.returncode, cmd = e.cmd, output = e.output))
+                raise
         # Retrieve each PID as an entry in a list by strip out trailing "\n" (which is returned when
         # using `universal_newlines`), and then splitting on each new line.
         PIDs = res.strip("\n").split("\n")
@@ -160,7 +158,7 @@ class executable(object):
         # We generally only expect one PID, so we should raise an issue clearly if we find more than one.
         # If multiple PIDs is fine, then we can add an option for when this can happen.
         if len(PIDs) > 1:
-            raise RuntimeError("Multiple PIDs {PIDs} found for process with identifier {processIdentifier}!".format(PIDs = PIDs, processIdentifier = self.processIdentifier))
+            raise ValueError("Multiple PIDs {PIDs} found for process with identifier {processIdentifier}!".format(PIDs = PIDs, processIdentifier = self.processIdentifier))
         return PIDs
 
     def killExistingProcess(self, PIDs, sig = signal.SIGINT):
@@ -1094,8 +1092,6 @@ _available_executables = {
                                     args = [
                                         "overwatchProcessing",
                                     ]),
-    #"webApp": webApp,
-    #"dqmReceiver": dqmReceiver,
     "webApp": functools.partial(overwatchFlaskExecutable,
                                 name = "webApp",
                                 description = "Overwatch web app",
