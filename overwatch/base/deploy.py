@@ -161,13 +161,13 @@ class executable(object):
             raise ValueError("Multiple PIDs {PIDs} found for process with identifier {processIdentifier}!".format(PIDs = PIDs, processIdentifier = self.processIdentifier))
         return PIDs
 
-    def killExistingProcess(self, PIDs, sig = signal.SIGINT):
+    def killExistingProcess(self, sig = signal.SIGINT):
         """ Kill processes by PID. The kill signal will be sent to the entire process group.
 
         Args:
             sig (signal.Signals): Signal to be sent to the processes. Default: signal.SIGINT
         Returns:
-            None.
+            int: Number of processes killed.
 
         Raises:
             RuntimeError: If the process identifier is found to still have an associated PID after attempting
@@ -175,11 +175,19 @@ class executable(object):
         """
         PIDs = self.getProcessPID()
         logger.debug("Killing existing {description} processes with PID(s) {PIDs}".format(description = self.description, PIDs = PIDs))
+        # If there are no PIDs, we can just return early
+        if not PIDs:
+            return 0
+
+        nKilled = 0
         for pid in PIDs:
-            # TODO: Check if -1 is needed (I think killpg handles sending the signal to the entire process group)
             logger.debug("Killing process with PID {pid}".format(pid = pid))
-            # TODO: killpg doesn't work. It claims that the process doesn't exist. Investigate this further...
+            # NOTE: It doesn't appear that we need to kill with ``-1`` to send the signal to the entire process group.
+            # NOTE: For whatever reason, ``killpg`` doesn't appear to work. It claims that the process doesn't
+            #       exist regardless of the input.
             os.kill(pid, sig)
+            # Keep track of how many times we've called kill
+            nKilled += 1
 
         # Check that killing the process was successful
         # If not, throw an error
@@ -187,6 +195,8 @@ class executable(object):
         logger.debug("PIDs left after killing processes: {PIDs}".format(PIDs = PIDs))
         if PIDs:
             raise RuntimeError("Requested to kill existing '{description}' processes, but found PIDs {PIDs} after killing the processes. Please investigate!".format(description = self.description, PIDs = PIDs))
+
+        return nKilled
 
     def startProcessWithLog(self):
         """ Start (or otherwise setup) the process with the given arguments and log the output.
@@ -1132,7 +1142,7 @@ def retrieveExecutable(name):
         ValueError: If the requested executable doesn't exist.
     """
     if name not in _available_executables:
-        raise ValueError("Executable {name} is invalid.".format(name = name))
+        raise KeyError("Executable {name} is invalid.".format(name = name))
     return _available_executables[name]
 
 def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):

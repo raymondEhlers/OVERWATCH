@@ -12,6 +12,7 @@ try:
     from StringIO import StringIO
 except ImportError:
     from io import StringIO
+import signal
 import subprocess
 import collections
 import logging
@@ -43,6 +44,15 @@ def testExpandEnvironmentVars(loggingMixin):
     assert config["environmentVar"] == os.environ["HOME"]
     # Should have no impact because there are no envrionment ars
     assert config["expandedWithoutVar"] == "Hello world"
+
+def testRetrieveExecutable(loggingMixin):
+    """ Tests for retrieving executables. """
+    e = deploy.retrieveExecutable("zodb")
+    assert e == deploy._available_executables["zodb"]
+
+    with pytest.raises(KeyError) as exceptionInfo:
+        e = deploy.retrieveExecutable("helloWorld")
+    assert exceptionInfo.value.args[0] == "Executable helloWorld is invalid."
 
 #: Simple named tuple to contain the execution expectations.
 executableExpected = collections.namedtuple("executableExpected", ["name", "description", "args", "config"])
@@ -146,13 +156,64 @@ def testGetProcessPIDFailure(setupBasicExecutable, mocker):
     # We don't need to check the exact message.
     assert "Multiple PIDs" in exceptionInfo.value.args[0]
 
-def testKillingProcess(setupBasicExecutable):
-    """ Test killing the process identified by the executable. """
-    pass
+@pytest.fixture
+def setupKillProcess(setupBasicExecutable, mocker):
+    """ Setup for tests of killing a process. """
+    executable, expected = setupBasicExecutable
 
-def testFailedKillingProces(setupBasicExecutable):
+    # First we return the PID to kill, then we return nothing (as if the kill worked)
+    mGetProcess = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.executable.getProcessPID", mGetProcess)
+    # Also need to mock the kill command itself.
+    mKill = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.os.kill", mKill)
+
+    # Setup
+    executable.setup()
+
+    return executable, expected, mGetProcess, mKill
+
+# Intentionally select non-existent PID (above 65535) just in case the mocking doesn't work properly.
+@pytest.mark.parametrize("pidsToKill", [
+    [],
+    [1234567],
+    [1234567, 1234568]
+    ], ids = ["No PIDs", "One PID", "Multiple PIDs"])
+def testKillingProcess(setupKillProcess, pidsToKill):
+    """ Test killing the process identified by the executable. """
+    executable, expected, mGetProcess, mKill = setupKillProcess
+
+    mGetProcess.side_effect = [pidsToKill, []]
+
+    # Perform the actual method that we want to test
+    nKilled = executable.killExistingProcess()
+
+    # Check the calls
+    if len(pidsToKill) == 0:
+        mKill.assert_not_called()
+    else:
+        for pid in pidsToKill:
+            if len(pidsToKill) == 1:
+                mKill.assert_called_once_with(pid, signal.SIGINT)
+            else:
+                mKill.assert_any_call(pid, signal.SIGINT)
+
+    # Check that the number of processes
+    assert nKilled == len(pidsToKill)
+
+def testFailedKillingProces(setupKillProcess):
     """ Test for the various error modes when killing a process. """
-    pass
+    executable, expected, mGetProcess, mKill = setupKillProcess
+
+    # Setup the PIDs to always return, such that it appears as if the kill didn't work.
+    pidsToKill = [1234567]
+    mGetProcess.side_effect = [pidsToKill, pidsToKill]
+
+    with pytest.raises(RuntimeError) as exceptionInfo:
+        # Call the actual method that we want to test
+        nKilled = executable.killExistingProcess()
+    # We don't need to check the exact message.
+    assert "found PIDs {PIDs} after killing the processes.".format(PIDs = pidsToKill) in exceptionInfo.value.args[0]
 
 @pytest.fixture
 def setupOverwatchExecutable(loggingMixin):
