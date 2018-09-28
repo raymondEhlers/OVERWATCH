@@ -28,6 +28,7 @@ from future.utils import iteritems
 
 import functools
 import os
+import collections
 import stat
 import signal
 import logging
@@ -215,24 +216,27 @@ class executable(object):
             # Use configparser to create the configuration from a dict.
             process = ConfigParser()
             programIdentifier = "program:{name}".format(name = self.name)
-            options = {
-                "command": " ".join(self.args),
-                # Redirect the stderr into the stdout.
-                "redirect_stderr": True,
-                # 5 MB log file with 10 backup files.
-                "stdout_logfile_maxbytes": 500000,
-                "stdout_logfile_backups": 10,
-            }
+            options = collections.OrderedDict()
+            options["command"] = " ".join(self.args)
+            # Redirect the stderr into the stdout.
+            # NOTE: All values must be strings, so we quote everything
+            options["redirect_stderr"] = "True"
+            # 5 MB log file with 10 backup files.
+            options["stdout_logfile_maxbytes"] = "500000"
+            options["stdout_logfile_backups"] = "10"
 
             # Prevents supervisord from immediately restarting a process which executes quickly.
             if self.shortExecutionTime:
-                options.update({
-                    "autorestart": False,
-                    "startsecs": 0,
-                })
+                options["autorestart"] = "False"
+                options["startsecs"] = "0"
 
             # Store the final configuration under the particular process identifier and write out the config.
-            process[programIdentifier] = options
+            process.add_section(programIdentifier)
+            for k, v in iteritems(options):
+                process.set(programIdentifier, k, v)
+            # In python 3, it would just be:
+            #process[programIdentifier] = options
+
             # Append so that other processes can also be included.
             with open("supervisord.conf", "a") as f:
                 process.write(f)

@@ -63,7 +63,7 @@ def setupBasicExecutable(loggingMixin, mocker):
     expected = {
         "name": "{label}Executable",
         "description": "Basic executable for {label}ing",
-        "args": ["exec", "arg1", "arg2", "test{hello}"],
+        "args": ["execTest", "arg1", "arg2", "test{hello}"],
         "config": {"hello": "world", "label": "test"},
     }
     executable = deploy.executable(**expected)
@@ -100,10 +100,10 @@ def testGetProcessPID(setupBasicExecutable, pid, mocker):
     executable, expected = setupBasicExecutable
     executable.setup()
 
-    # Preprocess the PID input. We don't do it above so it's easier to read here.
+    # Pre-process the PID input. We don't do it above so it's easier to read here.
     inputPID = "\n".join((str(p) for p in pid)) + "\n"
 
-    # Test getting a process ID. We mock it up.
+    # Mock opening the process
     m = mocker.MagicMock(return_value = inputPID)
     mocker.patch("overwatch.base.deploy.subprocess.check_output", m)
 
@@ -121,7 +121,7 @@ def testGetProcessPIDSubprocessFailure(setupBasicExecutable, mocker, returnCode)
     executable, expected = setupBasicExecutable
     executable.setup()
 
-    # Preprocess the PID input. We don't do it above so it's easier to read here.
+    # Pre-process the PID input. We don't do it above so it's easier to read here.
     inputPID = "\n".join((str(p) for p in pid)) + "\n"
 
     # Test getting a process ID. We mock it up.
@@ -214,6 +214,50 @@ def testFailedKillingProces(setupKillProcess):
         nKilled = executable.killExistingProcess()
     # We don't need to check the exact message.
     assert "found PIDs {PIDs} after killing the processes.".format(PIDs = pidsToKill) in exceptionInfo.value.args[0]
+
+def testStandardStartProcessWithLogs(setupBasicExecutable, mocker):
+    """ Tests for starting a process with logs in the standard manner ("Popen"). """
+    # Setup executable
+    executable, expected = setupBasicExecutable
+    executable.setup()
+
+    # Mock the subprocess command
+    mPopen = mocker.MagicMock(return_value = "Fake value")
+    mocker.patch("overwatch.base.deploy.subprocess.Popen", mPopen)
+    # Mock opening the log file
+    mFile = mocker.mock_open()
+    mocker.patch("overwatch.base.deploy.open", mFile)
+
+    # Execute
+    process = executable.startProcessWithLog()
+
+    # Check that it was called successfully
+    mFile.assert_called_once_with("{}.log".format(expected.name), "w")
+    mPopen.assert_called_once_with(expected.args, stderr = subprocess.STDOUT, stdout = mFile())
+
+    # No need to actually mock up a subprocess.Popen class object.
+    assert process == "Fake value"
+
+def testSupervisorStartProcessWithLogs(setupBasicExecutable, mocker):
+    """ Tests for starting a process with logs in supervisor. """
+    # Setup executable
+    executable, expected = setupBasicExecutable
+    executable.supervisord = True
+    executable.setup()
+
+    # Mock opening the log file
+    mFile = mocker.mock_open()
+    mocker.patch("overwatch.base.deploy.open", mFile)
+    # Mock write with the config parser
+    mConfigParserWrite = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.ConfigParser.write", mConfigParserWrite)
+
+    # Execute
+    executable.startProcessWithLog()
+
+    mFile.assert_called_once_with("supervisord.conf", "a")
+    # We don't check the output itself because that would basically be testing ConfigParser, which isn't our goal.
+    mConfigParserWrite.assert_called_once_with(mFile())
 
 @pytest.fixture
 def setupOverwatchExecutable(loggingMixin):
