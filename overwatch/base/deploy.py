@@ -104,6 +104,7 @@ class executable(object):
             need special options to ensure that it doesn't think that the executable failed immediately and should be
             restarted.
         logFilename (str): Filename for the log file. Default: ``{name}.log``.
+        configFilename (str): Location where the generated configuration file should be stored. Default: ``None``.
         runInBackground (bool): True if the process should be run in the background. This means that process will
             not be blocking, but it shouldn't be used in conjunction with supervisor. Default: ``False``.
         executeTask (bool): Whether the executable should actually be executed. Set via the "enabled" field of
@@ -124,6 +125,7 @@ class executable(object):
         # Additional options
         self.shortExecutionTime = False
         self.logFilename = "{name}.log".format(name = self.name)
+        self.configFilename = None
         self.runInBackground = self.config.get("runInBackground", False)
         self.executeTask = self.config.get("enabled", False)
 
@@ -545,9 +547,6 @@ class zodb(executable):
         databasePath (str): Path to where the database file should be stored.
         logFile (str): Filename and full path to the log file.
         logFormat (str): Format of the log. Default: "%(asctime)s %(message)s"
-
-    Attributes:
-        configFilename (str): Location where the generated configuration file should be stored. Default: ...
     """
     def __init__(self, config):
         # TODO: Can we remove the log file here and just handle the log in supervisord?
@@ -607,11 +606,13 @@ class overwatchExecutable(executable):
     In the config, it looks for:
 
     - additionalConfig (dict): Additional options to added to the YAML configuration.
+
+    Attributes:
     """
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Add the filename so that it can be modified later if so desired.
-        self.filename = "config.yaml"
+        self.configFilename = "config.yaml"
 
     def setup(self):
         """ Setup required for Overwatch data handling and transfer.
@@ -640,7 +641,7 @@ class overwatchExecutable(executable):
                 opt3: 3
 
         we would pass in the key name ``myAdditionalOptions``, and it would write ``opt2`` and ``opt3``
-        to ``self.filename``.
+        to ``self.configFilename``.
 
         Args:
         Returns:
@@ -651,8 +652,8 @@ class overwatchExecutable(executable):
         # If the configuration is empty, we just won't do anything.
         if configToWrite:
             config = {}
-            if os.path.exists(self.filename):
-                with open(self.filename, "r") as f:
+            if os.path.exists(self.configFilename):
+                with open(self.configFilename, "r") as f:
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore")
                         config = yaml.load(f, Loader = yaml.SafeLoader)
@@ -663,7 +664,7 @@ class overwatchExecutable(executable):
             # Write out configuration.
             # We overwrite the previous config because we already loaded it in, so in effect we are appending
             # (but it does de-duplicate options)
-            with open(self.filename, "w") as f:
+            with open(self.configFilename, "w") as f:
                 yaml.dump(config, f, default_flow_style = False)
 
 class overwatchFlaskExecutable(overwatchExecutable):

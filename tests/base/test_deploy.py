@@ -434,7 +434,7 @@ def testWriteCustomOverwatchConfig(setupOverwatchExecutable, existingConfig, moc
     executable, expected = setupOverwatchExecutable
 
     filename = "config.yaml"
-    executable.filename = filename
+    executable.configFilename = filename
 
     # Determine the expected result
     expectedConfig = existingConfig.copy()
