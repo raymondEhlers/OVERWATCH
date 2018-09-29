@@ -886,9 +886,20 @@ class uwsgi(executable):
         Arguments after ``config`` are values which are specified in the config.
 
     Args:
-        name (str): Name of the uwsgi web app. Should be unique, but without spaces!
+        name (str): Name of the uwsgi web app. It should be unique, but without spaces!
+        description (str): Description of the process for clearer display, etc.
+        args (list): List of arguments to be executed.
+        config (dict): Configuration for the executable.
+        enabled (bool): True if the task should actually be executed.
+        runInBackground (bool): True if the process should be run in the background. This means that process will
+            not be blocking, but it shouldn't be used in conjunction with supervisor. Default: False.
         module (str): Module (ie import) path for the web app. For example, ``overwatch.webApp.run``. All
             Overwatch packages should have a run module. Note that this **will not** run the development server.
+        http-socket (str): IP address and port under which the web app will be available via http.
+        wsgi-socket (str): IP address and port or unix socket under which the web app will be available via the
+            uwsgi protocol. Not used by default. Either it or ``http-socket`` can be specified - not both.
+        additionalOptions (dict): Additional options beyond those specified above which should be added to the uwsgi
+            config. It will override default values.
     """
     @classmethod
     def createObject(cls, obj):
@@ -911,7 +922,7 @@ class uwsgi(executable):
             raise KeyError('Expected "uwsgi" block in the executable configuration, but none was found!')
 
         if obj.config["uwsgi"].get("enabled", False) is True:
-            uwsgiApp = cls(name = obj.name,
+            uwsgiApp = cls(name = "{name}_uwsgi".format(name = obj.name),
                            description = obj.description,
                            args = None,
                            config = obj.config["uwsgi"])
@@ -927,7 +938,7 @@ class uwsgi(executable):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Basic setup
-        self.configFilename = "{name}.yaml".format(name = self.name)
+        self.configFilename = os.path.join("data", "config", "{name}.yaml".format(name = self.name))
         self.args = [
             "uwsgi",
             "--yaml",
@@ -939,6 +950,7 @@ class uwsgi(executable):
 
         Raises:
             ValueError: If there is a space in the name. This is not allowed.
+            ValueError: If both http-socket and uwsgi-socket are specified, which is invalid.
             KeyError: If ``module`` is not specific in the configuration, such that the ``uwsgi`` config
                 cannot not be defined.
         """
@@ -976,27 +988,30 @@ class uwsgi(executable):
 
             # Configure master fifo
             "master": True,
-            "master-fifo": "wsgiMasterFifo{name}",
+            "master-fifo": "/tmp/sockets/wsgiMasterFifo{name}",
         }
+
+        # Add any additional options which we might want to the config
+        if "additionalOptions" in self.config:
+            uwsgiConfig.update(self.config.pop("additionalOptions", {}))
+
+        # Add the custom configuration into the default configuration defined above
+        # Just in case "enabled" was stored in the config, remove it now so it's not added to the uwsgi config
+        self.config.pop("enabled", None)
 
         # Determine how call the web app. "wsgi-file" is the path to a python file, while
         # "module" is the route to a python module. Since Overwatch is packaged, we should
         # always use "overwatch.*.run".
         if "module" not in self.config:
             raise KeyError('Must pass either "module" in the uwsgi configuration!, where "module" corresponds to the import path to the module.')
-        else:
-            uwsgiConfig["module"] = self.config["module"]
 
-        if "unixSocket" in self.config:
-            uwsgiConfig["uwsgi-socket"] = "/tmp/sockets/wsgi_{name}.sock"
-        else:
-            # We usually take the http socket to simplify docker configuration
-            # The performance hit is small, so we won't worry about it.
-            uwsgiConfig["http-socket"] = self.config["address"]
+        # Ensure that the sockets are fine.
+        # The socket can be either http-socket or unix-socket
+        if "http-socket" in self.config and "uwsgi-socket" in self.config:
+            raise ValueError("Cannot specify both http-socket and uwsgi-socket! Check your config")
 
-        # Add the custom configuration into the default configuration defined above
-        # Just in case "enabled" was stored in the config, remove it now so it's not added to the uwsgi config
-        self.config.pop("enabled", None)
+        # Add all options in the config, such as the module and the socket
+        # They should now all be valid options.
         uwsgiConfig.update(self.config)
 
         # Inject name into the various values if needed
@@ -1006,11 +1021,11 @@ class uwsgi(executable):
 
         # Put dict inside of "uwsgi" block for it to be read properly by uwsgi
         uwsgiConfig = {
-            "uwsgi": uwsgiConfig
+            "uwsgi": uwsgiConfig,
         }
 
-        logger.info("Writing configuration file to {filename}".format(filename = filename))
-        with open(filename, "w") as f:
+        logger.info("Writing uwsgi configuration file to {configFilename}".format(configFilename = self.configFilename))
+        with open(self.configFilename, "w") as f:
             yaml.dump(uwsgiConfig, f, default_flow_style = False)
 
     def run(self):
@@ -1030,7 +1045,7 @@ class nginx(executable):
 
     Args:
         config (dict): Configuration for the executable.
-        name (str): Name of web app (especially the socket) which will be behind the ``nginx`` server.
+        webAppName (str): Name of web app (especially the socket) which will be behind the ``nginx`` server.
         basePath (str): Path to the ``nginx`` settings and configuration directory. Default: "/etc/nginx".
         configPath (str): Path to the main ``nginx`` configuration directory. Default: "${basePath}/conf.d".
         sitesPath (str): Path to the ``nginx`` sites directory. Default: "${basePath}/sites-enabled".
@@ -1063,7 +1078,7 @@ class nginx(executable):
             }
         }"""
         # Use "%" formatting because the `nginx` config uses curly brackets.
-        mainNginxConfig = mainNginxConfig % {"name": self.name}
+        mainNginxConfig = mainNginxConfig % {"name": self.config["webAppName"]}
         mainNginxConfig = inspect.cleandoc(mainNginxConfig)
 
         # Determine the path to the main config file.
@@ -1078,7 +1093,7 @@ class nginx(executable):
                 if not os.path.exists(path):
                     os.makedirs(path)
 
-        with open(os.path.join(nginxSitesPath, "{0}Nginx.conf".format(self.name)), "w") as f:
+        with open(os.path.join(nginxSitesPath, "{webAppName}Nginx.conf".format(webAppName = self.config["webAppName"])), "w") as f:
             f.write(mainNginxConfig)
 
         gzipConfig = """
@@ -1127,7 +1142,15 @@ class overwatchFlaskExecutable(overwatchExecutable):
         additionalConfig (dict): Additional options to added to the YAML configuration.
         uwsgi (dict): Additional options for ``uwsgi``. See the ``uwsgi`` executable class for more details.
         nginx (dict): Additional options for ``nginx``. See the ``nginx`` executable class for more details.
+
+    Attributes:
+        nginx (executable): Contains the nginx executable if it was requested. This way, we don't lose
+            reference to the object. Default: ``None``.
     """
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        self.nginx = None
+
     def setup(self):
         """ Setup required for an Overwatch flask executable.
 
@@ -1136,9 +1159,9 @@ class overwatchFlaskExecutable(overwatchExecutable):
         """
         # Create an underlying uwsgi app to handle the setup and execution.
         if "nginx" in self.config:
-            if self.config["nginx"]["enabled"] is True:
-                server = nginx(self.config["nginx"])
-                server.run()
+            if self.config["nginx"].get("enabled", False) is True:
+                self.nginx = nginx(self.config["nginx"])
+                self.nginx.run()
 
         # Create an underlying uwsgi app to handle the setup and execution.
         self = uwsgi.createObject(self)

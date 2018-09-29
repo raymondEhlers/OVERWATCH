@@ -5,6 +5,8 @@
 .. code-author: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
 """
 
+from future.utils import iteritems
+
 import pytest
 import os
 try:
@@ -13,6 +15,7 @@ try:
 except ImportError:
     from io import StringIO
 import signal
+import inspect
 import subprocess
 import collections
 import logging
@@ -35,7 +38,6 @@ def testExpandEnvironmentVars(loggingMixin):
     s.write(testYaml)
     s.seek(0)
 
-    # Need to use the YAML from the deploy module to ensure that the constructor is loaded properly.
     config = deploy.yaml.load(s, Loader = yaml.SafeLoader)
 
     assert config["normalVar"] == 3
@@ -467,6 +469,37 @@ def testWriteCustomOverwatchConfig(setupOverwatchExecutable, existingConfig, moc
     # Confirm that we've written the right information
     mYaml.assert_called_once_with(expectedConfig, mFile(), default_flow_style = False)
 
+def testTwoOverwatchExecutablesWithCustomConfigs(loggingMixin):
+    """ Test two Overwatch executables writing to the same config. """
+    # We just write to a scratch area since it is faster and easier.
+    # Otherwise, mocks need to be turned on and off, etc.
+    directory = os.path.join(os.path.dirname(os.path.realpath(__file__)), "deployScratch")
+    # Ensure that it exists. It won't by default because we don't store any files that are copied there in git.
+    if not os.path.exists(directory):
+        os.makedirs(directory)
+    filename = os.path.join(directory, "config.yaml")
+
+    # Processing and web app are selected randomly. Any overwatch executables would be fine.
+    processingOptions = {"additionalOptions": {"processing": True}}
+    processing = deploy.retrieveExecutable("processing")(config = processingOptions)
+    processing.configFilename = filename
+
+    webAppOptions = {"uwsgi": {}, "additionalOptions": {"webApp": True}}
+    webApp = deploy.retrieveExecutable("webApp")(config = webAppOptions)
+    webApp.configFilename = filename
+
+    # Write both configurations
+    processing.setup()
+    webApp.setup()
+
+    expected = processingOptions["additionalOptions"].copy()
+    expected.update(webAppOptions["additionalOptions"])
+
+    with open(filename, "r") as f:
+        generatedConfig = deploy.yaml.load(f, Loader = yaml.SafeLoader)
+
+    assert generatedConfig == expected
+
 @pytest.mark.parametrize("executableType, config, expected", [
         ("dataTransfer", {"additionalOptions": {"testVal": True}},
          executableExpected(name = "dataTransfer",
@@ -483,28 +516,70 @@ def testWriteCustomOverwatchConfig(setupOverwatchExecutable, existingConfig, moc
                             description = "Overwatch web app",
                             args = ["overwatchWebApp"],
                             config = {})),
+        ("webApp", {"uwsgi": {"enabled" : True}},
+         executableExpected(name = "webApp",
+                            description = "Overwatch web app",
+                            args = ["uwsgi", "--yaml", "data/config/webApp_uwsgi.yaml"],
+                            config = {})),
+        ("webApp", {"uwsgi": {"enabled" : True}, "nginx": {"enabled": True}},
+         executableExpected(name = "webApp",
+                            description = "Overwatch web app",
+                            args = ["uwsgi", "--yaml", "data/config/webApp_uwsgi.yaml"],
+                            config = {})),
         ("dqmReceiver", {"uwsgi": {}},
          executableExpected(name = "dqmReceiver",
                             description = "Overwatch DQM receiver",
                             args = ["overwatchDQMReciever"],
                             config = {})),
-    ], ids = ["Data transfer", "Processing", "Web App", "DQM Receiver"])
-        #"Web App - uwsgi" , "Web App - uwsgi + nginx", "DQM Receiver - uwsgi", "DQM Receiver - uwsgi + nginx"])
-def testOverwatchExecutableProperties(loggingMixin, executableType, config, expected, mocker):
-    """ Test the properties of Overwatch based executables. """
+    ], ids = ["Data transfer", "Processing", "Web App", "Web App - uwsgi", "Web App - uwsgi + nginx", "DQM Receiver"])
+def testOverwatchExecutableProperties(loggingMixin, executableType, config, expected, setupStartProcessWithLog, mocker):
+    """ Integration test for the setup and properties of Overwatch based executables. """
     executable = deploy.retrieveExecutable(executableType)(config = config)
 
-    # Check the custom config
+    # Centralized setup for `uwsgi`. Defined here so we don't have to copy it in parametrize.
+    uwsgi = False
+    if "uwsgi" in executable.config and executable.config["uwsgi"].get("enabled", False):
+        uwsgi = True
+        executable.config["uwsgi"] = {
+            "enabled": True,
+            "module": "overwatch.webApp.run",
+            "http-socket": "127.0.0.1:8850",
+            "additionalOptions": {
+                "chdir" : "myDir",
+            }
+        }
+    # Centralized setup for `nginx`. Defined here so we don't have to copy it in parametrize.
+    nginx = False
+    if "nginx" in executable.config and executable.config["nginx"]["enabled"]:
+        nginx = True
+        executable.config["nginx"] = {
+            "enabled": True,
+            "webAppName": "webApp",
+            "basePath": "data/config",
+            "sitesPath": "sites-enabled",
+            "configPath": "conf.d",
+        }
+
+    # Mocks relevant to startProcessWithLog
+    mFile, mPopen, mConfigParserWrite = setupStartProcessWithLog
+    # Mocks for checking the custom config
     mFile = mocker.mock_open()
     mocker.patch("overwatch.base.deploy.open", mFile)
     # Mock yaml.dump so we can check what was written.
     # (We can't check the write directly because dump writes many times!)
     mYaml = mocker.MagicMock()
     mocker.patch("overwatch.base.deploy.yaml.dump", mYaml)
+    # Redirect nginx run to nginx setup so we don't have to mock all of run()
+    mNginxRun = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.nginx.run", mNginxRun)
 
     # Perform task setup.
     executable.setup()
+    # Special call to this function so we don't have to mock all of run(). We just want to run setup() to check the config.
+    if nginx:
+        executable.nginx.setup()
 
+    # Confirm basic properties:
     assert executable.name == expected.name
     assert executable.description == expected.description
     assert executable.args == expected.args
@@ -512,4 +587,52 @@ def testOverwatchExecutableProperties(loggingMixin, executableType, config, expe
     # Only check for a custom config if we've actually written one.
     if expected.config:
         mYaml.assert_called_once_with(expected.config, mFile(), default_flow_style = False)
+
+    # Check for uwsgi config.
+    if uwsgi:
+        mFile.assert_any_call(expected.args[2], "w")
+        # Effectively copied from the uwsgi config
+        expectedConfig = {
+            "vacuum": True,
+            "stats": "/tmp/sockets/wsgi_{name}_stats.sock",
+            "chdir": "myDir",
+            "http-socket": "127.0.0.1:8850",
+            "module": "overwatch.webApp.run",
+            "callable": "app",
+            "processes": 4,
+            "threads": 2,
+            "cheaper": 2,
+            "master": True,
+            "master-fifo": "/tmp/sockets/wsgiMasterFifo{name}",
+        }
+        # Format in the variables
+        for k, v in iteritems(expectedConfig):
+            if isinstance(v, str):
+                expectedConfig[k] = v.format(name = "{name}_uwsgi".format(name = expected.name))
+        expectedConfig = {"uwsgi" : expectedConfig}
+        mYaml.assert_any_call(expectedConfig, mFile(), default_flow_style = False)
+
+    # Check for nginx config.
+    if nginx:
+        expectedMainNginxConfig = """
+        server {
+            listen 80 default_server;
+            # "_" is a wildcard for all possible server names
+            server_name _;
+            location / {
+                include uwsgi_params;
+                uwsgi_pass unix:///tmp/sockets/%(name)s.sock;
+            }
+        }"""
+
+        # Use "%" formatting because the `nginx` config uses curly brackets.
+        expectedMainNginxConfig = expectedMainNginxConfig % {"name": executable.config["nginx"]["webAppName"]}
+        expectedMainNginxConfig = inspect.cleandoc(expectedMainNginxConfig)
+
+        print(mFile.mock_calls)
+        mFile.assert_any_call(os.path.join("data", "config", "sites-enabled", "webAppNginx.conf"), "w")
+        mFile().write.assert_any_call(expectedMainNginxConfig)
+
+        # We skip the gzip config contents because they're static
+        mFile.assert_any_call(os.path.join("data", "config", "conf.d", "gzip.conf"), "w")
 
