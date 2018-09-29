@@ -352,6 +352,198 @@ class executable(object):
         # We have successfully launched the process
         return True
 
+class environment(executable):
+    """ Setup and create the necessary environment for execution.
+
+    Note:
+        Arguments after ``config`` are values which will be used for formatting and are required in the config.
+
+    Args:
+        config (dict): Configuration for the executable.
+    """
+    def __init__(self, config):
+        name = "environment"
+        description = "Setup and create the necessary execution environment"
+        args = []
+        super().__init__(name = name,
+                         description = description,
+                         args = args,
+                         config = config)
+
+    def setup(self):
+        """ Setup for creating the execution environment.
+
+        In particular, we write our sensitive environment variables and configure ROOT.
+        """
+        super().setup()
+
+        #if "cert" in config and config["cert"]["enabled"]:
+        # TODO: Update default location to "~/.globus/overwatchCert.pem" (?)
+        self.writeSensitiveVariableToFile(name = "cert",
+                                          prettyName = "certificate",
+                                          defaultWriteLocation = "overwatchCert.pem")
+
+        #if "sshKey" in config and config["sshKey"]["enabled"]:
+        # TODO: Update default write location to "~/ssh/id_rsa" (?)
+        self.writeSensitiveVariableToFile(name = "sshKey",
+                                          prettyName = "SSH key",
+                                          defaultWriteLocation = "overwatch.id_rsa")
+
+        # Setup environment
+        self.setupRoot()
+        self.setupEnvironmentVars()
+
+    def writeSensitiveVariableToFile(self, name, prettyName, defaultWriteLocation):
+        """ Write SSH key or certificate from environment variable to file. """
+        # Check name value (also acts as proxy for the other values)
+        if name != "sshKey" and name != "cert":
+            raise ValueError("Name \"{}\" is unrecognized! Aborting")
+
+        #sensitiveVariable = getSensitiveVariableConfigurationValues(config, name = name, prettyName = prettyName)
+        logger.info("Writing {} from environment variable to file".format(prettyName))
+        # Get variable from environment
+        variableName = self.config[name].get("variableName", name)
+        sensitiveVariable = os.environ[variableName]
+        # Check that the variable is not empty
+        if not sensitiveVariable:
+            raise ValueError("Empty {} passed".format(prettyName))
+        logger.debug("variableName: {}, {}: {}".format(variableName, prettyName, sensitiveVariable))
+
+        # Write to file
+        writeLocation = self.config[name].get("writeLocation", defaultWriteLocation)
+        # Expand filename
+        writeLocation = os.path.expanduser(os.path.expandvars(writeLocation))
+        if not os.path.exists(os.path.dirname(writeLocation)):
+            os.makedirs(os.path.dirname(writeLocation))
+
+        # Ensure that we don't overwrite an existing file!
+        if os.path.exists(writeLocation):
+            raise IOError("File at {0} already exists and will not be overwritten!".format(writeLocation))
+        with open(writeLocation, "w") as f:
+            f.write(sensitiveVariable)
+
+        if name == "sshKey":
+            # Set the file permissions to 600
+            os.chmod(writeLocation, stat.S_IRUSR | stat.S_IWUSR)
+            # Set the folder permissions to 700
+            os.chmod(os.path.dirname(writeLocation), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+        elif name == "cert":
+            # Set the file permissions to 400
+            os.chmod(writeLocation, stat.S_IRUSR)
+
+    def setupRoot(self):
+        """ Setup ROOT in our execution environment.
+
+        This is done by executing ``thisroot.sh``, capturing the output, and then assigning the updated
+        environment to our current environment variables.
+        """
+        # We only want to add ROOT to the path, etc, if it's not already setup.
+        # If ``ROOTSYS`` is setup, it's a pretty good bet that everything else is setup.
+        if "ROOTSYS" not in os.environ:
+            thisRootPath = os.path.join(self.config["root"]["path"], "bin", "thisroot.sh")
+            # Run thisroot.sh, extract the environment, and then set the python environment to those values
+            # See: https://stackoverflow.com/a/3505826
+            command = ["bash", "-c", "source {thisRootPath} && env".format(thisRootPath = thisRootPath)]
+
+            proc = subprocess.Popen(command, stdout = subprocess.PIPE)
+
+            # Load into the environment
+            # Note that this doesn't propagate to the shell where this was executed!
+            for line in proc.stdout:
+                (key, _, value) = line.partition("=")
+                os.environ[key] = value
+
+    def setupEnvironment(self):
+        """ Setup execution environment.
+
+        We generically add these environment variables, as well as explicitly checking for those
+        related to EOS.
+        """
+        # TODO: Check for EOS variables?
+
+        for k, v in iteritems(self.config["vars"]):
+            # Not necessarily a problem, but I want to make the user aware.
+            if k in os.environ:
+                logger.warning("Environment variable {k} is already set to {val}. It is being updated to {v}".format(k = k, val = os.environ["k"], v = v))
+            os.environ[k] = v
+
+class supervisor(executable):
+    """ Start ``supervisor`` (through ``supervisord``) to manage processes.
+
+    We don't need options for this executable. It is either going to be launched or it isn't.
+
+    Note:
+        Don't use ``run()`` for this executable. Instead, the setup and execution steps should be
+        performed separately because the basic config is needed at the beginning, while the final execution
+        is needed at the end.
+
+    Args:
+        *args (list): Absorb extra arguments.
+        **kwargs (dict): Absorb extra arguments.
+    """
+    def __init__(self, *args, **kwargs):
+        name = "supervisord"
+        description = "Supervisord"
+        args = [
+            "supervisorctl",
+            "update",
+        ]
+        # We don't want any additional config, so we specify it as empty here.
+        super().__init__(name = name,
+                         description = description,
+                         args = args,
+                         config = {})
+
+    def setup(self):
+        """ Setup required for the ``supervisord`` executable.
+
+        In particular, we need to write out the main configuration.
+        """
+        # Write to the supervisord config
+        filename = "supervisord.conf"
+        if not os.path.exists(filename):
+            logger.info("Creating supervisord main config")
+            # Write the main config
+            config = ConfigParser()
+            # Main supervisord configuration
+            config["supervisord"] = {
+                "nodaemon": True,
+                # Take advantage of the overwatch data directory.
+                "logfile": "data/logs/supervisord.log",
+                "childlogdir": "data/logs",
+                # 5 MB log file with 10 backup files
+                "logfile_maxbytes": 5000000,
+                "logfile_backups": 10,
+            }
+            # Unix http server monitoring options
+            config["unix_http_server"] = {
+                # Path to the socket file
+                "file": "/tmp/sockets/supervisor.sock",
+                # Socket file mode (default 0700)
+                "chmod": "0700",
+            }
+            # These options section must remain in the config file for RPC
+            # (supervisorctl/web interface) to work, additional interfaces may be
+            # added by defining them in separate ``rpcinterface: sections``
+            config["rpcinterface:supervisor"] = {
+                "supervisor.rpcinterface_factory": "supervisor.rpcinterface:make_main_rpcinterface",
+            }
+            # supervisorctl options
+            config["supervisorctl"] = {
+                # Use a unix:// URL  for a unix socket
+                "serverurl": "unix:///tmp/supervisor.sock",
+            }
+
+            # Write out the final config.
+            with open(filename, "w+") as f:
+                config.write(f)
+        else:
+            logger.info("Supervisord config already exists - skipping creation.")
+
+    def run(self):
+        """ We want to run in separate steps, so this function shouldn't be used. """
+        raise NotImplementedError("The supervisord executable should be run in multiple steps.")
+
 class sshKnownHostsExecutable(executable):
     """ Create a SSH ``known_hosts`` file with the SSH address in the configuration.
 
@@ -687,212 +879,6 @@ class overwatchExecutable(executable):
             with open(self.configFilename, "w") as f:
                 yaml.dump(config, f, default_flow_style = False)
 
-class overwatchFlaskExecutable(overwatchExecutable):
-    """ Start an Overwatch Flask executable.
-
-    Used for starting the web app and the DQM receiver - both of these are flask based.
-
-    Note:
-        All args are specified in the config.
-
-    Args:
-        additionalConfig (dict): Additional options to added to the YAML configuration.
-        uwsgi (dict): Additional options for ``uwsgi``. See the ``uwsgi`` executable class for more details.
-        nginx (dict): Additional options for ``nginx``. See the ``nginx`` executable class for more details.
-    """
-    def setup(self):
-        """ Setup required for an Overwatch flask executable.
-
-        In particular, we write any passed custom configuration options out to an Overwatch YAML config file,
-        as well as potentially setup ``uwsgi`` and/or setup and run ``nginx``.
-        """
-        # Create an underlying uwsgi app to handle the setup and execution.
-        if "nginx" in self.config:
-            if self.config["nginx"]["enabled"] is True:
-                server = nginx(self.config["nginx"])
-                server.run()
-
-        # Create an underlying uwsgi app to handle the setup and execution.
-        self = uwsgi.createObject(self)
-
-        # We call this last here because we are going to update variables if we use ``uwsgi`` for execution.
-        super().setup()
-
-class supervisor(executable):
-    """ Start ``supervisor`` (through ``supervisord``) to manage processes.
-
-    We don't need options for this executable. It is either going to be launched or it isn't.
-
-    Note:
-        Don't use ``run()`` for this executable. Instead, the setup and execution steps should be
-        performed separately because the basic config is needed at the beginning, while the final execution
-        is needed at the end.
-
-    Args:
-        *args (list): Absorb extra arguments.
-        **kwargs (dict): Absorb extra arguments.
-    """
-    def __init__(self, *args, **kwargs):
-        name = "supervisord"
-        description = "Supervisord"
-        args = [
-            "supervisorctl",
-            "update",
-        ]
-        # We don't want any additional config, so we specify it as empty here.
-        super().__init__(name = name,
-                         description = description,
-                         args = args,
-                         config = {})
-
-    def setup(self):
-        """ Setup required for the ``supervisord`` executable.
-
-        In particular, we need to write out the main configuration.
-        """
-        # Write to the supervisord config
-        filename = "supervisord.conf"
-        if not os.path.exists(filename):
-            logger.info("Creating supervisord main config")
-            # Write the main config
-            config = ConfigParser()
-            # Main supervisord configuration
-            config["supervisord"] = {
-                "nodaemon": True,
-                # Take advantage of the overwatch data directory.
-                "logfile": "data/logs/supervisord.log",
-                "childlogdir": "data/logs",
-                # 5 MB log file with 10 backup files
-                "logfile_maxbytes": 5000000,
-                "logfile_backups": 10,
-            }
-            # Unix http server monitoring options
-            config["unix_http_server"] = {
-                # Path to the socket file
-                "file": "/tmp/sockets/supervisor.sock",
-                # Socket file mode (default 0700)
-                "chmod": "0700",
-            }
-            # These options section must remain in the config file for RPC
-            # (supervisorctl/web interface) to work, additional interfaces may be
-            # added by defining them in separate ``rpcinterface: sections``
-            config["rpcinterface:supervisor"] = {
-                "supervisor.rpcinterface_factory": "supervisor.rpcinterface:make_main_rpcinterface",
-            }
-            # supervisorctl options
-            config["supervisorctl"] = {
-                # Use a unix:// URL  for a unix socket
-                "serverurl": "unix:///tmp/supervisor.sock",
-            }
-
-            # Write out the final config.
-            with open(filename, "w+") as f:
-                config.write(f)
-        else:
-            logger.info("Supervisord config already exists - skipping creation.")
-
-    def run(self):
-        """ We want to run in separate steps, so this function shouldn't be used. """
-        raise NotImplementedError("The supervisord executable should be run in multiple steps.")
-
-class nginx(executable):
-    """ Start ``nginx`` to serve a ``uwsgi`` based web app.
-
-    Note:
-        Arguments after ``config`` are values which will be used for formatting and are required in the config.
-
-    Note:
-        It is generally recommended to run ``nginx`` in a separate container, but this option is maintained
-        for situations where that is not possible. When run separately, we connect to the web app via an http socket,
-        while When run together, we connect to the ``uwsgi`` web app via a socket.
-
-    Args:
-        config (dict): Configuration for the executable.
-        name (str): Name of web app (especially the socket) which will be behind the ``nginx`` server.
-        basePath (str): Path to the ``nginx`` settings and configuration directory. Default: "/etc/nginx".
-        configPath (str): Path to the main ``nginx`` configuration directory. Default: "${basePath}/conf.d".
-        sitesPath (str): Path to the ``nginx`` sites directory. Default: "${basePath}/sites-enabled".
-    """
-    def __init__(self, config):
-        name = "nginx"
-        description = "NGINX web server for a uwsgi web app"
-        args = [
-            "/usr/sbin/nginx",
-        ]
-        super().__init__(name = name,
-                         description = description,
-                         args = args,
-                         config = config)
-
-    def setup(self):
-        """ Setup required for the ``nginx`` executable.
-
-        In particular, we need to write out the main configuration (which directs to the socket to which traffic
-        should be passed), as well as the ``gzip`` configuration.
-        """
-        mainNginxConfig = """
-        server {
-            listen 80 default_server;
-            # "_" is a wildcard for all possible server names
-            server_name _;
-            location / {
-                include uwsgi_params;
-                uwsgi_pass unix:///tmp/sockets/%(name)s.sock;
-            }
-        }"""
-        # Use "%" formatting because the `nginx` config uses curly brackets.
-        mainNginxConfig = mainNginxConfig % {"name": self.name}
-        mainNginxConfig = inspect.cleandoc(mainNginxConfig)
-
-        # Determine the path to the main config file.
-        nginxBasePath = self.config.get("basePath", "/etc/nginx")
-        nginxConfigPath = os.path.join(nginxBasePath, self.config.get("configPath", "conf.d"))
-        nginxSitesPath = os.path.join(nginxBasePath, self.config.get("sitesPath", "sites-enabled"))
-
-        # Create folders that don't exist, but don't mess with this if it's in `/etc/nginx`.
-        if nginxBasePath != "/etc/nginx":
-            paths = [nginxBasePath, nginxConfigPath, nginxSitesPath]
-            for path in paths:
-                if not os.path.exists(path):
-                    os.makedirs(path)
-
-        with open(os.path.join(nginxSitesPath, "{0}Nginx.conf".format(self.name)), "w") as f:
-            f.write(mainNginxConfig)
-
-        gzipConfig = """
-        # GZip configuration
-        # Already setup in main config!
-        #gzip on;
-        #gzip_disable "msie6";
-
-        gzip_vary on;
-        gzip_proxied any;
-        gzip_comp_level 6;
-        gzip_buffers 16 8k;
-        gzip_http_version 1.1;
-        gzip_min_length 256;
-        gzip_types
-            text/plain
-            text/css
-            application/json
-            application/x-javascript
-            text/xml
-            application/xml
-            application/xml+rss
-            application/javascript
-            text/javascript
-            application/vnd.ms-fontobject
-            application/x-font-ttf
-            font/opentype
-            image/svg+xml
-            image/x-icon;
-        """
-
-        # Cleanup and write the gzip config.
-        gzipConfig = inspect.cleandoc(gzipConfig)
-        with open(os.path.join(nginxConfigPath, "gzip.conf"), "w") as f:
-            f.write(gzipConfig)
-
 class uwsgi(executable):
     """ Start a ``uwsgi`` executable.
 
@@ -1031,120 +1017,134 @@ class uwsgi(executable):
         """ This should only be used to help configure another executable. """
         raise NotImplementedError("The uwsgi object should not be run directly.")
 
-class environment(executable):
-    """ Setup and create the necessary environment for execution.
+class nginx(executable):
+    """ Start ``nginx`` to serve a ``uwsgi`` based web app.
 
     Note:
         Arguments after ``config`` are values which will be used for formatting and are required in the config.
 
+    Note:
+        It is generally recommended to run ``nginx`` in a separate container, but this option is maintained
+        for situations where that is not possible. When run separately, we connect to the web app via an http socket,
+        while When run together, we connect to the ``uwsgi`` web app via a socket.
+
     Args:
         config (dict): Configuration for the executable.
+        name (str): Name of web app (especially the socket) which will be behind the ``nginx`` server.
+        basePath (str): Path to the ``nginx`` settings and configuration directory. Default: "/etc/nginx".
+        configPath (str): Path to the main ``nginx`` configuration directory. Default: "${basePath}/conf.d".
+        sitesPath (str): Path to the ``nginx`` sites directory. Default: "${basePath}/sites-enabled".
     """
     def __init__(self, config):
-        name = "environment"
-        description = "Setup and create the necessary execution environment"
-        args = []
+        name = "nginx"
+        description = "NGINX web server for a uwsgi web app"
+        args = [
+            "/usr/sbin/nginx",
+        ]
         super().__init__(name = name,
                          description = description,
                          args = args,
                          config = config)
 
     def setup(self):
-        """ Setup for creating the execution environment.
+        """ Setup required for the ``nginx`` executable.
 
-        In particular, we write our sensitive environment variables and configure ROOT.
+        In particular, we need to write out the main configuration (which directs to the socket to which traffic
+        should be passed), as well as the ``gzip`` configuration.
         """
+        mainNginxConfig = """
+        server {
+            listen 80 default_server;
+            # "_" is a wildcard for all possible server names
+            server_name _;
+            location / {
+                include uwsgi_params;
+                uwsgi_pass unix:///tmp/sockets/%(name)s.sock;
+            }
+        }"""
+        # Use "%" formatting because the `nginx` config uses curly brackets.
+        mainNginxConfig = mainNginxConfig % {"name": self.name}
+        mainNginxConfig = inspect.cleandoc(mainNginxConfig)
+
+        # Determine the path to the main config file.
+        nginxBasePath = self.config.get("basePath", "/etc/nginx")
+        nginxConfigPath = os.path.join(nginxBasePath, self.config.get("configPath", "conf.d"))
+        nginxSitesPath = os.path.join(nginxBasePath, self.config.get("sitesPath", "sites-enabled"))
+
+        # Create folders that don't exist, but don't mess with this if it's in `/etc/nginx`.
+        if nginxBasePath != "/etc/nginx":
+            paths = [nginxBasePath, nginxConfigPath, nginxSitesPath]
+            for path in paths:
+                if not os.path.exists(path):
+                    os.makedirs(path)
+
+        with open(os.path.join(nginxSitesPath, "{0}Nginx.conf".format(self.name)), "w") as f:
+            f.write(mainNginxConfig)
+
+        gzipConfig = """
+        # GZip configuration
+        # Already setup in main config!
+        #gzip on;
+        #gzip_disable "msie6";
+
+        gzip_vary on;
+        gzip_proxied any;
+        gzip_comp_level 6;
+        gzip_buffers 16 8k;
+        gzip_http_version 1.1;
+        gzip_min_length 256;
+        gzip_types
+            text/plain
+            text/css
+            application/json
+            application/x-javascript
+            text/xml
+            application/xml
+            application/xml+rss
+            application/javascript
+            text/javascript
+            application/vnd.ms-fontobject
+            application/x-font-ttf
+            font/opentype
+            image/svg+xml
+            image/x-icon;
+        """
+
+        # Cleanup and write the gzip config.
+        gzipConfig = inspect.cleandoc(gzipConfig)
+        with open(os.path.join(nginxConfigPath, "gzip.conf"), "w") as f:
+            f.write(gzipConfig)
+
+class overwatchFlaskExecutable(overwatchExecutable):
+    """ Start an Overwatch Flask executable.
+
+    Used for starting the web app and the DQM receiver - both of these are flask based.
+
+    Note:
+        All args are specified in the config.
+
+    Args:
+        additionalConfig (dict): Additional options to added to the YAML configuration.
+        uwsgi (dict): Additional options for ``uwsgi``. See the ``uwsgi`` executable class for more details.
+        nginx (dict): Additional options for ``nginx``. See the ``nginx`` executable class for more details.
+    """
+    def setup(self):
+        """ Setup required for an Overwatch flask executable.
+
+        In particular, we write any passed custom configuration options out to an Overwatch YAML config file,
+        as well as potentially setup ``uwsgi`` and/or setup and run ``nginx``.
+        """
+        # Create an underlying uwsgi app to handle the setup and execution.
+        if "nginx" in self.config:
+            if self.config["nginx"]["enabled"] is True:
+                server = nginx(self.config["nginx"])
+                server.run()
+
+        # Create an underlying uwsgi app to handle the setup and execution.
+        self = uwsgi.createObject(self)
+
+        # We call this last here because we are going to update variables if we use ``uwsgi`` for execution.
         super().setup()
-
-        #if "cert" in config and config["cert"]["enabled"]:
-        # TODO: Update default location to "~/.globus/overwatchCert.pem" (?)
-        self.writeSensitiveVariableToFile(name = "cert",
-                                          prettyName = "certificate",
-                                          defaultWriteLocation = "overwatchCert.pem")
-
-        #if "sshKey" in config and config["sshKey"]["enabled"]:
-        # TODO: Update default write location to "~/ssh/id_rsa" (?)
-        self.writeSensitiveVariableToFile(name = "sshKey",
-                                          prettyName = "SSH key",
-                                          defaultWriteLocation = "overwatch.id_rsa")
-
-        # Setup environment
-        self.setupRoot()
-        self.setupEnvironmentVars()
-
-    def writeSensitiveVariableToFile(self, name, prettyName, defaultWriteLocation):
-        """ Write SSH key or certificate from environment variable to file. """
-        # Check name value (also acts as proxy for the other values)
-        if name != "sshKey" and name != "cert":
-            raise ValueError("Name \"{}\" is unrecognized! Aborting")
-
-        #sensitiveVariable = getSensitiveVariableConfigurationValues(config, name = name, prettyName = prettyName)
-        logger.info("Writing {} from environment variable to file".format(prettyName))
-        # Get variable from environment
-        variableName = self.config[name].get("variableName", name)
-        sensitiveVariable = os.environ[variableName]
-        # Check that the variable is not empty
-        if not sensitiveVariable:
-            raise ValueError("Empty {} passed".format(prettyName))
-        logger.debug("variableName: {}, {}: {}".format(variableName, prettyName, sensitiveVariable))
-
-        # Write to file
-        writeLocation = self.config[name].get("writeLocation", defaultWriteLocation)
-        # Expand filename
-        writeLocation = os.path.expanduser(os.path.expandvars(writeLocation))
-        if not os.path.exists(os.path.dirname(writeLocation)):
-            os.makedirs(os.path.dirname(writeLocation))
-
-        # Ensure that we don't overwrite an existing file!
-        if os.path.exists(writeLocation):
-            raise IOError("File at {0} already exists and will not be overwritten!".format(writeLocation))
-        with open(writeLocation, "w") as f:
-            f.write(sensitiveVariable)
-
-        if name == "sshKey":
-            # Set the file permissions to 600
-            os.chmod(writeLocation, stat.S_IRUSR | stat.S_IWUSR)
-            # Set the folder permissions to 700
-            os.chmod(os.path.dirname(writeLocation), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
-        elif name == "cert":
-            # Set the file permissions to 400
-            os.chmod(writeLocation, stat.S_IRUSR)
-
-    def setupRoot(self):
-        """ Setup ROOT in our execution environment.
-
-        This is done by executing ``thisroot.sh``, capturing the output, and then assigning the updated
-        environment to our current environment variables.
-        """
-        # We only want to add ROOT to the path, etc, if it's not already setup.
-        # If ``ROOTSYS`` is setup, it's a pretty good bet that everything else is setup.
-        if "ROOTSYS" not in os.environ:
-            thisRootPath = os.path.join(self.config["root"]["path"], "bin", "thisroot.sh")
-            # Run thisroot.sh, extract the environment, and then set the python environment to those values
-            # See: https://stackoverflow.com/a/3505826
-            command = ["bash", "-c", "source {thisRootPath} && env".format(thisRootPath = thisRootPath)]
-
-            proc = subprocess.Popen(command, stdout = subprocess.PIPE)
-
-            # Load into the environment
-            # Note that this doesn't propagate to the shell where this was executed!
-            for line in proc.stdout:
-                (key, _, value) = line.partition("=")
-                os.environ[key] = value
-
-    def setupEnvironment(self):
-        """ Setup execution environment.
-
-        We generically add these environment variables, as well as explicitly checking for those
-        related to EOS.
-        """
-        # TODO: Check for EOS variables?
-
-        for k, v in iteritems(self.config["vars"]):
-            # Not necessarily a problem, but I want to make the user aware.
-            if k in os.environ:
-                logger.warning("Environment variable {k} is already set to {val}. It is being updated to {v}".format(k = k, val = os.environ["k"], v = v))
-            os.environ[k] = v
 
 _available_executables = {
     "environment": environment,
