@@ -647,6 +647,7 @@ class overwatchExecutable(executable):
             None.
         """
         configToWrite = self.config.get("additionalOptions", {})
+        logger.debug("configToWrite: {configToWrite}".format(configToWrite = configToWrite))
         # If the configuration is empty, we just won't do anything.
         if configToWrite:
             config = {}

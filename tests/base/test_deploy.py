@@ -96,6 +96,33 @@ def testSetupExecutable(setupBasicExecutable, processIdentifier):
     assert executable.config == expected.config
     assert executable.processIdentifier == (processIdentifier if processIdentifier else " ".join(expected.args))
 
+def testExecutableFromConfig(loggingMixin):
+    """ Test for configuring an executable via a config.
+
+    This duplicates some code from ``setupBasicExecutable``, but it's necessary because we need to create the
+    executable in the test function to properly test the initialization.
+    """
+    expected = {
+        "name": "{label}Executable",
+        "description": "Basic executable for {label}ing",
+        "args": ["execTest", "arg1", "arg2", "test{hello}"],
+        "config": {"runInBackground": True, "enabled": True, "label": "test", "hello": "world"},
+    }
+
+    executable = deploy.executable(**expected)
+    # Run setup so names are properly formatted
+    executable.setup()
+
+    # Determine the expected values
+    for k in ["name", "description"]:
+        expected[k] = expected[k].format(**expected["config"])
+    expected["args"] = [arg.format(**expected["config"]) for arg in expected["args"]]
+    expected = executableExpected(**expected)
+
+    assert executable.runInBackground == expected.config["runInBackground"]
+    assert executable.executeTask == expected.config["enabled"]
+    assert executable.logFilename == "{name}.log".format(name = expected.name)
+
 @pytest.mark.parametrize("pid", [
     [],
     [1234],
@@ -441,11 +468,11 @@ def testWriteCustomOverwatchConfig(setupOverwatchExecutable, existingConfig, moc
     mYaml.assert_called_once_with(expectedConfig, mFile(), default_flow_style = False)
 
 @pytest.mark.parametrize("executableType, config, expected", [
-        ("dataTransfer", {},
+        ("dataTransfer", {"additionalOptions": {"testVal": True}},
          executableExpected(name = "dataTransfer",
                             description = "Overwatch receiver data transfer",
                             args = ["overwatchReceiverDataHandling"],
-                            config = {})),
+                            config = {"testVal": True})),
         ("processing", {},
          executableExpected(name = "processing",
                             description = "Overwatch processing",
@@ -463,9 +490,17 @@ def testWriteCustomOverwatchConfig(setupOverwatchExecutable, existingConfig, moc
                             config = {})),
     ], ids = ["Data transfer", "Processing", "Web App", "DQM Receiver"])
         #"Web App - uwsgi" , "Web App - uwsgi + nginx", "DQM Receiver - uwsgi", "DQM Receiver - uwsgi + nginx"])
-def testOverwatchExecutableProperties(loggingMixin, executableType, config, expected):
+def testOverwatchExecutableProperties(loggingMixin, executableType, config, expected, mocker):
     """ Test the properties of Overwatch based executables. """
     executable = deploy.retrieveExecutable(executableType)(config = config)
+
+    # Check the custom config
+    mFile = mocker.mock_open()
+    mocker.patch("overwatch.base.deploy.open", mFile)
+    # Mock yaml.dump so we can check what was written.
+    # (We can't check the write directly because dump writes many times!)
+    mYaml = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.yaml.dump", mYaml)
 
     # Perform task setup.
     executable.setup()
@@ -474,6 +509,7 @@ def testOverwatchExecutableProperties(loggingMixin, executableType, config, expe
     assert executable.description == expected.description
     assert executable.args == expected.args
 
-    # TODO: Check custom config!
-    #assert
+    # Only check for a custom config if we've actually written one.
+    if expected.config:
+        mYaml.assert_called_once_with(expected.config, mFile(), default_flow_style = False)
 
