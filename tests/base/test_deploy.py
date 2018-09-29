@@ -405,9 +405,29 @@ def testRunExecutableFailure(setupBasicExecutable, setupStartProcessWithLog, moc
         executable.run()
     assert "Failed to find the executed process" in exceptionInfo.value.args[0]
 
-def testSupervisor(loggingMixin, mocker):
-    """ Tests for the supervisor executable. """
+def testEnvironment(loggingMixin, mocker):
+    """ Tests for configuring the environment. """
     assert False
+
+def testSupervisorExecutable(loggingMixin, mocker):
+    """ Tests for the supervisor executable. """
+    executable = deploy.retrieveExecutable("supervisor")()
+
+    # Mock opening the file
+    mFile = mocker.mock_open()
+    mocker.patch("overwatch.base.deploy.open", mFile)
+    # Mock write with the config parser
+    mConfigParserWrite = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.ConfigParser.write", mConfigParserWrite)
+
+    result = executable.setup()
+
+    mFile.assert_called_once_with("supervisord.conf", "w+")
+    mConfigParserWrite.assert_called_once_with(mFile())
+
+    with pytest.raises(NotImplementedError) as exceptionInfo:
+        executable.run()
+    assert exceptionInfo.value.args[0] == "The supervisor executable should be run in multiple steps."
 
 def testZMQReceiver(loggingMixin, mocker):
     """ Tests for the ZMQ receiver and the underlying exectuables. """

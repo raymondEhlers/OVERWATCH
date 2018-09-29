@@ -498,51 +498,63 @@ class supervisor(executable):
                          args = args,
                          config = {})
 
+        self.configFilename = "supervisord.conf"
+
     def setup(self):
         """ Setup required for the ``supervisor`` executable.
 
         In particular, we need to write out the main configuration.
+
+        Returns:
+            bool: True if supervisor was actually configured. It will not be if the supervisor option is disabled.
         """
         # Write to the supervisor config
-        filename = "supervisord.conf"
-        if not os.path.exists(filename):
-            logger.info("Creating supervisor main config")
-            # Write the main config
-            config = ConfigParser()
-            # Main supervisord configuration
-            config["supervisord"] = {
-                "nodaemon": True,
-                # Take advantage of the overwatch data directory.
-                "logfile": os.path.join("data", "logs", "supervisord.log"),
-                "childlogdir": os.path.join("data", "logs"),
-                # 5 MB log file with 10 backup files
-                "logfile_maxbytes": 5000000,
-                "logfile_backups": 10,
-            }
-            # Unix http server monitoring options
-            config["unix_http_server"] = {
-                # Path to the socket file
-                "file": os.path.join("tmp", "sockets", "supervisor.sock"),
-                # Socket file mode (default 0700)
-                "chmod": "0700",
-            }
-            # These options section must remain in the config file for RPC
-            # (supervisorctl/web interface) to work, additional interfaces may be
-            # added by defining them in separate ``rpcinterface: sections``
-            config["rpcinterface:supervisor"] = {
-                "supervisor.rpcinterface_factory": "supervisor.rpcinterface:make_main_rpcinterface",
-            }
-            # supervisorctl options
-            config["supervisorctl"] = {
-                # Use a unix:// URL  for a unix socket
-                "serverurl": "unix:///tmp/supervisor.sock",
-            }
+        logger.info("Creating supervisor main config")
+        # Write the main config
+        config = ConfigParser()
+        # Main supervisord configuration
+        tempConfig = {}
+        tempConfig["supervisord"] = {
+            "nodaemon": "True",
+            # Take advantage of the overwatch data directory.
+            "logfile": os.path.join("data", "logs", "supervisord.log"),
+            "childlogdir": os.path.join("data", "logs"),
+            # 5 MB log file with 10 backup files
+            "logfile_maxbytes": "5000000",
+            "logfile_backups": "10",
+        }
 
-            # Write out the final config.
-            with open(filename, "w+") as f:
-                config.write(f)
-        else:
-            logger.info("Supervisor config already exists - skipping creation.")
+        # Unix http server monitoring options
+        tempConfig["unix_http_server"] = {
+            # Path to the socket file
+            "file": os.path.join("tmp", "sockets", "supervisor.sock"),
+            # Socket file mode (default 0700)
+            "chmod": "0700",
+        }
+        # These options section must remain in the config file for RPC
+        # (supervisorctl/web interface) to work, additional interfaces may be
+        # added by defining them in separate ``rpcinterface: sections``
+        tempConfig["rpcinterface:supervisor"] = {
+            "supervisor.rpcinterface_factory": "supervisor.rpcinterface:make_main_rpcinterface",
+        }
+        # supervisorctl options
+        tempConfig["supervisorctl"] = {
+            # Use a unix:// URL  for a unix socket
+            "serverurl": "unix:///tmp/supervisor.sock",
+        }
+
+        # Python 2 and 3 compatible version
+        for sectionName, conf in iteritems(tempConfig):
+            config.add_section(sectionName)
+            for k, v in iteritems(conf):
+                config.set(sectionName, k, v)
+
+        # Write out the final config.
+        with open(self.configFilename, "w+") as f:
+            config.write(f)
+
+        # Ensure that we can actually run the executable
+        self.executeTask = True
 
     def run(self):
         """ We want to run in separate steps, so this function shouldn't be used. """
@@ -1167,6 +1179,7 @@ class overwatchFlaskExecutable(overwatchExecutable):
 
 _available_executables = {
     "environment": environment,
+    "supervisor": supervisor,
     "zodb": zodb,
     "autossh": autossh,
     "zmqReceiver": zmqReceiver,
@@ -1204,6 +1217,7 @@ def retrieveExecutable(name):
     The available executables are:
 
     - environment
+    - supervisor
     - zodb
     - autossh
     - zmqReceiver
