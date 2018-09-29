@@ -298,27 +298,40 @@ class executable(object):
         Args:
             None.
         Returns:
-            None.
+            bool: True if the process was started, or False if the process was not start for some reason (such as
+                the task execution was not enabled, the process already exists, etc).
+
+        Raises:
+            ValueError: If attempting to launch the process with supervisor and also trying to run in the
+                foreground (which are incompatible options).
+            RuntimeError: If the started process doesn't appear to have launched successfully.
         """
         # Handle configuration, etc.
         self.setup()
 
         # Bail out immediately after task setup if the task is not supposed to be executed.
         if self.executeTask is False:
-            return None
+            return False
 
         # Check for existing process
         # TODO: Maybe only do this sometimes??
         #if config.get("forceRestart", False) or receiverConfig.get("forceRestartTunnel", False):
         if self.config.get("forceRestart", False):
             self.killExistingProcess()
+        else:
+            if self.getProcessPID():
+                logger.info("Process {name} is already running and no restart was requested, so there is nothing else to do.".format(name = self.name))
+                return False
+
+        # Check that we have a valid execution state.
+        if self.supervisord is True and self.config["foreground"] is True:
+            raise ValueError("Cannot run a foreground process with supervisor.")
 
         # If we are not using supervisord and we want to launch multiple process, they must be
         # launched with `nohup` so they run in the background.
         if self.supervisord is False or self.config["foreground"] is True:
             self.args = ["nohup"] + self.args
 
-        # TODO: Perhaps we can skip this if it already exists and we don't want to force restart?
         # Actually execute the process
         process = self.startProcessWithLog()
 
@@ -331,6 +344,9 @@ class executable(object):
             PIDs = self.getProcessPID()
             if not PIDs:
                 raise RuntimeError("Failed to find the executed process with identifier {processIdentifier}. It appears that it did not execute correctly or already completed.".format(processIdentifier = self.processIdentifier))
+
+        # We have successfully launched the process
+        return True
 
 class sshKnownHostsExecutable(executable):
     """ Create a SSH ``known_hosts`` file with the SSH address in the configuration.

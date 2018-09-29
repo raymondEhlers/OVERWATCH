@@ -259,6 +259,56 @@ def testSupervisorStartProcessWithLogs(setupBasicExecutable, mocker):
     # We don't check the output itself because that would basically be testing ConfigParser, which isn't our goal.
     mConfigParserWrite.assert_called_once_with(mFile())
 
+@pytest.mark.parametrize("supervisor", [
+    False,
+    True,
+    ], ids = ["Standard process", "Supervisor"])
+@pytest.mark.parametrize("executeTask, shortExectuableTime", [
+    (False, False),
+    (True, False),
+    (True, True)
+    ], ids = ["No execute task", "Execute task", "Execute with short executable time"])
+@pytest.mark.parametrize("forceRestart", [
+    False,
+    True
+    ], ids = ["No force restart", "Force restart"])
+def testRunExecutable(setupBasicExecutable, supervisor, executeTask, shortExectuableTime, forceRestart, mocker):
+    """ Test running an executable from start to finish.
+
+    Note:
+        Since this is an integration task, it is quite a bit more complicated than the other tests.
+    """
+    executable, expected = setupBasicExecutable
+    # Set supervisor state first, as everything else effectively depends on this.
+    executable.supervisor = supervisor
+    # Set execution state.
+    executable.executeTask = executeTask
+    executable.shortExectuableTime = shortExectuableTime
+    # Force restart.
+    executable.config["forceRestart"] = forceRestart
+
+    # Mock all of the relevant class methods
+    mGetProcessPID = mocker.MagicMock(return_value = [1234567])
+    mocker.patch("overwatch.base.deploy.executable.getProcessPID", mGetProcessPID)
+    mKillExistingProcess = mocker.MagicMock(return_value = 1)
+    mocker.patch("overwatch.base.deploy.executable.killExistingProcess", mKillExistingProcess)
+    mStartProcessWithLog = mocker.MagicMock(return_value = None if supervisor else "fake return value")
+    mocker.patch("overwatch.base.deploy.executable.startProcessWithLog", mStartProcessWithLog)
+
+    result = executable.run()
+
+    # We won't launch a process if executeTask is False or if we don't forceRestart
+    # (since the mock returns values as if the process exists).
+    expectedResult = False if (executeTask is False or forceRestart is False) else True
+    # Check the basic result
+    assert result == expectedResult
+
+    # Now check the details
+
+def testRunExecutableFailures(setupBasicExecutable):
+    """ Test failure modes of run executable. """
+    assert False
+
 @pytest.fixture
 def setupOverwatchExecutable(loggingMixin):
     """ Setup basic Overwatch executable for testing.
