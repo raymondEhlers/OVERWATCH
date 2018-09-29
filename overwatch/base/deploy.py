@@ -7,6 +7,7 @@ It can handle the configuration and execution of:
 - ``autossh`` for SSH tunnels.
 - ``ZODB`` for the Overwatch Database
 - Overwatch ZMQ receiver
+- Overwatch receiver data transfer
 - Overwatch DQM receiver
     - Via ``uswgi``, ``uwsgi`` behind ``nginx`` or directly.
 - Overwatch processing
@@ -660,7 +661,7 @@ class overwatchExecutable(executable):
 
             # Write out configuration.
             # We overwrite the previous config because we already loaded it in, so in effect we are appending
-            # (but we reduplication of options)
+            # (but it does de-duplicate options)
             with open(self.filename, "w") as f:
                 yaml.dump(config, f, default_flow_style = False)
 
@@ -686,7 +687,6 @@ class overwatchFlaskExecutable(overwatchExecutable):
         if "nginx" in self.config:
             if self.config["nginx"]["enabled"] is True:
                 server = nginx(self.config["nginx"])
-                server.setup()
                 server.run()
 
         # Create an underlying uwsgi app to handle the setup and execution.

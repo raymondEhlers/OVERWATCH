@@ -59,7 +59,12 @@ executableExpected = collections.namedtuple("executableExpected", ["name", "desc
 
 @pytest.fixture
 def setupBasicExecutable(loggingMixin, mocker):
-    """ Fixture to setup an executable object. """
+    """ Fixture to setup an executable object.
+
+    Returns:
+        tuple: (executable, expected) where executable is an executable object and expected are the expected
+            parameters.
+    """
     expected = {
         "name": "{label}Executable",
         "description": "Basic executable for {label}ing",
@@ -117,12 +122,8 @@ def testGetProcessPID(setupBasicExecutable, pid, mocker):
     ], ids = ["No process found", "Unknown error"])
 def testGetProcessPIDSubprocessFailure(setupBasicExecutable, mocker, returnCode):
     """ Test for subprocess failure when getting the process PID. """
-    pid = [1234]
     executable, expected = setupBasicExecutable
     executable.setup()
-
-    # Pre-process the PID input. We don't do it above so it's easier to read here.
-    inputPID = "\n".join((str(p) for p in pid)) + "\n"
 
     # Test getting a process ID. We mock it up.
     m = mocker.MagicMock()
@@ -144,7 +145,7 @@ def testGetProcessPIDFailure(setupBasicExecutable, mocker):
     executable, expected = setupBasicExecutable
     executable.setup()
 
-    # Preprocess the PID input. We don't do it above so it's easier to read here.
+    # Pre-process the PID input. We don't do it above so it's easier to read here.
     inputPID = "\n".join((str(p) for p in pid)) + "\n"
 
     # Test getting a process ID. We mock it up.
@@ -152,18 +153,24 @@ def testGetProcessPIDFailure(setupBasicExecutable, mocker):
     mocker.patch("overwatch.base.deploy.subprocess.check_output", m)
 
     with pytest.raises(ValueError) as exceptionInfo:
-        outputPID = executable.getProcessPID()
+        executable.getProcessPID()
     # We don't need to check the exact message.
     assert "Multiple PIDs" in exceptionInfo.value.args[0]
 
 @pytest.fixture
 def setupKillProcess(setupBasicExecutable, mocker):
-    """ Setup for tests of killing a process. """
+    """ Setup for tests of killing a process.
+
+    Returns:
+        tuple: (executable, expected, mGetProcess, mKill) where executable is an executable object and expected are
+            the expected parameters, mGetProcess is the mock for ``executable.getProcessPID()``, and mKill is the mock
+            for ``executable.killExistingProcess()``.
+    """
     executable, expected = setupBasicExecutable
 
     # First we return the PID to kill, then we return nothing (as if the kill worked)
-    mGetProcess = mocker.MagicMock()
-    mocker.patch("overwatch.base.deploy.executable.getProcessPID", mGetProcess)
+    mGetProcessPID = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.executable.getProcessPID", mGetProcessPID)
     # Also need to mock the kill command itself.
     mKill = mocker.MagicMock()
     mocker.patch("overwatch.base.deploy.os.kill", mKill)
@@ -171,7 +178,7 @@ def setupKillProcess(setupBasicExecutable, mocker):
     # Setup
     executable.setup()
 
-    return executable, expected, mGetProcess, mKill
+    return executable, expected, mGetProcessPID, mKill
 
 # Intentionally select non-existent PID (above 65535) just in case the mocking doesn't work properly.
 @pytest.mark.parametrize("pidsToKill", [
@@ -211,7 +218,7 @@ def testFailedKillingProces(setupKillProcess):
 
     with pytest.raises(RuntimeError) as exceptionInfo:
         # Call the actual method that we want to test
-        nKilled = executable.killExistingProcess()
+        executable.killExistingProcess()
     # We don't need to check the exact message.
     assert "found PIDs {PIDs} after killing the processes.".format(PIDs = pidsToKill) in exceptionInfo.value.args[0]
 
@@ -224,6 +231,10 @@ def setupStartProcessWithLog(setupBasicExecutable, mocker):
     - Writing a ConfigParser configuration
     - ``subprocess.Popen``
     - Opening files
+
+    Returns:
+        tuple: (mFile, mPopen, mConfigParserWrite) where ``mFile`` is the mock for opening a file, ``mPopen`` is the mock
+            for ``subprocess.Popen(...)``, and ``mConfigParserWrite`` is the mock for writing a ``configparser`` config.
     """
     # For standard processes
     # Mock the subprocess command
@@ -334,7 +345,7 @@ def testRunExecutable(setupBasicExecutable, setupStartProcessWithLog, supervisor
 
     # We won't launch a process if executeTask is False or if we don't forceRestart
     # (since the mock returns PID values as if the process exists).
-    expectedResult = False if (executeTask is False or (forceRestart is False and executeTask is False ) or (forceRestart is False and returnProcessPID is True)) else True
+    expectedResult = False if (executeTask is False or (forceRestart is False and executeTask is False) or (forceRestart is False and returnProcessPID is True)) else True
     # Check the basic result
     assert result == expectedResult
 
@@ -362,7 +373,7 @@ def testRunExecutableFailure(setupBasicExecutable, setupStartProcessWithLog, moc
 
     # Run the executable to start the actual test
     with pytest.raises(RuntimeError) as exceptionInfo:
-        result = executable.run()
+        executable.run()
     assert "Failed to find the executed process" in exceptionInfo.value.args[0]
 
 @pytest.fixture
@@ -392,6 +403,7 @@ def setupOverwatchExecutable(loggingMixin):
     ], ids = ["Config from scratch", "Appending to non-overlapping values", "Update overlapping values"])
 def testWriteCustomOverwatchConfig(setupOverwatchExecutable, existingConfig, mocker):
     """ Test writing a custom Overwtach config. """
+    # Basic setup
     executable, expected = setupOverwatchExecutable
 
     filename = "config.yaml"
@@ -408,7 +420,7 @@ def testWriteCustomOverwatchConfig(setupOverwatchExecutable, existingConfig, moc
 
     # Mock checking for a file
     mExists = mocker.MagicMock(return_value = (existingConfig != {}))
-    mocker.patch("os.path.exists", mExists)
+    mocker.patch("overwatch.base.deploy.os.path.exists", mExists)
     # Mock opening the file
     mFile = mocker.mock_open(read_data = inputStr.read())
     mocker.patch("overwatch.base.deploy.open", mFile)
@@ -427,10 +439,6 @@ def testWriteCustomOverwatchConfig(setupOverwatchExecutable, existingConfig, moc
 
     # Confirm that we've written the right information
     mYaml.assert_called_once_with(expectedConfig, mFile(), default_flow_style = False)
-
-    # Necessary to ensure that profiling works (it seems that it runs before all mocks are cleared)
-    # Probably something to do with mocking open
-    mocker.stopall()
 
 @pytest.mark.parametrize("executableType, config, expected", [
         ("dataTransfer", {},
@@ -455,7 +463,7 @@ def testWriteCustomOverwatchConfig(setupOverwatchExecutable, existingConfig, moc
                             config = {})),
     ], ids = ["Data transfer", "Processing", "Web App", "DQM Receiver"])
         #"Web App - uwsgi" , "Web App - uwsgi + nginx", "DQM Receiver - uwsgi", "DQM Receiver - uwsgi + nginx"])
-def testDataTransferExecutable(loggingMixin, executableType, config, expected):
+def testOverwatchExecutableProperties(loggingMixin, executableType, config, expected):
     """ Test the properties of Overwatch based executables. """
     executable = deploy.retrieveExecutable(executableType)(config = config)
 
@@ -467,4 +475,5 @@ def testDataTransferExecutable(loggingMixin, executableType, config, expected):
     assert executable.args == expected.args
 
     # TODO: Check custom config!
+    #assert
 
