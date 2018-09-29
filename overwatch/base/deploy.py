@@ -105,10 +105,10 @@ class executable(object):
         processIdentifier (str): A unique string which identifies the process (to be used to check if it already
             exists). It may need to include arguments to be unique, which will then depend on the order in which
             the process arguments are defined. It is determined by the fully formatted arguments.
-        supervisord (bool): True if the process launching should be configured for ``supervisord``.
+        supervisor (bool): True if the process launching should be configured for ``supervisor``.
             This means that the process won't be started immediately. Note that this is a class variable, so
             we only need to set it once when starting the deployment.
-        shortExecutionTime (bool): True if the executable executes and completes quickly. In this case, supervisord
+        shortExecutionTime (bool): True if the executable executes and completes quickly. In this case, supervisor
             need special options to ensure that it doesn't think that the executable failed immediately and should be
             restarted.
         logFilename (str): Filename for the log file. Default: ``{name}.log``.
@@ -119,7 +119,7 @@ class executable(object):
             the config. Default: ``False``.
     """
     # Avoid having to set this for every object given that it should be the same for (nearly) every one.
-    supervisord = False
+    supervisor = False
 
     def __init__(self, name, description, args, config):
         self.name = name
@@ -214,8 +214,8 @@ class executable(object):
         """ Start (or otherwise setup) the process with the given arguments and log the output.
 
         For a normal process, we configure it to log to the given filename and start it immediately. In the case that
-        the process should be launched with ``supervisord``, the process won't be launched immediately.  Instead, the
-        process and log information will be appended to the existing ``supervisord`` configuration.
+        the process should be launched with ``supervisor``, the process won't be launched immediately.  Instead, the
+        process and log information will be appended to the existing ``supervisor`` configuration.
 
         Args:
             None.
@@ -223,7 +223,7 @@ class executable(object):
             subprocess.Popen or None: If the process is started immediately, then we return the ``Popen`` class
                 associated with the started process. Otherwise, we return None.
         """
-        if self.supervisord:
+        if self.supervisor:
             # Use configparser to create the configuration from a dict.
             process = ConfigParser()
             programIdentifier = "program:{name}".format(name = self.name)
@@ -236,7 +236,7 @@ class executable(object):
             options["stdout_logfile_maxbytes"] = "500000"
             options["stdout_logfile_backups"] = "10"
 
-            # Prevents supervisord from immediately restarting a process which executes quickly.
+            # Prevents supervisor from immediately restarting a process which executes quickly.
             if self.shortExecutionTime:
                 options["autorestart"] = "False"
                 options["startsecs"] = "0"
@@ -333,7 +333,7 @@ class executable(object):
             # If there are no PIDs, then we want to continue.
 
         # Add "nohup" if running in the background with the appropriate context
-        if self.supervisord is False:
+        if self.supervisor is False:
             if self.runInBackground is True:
                 self.args = ["nohup"] + self.args
 
@@ -473,6 +473,10 @@ class supervisor(executable):
     We don't need options for this executable. It is either going to be launched or it isn't.
 
     Note:
+        The overall program is called ``supervisor``, while the daemon is known as ``supervisord`` and the config
+        is stored in ``supervisord.conf``.
+
+    Note:
         Don't use ``run()`` for this executable. Instead, the setup and execution steps should be
         performed separately because the basic config is needed at the beginning, while the final execution
         is needed at the end.
@@ -482,8 +486,8 @@ class supervisor(executable):
         **kwargs (dict): Absorb extra arguments.
     """
     def __init__(self, *args, **kwargs):
-        name = "supervisord"
-        description = "Supervisord"
+        name = "supervisor"
+        description = "Supervisor"
         args = [
             "supervisorctl",
             "update",
@@ -495,14 +499,14 @@ class supervisor(executable):
                          config = {})
 
     def setup(self):
-        """ Setup required for the ``supervisord`` executable.
+        """ Setup required for the ``supervisor`` executable.
 
         In particular, we need to write out the main configuration.
         """
-        # Write to the supervisord config
+        # Write to the supervisor config
         filename = "supervisord.conf"
         if not os.path.exists(filename):
-            logger.info("Creating supervisord main config")
+            logger.info("Creating supervisor main config")
             # Write the main config
             config = ConfigParser()
             # Main supervisord configuration
@@ -518,7 +522,7 @@ class supervisor(executable):
             # Unix http server monitoring options
             config["unix_http_server"] = {
                 # Path to the socket file
-                "file": "/tmp/sockets/supervisor.sock",
+                "file": os.path.join("tmp", "sockets", "supervisor.sock"),
                 # Socket file mode (default 0700)
                 "chmod": "0700",
             }
@@ -538,11 +542,11 @@ class supervisor(executable):
             with open(filename, "w+") as f:
                 config.write(f)
         else:
-            logger.info("Supervisord config already exists - skipping creation.")
+            logger.info("Supervisor config already exists - skipping creation.")
 
     def run(self):
         """ We want to run in separate steps, so this function shouldn't be used. """
-        raise NotImplementedError("The supervisord executable should be run in multiple steps.")
+        raise NotImplementedError("The supervisor executable should be run in multiple steps.")
 
 class sshKnownHostsExecutable(executable):
     """ Create a SSH ``known_hosts`` file with the SSH address in the configuration.

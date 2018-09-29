@@ -304,7 +304,7 @@ def testSupervisorStartProcessWithLogs(setupStartProcessWithLog, setupBasicExecu
     mFile, mPopen, mConfigParserWrite = setupStartProcessWithLog
     # Setup executable
     executable, expected = setupBasicExecutable
-    executable.supervisord = True
+    executable.supervisor = True
     executable.setup()
 
     # Execute
@@ -342,7 +342,7 @@ def testRunExecutable(setupBasicExecutable, setupStartProcessWithLog, supervisor
     """
     executable, expected = setupBasicExecutable
     # Set supervisor state first, as everything else effectively depends on this.
-    executable.supervisord = supervisor
+    executable.supervisor = supervisor
     executable.runInBackground = runInBackground
     # Set execution state.
     executable.executeTask = executeTask
@@ -404,6 +404,14 @@ def testRunExecutableFailure(setupBasicExecutable, setupStartProcessWithLog, moc
     with pytest.raises(RuntimeError) as exceptionInfo:
         executable.run()
     assert "Failed to find the executed process" in exceptionInfo.value.args[0]
+
+def testSupervisor(loggingMixin, mocker):
+    """ Tests for the supervisor executable. """
+    assert False
+
+def testZMQReceiver(loggingMixin, mocker):
+    """ Tests for the ZMQ receiver and the underlying exectuables. """
+    assert False
 
 def testZODB(loggingMixin, mocker):
     """ Test for the ZODB executable. """
@@ -668,3 +676,7 @@ def testOverwatchExecutableProperties(loggingMixin, executableType, config, expe
         # We skip the gzip config contents because they're static
         mFile.assert_any_call(os.path.join("data", "config", "conf.d", "gzip.conf"), "w")
 
+def testMainDriverFunction(loggingMixin, mocker):
+    """ Test for the main driver function. """
+
+    assert False
