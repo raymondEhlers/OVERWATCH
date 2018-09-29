@@ -84,9 +84,9 @@ class executable(object):
         description (str): Description of the process for clearer display, etc.
         args (list): List of arguments used to start the process.
         config (dict): Configuration for the executable.
-        runInForeground (bool): True if the process should be run in the foreground. This means that process will
-            be blocking. Note that this option is not meaningful if supervisord is being used. Default: False.
         enabled (bool): True if the task should actually be executed.
+        runInBackground (bool): True if the process should be run in the background. This means that process will
+            not be blocking, but it shouldn't be used in conjunction with supervisor. Default: False.
     Attributes:
         name (str): Name of the process that we are starting. It doesn't need to be the executable name,
                 as it's just used for informational purposes.
@@ -103,8 +103,8 @@ class executable(object):
             need special options to ensure that it doesn't think that the executable failed immediately and should be
             restarted.
         logFilename (str): Filename for the log file. Default: ``{name}.log``.
-        runInForeground (bool): True if the process should be run in the foreground. This means that process will
-            be blocking. Note that this option is not meaningful if supervisord is being used. Default: ``False``.
+        runInBackground (bool): True if the process should be run in the background. This means that process will
+            not be blocking, but it shouldn't be used in conjunction with supervisor. Default: ``False``.
         executeTask (bool): Whether the executable should actually be executed. Set via the "enabled" field of
             the config. Default: ``False``.
     """
@@ -123,7 +123,7 @@ class executable(object):
         # Additional options
         self.shortExecutionTime = False
         self.logFilename = "{name}.log".format(name = self.name)
-        self.runInForeground = self.config.get("runInForeground", False)
+        self.runInBackground = self.config.get("runInBackground", False)
         self.executeTask = self.config.get("enabled", False)
 
     def getProcessPID(self):
@@ -292,18 +292,17 @@ class executable(object):
     def run(self):
         """ Driver function for running executables.
 
-        The options that are executed here depend heavily on the provided YAML config.
-        TODO: Document options here...
+        It sets up the executable, determines if it should be executed, kills existing processes if necessary,
+        allows them to run in the background, executes the process, and then checks if it started successfully.
 
         Args:
             None.
         Returns:
-            bool: True if the process was started, or False if the process was not start for some reason (such as
-                the task execution was not enabled, the process already exists, etc).
+            bool: True if the process was started, or False if the process was not start for some expected reason
+                (such as the task execution was not enabled, the process already exists, etc). If it failed in a
+                manner that is not acceptable, it will raise an exception.
 
         Raises:
-            ValueError: If attempting to launch the process with supervisor and also trying to run in the
-                foreground (which are incompatible options).
             RuntimeError: If the started process doesn't appear to have launched successfully.
         """
         # Handle configuration, etc.
@@ -314,30 +313,24 @@ class executable(object):
             return False
 
         # Check for existing process
-        # TODO: Maybe only do this sometimes??
-        #if config.get("forceRestart", False) or receiverConfig.get("forceRestartTunnel", False):
         if self.config.get("forceRestart", False):
             self.killExistingProcess()
         else:
             if self.getProcessPID():
                 logger.info("Process {name} is already running and no restart was requested, so there is nothing else to do.".format(name = self.name))
                 return False
+            # If there are no PIDs, then we want to continue.
 
-        # Check that we have a valid execution state.
-        if self.supervisord is True and self.config["foreground"] is True:
-            raise ValueError("Cannot run a foreground process with supervisor.")
-
-        # If we are not using supervisord and we want to launch multiple process, they must be
-        # launched with `nohup` so they run in the background.
-        if self.supervisord is False or self.config["foreground"] is True:
-            self.args = ["nohup"] + self.args
+        # Add "nohup" if running in the background with the appropriate context
+        if self.supervisord is False:
+            if self.runInBackground is True:
+                self.args = ["nohup"] + self.args
 
         # Actually execute the process
         process = self.startProcessWithLog()
 
         # Check the output to see if we've succeeded. If it was executed (ie. we are not using ``supervisord``),
         # process is not None, so we can use that as a proxy for whether to check for successful execution.
-        # TODO: Maybe only do this sometimes?? Set via config?
         if process and self.shortExecutionTime is False:
             logger.info("Check that the {name} executable launched successfully...".format(name = self.name))
             time.sleep(1.5)

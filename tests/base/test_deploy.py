@@ -215,18 +215,38 @@ def testFailedKillingProces(setupKillProcess):
     # We don't need to check the exact message.
     assert "found PIDs {PIDs} after killing the processes.".format(PIDs = pidsToKill) in exceptionInfo.value.args[0]
 
-def testStandardStartProcessWithLogs(setupBasicExecutable, mocker):
-    """ Tests for starting a process with logs in the standard manner ("Popen"). """
-    # Setup executable
-    executable, expected = setupBasicExecutable
-    executable.setup()
+@pytest.fixture
+def setupStartProcessWithLog(setupBasicExecutable, mocker):
+    """ Setup required for testing startProcessWithLog.
 
+    It mocks:
+
+    - Writing a ConfigParser configuration
+    - ``subprocess.Popen``
+    - Opening files
+    """
+    # For standard processes
     # Mock the subprocess command
     mPopen = mocker.MagicMock(return_value = "Fake value")
     mocker.patch("overwatch.base.deploy.subprocess.Popen", mPopen)
-    # Mock opening the log file
+    # For supervisor processes
+    # Mock write with the config parser
+    mConfigParserWrite = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.ConfigParser.write", mConfigParserWrite)
+    # Shared by both
+    # Mock opening the log or config file
     mFile = mocker.mock_open()
     mocker.patch("overwatch.base.deploy.open", mFile)
+
+    return mFile, mPopen, mConfigParserWrite
+
+def testStandardStartProcessWithLogs(setupStartProcessWithLog, setupBasicExecutable):
+    """ Tests for starting a process with logs in the standard manner ("Popen"). """
+    # Setup mocks
+    mFile, mPopen, mConfigParserWrite = setupStartProcessWithLog
+    # Setup executable
+    executable, expected = setupBasicExecutable
+    executable.setup()
 
     # Execute
     process = executable.startProcessWithLog()
@@ -238,41 +258,43 @@ def testStandardStartProcessWithLogs(setupBasicExecutable, mocker):
     # No need to actually mock up a subprocess.Popen class object.
     assert process == "Fake value"
 
-def testSupervisorStartProcessWithLogs(setupBasicExecutable, mocker):
+def testSupervisorStartProcessWithLogs(setupStartProcessWithLog, setupBasicExecutable):
     """ Tests for starting a process with logs in supervisor. """
+    # Setup mocks
+    mFile, mPopen, mConfigParserWrite = setupStartProcessWithLog
     # Setup executable
     executable, expected = setupBasicExecutable
     executable.supervisord = True
     executable.setup()
 
-    # Mock opening the log file
-    mFile = mocker.mock_open()
-    mocker.patch("overwatch.base.deploy.open", mFile)
-    # Mock write with the config parser
-    mConfigParserWrite = mocker.MagicMock()
-    mocker.patch("overwatch.base.deploy.ConfigParser.write", mConfigParserWrite)
-
     # Execute
-    executable.startProcessWithLog()
+    process = executable.startProcessWithLog()
 
     mFile.assert_called_once_with("supervisord.conf", "a")
     # We don't check the output itself because that would basically be testing ConfigParser, which isn't our goal.
     mConfigParserWrite.assert_called_once_with(mFile())
 
-@pytest.mark.parametrize("supervisor", [
-    False,
-    True,
-    ], ids = ["Standard process", "Supervisor"])
-@pytest.mark.parametrize("executeTask, shortExectuableTime", [
+    assert process is None
+
+@pytest.mark.parametrize("supervisor, runInBackground", [
+    (False, False),
+    (False, True),
+    (True, False),
+    ], ids = ["Standard process", "Standard process run in background", "Supervisor"])
+@pytest.mark.parametrize("executeTask, shortExecutionTime", [
     (False, False),
     (True, False),
     (True, True)
     ], ids = ["No execute task", "Execute task", "Execute with short executable time"])
 @pytest.mark.parametrize("forceRestart", [
     False,
-    True
+    True,
     ], ids = ["No force restart", "Force restart"])
-def testRunExecutable(setupBasicExecutable, supervisor, executeTask, shortExectuableTime, forceRestart, mocker):
+@pytest.mark.parametrize("returnProcessPID", [
+    False,
+    True,
+    ], ids = ["Do not return process PID", "Return process PID"])
+def testRunExecutable(setupBasicExecutable, setupStartProcessWithLog, supervisor, runInBackground, executeTask, shortExecutionTime, forceRestart, returnProcessPID, mocker):
     """ Test running an executable from start to finish.
 
     Note:
@@ -280,34 +302,68 @@ def testRunExecutable(setupBasicExecutable, supervisor, executeTask, shortExectu
     """
     executable, expected = setupBasicExecutable
     # Set supervisor state first, as everything else effectively depends on this.
-    executable.supervisor = supervisor
+    executable.supervisord = supervisor
+    executable.runInBackground = runInBackground
     # Set execution state.
     executable.executeTask = executeTask
-    executable.shortExectuableTime = shortExectuableTime
+    executable.shortExecutionTime = shortExecutionTime
     # Force restart.
     executable.config["forceRestart"] = forceRestart
 
+    # Speed use the tests by avoiding actually sleeping.
+    mSleep = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.time.sleep", mSleep)
     # Mock all of the relevant class methods
     mGetProcessPID = mocker.MagicMock(return_value = [1234567])
+    # Ensure that we hit the branch where we do not force restart and we find no processes.
+    if forceRestart is False:
+        if returnProcessPID is True:
+            # Continue returning a value as normal
+            pass
+        else:
+            mGetProcessPID.return_value = None
+            mGetProcessPID.side_effect = [[], [1234567]]
     mocker.patch("overwatch.base.deploy.executable.getProcessPID", mGetProcessPID)
     mKillExistingProcess = mocker.MagicMock(return_value = 1)
     mocker.patch("overwatch.base.deploy.executable.killExistingProcess", mKillExistingProcess)
-    mStartProcessWithLog = mocker.MagicMock(return_value = None if supervisor else "fake return value")
-    mocker.patch("overwatch.base.deploy.executable.startProcessWithLog", mStartProcessWithLog)
+    # Mocks relevant to startProcessWithLog
+    mFile, mPopen, mConfigParserWrite = setupStartProcessWithLog
 
+    # Run the executable to start the actual test
     result = executable.run()
 
     # We won't launch a process if executeTask is False or if we don't forceRestart
-    # (since the mock returns values as if the process exists).
-    expectedResult = False if (executeTask is False or forceRestart is False) else True
+    # (since the mock returns PID values as if the process exists).
+    expectedResult = False if (executeTask is False or (forceRestart is False and executeTask is False ) or (forceRestart is False and returnProcessPID is True)) else True
     # Check the basic result
     assert result == expectedResult
 
     # Now check the details
+    if result and runInBackground:
+        assert executable.args[0] == "nohup"
 
-def testRunExecutableFailures(setupBasicExecutable):
-    """ Test failure modes of run executable. """
-    assert False
+def testRunExecutableFailure(setupBasicExecutable, setupStartProcessWithLog, mocker):
+    """ Test failure of run executable when the process doesn't start. """
+    # Ensure that the executable actually executes
+    executable, expected = setupBasicExecutable
+    executable.executeTask = True
+
+    # Speed use the tests by avoiding actually sleeping.
+    mSleep = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.time.sleep", mSleep)
+    # Mock all of the relevant class methods
+    mGetProcessPID = mocker.MagicMock(return_value = [])
+    # Ensure that we hit the branch where we do not force restart and we find no processes.
+    mocker.patch("overwatch.base.deploy.executable.getProcessPID", mGetProcessPID)
+    mKillExistingProcess = mocker.MagicMock(return_value = 1)
+    mocker.patch("overwatch.base.deploy.executable.killExistingProcess", mKillExistingProcess)
+    # Mocks relevant to startProcessWithLog
+    mFile, mPopen, mConfigParserWrite = setupStartProcessWithLog
+
+    # Run the executable to start the actual test
+    with pytest.raises(RuntimeError) as exceptionInfo:
+        result = executable.run()
+    assert "Failed to find the executed process" in exceptionInfo.value.args[0]
 
 @pytest.fixture
 def setupOverwatchExecutable(loggingMixin):
