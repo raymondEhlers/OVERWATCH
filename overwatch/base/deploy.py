@@ -17,6 +17,14 @@ It can handle the configuration and execution of:
 It can also handle receiving SSH Keys and grid certificates passed in via
 environment variables.
 
+Various classes of files are stored in specific locations. In particular,
+
+- socket files are stored in "/tmp/sockets".
+- config files are stored in "data/config" (except for those which must be
+  in the current folder, such as the supervisor config, or the overwatch
+  custom config).
+- log files are in "data/logs".
+
 Usually, this module is executed directly in docker containers. All options
 are configured via a YAML file.
 
@@ -357,6 +365,9 @@ class sshKnownHostsExecutable(executable):
 
     Args:
         config (dict): Configuration for the executable.
+        enabled (bool): True if the task should actually be executed.
+        runInBackground (bool): True if the process should be run in the background. This means that process will
+            not be blocking, but it shouldn't be used in conjunction with supervisor. Default: False.
         port (int): SSH connection port.
         address (str): SSH connection address.
 
@@ -406,6 +417,9 @@ class autossh(executable):
 
     Args:
         config (dict): Configuration for the executable.
+        enabled (bool): True if the task should actually be executed.
+        runInBackground (bool): True if the process should be run in the background. This means that process will
+            not be blocking, but it shouldn't be used in conjunction with supervisor. Default: False.
         localPort (int): Port where the HLT data should be made available on the local system.
         hltPort (int): Port where the HLT data is available on the remote system.
         port (int): SSH connection port.
@@ -453,6 +467,9 @@ class zmqReceiver(executable):
 
     Args:
         config (dict): Configuration for the executable.
+        enabled (bool): True if the task should actually be executed.
+        runInBackground (bool): True if the process should be run in the background. This means that process will
+            not be blocking, but it shouldn't be used in conjunction with supervisor. Default: False.
         receiver (str): Three letter subsystem name. For example, ``EMC``.
         localPort (int): Port where the HLT data should be made available on the local system.
         dataPath (str): Path to where the data should be stored.
@@ -542,6 +559,9 @@ class zodb(executable):
 
     Args:
         config (dict): Configuration for the executable.
+        enabled (bool): True if the task should actually be executed.
+        runInBackground (bool): True if the process should be run in the background. This means that process will
+            not be blocking, but it shouldn't be used in conjunction with supervisor. Default: False.
         address (str): IP address for the database.
         port (int): Port for the database.
         databasePath (str): Path to where the database file should be stored.
@@ -672,9 +692,13 @@ class overwatchFlaskExecutable(overwatchExecutable):
 
     Used for starting the web app and the DQM receiver - both of these are flask based.
 
-    In the config, it looks for:
+    Note:
+        All args are specified in the config.
 
-    - additionalConfig (dict): Additional options to added to the YAML configuration.
+    Args:
+        additionalConfig (dict): Additional options to added to the YAML configuration.
+        uwsgi (dict): Additional options for ``uwsgi``. See the ``uwsgi`` executable class for more details.
+        nginx (dict): Additional options for ``nginx``. See the ``nginx`` executable class for more details.
     """
     def setup(self):
         """ Setup required for an Overwatch flask executable.
@@ -682,9 +706,6 @@ class overwatchFlaskExecutable(overwatchExecutable):
         In particular, we write any passed custom configuration options out to an Overwatch YAML config file,
         as well as potentially setup ``uwsgi`` and/or setup and run ``nginx``.
         """
-        # Write custom configuration for the overwatch executable.
-        self.writeCustomConfig()
-
         # Create an underlying uwsgi app to handle the setup and execution.
         if "nginx" in self.config:
             if self.config["nginx"]["enabled"] is True:
@@ -694,7 +715,7 @@ class overwatchFlaskExecutable(overwatchExecutable):
         # Create an underlying uwsgi app to handle the setup and execution.
         self = uwsgi.createObject(self)
 
-        # We call this last here because we are going to update variables if we use uwsgi for execution.
+        # We call this last here because we are going to update variables if we use ``uwsgi`` for execution.
         super().setup()
 
 class supervisor(executable):
@@ -718,6 +739,7 @@ class supervisor(executable):
             "supervisorctl",
             "update",
         ]
+        # We don't want any additional config, so we specify it as empty here.
         super().__init__(name = name,
                          description = description,
                          args = args,
@@ -875,7 +897,12 @@ class uwsgi(executable):
     """ Start a ``uwsgi`` executable.
 
     Note:
-        We take the default initialization from the base class.
+        Arguments after ``config`` are values which are specified in the config.
+
+    Args:
+        name (str): Name of the uwsgi web app. Should be unique, but without spaces!
+        module (str): Module (ie import) path for the web app. For example, ``overwatch.webApp.run``. All
+            Overwatch packages should have a run module. Note that this **will not** run the development server.
     """
     @classmethod
     def createObject(cls, obj):
@@ -911,33 +938,37 @@ class uwsgi(executable):
         # We want to return the object one way or another.
         return obj
 
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        # Basic setup
+        self.configFilename = "{name}.yaml".format(name = self.name)
+        self.args = [
+            "uwsgi",
+            "--yaml",
+            self.configFilename,
+        ]
+
     def setup(self):
         """ Setup required for executing a web app via ``uwsgi``.
 
         Raises:
-            KeyError: If ``wsgi-file`` or ``module`` is not specific in the configuration, such that the ``uwsgi``
-                executable cannot not be defined.
+            ValueError: If there is a space in the name. This is not allowed.
+            KeyError: If ``module`` is not specific in the configuration, such that the ``uwsgi`` config
+                cannot not be defined.
         """
-        filename = "{name}.yaml".format(name = self.name)
-        self.args = [
-            "uwsgi",
-            "--yaml",
-            filename,
-        ]
-
-        # Once we have the arguments defined, we can move setup the base class.
+        # Setup the base class
         super().setup()
 
-        # Define the uwsgi config
-        if "wsgi-file" not in self.config and "module" not in self.config:
-            raise KeyError('Must pass either "wsgi-file" or "module" in the uwsgi configuration!'
-                           '"wsgi-file" corresponds to a path to a python file which contains the app.'
-                           '"module" is the python module path to a module containing the app.')
+        # Check to ensure that there is no whitespace in the name!
+        # Check after setup to ensure that the formatting didn't introduce any spaces.
+        if " " in self.name:
+            raise ValueError("There is a space in the uwsgi name! This is not allowed.")
 
+        # Define the uwsgi config
         # This is the base configuration which sets the default values
         uwsgiConfig = {
             # Socket setup
-            "socket": "/tmp/sockets/wsgi_{name}.sock",
+            # The rest of the config is completed below
             "vacuum": True,
             # Stats
             "stats": "/tmp/sockets/wsgi_{name}_stats.sock",
@@ -962,6 +993,21 @@ class uwsgi(executable):
             "master-fifo": "wsgiMasterFifo{name}",
         }
 
+        # Determine how call the web app. "wsgi-file" is the path to a python file, while
+        # "module" is the route to a python module. Since Overwatch is packaged, we should
+        # always use "overwatch.*.run".
+        if "module" not in self.config:
+            raise KeyError('Must pass either "module" in the uwsgi configuration!, where "module" corresponds to the import path to the module.')
+        else:
+            uwsgiConfig["module"] = self.config["module"]
+
+        if "unixSocket" in self.config:
+            uwsgiConfig["uwsgi-socket"] = "/tmp/sockets/wsgi_{name}.sock"
+        else:
+            # We usually take the http socket to simplify docker configuration
+            # The performance hit is small, so we won't worry about it.
+            uwsgiConfig["http-socket"] = self.config["address"]
+
         # Add the custom configuration into the default configuration defined above
         # Just in case "enabled" was stored in the config, remove it now so it's not added to the uwsgi config
         self.config.pop("enabled", None)
@@ -985,14 +1031,14 @@ class uwsgi(executable):
         """ This should only be used to help configure another executable. """
         raise NotImplementedError("The uwsgi object should not be run directly.")
 
-class enviornmentVariables():
-    pass
-
 class environment(executable):
     """ Setup and create the necessary environment for execution.
 
-    Args:
+    Note:
+        Arguments after ``config`` are values which will be used for formatting and are required in the config.
 
+    Args:
+        config (dict): Configuration for the executable.
     """
     def __init__(self, config):
         name = "environment"
