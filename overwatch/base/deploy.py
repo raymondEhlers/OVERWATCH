@@ -509,8 +509,8 @@ class supervisor(executable):
             config["supervisord"] = {
                 "nodaemon": True,
                 # Take advantage of the overwatch data directory.
-                "logfile": "data/logs/supervisord.log",
-                "childlogdir": "data/logs",
+                "logfile": os.path.join("data", "logs", "supervisord.log"),
+                "childlogdir": os.path.join("data", "logs"),
                 # 5 MB log file with 10 backup files
                 "logfile_maxbytes": 5000000,
                 "logfile_backups": 10,
@@ -757,21 +757,15 @@ class zodb(executable):
         address (str): IP address for the database.
         port (int): Port for the database.
         databasePath (str): Path to where the database file should be stored.
-        logFile (str): Filename and full path to the log file.
-        logFormat (str): Format of the log. Default: "%(asctime)s %(message)s"
     """
     def __init__(self, config):
-        # TODO: Can we remove the log file here and just handle the log in supervisord?
         name = "zodb"
         description = "ZODB database"
-        self.configFilename = "data/config/database.conf"
+        self.configFilename = os.path.join("data", "config", "database.conf")
         args = [
             "runzeo",
             "-C {configFilename}".format(configFilename = self.configFilename),
         ]
-        # Set the default log format in the config if not specified.
-        if "logForamt" not in config:
-            config["logFormat"] = "%(asctime)s %(message)s"
         super().__init__(name = name,
                          description = description,
                          args = args,
@@ -786,19 +780,12 @@ class zodb(executable):
         # another module such as ``configparser`` to generate the config. Consequently, we just use a string.
         zeoConfig = """
         <zeo>
-            address {ipAddress}:{port}
+            address {address}:{port}
         </zeo>
 
         <filestorage>
             path {databasePath}
         </filestorage>
-
-        <eventlog>
-            <logfile>
-                path {logFile}
-                format {logFormat}
-            </logfile>
-        </eventlog>
         """
         # Fill in the values.
         zeoConfig = zeoConfig.format(**self.config)
@@ -971,12 +958,17 @@ class uwsgi(executable):
             # Stats
             "stats": "/tmp/sockets/wsgi_{name}_stats.sock",
 
-            # Setup
+            # Setup the working directory
             "chdir": "/opt/overwatch",
 
             # App
             # Need either wsgi-file or module!
             "callable": "app",
+
+            # Load code into each worker instead of the master to help with ZODB locks
+            # See: https://uwsgi-docs.readthedocs.io/en/latest/ThingsToKnow.html
+            #  and https://stackoverflow.com/questions/14499594/zeo-deadlocks-on-uwsgi-in-master-mode
+            "lazy-apps": True,
 
             # Instances
             # Number of processes

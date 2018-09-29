@@ -405,6 +405,37 @@ def testRunExecutableFailure(setupBasicExecutable, setupStartProcessWithLog, moc
         executable.run()
     assert "Failed to find the executed process" in exceptionInfo.value.args[0]
 
+def testZODB(loggingMixin, mocker):
+    """ Test for the ZODB executable. """
+    config = {
+        "address": "127.0.0.1",
+        "port": 12345,
+        "databasePath": "data/overwatch.fs",
+    }
+    executable = deploy.retrieveExecutable("zodb")(config = config)
+
+    # Mock opening the file
+    mFile = mocker.mock_open()
+    mocker.patch("overwatch.base.deploy.open", mFile)
+    executable.setup()
+
+    # Determine expected values
+    expected = """
+    <zeo>
+        address {address}:{port}
+    </zeo>
+
+    <filestorage>
+        path {databasePath}
+    </filestorage>
+    """
+    # Fill in the values.
+    expected = expected.format(**config)
+    expected = inspect.cleandoc(expected)
+
+    mFile.assert_called_once_with(executable.configFilename, "w")
+    mFile().write.assert_called_once_with(expected)
+
 @pytest.fixture
 def setupOverwatchExecutable(loggingMixin):
     """ Setup basic Overwatch executable for testing.
@@ -599,6 +630,7 @@ def testOverwatchExecutableProperties(loggingMixin, executableType, config, expe
             "http-socket": "127.0.0.1:8850",
             "module": "overwatch.webApp.run",
             "callable": "app",
+            "lazy-apps": True,
             "processes": 4,
             "threads": 2,
             "cheaper": 2,
