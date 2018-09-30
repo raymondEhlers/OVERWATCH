@@ -54,7 +54,9 @@ def testFindAvailableRunPages(loggingMixin, yamlConfigForParsingPlugins):
     # Use pkg_resources to make sure we don't end up with the wrong resources (and to ensure that the tests
     # are cwd independent).
     expected = [name for name in pkg_resources.resource_listdir("overwatch.webApp", "templates") if "runPage" in name]
-    assert parameters["runPageTemplates"] == expected
+    # Apparently the order of these lists can vary between different systems. We don't care about the order
+    # - just the values themselves - so we compare them as sets, which don't depend on order.
+    assert set(parameters["runPageTemplates"]) == set(expected)
 
 def testBcrypt(loggingMixin, yamlConfigForParsingPlugins):
     """ Tests for using bcrypt to setup users. """
@@ -96,7 +98,7 @@ def testReadConfig(loggingMixin, configType, configTypeString):
         configTypeForReadingConfig = configType.name
     (parameters, filesRead) = config.readConfig(configTypeForReadingConfig)
 
-    filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), "testFiles", "{}ConfigRef.txt".format(configType.name))
+    filename = os.path.join(os.path.dirname(os.path.realpath(__file__)), "configTestFiles", "{}ConfigRef.yaml".format(configType.name))
 
     # We need to treat whether the file exists with a bit of care.
     # NOTE: Since the parametization causes this to run mulitple times, some will pass and
@@ -122,6 +124,14 @@ def testReadConfig(loggingMixin, configType, configTypeString):
     if paramUsers:
         for k, v in iteritems(paramUsers):
             assert v[:lengthToCheck] == expectedUsers[k][:lengthToCheck]
+
+    # Apparently the order of these lists can vary between different systems. We don't care about the order
+    # - just the values themselves - so we compare them as sets, which don't depend on order.
+    paramTemplates = parameters.pop("availableRunPageTemplates", None)
+    expectedTemplates = expected.pop("availableRunPageTemplates", None)
+    # It won't always exist, so we need to check for it first.
+    if paramTemplates:
+        assert set(paramTemplates) == set(expectedTemplates)
 
     # Everything else should be identical.
     assert parameters == expected

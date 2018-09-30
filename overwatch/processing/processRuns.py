@@ -248,7 +248,7 @@ def processTrending(outputFormatting, trending, processingOptions = None):
     logger.debug("trending.trendingObjects: {}".format(trending.trendingObjects["TPC"]))
     for subsystemName, subsystem in iteritems(trending.trendingObjects):
         logger.debug("{}: subsystem from trending: {}".format(subsystemName, subsystem))
-        for name, trendingObject in iteritems(subsystem):
+        for trendingObject in itervalues(subsystem):
             hist = trendingObject.hist
             hist.retrieveHistogram(trending = trending, ROOT = ROOT)
             logger.debug("trendingObject: {}, hist: {}, hist.histName: {}, hist.hist: {}".format(trendingObject, hist, hist.histName, hist.hist))
@@ -562,7 +562,7 @@ def processTimeSlices(runs, runDir, minTimeRequested, maxTimeRequested, subsyste
             in the ``subsystemContainer.timeSlices`` dictionary. If an error was encountered, we return an error
             dictionary in the proper format.
     """
-    logger.info("Processing time slice for {runDir}".format(runDir))
+    logger.info("Processing time slice for {runDir}".format(runDir = runDir))
 
     # Load run information and subsystem
     if runDir in runs:
@@ -590,9 +590,9 @@ def processTimeSlices(runs, runDir, minTimeRequested, maxTimeRequested, subsyste
     # Merge the files that are included in the time slice.
     # Return if there were errors in merging
     try:
-        errors = mergeFiles.merge(processingParameters["dirPrefix"], run, subsystem,
-                                  cumulativeMode = processingParameters["cumulativeMode"],
-                                  timeSlice = timeSlice)
+        mergeFiles.merge(processingParameters["dirPrefix"], run, subsystem,
+                         cumulativeMode = processingParameters["cumulativeMode"],
+                         timeSlice = timeSlice)
     except ValueError as e:
         # Return the merge error to the user.
         # We want to return a list, so we just return all of the args.
@@ -867,7 +867,7 @@ def processAllRuns():
 
                 logger.info("Creating subsystem {subsystem} in {runDir}".format(subsystem = subsystem, runDir = runDir))
                 # Retrieve the files for a given subsystem directory.
-                [filenamesDict, runLength] = utilities.createFileDictionary(processingParameters["dirPrefix"], runDir, fileLocationSubsystem)
+                [filenamesDict, _] = utilities.createFileDictionary(processingParameters["dirPrefix"], runDir, fileLocationSubsystem)
                 # We want them to be ordered by time stamp.
                 sortedKeys = sorted(filenamesDict.keys())
                 # Extract information necessary for creating the subsystem.
@@ -996,11 +996,6 @@ def processAllRuns():
         transaction.commit()
 
     logger.info("Finished trending processing!")
-
-    # Send data via `rsync` (if necessary)
-    if processingParameters["sendData"]:
-        logger.info("Preparing to send data")
-        utilities.rsyncData(processingParameters["dirPrefix"], processingParameters["remoteUsername"], processingParameters["remoteSystems"], processingParameters["remoteFileLocations"])
 
     # Update receiver last modified time if the log exists
     # This allows to keep track of when we last processed a new file.

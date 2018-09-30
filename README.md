@@ -4,6 +4,7 @@
 
 [![DOI](https://zenodo.org/badge/50686415.svg)](https://zenodo.org/badge/latestdoi/50686415)
 [![Documentation Status](https://readthedocs.org/projects/overwatch/badge/?version=latest)](https://overwatch.readthedocs.io/en/latest/?badge=latest)
+[![Build Status](https://travis-ci.org/raymondEhlers/OVERWATCH.svg?branch=master)](https://travis-ci.org/raymondEhlers/OVERWATCH)
 
 Welcome to ALICE Overwatch[\*](#name-meaning), a project to provide real-time online data monitoring and
 quality assurance using timestamped data from the ALICE High Level Trigger (HLT) and Data Quality Monitoring (DQM).
@@ -37,7 +38,7 @@ that you will likely want to use this image interactively (-it) and may want to 
 are done (--rm). If the data is in a folder called `data`, it should look something like:
 
 ```bash
-$ docker run -it --rm -v data:/overwatch/data rehlers/overwatch /bin/bash
+$ docker run -it --rm -v data:/overwatch/data rehlers/overwatch:latest-py3.6.6 /bin/bash
 ```
 
 ### Installation only for running Overwatch

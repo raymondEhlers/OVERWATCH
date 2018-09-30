@@ -5,12 +5,17 @@ availableRunPageTemplates: [runPage.html, runPageDrawer.html, runPageMainContent
 basePath: ''
 cumulativeMode: true
 dataFolder: data
+dataHandlingTimeToSleep: 20
+dataTransferLocations: {EOS: /eos/experiment/alice/overwatch/, site1: ''}
+dataTransferRetries: 2
 databaseLocation: file://data/overwatch.fs
 debug: false
 defaultUsername: ''
 dirPrefix: data
 docsBuildFolder: doc/build/html
 docsFolder: doc
+emailLogger: false
+emailLoggerAddresses: ['']
 fileExtension: png
 flaskAssetsDebug: null
 forceNewMerge: false
@@ -21,13 +26,10 @@ ipAddress: 127.0.0.1
 loggingLevel: INFO
 port: 8850
 protectedFolder: data
+receiverData: data
+receiverDataTempStorage: data/tempStorage
 receiverIP: 127.0.0.1
 receiverPort: 8080
-remoteFileLocations:
-  data: [/opt/www/aliceoverwatch/data/]
-remoteSystems: [aliceoverwatch.physics.yale.edu]
-remoteUsername: ''
-sendData: false
 staticFolder: static
 staticURLPath: /static
 statusRequestSites: {null: null}

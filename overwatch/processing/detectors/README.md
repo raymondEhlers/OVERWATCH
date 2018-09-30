@@ -42,7 +42,7 @@ runContainer (Run 3) ->
             histogramContainer (histF)
 ```
 
-This structure will be generated through the plug-in functionality described below. 
+This structure will be generated through the plug-in functionality described below.
 
 In general, there are two modes of operation:
 
@@ -460,7 +460,7 @@ For a full example of how to determine the functions to apply to particular hist
 `overwatch.processing.detectors.EMC.findFunctionsForEMCHistogram`. For a full example of a processing
 function, see `overwatch.processing.detectors.EMC.generalOptionsRequiringUnderlyingObjects`.
 
-## Trending 
+## Trending
 
 The trending framework is based on a thin wrapper around the framework being implemented for the ALICE O2
 project. This allows the development and investigation of the trending framework while still in Run 2.
@@ -530,7 +530,7 @@ This list can by looking at the histograms that are available in the test data. 
     KEY: TH2F     EMCTRQA_histAmpEdgePosEMCL0Online;1     Integrated amplitude EMCL0 patch Online
     KEY: TH2F     EMCTRQA_histAmpEdgePosEMCL0Recalc;1     Integrated amplitude EMCL0 patch Recalc
     KEY: TH1F     EMCTRQA_histEvents;1    				  Number of events
-    # Trigger patch max edge value 
+    # Trigger patch max edge value
     KEY: TH2F     EMCTRQA_histMaxEdgePosEMCGAHOffline;1   Edge Position Max EMCGAH patch Offline
     KEY: TH2F     EMCTRQA_histMaxEdgePosEMCGAHOnline;1    Edge Position Max EMCGAH patch Online
     KEY: TH2F     EMCTRQA_histMaxEdgePosEMCGAHRecalc;1    Edge Position Max EMCGAH patch Recalc

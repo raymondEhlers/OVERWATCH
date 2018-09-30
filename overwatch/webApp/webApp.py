@@ -39,6 +39,9 @@ from flask_zodb import ZODB
 from flask_assets import Environment
 from flask_wtf.csrf import CSRFProtect, CSRFError
 
+import sentry_sdk
+from sentry_sdk.integrations.flask import FlaskIntegration
+
 # Server configuration
 from ..base import config
 (serverParameters, filesRead) = config.readConfig(config.configurationType.webApp)
@@ -141,6 +144,10 @@ def load_user(user):
             ``None`` if it doesn't exist.
     """
     return auth.User.getUser(user, db)
+
+# Sentry for monitoring errors and other issues.
+# Note that if SENTRY_DSN is not set, it simply won't activated.
+sentry_sdk.init(dsn = os.getenv("SENTRY_DSN"), integrations = [FlaskIntegration()])
 
 ######################################################################################################
 # Unauthenticated Routes

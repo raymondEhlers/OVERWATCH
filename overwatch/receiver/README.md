@@ -1,7 +1,7 @@
 # DQM Receiver package details
 
 This package serves as a compliment to the ZMQ receiver built in `c++` to receive files from the HLT. It
-provides a route for files to be shared from ALICE Data Quality Monitoring (DQM) to Overwatch. 
+provides a route for files to be shared from ALICE Data Quality Monitoring (DQM) to Overwatch.
 
 In particular, it provides a REST interface for sending files to Overwatch, which are then processed similarly
 to files from the ZMQ receiver. Note that in the case of the ZMQ receiver, it makes explicit requests via ZMQ
@@ -10,7 +10,7 @@ files via the REST API. In summary, the ZMQ receiver pulls, while data is pushed
 
 ## Receiver API
 
-The receiver can receive files from the DQM system, as well list the files that it received. 
+The receiver can receive files from the DQM system, as well list the files that it received.
 
 ### Send and list files
 
@@ -33,7 +33,7 @@ The receiver can receive files from the DQM system, as well list the files that 
     - `runNumber=[int]`. The run number.
     - `timeStamp=[int]`. The time stamp in unix time.
     - `amoreAgent=[str]`. The name of the AMORE agent of the file being sent.
-    - `dataStatus=[int]`. The status of the data taking. `1` for start of a set of data, `2` for the end of data, and 0 (or not set) for somewhere in the middle. 
+    - `dataStatus=[int]`. The status of the data taking. `1` for start of a set of data, `2` for the end of data, and 0 (or not set) for somewhere in the middle.
     - `token=[str]`. Token to identify the sender.
 
 - **Data Parameters**
@@ -47,7 +47,7 @@ The receiver can receive files from the DQM system, as well list the files that 
 
     - **Code:** 200 <br />
       **Content:** `{ "files" : ["exampleFilename1.root", "exampleFilename2.root", ...] }`
-    
+
     POST Request:
 
     - **Code:** 200 <br />
@@ -83,7 +83,7 @@ The receiver can receive files from the DQM system, as well list the files that 
 
     - Payload errors: <br />
       **Code:** 400 <br />
-      **Content:** 
+      **Content:**
       ```
       {
           "status" : 400,
@@ -131,7 +131,7 @@ The receiver can receive files from the DQM system, as well list the files that 
 - **Success Response**
 
     - `application/octet-stream` of the actual file.
- 
+
 - **Error Response**
 
     - Token errors: <br />

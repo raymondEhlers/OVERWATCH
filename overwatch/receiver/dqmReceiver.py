@@ -166,7 +166,7 @@ def dqm():
     if request.method == "GET":
         # We use upper on the filename so that "DQM" will always match, regardless of the case in the file.
         # "DQM" is unique enough in English that we don't need to worry about this matching unrelated files.
-        availableFiles = [f for f in os.listdir(receiverParameters["dataFolder"]) if os.path.isfile(os.path.join(receiverParameters["dataFolder"], f) and "DQM" in f.upper())]
+        availableFiles = [f for f in os.listdir(receiverParameters["dataFolder"]) if os.path.isfile(os.path.join(receiverParameters["dataFolder"], f)) and "DQM" in f.upper()]
         response["files"] = availableFiles
         resp = jsonify(response)
         resp.status_code = 200

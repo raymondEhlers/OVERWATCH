@@ -77,6 +77,8 @@ setup(
             "overwatchDeploy = overwatch.base.deploy:run",
             # Utility script to update the database users
             "overwatchUpdateUsers = overwatch.base.updateDBUsers:updateDBUsers",
+            # Reciever data handling script
+            "overwatchReceiverDataHandling = overwatch.base.run:runReceiverDataHandling",
         ],
     },
 
@@ -109,6 +111,8 @@ setup(
         "Flask-WTF",
         "requests",
         "uwsgi",
+        # Flask monitoring
+        "sentry-sdk[flask]",
     ],
 
     # Include additional files
@@ -119,6 +123,7 @@ setup(
             "pytest",
             "pytest-cov",
             "pytest-mock",
+            "coveralls",
         ],
         "docs": [
             "sphinx",
@@ -126,6 +131,9 @@ setup(
             "recommonmark",
             # Allow markdown tables to be used
             "sphinx_markdown_tables",
+        ],
+        "dev": [
+            "flake8",
         ]
     }
 )

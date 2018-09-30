@@ -92,13 +92,13 @@ Error handling is built into most routes, so errors will usually be handled seam
 
 Overwatch depends on `webassets` to deploy compiled and minimized files. In particular, the `js` is minimized,
 and `polymer-bundler` is employed to compile all of the polymer components into one minimized file to reduce
-the number of HTTP requests. 
+the number of HTTP requests.
 
 A few number of important notes on usage are below:
 
 - Most filters, including the `polymer-bundler` and `rjsmin` filters, won't build in debug mode!
 - Disable caching with the below lines. Put these lines in `overwatch.webApp.webApp` or `overewatch.webApp.run`.
-  It is useful for debugging: 
+  It is useful for debugging:
 
     ```python
     >>> assets.cache = False
@@ -115,10 +115,19 @@ A few number of important notes on usage are below:
   the `flaskAssetsDebug` field in the YAML configuration. This allows debug information to flow while still
   causing the filters to run.
 - Each Asset won't be built until first access of the particular file. Access the associated `urls` of the
-  asset to force it to built immediately (will still only be built if needed or forced by following the 
+  asset to force it to built immediately (will still only be built if needed or forced by following the
   debug procedure above).
 
     ```python
     >>> logger.debug(assets["polymerBundle"].urls())
     ```
 
+## Monitoring for errors
+
+It is important to monitor Overwatch for errors and other issues. For the web app, this monitoring is provided
+by `sentry`, which hooks into exceptions, logging, and other parts of the app to automatically provide alerts
+and information when issues occur.
+
+For successful monitoring, the environment must export the `DSN` as `export SENTRY_DSN=<value>`. The value
+will be some sort of unique URL. Note that this endpoint is for _all_ Overwatch monitoring, so be certain to
+check the traceback to determine the originating source of the issue.

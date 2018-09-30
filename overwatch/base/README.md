@@ -35,3 +35,35 @@ constructor plug-ins, see the documentation for functions within the `overwatch.
 `storageWrapper.py` is an idea for how files could be accessed through `XRootD` instead of needing to preside
 on the local disk. This would be particularly useful because we would then be able to take advantage of EOS
 directly. However, as of August 2018, this is still very much a work in progress and isn't fully operation.
+
+## Deployment system
+
+To facilitate configuring and launching tasks (particularly in docker containers), Overwatch includes a
+configuration and launching module. It is available as `overwatchDeploy`. To operate, it requires a YAML based
+config file. All executables inherit from the `executable` class. As of September 2018, it can execute:
+
+- Environment setup
+- `autossh` for SSH tunnels.
+- `ZODB` for the Overwatch Database
+- Overwatch ZMQ receiver
+- Overwatch receiver data transfer
+- Overwatch DQM receiver
+    - Via `uswgi`, `uwsgi` behind `nginx` or directly.
+- Overwatch processing
+- Overwatch web app
+    - Via `uswgi`, `uwsgi` behind `nginx` or directly.
+
+For a comprehensive set of options, see the docstrings of the module, as well as the reference
+configuration, `overwatch/base/deployReferenceConfig.yaml`. Note that all executable are disabled by default,
+so one may leave the configuration for all objects in a deployment configuration, and then just enable the
+parts that you want for a particular execution.
+
+## Monitoring for errors
+
+It is important to monitor Overwatch for errors and other issues. For the data transfer module, this
+monitoring is provided by `sentry`, which hooks into exceptions, logging, and other parts of the app to
+automatically provide alerts and information when issues occur.
+
+For successful monitoring, the environment must export the `DSN` as `export SENTRY_DSN=<value>`. The value
+will be some sort of unique URL. Note that this endpoint is for _all_ Overwatch monitoring, so be certain to
+check the traceback to determine the originating source of the issue.

@@ -1,0 +1,69 @@
+language: python
+matrix:
+    include:
+        # In addition to the base python version, we need the full python version to identify the docker images.
+        # It is defined as the DOCKER_PYTHON_VERSION because it may not be the same version as point release as
+        # used on Travis (ie 2.7.14 on Travis vs 2.7.15 in the docker image as of Sept 2018).
+        - python: 2.7
+          env: DOCKER_PYTHON_VERSION=2.7.15
+        # 3.7 doesn't run flake8 or other things cleanly at the moment.
+        - python: 3.6
+          env: DOCKER_PYTHON_VERSION=3.6.6
+sudo: required
+services:
+    - docker
+# Use cache with pip to save time.
+cache: pip
+before_install:
+    - docker pull rehlers/overwatch:latest-py${DOCKER_PYTHON_VERSION}
+    # Needed for ZODB python 3 compatibility
+    - if [[ "${DOCKER_PYTHON_VERSION}" == "3."* ]]; then pip install git+https://github.com/SpotlightKid/flask-zodb.git; fi
+install: pip install --upgrade -e .[tests,dev]
+before_script:
+    # Runs the tests in a docker container. Necessary because we can't install ROOT easily here.
+    - docker run -v ${PWD}:/opt/overwatch rehlers/overwatch:latest-py${DOCKER_PYTHON_VERSION} /bin/bash -c "pip install --upgrade -e .[tests,dev]; cd tests; pytest -l --cov=overwatch --cov-report html --cov-branch . --durations=5"
+    # Install polymer and jsRoot so it they will be avialable and included in a built package
+    # We can't easily install nodejs to install polymer and jsRoot, so instead, we extract it from the docker image.
+    # Yes, it's super hacky, but it seems to work, so why not?
+    - docker run -v ${PWD}/overwatch/webApp/static/:/opt/extractJS rehlers/overwatch:latest-py${DOCKER_PYTHON_VERSION} /bin/bash -c "cd overwatch/webApp/static && cp -r bower_components /opt/extractJS/. && cp -r jsRoot /opt/extractJS/."
+script:
+    # Since we ran the tests above, we just need to check code here.
+    - flake8 overwatch
+after_success:
+    # Information about test coverage
+    - coveralls
+    # Build the docker image
+    # This will work for both tags and standard buidls. The build is performed for PRs, but it won't be deplyoed.
+    # First, determine the Overwatch branch. If ${TRAVIS_BRANCH} is the same as ${TRAVIS_TAG}, then means that we're
+    # working with a tag and we should use the master branch (which won't be available under $TRAVIS_BRANCH because
+    # the branch is not available when building a tag). Otherwise, we just use $TRAVIS_BRANCH
+    - if [[ ${TRAVIS_BRANCH} == ${TRAVIS_TAG} ]]; then OVERWATCH_BRANCH="master"; else OVERWATCH_BRANCH=${TRAVIS_BRANCH}; fi
+    # NOTE: To be clear about what is done here, we set PYTHON_VERSION in the docker build to the variable
+    #       ${DOCKER_PYTHON_VERSION}.
+    - cd deploy/docker; docker build --build-arg PYTHON_VERSION=${DOCKER_PYTHON_VERSION} --build-arg OVERWATCH_BRANCH=${OVERWATCH_BRANCH} -f Dockerfile -t "${DOCKER_USERNAME}/overwatch:${TRAVIS_TAG:-latest}-py${DOCKER_PYTHON_VERSION}" .; cd -
+    # Print out to see if we've build it as expected.
+    - docker images
+before_deploy:
+    # Check for the required files and error out in case something when wrong.
+    # We only check for a few directories because if they exist, it is likely that everything worked.
+    - if [[ -d ${PWD}/overwatch/webApp/static/jsRoot/scripts && -d ${PWD}/overwatch/webApp/static/bower_components/polymer ]]; then true; else false; fi
+deploy:
+    - provider: pypi
+      user: rehlers
+      password:
+          secure: jGJTAlpfNsTcZJbU24/m0GjxVzoWKBhKkloaKTqpZkrymDydX5K08DZn/U1y86/8HUB6gCT9L8ecOyecmWjwKQiGYt0wF3lyCjzjwd82nZWeWunsoMkVo9hkWwlh4+7jBd3QdYGH5DpI1DHK2RDwMAN5lUUa+qGTvnZzhxR/DVJcIva9XNFOYNKD6fDr3DvWw25Dhb5xL1ojl0silPYMXu8eXmO+x7Et4bdnzeU5eFZT//IPDJp4OGn1jCy9uXCgvE7s25ScHNPzY7WbTU2L1y07VHBOSPtkT5BIB7/HAipf2ydG7XR2YGl6U3X5cb4eqS4JDh9AUFhP1kNLx1uZWChraqeB7gXCbTcl6hNGNIQ16pEbFuwLaZkbmn75EvVBFkAzM0RpDMr+zCY4Sc0uJnEYj5xX1IDvS4qtAQdr31t0POwtuuUe6S0eL/8ikzGMHuX/OqwSPqlW4vvcvhdJkMwwL5RcJ2icBxuN5mK+JdmgMRHLuSopgA0d7v4Hi3EWPtcmjZ/vcS9gfx3cNQykqHYNCWCwWUaUQgbgn+SUb4efSxvqTtQizU40q9KJRbPEf1mQNFDF8nPb8a2f006LcR9Mnsb4l69azGBCRVTKPcF/UqK+B917pqJmXNOOeNomqHiNaEJej9ADJG0WrM2CqqyGAXye2eZz+iux9V7kKXI=
+      distributions: sdist bdist_wheel
+      # Skip cleanup because we added files from polymer and jsRoot.
+      skip_cleanup: true
+      on:
+          tags: true
+    - provider: script
+      # Variables are defined in the travis CI interface
+      # They include: $DOCKER_USERNAME, $DOCKER_PASSWORD
+      script: bash deploy/docker/pushToDockerHub.sh
+      # We don't need to skip cleanup here because the docker image is already built!
+      on:
+          # Build a docker image for master or if it has "-docker" in the branch name.
+          all_branches: true
+          # For whatever reason, since Travis is parsing this line, we can't quote the variable here
+          condition: ${TRAVIS_BRANCH} =~ [a-zA-Z]+-docker|master
