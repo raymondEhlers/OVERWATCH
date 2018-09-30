@@ -50,11 +50,11 @@ def testExpandEnvironmentVars(loggingMixin):
 
 def testRetrieveExecutable(loggingMixin):
     """ Tests for retrieving executables. """
-    e = deploy.retrieveExecutable("zodb")
-    assert e == deploy._available_executables["zodb"]
+    e = deploy.retrieveExecutable("zodb", config = {})
+    assert isinstance(e, deploy._available_executables["zodb"])
 
     with pytest.raises(KeyError) as exceptionInfo:
-        e = deploy.retrieveExecutable("helloWorld")
+        e = deploy.retrieveExecutable("helloWorld", config = {})
     assert exceptionInfo.value.args[0] == "Executable helloWorld is invalid."
 
 #: Simple named tuple to contain the execution expectations.
@@ -412,7 +412,7 @@ def testEnvironment(loggingMixin, mocker):
 
 def testSupervisorExecutable(loggingMixin, mocker):
     """ Tests for the supervisor executable. """
-    executable = deploy.retrieveExecutable("supervisor")()
+    executable = deploy.retrieveExecutable("supervisor", config = {})
 
     # Mock opening the file
     mFile = mocker.mock_open()
@@ -448,7 +448,7 @@ def testZMQReceiver(loggingMixin, mocker):
             "username": "myUsername",
         },
     }
-    executable = deploy.retrieveExecutable("zmqReceiver")(config = config)
+    executable = deploy.retrieveExecutable("zmqReceiver", config = config)
 
     # Show files as not existing, so they attempt to make the directory and file
     mPathExists = mocker.MagicMock(return_value = False)
@@ -532,7 +532,7 @@ def testZODB(loggingMixin, mocker):
         "port": 12345,
         "databasePath": "data/overwatch.fs",
     }
-    executable = deploy.retrieveExecutable("zodb")(config = config)
+    executable = deploy.retrieveExecutable("zodb", config = config)
 
     # Mock opening the file
     mFile = mocker.mock_open()
@@ -632,11 +632,11 @@ def testTwoOverwatchExecutablesWithCustomConfigs(loggingMixin):
 
     # Processing and web app are selected randomly. Any overwatch executables would be fine.
     processingOptions = {"additionalOptions": {"processing": True}}
-    processing = deploy.retrieveExecutable("processing")(config = processingOptions)
+    processing = deploy.retrieveExecutable("processing", config = processingOptions)
     processing.configFilename = filename
 
     webAppOptions = {"uwsgi": {}, "additionalOptions": {"webApp": True}}
-    webApp = deploy.retrieveExecutable("webApp")(config = webAppOptions)
+    webApp = deploy.retrieveExecutable("webApp", config = webAppOptions)
     webApp.configFilename = filename
 
     # Write both configurations
@@ -685,7 +685,7 @@ def testTwoOverwatchExecutablesWithCustomConfigs(loggingMixin):
     ], ids = ["Data transfer", "Processing", "Web App", "Web App - uwsgi", "Web App - uwsgi + nginx", "DQM Receiver"])
 def testOverwatchExecutableProperties(loggingMixin, executableType, config, expected, setupStartProcessWithLog, mocker):
     """ Integration test for the setup and properties of Overwatch based executables. """
-    executable = deploy.retrieveExecutable(executableType)(config = config)
+    executable = deploy.retrieveExecutable(executableType, config = config)
 
     # Centralized setup for `uwsgi`. Defined here so we don't have to copy it in parametrize.
     uwsgi = False
@@ -788,7 +788,7 @@ def testOverwatchExecutableProperties(loggingMixin, executableType, config, expe
         # We skip the gzip config contents because they're static
         mFile.assert_any_call(os.path.join("data", "config", "conf.d", "gzip.conf"), "w")
 
-def testMainDriverFunction(loggingMixin, mocker):
+def testStartOverwatch(loggingMixin, mocker):
     """ Test for the main driver function. """
 
     assert False

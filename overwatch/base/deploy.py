@@ -96,6 +96,8 @@ class executable(object):
         enabled (bool): True if the task should actually be executed.
         runInBackground (bool): True if the process should be run in the background. This means that process will
             not be blocking, but it shouldn't be used in conjunction with supervisor. Default: False.
+        forceRestart (bool): True if the process should kill any previous processes before starting. If not and the
+            process already exists, then nothing will be done.
     Attributes:
         name (str): Name of the process that we are starting. It doesn't need to be the executable name,
                 as it's just used for informational purposes.
@@ -576,6 +578,8 @@ class sshKnownHosts(executable):
         enabled (bool): True if the task should actually be executed.
         runInBackground (bool): True if the process should be run in the background. This means that process will
             not be blocking, but it shouldn't be used in conjunction with supervisor. Default: False.
+        forceRestart (bool): True if the process should kill any previous processes before starting. If not and the
+            process already exists, then nothing will be done.
         address (str): SSH connection address.
         port (int): SSH connection port.
 
@@ -633,6 +637,8 @@ class autossh(executable):
         enabled (bool): True if the task should actually be executed.
         runInBackground (bool): True if the process should be run in the background. This means that process will
             not be blocking, but it shouldn't be used in conjunction with supervisor. Default: False.
+        forceRestart (bool): True if the process should kill any previous processes before starting. If not and the
+            process already exists, then nothing will be done.
         hltPort (int): Port where the HLT data is available on the remote system.
         address (str): SSH connection address.
         port (int): SSH connection port.
@@ -692,6 +698,8 @@ class zmqReceiver(executable):
         enabled (bool): True if the task should actually be executed.
         runInBackground (bool): True if the process should be run in the background. This means that process will
             not be blocking, but it shouldn't be used in conjunction with supervisor. Default: False.
+        forceRestart (bool): True if the process should kill any previous processes before starting. If not and the
+            process already exists, then nothing will be done.
         receiver (str): Three letter subsystem name. For example, ``EMC``.
         localPort (int): Port where the HLT data should be made available on the local system.
         dataPath (str): Path to where the data should be stored.
@@ -793,6 +801,8 @@ class zodb(executable):
         enabled (bool): True if the task should actually be executed.
         runInBackground (bool): True if the process should be run in the background. This means that process will
             not be blocking, but it shouldn't be used in conjunction with supervisor. Default: False.
+        forceRestart (bool): True if the process should kill any previous processes before starting. If not and the
+            process already exists, then nothing will be done.
         address (str): IP address for the database.
         port (int): Port for the database.
         databasePath (str): Path to where the database file should be stored.
@@ -919,6 +929,8 @@ class uwsgi(executable):
         enabled (bool): True if the task should actually be executed.
         runInBackground (bool): True if the process should be run in the background. This means that process will
             not be blocking, but it shouldn't be used in conjunction with supervisor. Default: False.
+        forceRestart (bool): True if the process should kill any previous processes before starting. If not and the
+            process already exists, then nothing will be done.
         module (str): Module (ie import) path for the web app. For example, ``overwatch.webApp.run``. All
             Overwatch packages should have a run module. Note that this **will not** run the development server.
         http-socket (str): IP address and port under which the web app will be available via http.
@@ -1232,7 +1244,7 @@ _available_executables = {
                                      ]),
 }
 
-def retrieveExecutable(name):
+def retrieveExecutable(name, config):
     """ Retrieve an expected by name.
 
     This is an extremely minimal helper function to allow for flexibility in the future.
@@ -1252,6 +1264,7 @@ def retrieveExecutable(name):
     Args:
         name (str): Name of the executable "type". For example, "processing" for Overwatch processing.
             An extensive list is in this docstring.
+        config (dict): Configuration to be used to initialize the object.
     Returns:
         executable: The requested executable.
 
@@ -1260,46 +1273,66 @@ def retrieveExecutable(name):
     """
     if name not in _available_executables:
         raise KeyError("Executable {name} is invalid.".format(name = name))
-    return _available_executables[name]
+    return _available_executables[name](config = config)
 
-def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
+def runExecutables(executables):
+    """ Run a given set of executables.
+
+    Args:
+        executables (dict): Executable configurations to execute. Keys are the executable names (up to a "_{tag}"),
+            and the values are their configurations.
+    Returns:
+        None.
+    """
+    for executableType, executableConfig in iteritems(config["executables"]):
+        # Determine the executable type. It is of the form "type_identifier"
+        if "_" in executableType:
+            executableType = executableType[:executableType.find("_")]
+
+        executable = retrieveExecutable(executableType)(config = config)
+        executable.run()
+
+def startOverwatch(configFilename, configEnvironmentVariable):
     """ Start the various parts of Overwatch.
 
     Components are only started if they are included in the configuration.
 
     Args:
         configFilename (str): Filename of the configuration.
-        fromEnvironment (str): Name of the environment variable which contains the configuration as a string. This
-            is usually created by reading a config file into the variable with ``var=$(cat deployConfig.yaml)``.
-        avoidNohup (bool): If true, ``nohup`` (which is used to run processes in the background) should not be used.
+        configEnvironmentVariable (str): Name of the environment variable which contains the configuration as a string.
+            This is usually created by reading a config file into the variable with ``var=$(cat deployConfig.yaml)``.
     Returns:
         None.
+
+    Raises:
+        ValueError: If both a configuration filename and a configuration environment variable are specified.
     """
-    # Get configuration
-    if fromEnvironment:
+    # Validation
+    if configEnvironmentVariable and configFilename:
+        raise ValueError("Specified both a config filename and an environment variable. Specify only one.")
+
+    # Get the configuration from the environment or from a given file.
+    if configEnvironmentVariable:
         # From environment
-        logger.info("Loading configuration from environment variable '{fromEnvironment}'".format(fromEnvironment = fromEnvironment))
-        config = yaml.load(os.environ[fromEnvironment], Loader=yaml.SafeLoader)
+        logger.info("Loading configuration from environment variable '{configEnvironmentVariable}'".format(configEnvironmentVariable = configEnvironmentVariable))
+        config = os.environ[configEnvironmentVariable]
     else:
         # From file
-        logger.info("Loading configuration from file \"{}\"".format(configFilename))
+        logger.info('Loading configuration from file "{configFilename}"'.format(configFilename = configFilename))
         with open(configFilename, "r") as f:
-            config = yaml.load(f, Loader=yaml.SafeLoader)
+            config = f.read()
 
-    # Setup
-    supervisord = "supervisord" in config
-    if supervisord:
+    # Load the configuration.
+    config = yaml.load(config, Loader=yaml.SafeLoader)
+
+    # Setup supervisor if necessary
+    supervisor = None
+    if config.get("supervisor", False):
         logger.info("Setting up supervisord")
-
         # Setup
-        #setupSupervisord(config)
+        supervisor.setup()
 
-        # Must be avoided when using supervisord
-        config["avoidNohup"] = True
-    else:
-        config["avoidNohup"] = avoidNohup
-
-    logger.info("Config: {}".format(pprint.pformat(config)))
+    logger.info("Overwatch deploy configuration: {}".format(pprint.pformat(config)))
 
     if "cert" in config and config["cert"]["enabled"]:
         pass
@@ -1307,27 +1340,15 @@ def startOverwatch(configFilename, fromEnvironment, avoidNohup = False):
     if "sshKey" in config and config["sshKey"]["enabled"]:
         pass
 
-    # Setup environment
-    if "env" in config and config["env"]["enabled"]:
-        #setupEnv(config)
-        pass
+    # Setup environment based executables
+    runExecutables(config["environment"])
 
-    if "receiver" in config and config["receiver"]["enabled"]:
-        # Start the receiver(s)
-        #receiver(config)
-        pass
+    # Start the standard executables
+    runExectuables(config["executables"])
 
-    if "processing" in config and config["processing"]["enabled"]:
-        #processing(config)
-        pass
-
-    if "webApp" in config and config["webApp"]["enabled"]:
-        #webApp(config)
-        pass
-
-    # Start supervisord
-    if "supervisord" in config and config["supervisord"]:
-        # Reload supervisor config
+    # Start supervisor if necessary
+    if supervisor:
+        # Reload supervisor config.
         subprocess.Popen(["supervisorctl", "update"])
 
 def run():
@@ -1336,15 +1357,12 @@ def run():
     parser.add_argument("-c", "--config", metavar="configFile",
                         type=str, default="deployConfig.yaml",
                         help="Path to config filename")
-    parser.add_argument("-e", "--fromEnvironment", metavar="envVariable",
+    parser.add_argument("-e", "--configEnvironmentVariable", metavar="envVariable",
                         type=str, default="",
                         help="Take config from environment.")
     parser.add_argument("-l", "--logLevel", metavar="level",
                         type=str, default="DEBUG",
                         help="Set the log level.")
-    parser.add_argument("-a", "--avoidNohup",
-                        action="store_true",
-                        help="Pass this option to indicdate if nohup should be avoided (say, if systemd is calling the script)")
 
     # Parse arguments
     args = parser.parse_args()
@@ -1359,7 +1377,7 @@ def run():
     level = args.logLevel.upper()
     logger.setLevel(level)
 
-    startOverwatch(configFilename = args.config, fromEnvironment = args.fromEnvironment, avoidNohup = args.avoidNohup)
+    startOverwatch(configFilename = args.config, configEnvironmentVariable = args.configEnvironmentVariable)
 
-if __name__ == "__main__":
+if __name__ == "__main__":  # pragma: no cover
     run()
