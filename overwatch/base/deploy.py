@@ -418,7 +418,7 @@ class environment(executable):
 
         # Ensure that we don't overwrite an existing file!
         if os.path.exists(writeLocation):
-            raise IOError("File at {0} already exists and will not be overwritten!".format(writeLocation))
+            raise IOError("File at {writeLocation} already exists and will not be overwritten!".format(writeLocation = writeLocation))
         with open(writeLocation, "w") as f:
             f.write(sensitiveVariable)
 
@@ -560,7 +560,7 @@ class supervisor(executable):
         """ We want to run in separate steps, so this function shouldn't be used. """
         raise NotImplementedError("The supervisor executable should be run in multiple steps.")
 
-class sshKnownHostsExecutable(executable):
+class sshKnownHosts(executable):
     """ Create a SSH ``known_hosts`` file with the SSH address in the configuration.
 
     Note:
@@ -576,8 +576,8 @@ class sshKnownHostsExecutable(executable):
         enabled (bool): True if the task should actually be executed.
         runInBackground (bool): True if the process should be run in the background. This means that process will
             not be blocking, but it shouldn't be used in conjunction with supervisor. Default: False.
-        port (int): SSH connection port.
         address (str): SSH connection address.
+        port (int): SSH connection port.
 
     Attributes:
         knownHostsPath (str): Path to the known hosts file. Assumed to be at ``$HOME/.ssh/known_hosts``.
@@ -596,7 +596,9 @@ class sshKnownHostsExecutable(executable):
                          args = args,
                          config = config)
         # The information should stored be in the $HOME/.ssh/known_hosts
-        self.knownHostsPath = os.path.expandvars(os.path.join("$HOME", ".ssh", "known_hosts")).replace("\n", "")
+        self.configFilename = os.path.expandvars(os.path.join("$HOME", ".ssh", "known_hosts")).replace("\n", "")
+        # Take advantage of the log file to write the process output to the known_hosts file.
+        self.logFilename = self.configFilename
         # This will execute rather quickly.
         self.shortExecutionTime = True
 
@@ -605,17 +607,18 @@ class sshKnownHostsExecutable(executable):
 
         In particular, the executable should only be run if the ``known_hosts`` file doesn't exist.
         """
-        logger.debug("Checking for known_hosts file at {knownHostsPath}".format(knownHostsPath = self.knownHostsPath))
-        if not os.path.exists(self.knownHostsPath):
-            directoryName = os.path.dirname(self.knownHostsPath)
+        # First initialize the base class
+        super().setup()
+
+        logger.debug("Checking for known_hosts file at {configFilename}".format(configFilename= self.configFilename))
+        if not os.path.exists(self.configFilename):
+            directoryName = os.path.dirname(self.configFilename)
             if not os.path.exists(directoryName):
                 os.makedirs(directoryName)
                 # Set the proper permissions
-                os.chmod(os.path.dirname(self.knownHostsPath), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+                os.chmod(os.path.dirname(self.configFilename), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
 
             self.executeTask = True
-        # Take advantage of the log file to write the process output to the known_hosts file.
-        self.logFilename = self.knownHostsPath
 
 class autossh(executable):
     """ Start ``autossh`` to create a SSH tunnel.
@@ -624,17 +627,21 @@ class autossh(executable):
         Arguments after ``config`` are values which will be used for formatting and are required in the config.
 
     Args:
+        receiver (str): Three letter subsystem name. For example, ``EMC``.
+        localPort (int): Port where the HLT data should be made available on the local system.
         config (dict): Configuration for the executable.
         enabled (bool): True if the task should actually be executed.
         runInBackground (bool): True if the process should be run in the background. This means that process will
             not be blocking, but it shouldn't be used in conjunction with supervisor. Default: False.
-        localPort (int): Port where the HLT data should be made available on the local system.
         hltPort (int): Port where the HLT data is available on the remote system.
+        address (str): SSH connection address.
         port (int): SSH connection port.
         username (str): SSH connection username.
-        address (str): SSH connection address.
+
+    Attributes:
+        knownHosts (executable): Keep track of the known hosts executable. Default: ``None``.
     """
-    def __init__(self, config):
+    def __init__(self, receiver, localPort, config):
         name = "autossh_{receiver}"
         description = "{receiver} autossh tunnel"
         args = [
@@ -649,6 +656,10 @@ class autossh(executable):
             "-f",
             "-N",
         ]
+        # Store the receiver name so we can use it for formatting.
+        config["receiver"] = receiver
+        # Store local port so we can use it for formatting.
+        config["localPort"] = localPort
         super().__init__(name = name,
                          description = description,
                          args = args,
@@ -657,6 +668,9 @@ class autossh(executable):
         # This will execute rather quickly.
         self.shortExecutionTime = True
 
+        # Keep track of the known hosts executable.
+        self.knownHosts = None
+
     def setup(self):
         """ Setup the ``autossh`` tunnel by additionally setting up the known_hosts file. """
         # Call the base class setup first so that all of the variables are fully initialized and formatted.
@@ -664,8 +678,8 @@ class autossh(executable):
         # For the tunnel to be created successfully, we need to add the address of the SSH server
         # to the known_hosts file, so we create it here. In principle, this isn't safe if we're not in
         # a safe environment, but this should be fine for our purposes.
-        knownHosts = sshKnownHostsExecutable(config = self.config)
-        knownHosts.run()
+        self.knownHosts = sshKnownHosts(config = self.config)
+        self.knownHosts.run()
 
 class zmqReceiver(executable):
     """ Start the ZMQ receiver.
@@ -684,6 +698,10 @@ class zmqReceiver(executable):
         select (str): Selection string for the receiver.
         additionalOptions (list): Additional options to be passed to the receiver.
         receiverPath (str): Path to directory which contains the receiver. Default: "receiver/bin".
+        tunnel (dict): Configuration for autossh. See the ``autossh`` executable for a comprehensive set of options.
+
+    Attributes:
+        tunnel (executable): Keep track of the autossh executable. Default: ``None``.
     """
     def __init__(self, config):
         name = "zmqReceiver_{receiver}"
@@ -715,13 +733,16 @@ class zmqReceiver(executable):
         config["receiver"] = receiverName
 
         # Add default values to the config if necessary
-        config["dataPath"] = self.config.get("dataPath", "data")
-        config["select"] = self.config.get("select", "")
+        config["dataPath"] = config.get("dataPath", "data")
+        config["select"] = config.get("select", "")
 
         super().__init__(name = name,
                          description = description,
                          args = args,
                          config = config)
+
+        # Keep track of the autossh tunnel
+        self.tunnel = None
 
     def setup(self):
         """ Setup required for the ZMQ receiver.
@@ -753,8 +774,10 @@ class zmqReceiver(executable):
 
         # Setup the autossh tunnel if required.
         if self.config["tunnel"]:
-            tunnel = autossh(config = self.config)
-            tunnel.run()
+            self.tunnel = autossh(receiver = self.config["receiver"],
+                                  localPort = self.config["localPort"],
+                                  config = self.config["tunnel"])
+            self.tunnel.run()
 
         # Conditions for run?
         #if processPIDs is not None and (config["receiver"].get("forceRestart", None) or receiverConfig.get("forceRestart", None)):

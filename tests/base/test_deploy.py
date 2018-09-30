@@ -15,6 +15,7 @@ try:
 except ImportError:
     from io import StringIO
 import signal
+import stat
 import inspect
 import subprocess
 import collections
@@ -431,7 +432,98 @@ def testSupervisorExecutable(loggingMixin, mocker):
 
 def testZMQReceiver(loggingMixin, mocker):
     """ Tests for the ZMQ receiver and the underlying exectuables. """
-    assert False
+    config = {
+        "enabled": True,
+        "receiver": "EMC",
+        "localPort": 123456,
+        "dataPath": "data",
+        "select": "",
+        "additionalOptions": ["a", "b"],
+        "receiverPath": os.path.join("receiver", "bin"),
+        "tunnel": {
+            "enabled": False,
+            "hltPort": 234567,
+            "address": "1.2.3.4",
+            "port": 22,
+            "username": "myUsername",
+        },
+    }
+    executable = deploy.retrieveExecutable("zmqReceiver")(config = config)
+
+    # Show files as not existing, so they attempt to make the directory and file
+    mPathExists = mocker.MagicMock(return_value = False)
+    mocker.patch("overwatch.base.deploy.os.path.exists", mPathExists)
+    # Don't actually create the directory
+    mMakeDirs = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.os.makedirs", mMakeDirs)
+    # Don't actually change the permissions
+    mChmod = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.os.chmod", mChmod)
+    # Prevent known_hosts from actually running
+    mKnownHostsRun = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.sshKnownHosts.run", mKnownHostsRun)
+    # Prevent autossh from actually running
+    mAutosshRun = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.autossh.run", mAutosshRun)
+
+    executable.setup()
+    # We have to step through the setups because we mocker the run() methods
+    executable.tunnel.setup()
+    executable.tunnel.knownHosts.setup()
+
+    # Check known hosts
+    expectedKnownHostsArgs = [
+        "ssh-keyscan",
+        "-p {port}",
+        "-H",
+        "{address}",
+    ]
+    # It is formatted by the tunnel config, so be certain to use that here as an additional check.
+    expectedKnownHostsArgs = [a.format(**config["tunnel"]) for a in expectedKnownHostsArgs]
+    assert executable.tunnel.knownHosts.args == expectedKnownHostsArgs
+    expectedKnownHostsLocation = os.path.expandvars(os.path.join("$HOME", ".ssh", "known_hosts").replace("\n", ""))
+    expectedKnownHostsDir = os.path.dirname(expectedKnownHostsLocation)
+    # Sanity check
+    assert executable.tunnel.knownHosts.configFilename == expectedKnownHostsLocation
+    # Check the setup calls
+    mPathExists.assert_any_call(expectedKnownHostsLocation)
+    mPathExists.assert_any_call(expectedKnownHostsDir)
+    mMakeDirs.assert_called_once_with(expectedKnownHostsDir)
+    mChmod.assert_called_once_with(expectedKnownHostsDir, stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+
+    # Check autossh
+    expectedTunnelArgs = [
+        "autossh",
+        "-L {localPort}:localhost:{hltPort}",
+        "-o ServerAliveInterval=30",  # Built-in ssh monitoring option
+        "-o ServerAliveCountMax=3",   # Built-in ssh monitoring option
+        "-p {port}",
+        "-l {username}",
+        "{address}",
+        "-M 0",                       # Disable autossh built-in monitoring
+        "-f",
+        "-N",
+    ]
+    config["tunnel"]["localPort"] = config["localPort"]
+    expectedTunnelArgs = [a.format(**config["tunnel"]) for a in expectedTunnelArgs]
+
+    assert executable.tunnel.args == expectedTunnelArgs
+
+    # Check zmqReceiver
+    expectedArgs = [
+        "zmqReceive",
+        "--subsystem={receiver}",
+        "--in=REQ>tcp://localhost:{localPort}",
+        "--dataPath={dataPath}",
+        "--verbose=1",
+        "--sleep=60",
+        "--timeout=100",
+        "--select={select}",
+    ]
+    expectedArgs = [a.format(**config) for a in expectedArgs]
+    expectedArgs.append(config["additionalOptions"])
+    assert executable.args == expectedArgs
+    assert config["receiverPath"] in os.environ["PATH"]
 
 def testZODB(loggingMixin, mocker):
     """ Test for the ZODB executable. """
