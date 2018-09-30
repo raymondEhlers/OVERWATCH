@@ -562,7 +562,7 @@ def processTimeSlices(runs, runDir, minTimeRequested, maxTimeRequested, subsyste
             in the ``subsystemContainer.timeSlices`` dictionary. If an error was encountered, we return an error
             dictionary in the proper format.
     """
-    logger.info("Processing time slice for {runDir}".format(runDir))
+    logger.info("Processing time slice for {runDir}".format(runDir = runDir))
 
     # Load run information and subsystem
     if runDir in runs:
