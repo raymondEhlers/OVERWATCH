@@ -408,7 +408,9 @@ def testRunExecutableFailure(setupBasicExecutable, setupStartProcessWithLog, moc
 
 def testEnvironment(loggingMixin, mocker):
     """ Tests for configuring the environment. """
-    assert False
+    receiverPath = os.path.join("receiver", "bin"),
+
+    assert receiverPath in os.environ["PATh"]
 
 def testSupervisorExecutable(loggingMixin, mocker):
     """ Tests for the supervisor executable. """
@@ -439,7 +441,6 @@ def testZMQReceiver(loggingMixin, mocker):
         "dataPath": "data",
         "select": "",
         "additionalOptions": ["a", "b"],
-        "receiverPath": os.path.join("receiver", "bin"),
         "tunnel": {
             "enabled": False,
             "hltPort": 234567,
@@ -523,7 +524,6 @@ def testZMQReceiver(loggingMixin, mocker):
     expectedArgs = [a.format(**config) for a in expectedArgs]
     expectedArgs.append(config["additionalOptions"])
     assert executable.args == expectedArgs
-    assert config["receiverPath"] in os.environ["PATH"]
 
 def testZODB(loggingMixin, mocker):
     """ Test for the ZODB executable. """

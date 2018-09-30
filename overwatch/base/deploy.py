@@ -4,6 +4,7 @@
 
 It can handle the configuration and execution of:
 
+- Environment setup
 - ``autossh`` for SSH tunnels.
 - ``ZODB`` for the Overwatch Database
 - Overwatch ZMQ receiver
@@ -354,64 +355,83 @@ class executable(object):
         # We have successfully launched the process
         return True
 
-class environment(executable):
+class environment(object):
     """ Setup and create the necessary environment for execution.
 
+    It has similar structure to ``exectuable``, but it is a fundamentally different object, so it doesn't
+    inherit from it.
+
     Note:
-        Arguments after ``config`` are values which will be used for formatting and are required in the config.
+        Arguments after ``config`` are values which are specified in the config.
 
     Args:
         config (dict): Configuration for the executable.
+        root (dict): Specify setup related to ROOT. Accepts a ``path`` key with the value as the location of the
+            ``thisroot.sh`` script for ROOT.
+        vars (dict):
+        zmqReceiver (dict): Specify setup related to the ZMQ receiver. Accepts a ``path`` with the value as the
+            directory which contains the receiver. Must be an absolute path. Default: "${PWD}/receiver/bin".
+
+    Attributes:
+        name (str): Name of the process that we are starting. It doesn't need to be the executable name,
+                as it's just used for informational purposes.
+        description (str): Description of the process for clearer display, etc.
+        config (dict): Configuration for the executable.
     """
     def __init__(self, config):
-        name = "environment"
-        description = "Setup and create the necessary execution environment"
-        args = []
-        super().__init__(name = name,
-                         description = description,
-                         args = args,
-                         config = config)
+        self.name = "environment"
+        self.description = "Setup and create the necessary execution environment"
+        self.config = config
 
     def setup(self):
         """ Setup for creating the execution environment.
 
-        In particular, we write our sensitive environment variables and configure ROOT.
+        In particular, we write our sensitive environment variables, configure ROOT, configure
+        the ZMQ receiver, and set general environment variables.
         """
-        super().setup()
-
-        #if "cert" in config and config["cert"]["enabled"]:
         # TODO: Update default location to "~/.globus/overwatchCert.pem" (?)
         self.writeSensitiveVariableToFile(name = "cert",
-                                          prettyName = "certificate",
+                                          description = "certificate",
                                           defaultWriteLocation = "overwatchCert.pem")
 
-        #if "sshKey" in config and config["sshKey"]["enabled"]:
         # TODO: Update default write location to "~/ssh/id_rsa" (?)
         self.writeSensitiveVariableToFile(name = "sshKey",
-                                          prettyName = "SSH key",
+                                          description = "SSH key",
                                           defaultWriteLocation = "overwatch.id_rsa")
 
         # Setup environment
         self.setupRoot()
+        self.setupReceiverPath()
         self.setupEnvironmentVars()
 
-    def writeSensitiveVariableToFile(self, name, prettyName, defaultWriteLocation):
-        """ Write SSH key or certificate from environment variable to file. """
+    def writeSensitiveVariableToFile(self, name, description, defaultWriteLocation):
+        """ Write SSH key or certificate from environment variable to file.
+
+        Args:
+            name (str): Name of the sensitive variable to be written to a file. Acceptable values are "cert" and
+                "sshKey".
+            description (str): Description of the sensitive parameters for information purposes.
+            defaultWriteLocation (str): Default location for the file to be written (in case it isn't specified).
+        """
+        # Validation
         # Check name value (also acts as proxy for the other values)
         if name != "sshKey" and name != "cert":
-            raise ValueError("Name \"{}\" is unrecognized! Aborting")
+            raise ValueError('Name "{name}" is not recognized as a sensitive parameter! Aborting'.format(name = name))
 
-        #sensitiveVariable = getSensitiveVariableConfigurationValues(config, name = name, prettyName = prettyName)
-        logger.info("Writing {} from environment variable to file".format(prettyName))
-        # Get variable from environment
+        # Only do so if it's actually enabled.
+        if self.config.get(name, {}).get("enabled", False):
+            return
+
+        logger.info("Writing {} from environment variable to file".format(description))
+        # Get the name of the environment variable from which we will retrieve the sensitive information.
         variableName = self.config[name].get("variableName", name)
         sensitiveVariable = os.environ[variableName]
         # Check that the variable is not empty
         if not sensitiveVariable:
-            raise ValueError("Empty {} passed".format(prettyName))
-        logger.debug("variableName: {}, {}: {}".format(variableName, prettyName, sensitiveVariable))
+            raise ValueError("Empty {description} passed".format(description = description))
+        logger.debug("variableName: {}, {}: {}".format(variableName, description, sensitiveVariable))
 
-        # Write to file
+        # Write to sensitive variable to file
         writeLocation = self.config[name].get("writeLocation", defaultWriteLocation)
         # Expand filename
         writeLocation = os.path.expanduser(os.path.expandvars(writeLocation))
@@ -424,6 +444,7 @@ class environment(executable):
         with open(writeLocation, "w") as f:
             f.write(sensitiveVariable)
 
+        # Set the final directory and file permissions
         if name == "sshKey":
             # Set the file permissions to 600
             os.chmod(writeLocation, stat.S_IRUSR | stat.S_IWUSR)
@@ -455,19 +476,27 @@ class environment(executable):
                 (key, _, value) = line.partition("=")
                 os.environ[key] = value
 
-    def setupEnvironment(self):
+    def setupEnvironmentVars(self):
         """ Setup execution environment.
 
-        We generically add these environment variables, as well as explicitly checking for those
-        related to EOS.
+        We generically add any environment variables specified in "vars".
         """
-        # TODO: Check for EOS variables?
-
         for k, v in iteritems(self.config["vars"]):
             # Not necessarily a problem, but I want to make the user aware.
             if k in os.environ:
                 logger.warning("Environment variable {k} is already set to {val}. It is being updated to {v}".format(k = k, val = os.environ["k"], v = v))
             os.environ[k] = v
+
+    def setupReceiverPath(self):
+        """ Set the PATH to include the ZMQ receiver executable. """
+        # Add the executable location to the path if necessary.
+        receiverPath = self.config.get("zmqReceiver", {}).get("path", os.path.join("${PWD}", "receiver", "bin"))
+        if receiverPath:
+			# Could have environment vars introduced (because our default includes an environment variable), so we
+            # need to expand them. Also need to strip "\n" due to it being inserted when variables are expanded.
+			receiverPath = os.path.expandvars(receiverPath).replace("\n", "")
+			logger.debug('Adding receiver path "{receiverPath}" to PATH'.format(receiverPath = receiverPath))
+            os.environ["PATH"] = os.environ["PATH"].rstrip() + os.pathsep + receiverPath
 
 class supervisor(executable):
     """ Start ``supervisor`` (through ``supervisord``) to manage processes.
@@ -705,7 +734,6 @@ class zmqReceiver(executable):
         dataPath (str): Path to where the data should be stored.
         select (str): Selection string for the receiver.
         additionalOptions (list): Additional options to be passed to the receiver.
-        receiverPath (str): Path to directory which contains the receiver. Default: "receiver/bin".
         tunnel (dict): Configuration for autossh. See the ``autossh`` executable for a comprehensive set of options.
 
     Attributes:
@@ -760,17 +788,6 @@ class zmqReceiver(executable):
         """
         # Call the base class setup first so that all of the variables are fully initialized and formatted.
         super().setup()
-
-        # TODO: Do we want to use a class for adding this to the environment??
-        # Add the executable location to the path if necessary.
-        receiverPath = self.config.get("receiverPath", "receiver/bin")
-        if receiverPath:
-            # Could have environment vars, so we need to expand them.
-            # Need to strip "\n" due to it being inserted when variables are expanded
-            receiverPath = os.path.expandvars(receiverPath).replace("\n", "")
-            logger.debug('Adding receiver path "{receiverPath}" to PATH'.format(receiverPath = receiverPath))
-            # Also remove "\n" at the end of the path variable for clarity
-            os.environ["PATH"] = os.environ["PATH"].rstrip() + os.pathsep + receiverPath
 
         # Append any additional options that might be defined in the config.
         # We do this after the base class setup so it doesn't pollute the process identifier since custom
@@ -1213,7 +1230,6 @@ class overwatchFlaskExecutable(overwatchExecutable):
         super().setup()
 
 _available_executables = {
-    "environment": environment,
     "supervisor": supervisor,
     "zodb": zodb,
     "autossh": autossh,
@@ -1251,7 +1267,6 @@ def retrieveExecutable(name, config):
 
     The available executables are:
 
-    - environment
     - supervisor
     - zodb
     - autossh
@@ -1341,7 +1356,8 @@ def startOverwatch(configFilename, configEnvironmentVariable):
         pass
 
     # Setup environment based executables
-    runExecutables(config["environment"])
+    env = environment(config = config["environment"])
+    env.setup()
 
     # Start the standard executables
     runExectuables(config["executables"])
