@@ -406,11 +406,19 @@ def testRunExecutableFailure(setupBasicExecutable, setupStartProcessWithLog, moc
         executable.run()
     assert "Failed to find the executed process" in exceptionInfo.value.args[0]
 
-def testEnvironment(loggingMixin, mocker):
-    """ Tests for configuring the environment. """
-    receiverPath = os.path.join("receiver", "bin"),
-
-    assert receiverPath in os.environ["PATh"]
+#def testEnvironment(loggingMixin, mocker):
+#    """ Tests for configuring the environment. """
+#    config = {
+#
+#    }
+#    executable = deploy.environment(config = config)
+#    # Check ROOT setup
+#    assert "ROOTSYS" in os.environ
+#    assert ""
+#
+#    # Check receiver setup
+#    receiverPath = os.path.join("receiver", "bin"),
+#    assert receiverPath in os.environ["PATh"]
 
 def testSupervisorExecutable(loggingMixin, mocker):
     """ Tests for the supervisor executable. """
@@ -593,7 +601,7 @@ def testWriteCustomOverwatchConfig(setupOverwatchExecutable, existingConfig, moc
     expectedConfig = existingConfig.copy()
     expectedConfig.update(expected.config["additionalOptions"])
 
-    # Need to encode the exsting config with yaml so that we can input a string...
+    # Need to encode the existing config with yaml so that we can input a string...
     inputStr = StringIO()
     yaml.dump(existingConfig, inputStr, default_flow_style = False)
     inputStr.seek(0)
@@ -788,7 +796,41 @@ def testOverwatchExecutableProperties(loggingMixin, executableType, config, expe
         # We skip the gzip config contents because they're static
         mFile.assert_any_call(os.path.join("data", "config", "conf.d", "gzip.conf"), "w")
 
-def testStartOverwatch(loggingMixin, mocker):
-    """ Test for the main driver function. """
-
-    assert False
+#@pytest.mark.parametrize("enableSupervisor", [
+#    False,
+#    True,
+#    ], ids = ["Standard execution", "Supervisor"])
+#@pytest.mark.parametrize("configureFromEnvironment", [
+#    False,
+#    True,
+#    ], ids = ["Configuration file", "Configuration from environment variable"])
+#def testStartOverwatch(loggingMixin, enableSupervisor, configureFromEnvironment, mocker):
+#    """ Test for the main driver function. """
+#    assert False
+#
+#    # TODO: Use the reference config for configuration. Everything is disabled by default, so there should
+#    # be less to mock.
+#    with open("deployReference.yaml", "r") as f:
+#        config = deploy.yaml.load(f, Loader = yaml.SafeLoader)
+#
+#    # Turn supervisor on or off depending on the test.
+#    config["supervisor"] = enableSupervisor
+#
+#    # Need to encode the existing config with yaml so that we can input a string...
+#    configStr = StringIO()
+#    yaml.dump(config, configStr, default_flow_style = False)
+#    configStr.seek(0)
+#
+#    # Setup config var or file.
+#    configVar = ""
+#    configFilename = ""
+#    mFile = None
+#    if configureFromEnvironment:
+#        configVar = "CONFIGURE_KEY"
+#        os.environ[configurationVar] = configStr
+#    else:
+#        configFilename = "configFilename.yaml"
+#        mFile = mocker.mock_open(read_data = configStr)
+#        mocker.patch("overwatch.base.deploy.open", mFile)
+#
+#    deply.startOverwatch(configFilename = configFilename, configEnvironmentVariable =  configVar)

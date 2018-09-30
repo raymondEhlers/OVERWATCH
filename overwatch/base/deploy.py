@@ -358,7 +358,7 @@ class executable(object):
 class environment(object):
     """ Setup and create the necessary environment for execution.
 
-    It has similar structure to ``exectuable``, but it is a fundamentally different object, so it doesn't
+    It has similar structure to ``executable``, but it is a fundamentally different object, so it doesn't
     inherit from it.
 
     Note:
@@ -492,10 +492,10 @@ class environment(object):
         # Add the executable location to the path if necessary.
         receiverPath = self.config.get("zmqReceiver", {}).get("path", os.path.join("${PWD}", "receiver", "bin"))
         if receiverPath:
-			# Could have environment vars introduced (because our default includes an environment variable), so we
+            # Could have environment vars introduced (because our default includes an environment variable), so we
             # need to expand them. Also need to strip "\n" due to it being inserted when variables are expanded.
-			receiverPath = os.path.expandvars(receiverPath).replace("\n", "")
-			logger.debug('Adding receiver path "{receiverPath}" to PATH'.format(receiverPath = receiverPath))
+            receiverPath = os.path.expandvars(receiverPath).replace("\n", "")
+            logger.debug('Adding receiver path "{receiverPath}" to PATH'.format(receiverPath = receiverPath))
             os.environ["PATH"] = os.environ["PATH"].rstrip() + os.pathsep + receiverPath
 
 class supervisor(executable):
@@ -1299,12 +1299,12 @@ def runExecutables(executables):
     Returns:
         None.
     """
-    for executableType, executableConfig in iteritems(config["executables"]):
+    for executableType, executableConfig in iteritems(executables):
         # Determine the executable type. It is of the form "type_identifier"
         if "_" in executableType:
             executableType = executableType[:executableType.find("_")]
 
-        executable = retrieveExecutable(executableType)(config = config)
+        executable = retrieveExecutable(executableType)(config = executableConfig)
         executable.run()
 
 def startOverwatch(configFilename, configEnvironmentVariable):
@@ -1343,7 +1343,10 @@ def startOverwatch(configFilename, configEnvironmentVariable):
     # Setup supervisor if necessary
     supervisor = None
     if config.get("supervisor", False):
-        logger.info("Setting up supervisord")
+        logger.info("Setting up supervisor")
+        # Ensure that all executables use supervisor by setting the static class member.
+        # Each executable will inherit this value.
+        executable.supervisor = True
         # Setup
         supervisor.setup()
 
@@ -1360,7 +1363,7 @@ def startOverwatch(configFilename, configEnvironmentVariable):
     env.setup()
 
     # Start the standard executables
-    runExectuables(config["executables"])
+    runExecutables(config["executables"])
 
     # Start supervisor if necessary
     if supervisor:
