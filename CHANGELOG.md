@@ -2,6 +2,24 @@
 
 Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
 
+## [1.1.1] - 26 September 2018
+
+### Added
+
+- Travis CI to run tests, `flake8`, and coverage. Also added `coveralls` to expand of tests coverage
+  information. Note that the `flake8` tests run in the Travis CI python 2.7 and 3.6, while the tests run
+  inside the docker images.
+- Travis CI will build new docker images on each commit, which are known as `rehlers/overwatch:latest-py*`.
+  Tagged releases will be available as `rehlers/overwatch:tag-py*`.
+- Releases are automatically made on PyPI through Travis CI.
+- Added `overwatch.base.dataHandling` module, which is responsible for transferring data provided by the
+  receiver to various Overwatch and EOS sites. This modules is fairly well covered by tests.
+
+### Changed
+
+- Updated `overwatchDeploy` to be class based, and generally far more stable and extensible. It is also
+  broadly covered by unit tests (some branches are still missing).
+
 ## [1.1] - 2 September 2018
 
 ### Added
