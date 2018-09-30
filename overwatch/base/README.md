@@ -57,3 +57,13 @@ For a comprehensive set of options, see the docstrings of the module, as well as
 configuration, `overwatch/base/deployReferenceConfig.yaml`. Note that all executable are disabled by default,
 so one may leave the configuration for all objects in a deployment configuration, and then just enable the
 parts that you want for a particular execution.
+
+## Monitoring for errors
+
+It is important to monitor Overwatch for errors and other issues. For the data transfer module, this
+monitoring is provided by `sentry`, which hooks into exceptions, logging, and other parts of the app to
+automatically provide alerts and information when issues occur.
+
+For successful monitoring, the environment must export the `DSN` as `export SENTRY_DSN=<value>`. The value
+will be some sort of unique URL. Note that this endpoint is for _all_ Overwatch monitoring, so be certain to
+check the traceback to determine the originating source of the issue.

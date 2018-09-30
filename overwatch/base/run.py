@@ -10,9 +10,13 @@ in the python package setup.
 """
 
 import pprint
+import os
 import logging
 # We want to log everything, so we give it empty quotes.
 logger = logging.getLogger("")
+
+import sentry_sdk
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 # Config
 from overwatch.base import config
@@ -29,6 +33,10 @@ utilities.setupLogging(logger = logger,
                        logFilename = "receiverDataHandling")
 # Log settings
 logger.info(parameters)
+
+# Setup sentry to create alerts for warning level messages.
+sentry_logging = LoggingIntegration(level = logging.WARNING, event_level = None)
+sentry_sdk.init(dsn = os.getenv("SENTRY_DSN"), integrations = [sentry_logging])
 
 # Imports are below here so that they can be logged
 from overwatch.base import dataHandling

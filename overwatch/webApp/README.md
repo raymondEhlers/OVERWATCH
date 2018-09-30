@@ -122,3 +122,12 @@ A few number of important notes on usage are below:
     >>> logger.debug(assets["polymerBundle"].urls())
     ```
 
+## Monitoring for errors
+
+It is important to monitor Overwatch for errors and other issues. For the web app, this monitoring is provided
+by `sentry`, which hooks into exceptions, logging, and other parts of the app to automatically provide alerts
+and information when issues occur.
+
+For successful monitoring, the environment must export the `DSN` as `export SENTRY_DSN=<value>`. The value
+will be some sort of unique URL. Note that this endpoint is for _all_ Overwatch monitoring, so be certain to
+check the traceback to determine the originating source of the issue.

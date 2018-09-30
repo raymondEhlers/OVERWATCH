@@ -111,6 +111,8 @@ setup(
         "Flask-WTF",
         "requests",
         "uwsgi",
+        # Flask monitoring
+        "sentry-sdk[flask]",
     ],
 
     # Include additional files
