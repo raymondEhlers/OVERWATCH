@@ -123,7 +123,7 @@ setup(
             "pytest",
             "pytest-cov",
             "pytest-mock",
-            "coveralls",
+            "codecov",
         ],
         "docs": [
             "sphinx",
