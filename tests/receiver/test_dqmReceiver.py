@@ -33,7 +33,7 @@ def client():
     client = app.test_client()
 
     # Use local files in the receiver test directory.
-    receiver.receiverParameters["dataFolder"] = os.path.join(os.path.realpath("."), "receiver", "testFiles")
+    receiver.receiverParameters["dataFolder"] = os.path.join(os.path.dirname(os.path.realpath(__file__)), "testFiles")
     # Grab the valid token dynamically
     validToken = receiver.receiverParameters["apiToken"]
 
@@ -78,7 +78,7 @@ def testGetFile(loggingMixin, client):
     """ Test retrieving a file. """
     # Setup.
     client, validToken = client
-    basePath = os.path.join(os.path.realpath("."), "receiver", "testFiles")
+    basePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "testFiles")
     # Filename for the file that we receive.
     filename = "EMChistos_123456_DQM_1970_01_02_16_07_24.root"
     # Determine the content that we expect. We are just going to look at the binary
@@ -101,7 +101,7 @@ def sendPostRequest(client):
     to be certain that we haven't corrupted our test file when overwriting it.
     """
     client, validToken = client
-    basePath = os.path.join(os.path.realpath("."), "receiver", "testFiles")
+    basePath = os.path.join(os.path.dirname(os.path.realpath(__file__)), "testFiles")
     # We take the contents of a ROOT file, send that file, and then compare against it.
     # This file will be overwritten when the file is received in the POST request, but
     # this fine because we can compare to the contents that we extract here. It can be

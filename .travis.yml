@@ -21,7 +21,14 @@ before_install:
 install: pip install --upgrade -e .[tests,dev]
 before_script:
     # Runs the tests in a docker container. Necessary because we can't install ROOT easily here.
-    - docker run -v ${PWD}:/opt/overwatch rehlers/overwatch:latest-py${DOCKER_PYTHON_VERSION} /bin/bash -c "pip install --upgrade -e .[tests,dev]; cd tests; pytest -l --cov=overwatch --cov-report html --cov-branch . --durations=5"
+    # Further, we run in the tests directory to avoid any possible config.yaml interfering with the tests.
+    # Since we mount the Travis overwatch directory inside of the container, the results should still be available
+    # even after this docker container has stopped
+    # To use codecov, we first retrieve the variables necessary to pass to the container (via codecov), and then we
+    # send the results from inside the container to codecov. If we try to send afterwards from outside the container,
+    # the paths will be wrong and the coverage report will fail!
+    - ci_env=`bash <(curl -s https://codecov.io/env)`
+    - docker run -v ${PWD}:/opt/overwatch $ci_env rehlers/overwatch:latest-py${DOCKER_PYTHON_VERSION} /bin/bash -c "pip install --upgrade -e .[tests,dev]; cd tests; pytest -l --cov=overwatch --cov-branch --durations=5 . && bash <(curl -s https://codecov.io/bash)"
     # Install polymer and jsRoot so it they will be avialable and included in a built package
     # We can't easily install nodejs to install polymer and jsRoot, so instead, we extract it from the docker image.
     # Yes, it's super hacky, but it seems to work, so why not?
@@ -30,9 +37,6 @@ script:
     # Since we ran the tests above, we just need to check code here.
     - flake8 overwatch
 after_success:
-    # Information about test coverage
-    - coveralls
-    # Build the docker image
     # This will work for both tags and standard buidls. The build is performed for PRs, but it won't be deplyoed.
     # First, determine the Overwatch branch. If ${TRAVIS_BRANCH} is the same as ${TRAVIS_TAG}, then means that we're
     # working with a tag and we should use the master branch (which won't be available under $TRAVIS_BRANCH because
