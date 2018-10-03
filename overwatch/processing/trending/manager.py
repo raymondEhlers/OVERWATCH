@@ -10,7 +10,7 @@ import overwatch.processing.qa as qa
 import overwatch.processing.trending.constants as CON
 from overwatch.processing.processingClasses import histogramContainer
 from overwatch.processing.trending.info import TrendingInfo
-from overwatch.processing.trending.object import TrendingObject
+from overwatch.processing.trending.objects.object import TrendingObject
 
 logger = logging.getLogger(__name__)
 

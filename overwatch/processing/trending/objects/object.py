@@ -4,10 +4,8 @@ import os
 import sys
 
 import ROOT
-import numpy as np
 
 import overwatch.processing.trending.constants as CON
-
 # https://stackoverflow.com/questions/35673474/using-abc-abcmeta-in-a-way-it-is-compatible-both-with-python-2-7-and-python-3-5/41622155#41622155
 from overwatch.processing.processingClasses import histogramContainer
 
@@ -24,8 +22,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-# class TrendingObject(ABC):
-class TrendingObject:
+class TrendingObject(ABC):
 
     def __init__(self, name, description, histogramNames, subsystemName, parameters):
         # type: (str, str, list, str, dict) -> None
@@ -45,39 +42,41 @@ class TrendingObject:
     def __str__(self):
         return self.name
 
-    # @abc.abstractmethod
+    @abc.abstractmethod
     def initStartValues(self):  # type: () -> Any
+        """Example:
         return np.zeros((self.maxEntries, 2), dtype=np.float)
+        """
 
     @property
     def histogram(self):
-        return self._histogram or self.retrieveHist()
+        if self._histogram is None:
+            self._histogram = self.retrieveHist()
+        return self._histogram
 
-    # @abc.abstractmethod
-    def retrieveHist(self):
-        # Define TGraph
-        # TH1's need to be defined more carefully, as they seem to possible cause memory corruption
-        # Multiply by 60.0 because it expects the times in seconds
-        #  TODO multiply what? OK: in old TrendingObject was option SetTimeDisplay
-        self._histogram = ROOT.TGraphErrors(self.maxEntries)
-        self._histogram.SetName(self.name)
-        self._histogram.GetXaxis().SetTimeDisplay(True)
-        self._histogram.SetTitle(self.desc)
+    @abc.abstractmethod
+    def retrieveHist(self):  # type: () -> ROOT.TObject
+        """Example:
+        histogram = ROOT.TGraphErrors(self.maxEntries)
+        histogram.SetName(self.name)
+        histogram.GetXaxis().SetTimeDisplay(True)
+        histogram.GetXaxis()
+        histogram.SetTitle(self.desc)
+        histogram.SetMarkerStyle(ROOT.kFullCircle)
 
         for i in range(len(self.trendedValues)):
-            self._histogram.SetPoint(i, i, self.trendedValues[i, 0])
-            self._histogram.SetPointError(i, i, self.trendedValues[i, 1])
+            histogram.SetPoint(i, i, self.trendedValues[i, 0])
+            histogram.SetPointError(i, i, self.trendedValues[i, 1])
 
-        return self._histogram
+        return histogram
+        """
 
     def processHist(self, canvas):
         self.resetCanvas(canvas)
         canvas.cd()  # Ensure we plot onto the right canvas
 
-        ROOT.gStyle.SetOptTitle(False)  # turn off title #TODO false vs 0?
-        hist = self.histogram
-        hist.SetMarkerStyle(ROOT.kFullCircle)
-        hist.Draw(self.drawOptions)
+        ROOT.gStyle.SetOptTitle(False)  # turn off title
+        self.histogram.Draw(self.drawOptions)
 
         # Replace any slashes with underscores to ensure that it can be used safely as a filename
         outputNameWithoutExt = self.name.replace("/", "_") + '.{}'
@@ -100,8 +99,9 @@ class TrendingObject:
         canvas.SetLogy(False)
         canvas.SetLogz(False)
 
-    # @abc.abstractmethod
+    @abc.abstractmethod
     def addNewHistogram(self, hist):  # type: (histogramContainer) -> None
+        """Example:
         if self.currentEntry > self.maxEntries:
             self.trendedValues = np.delete(self.trendedValues, 0, axis=0)
         else:
@@ -109,6 +109,7 @@ class TrendingObject:
 
         newValue = self.getMeasurement(hist)
         self.trendedValues = np.append(self.trendedValues, [newValue], axis=0)
+        """
 
     @staticmethod
     def getMeasurement(hist):  # type: (histogramContainer) -> Any

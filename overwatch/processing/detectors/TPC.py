@@ -17,7 +17,7 @@ logger = logging.getLogger(__name__)
 # Used for sorting and generating html
 from .. import processingClasses
 
-from ..trendingClasses import TrendingObjectMean, createIfNotExist
+from ..trendingClasses import createIfNotExist
 
 def defineTPCTrendingObjects(trending, *args, **kwargs):
     # Being a bit clever so we don't have to repeat too much code
@@ -42,12 +42,12 @@ try:
     from typing import *
 except ImportError:
     pass
-from overwatch.processing.trending.info import TrendingInfo
-from overwatch.processing.trending.object import TrendingObject
+from overwatch.processing.trending.info import TrendingInfo, TrendingInfoException
+from overwatch.processing.trending.objects.meanTrending import MeanTrending
+
 
 def getTPCTrendingObjectInfo():  # type: () -> List[TrendingInfo]
-    """Data format must be valid - there is no check format - TODO"""
-    trendingInfoList = [
+    infoList = [
         ("TPCClusterTrending", "<TPC clusters>: (p_{T} > 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_0_5_7_restrictedPtEta"]),
         ("TPCFoundClusters", "<Found/Findable TPC clusters>: (p_{T} > 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_2_5_7_restrictedPtEta"]),
         ("TPCdcaR", "<DCAr> (cm)>: (p_{T}> 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_3_5_7_restrictedPtEta"]),
@@ -58,7 +58,13 @@ def getTPCTrendingObjectInfo():  # type: () -> List[TrendingInfo]
         ("histMpos", "<Multiplicity of pos. tracks>", ["TPCQA/h_tpc_event_recvertex_4"]),
         ("histMneg", "<Multiplicity of neg. tracks>", ["TPCQA/h_tpc_event_recvertex_5"])
     ]
-    trendingInfoList = [TrendingInfo(*args+(TrendingObject,)) for args in trendingInfoList]
+    trendingInfoList = []
+    for name, desc, histograms in infoList:
+        try:
+            trendingInfoList.append(TrendingInfo(name, desc, histograms, MeanTrending))
+        except TrendingInfoException as mt:
+            logger.warning(mt)
+
     return trendingInfoList
 
 ######################################################################################################

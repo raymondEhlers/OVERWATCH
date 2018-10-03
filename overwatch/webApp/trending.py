@@ -29,7 +29,7 @@ def trending():
     (error, subsystemName, requestedHist, jsRoot, ajaxRequest) = validation.validateTrending()
 
     # Create trending container from stored trending information
-    trendingManager = TrendingManager(db[CON.TRENDING], serverParameters)
+    trendingManager = TrendingManager(db, serverParameters)
     subsystemName = determineSubsystemName(subsystemName, trendingManager)
     assert subsystemName
 

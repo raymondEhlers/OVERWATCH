@@ -731,6 +731,7 @@ def processAllRuns():
         from .trending.manager import TrendingManager
         trendMan = TrendingManager(dbRoot, processingParameters)  # TODO test
         trendMan.createTrendingObjects()
+        transaction.commit()
 
         # TODO remove following lines
         trendingContainer = processingClasses.trendingContainer(dbRoot["trending"])
