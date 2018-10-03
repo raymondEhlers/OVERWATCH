@@ -4,5 +4,5 @@
 """
 
 __all__ = [
-           "dqmReceiver"
-          ]
+    "dqmReceiver"
+]

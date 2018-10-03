@@ -1,7 +1,6 @@
 #!/usr/bin/env python
 
 import requests
-import json
 from io import StringIO
 import os
 import contextlib
@@ -36,7 +35,7 @@ def getFile(filename, fileObject, stream = False):
         if "error" in r.headers:
             print("ERROR: {}".format(r.headers["error"]))
             raise ErrorInGettingFile(r.headers["error"])
-    
+
     return (r.ok, r.status_code, fileObject)
 
 def putFile(filename, file = None, localFilename = None):
@@ -48,7 +47,7 @@ def putFile(filename, file = None, localFilename = None):
         file = open(filename, "rb")
 
     print("filename: {}, file: {}".format(filename, file))
-    r = requests.put("{host}/{filename}".format(host = host, filename = filename), files = { "file": file })
+    r = requests.put("{host}/{filename}".format(host = host, filename = filename), files = {"file": file})
     return (r.ok, r.status_code, r.text)
 
 @contextlib.contextmanager

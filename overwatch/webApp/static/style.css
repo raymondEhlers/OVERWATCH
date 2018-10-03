@@ -1,9 +1,17 @@
-/* Started from: http://cssreset.com/creating-fixed-headers-with-css/ */
-/* Most of these values are more or less hacks. It is usually easiest to understand each setting */
-/* from inspecting elements when viewing the pages in the browser */
+/**
+  * Provide general styling for Overwatch.
+  *
+  * Styling is predominately based around customizing Polymer classes, as well the layout of elements within
+  * particular pages.
+  *
+  * NOTE: For our purposes, this styling is sufficient for getting the job done. However, it really isn't
+  *       very sophisticated and could most certainly benefit from a more experienced developer.
+  *
+  * Author: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
+  */
 
 /* General header elements */
-/* A fixed header for both desktop and mobile */
+/* A fixed polymer header for both desktop and mobile */
 .header {
     /* Appearance */
     background-color: #003E72;
@@ -11,7 +19,7 @@
 }
 
 /* Style the horizontal dividing line */
-/* Derived from : https://css-tricks.com/examples/hrs/ */
+/* Derived from: https://css-tricks.com/examples/hrs/ */
 hr {
     border: 0;
     height: 2px;
@@ -21,7 +29,7 @@ hr {
     /*background-image: linear-gradient(to right, rgba(0, 0, 0, 0), rgba(0, 0, 0, 0.75), rgba(0, 0, 0, 0));*/
 }
 
-/* Menu icon settings */
+/* Style all icons in the header */
 .menuIcon {
     color: white;
 }
@@ -62,68 +70,6 @@ hr {
     color: red;
 }
 
-/* Responsive elements */
-/* Contains the time dependent merge. */
-.responsiveTimeDependentMerge {
-    /* Position and size */
-    width: 100%;
-    /* Create some spacing below the links in the header */
-    margin-top: 3px;
-    /* Provides the border between the header links and the controls
-     * When there are no controls, it appears as bottom border for the header between the header and the page */
-    border-top: 3.5px solid #4588ba;
-    background-color: #6AADE4;
-    /* Allows child content to be centered */
-    text-align: center;
-}
-
-/* Time dependent merge elements */
-/* The form that controls the time dependent merge */
-#timeDependentMergeControls {
-    /* Ensures the controls do not overflow the page */
-    max-width: 100%;
-    word-wrap: break-word;
-    /* To center the controls */
-    margin: 0px auto;
-    /* To center the controls - perhaps not necessary? */
-    display: inline-block;
-}
-/* Styling of the form that holds the merge controls */
-.mergeControlsContainer {
-    /* Determined by measuring the size when displaying a four digit time next to the control */
-    min-width: 180px;
-    /* Ensures the the elements are shown side by side */
-    display: inline-block;
-}
-/* Contains the timing information (ie info about what data was actually used) from the time dependent merge */
-.timeSliceResults {
-    margin-top: 2px;
-    /* Center the text */
-    text-align: center;
-}
-
-/* Handle smaller screens */
-/* The check box is used to show or hide the menu. This way, we do not need to rely on hover, which may not work on mobile. */
-#menuToggle {
-    /* Always hide the checkbox */
-    display: none;
-}
-/* The icon which is clicked to show the menu */
-.menuIconStop {
-    /*display: hidden;*/
-    width: 40px;
-    height: 40px;
-    background: #4C8FEC url("menuIcon.png") center;
-    /* The png is much larger than we need, so we have to scale it.
-     * See: https://stackoverflow.com/a/16080995 */
-    background-size: 100%;
-}
-/* The label of the check box (ie. the menu icon) */
-label {
-    /* Show the cursor when over the menu icon */
-    cursor: pointer;
-}
-
 /* Main body elements */
 body {
     background-color: #C6E2FF;
@@ -138,10 +84,6 @@ body {
 h1 {
     /* Allow left and right floated elements (such as div) in a given header */
     overflow: auto;
-}
-h1 > div {
-    /* Set font size such that the h1 on the run page shrinks dynamically and does not overlap with the basic QA link. */
-    font-size: 5.5vw;
 }
 h2 {
     /* Ensures that headers do not overflow the width of the page */
@@ -183,52 +125,7 @@ a.anchor {
     top: -60px;
 }
 
-/* Container for all content */
-#contentContainerTemp {
-    /* Narrowing the width a bit makes the page more viewable.
-     * The width is set relative to the viewport */
-    width: 90vw;
-    /* Ensures the div reaches to the end of the content */
-    height: 100vh;
-    /* Ensures that it stays below the header */
-    padding-top: 60px;
-    /* Allows the div to be centered. */
-    margin: 0px auto;
-}
-/* Creates a border around content to divide up the page */
-.contentDivider {
-    /* Ensure some reasonable spacing */
-    /*margin-top: 24px;
-    padding-bottom: 15px;*/
-    /* Create the border on the top and bottom to divide.
-     * This is perhaps not the most scalable because putting two of these
-     * next to each other does not work well (it creates two borders), but
-     * it is sufficient for our purposes */
-    /*border-top: 3px solid #4588ba;
-    border-bottom: 3px solid #4588ba;*/
-    border: 3px solid #4588ba;
-    position: fixed;
-    top: 32.6px;
-    left: 0px;
-    width: 25vw;
-    /*height: calc(100vh-60px);*/
-    height: auto;
-    background-color: white;
-    overflow: auto;
-    word-wrap: break-word;
-}
-
-/* Styles the QA Link on the main run page of the desktop. */
-.basicQALink {
-    /* Remove the underline to make the display more similar to the run list header */
-    text-decoration: none;
-}
-.basicQALink:hover {
-    /* Show the underline when hovering to make clear that it is a link */
-    text-decoration: underline;
-}
-
-/* Sets the styling on the tables containing the run information shown on the main run page */
+/* Sets the styling on the tables containing the run information shown on the main run page. */
 .rootPageRunListTable {
     /* Makes it easier to view */
     padding-top: 18px;
@@ -254,6 +151,7 @@ a.anchor {
 }
 
 /* Contains grid of images on each run page */
+/* Probably should be replaced by iron-flex-layout */
 .gridContainer {
     /* The "overflow: auto;" is a hack to keep the container div from collapsing to 0 height
      * See: https://stackoverflow.com/q/218760 */
@@ -268,6 +166,7 @@ a.anchor {
     padding: 0px 1%;
 }
 
+/* Contact page styling */
 /* Sets the location of the contact link shown on all pages */
 .contactLinkContainer {
     margin: 0px auto;
@@ -280,134 +179,8 @@ a.anchor {
     text-align: center;
     margin: 0px;
 }
-
 /* Changes the table displayed on the contact page. */
 .contactTableData {
     padding-right: 30px;
 }
 
-/* Button to submit a time dependent merge
- * Created at: http://css3buttongenerator.com/ */
-.submitButton {
-    background: #3498db;
-    background-image: -webkit-linear-gradient(top, #3498db, #2980b9);
-    background-image: -moz-linear-gradient(top, #3498db, #2980b9);
-    background-image: -ms-linear-gradient(top, #3498db, #2980b9);
-    background-image: -o-linear-gradient(top, #3498db, #2980b9);
-    background-image: linear-gradient(to bottom, #3498db, #2980b9);
-    -webkit-border-radius: 28px;
-    -moz-border-radius: 28px;
-    border-radius: 28px;
-    /*font-family: Arial;*/
-    color: #ffffff;
-    /*font-size: 20px; */
-    padding: 5px 10px 5px 10px;
-    border: 0px;
-    /*border: solid #1f628d 2px;*/
-    margin-bottom: 2px;
-    text-decoration: none;
-    /* Ensures that the button aligns with everything else. See: https://stackoverflow.com/a/20125492 */
-    vertical-align: top;
-    margin-top: 1px;
-}
-/* Change the style on hover to make the button clear */
-.submitButton:hover {
-    background: #3cb0fd;
-    background-image: -webkit-linear-gradient(top, #3cb0fd, #3498db);
-    background-image: -moz-linear-gradient(top, #3cb0fd, #3498db);
-    background-image: -ms-linear-gradient(top, #3cb0fd, #3498db);
-    background-image: -o-linear-gradient(top, #3cb0fd, #3498db);
-    background-image: linear-gradient(to bottom, #3cb0fd, #3498db);
-    text-decoration: none;
-}
-
-/* Media queries to handle different screen sizes.
- * 600px is selected arbitrarily */
-@media screen and (max-width: 600px) {
-    /* Make the body wider on mobile since space is more limited. */
-    #contentContainerTemp {
-        width: 95vw;
-    }
-    h1 > div {
-        /* Reset font size when on mobile to ensure that it stays large enough */
-        font-size: 100%;
-    }
-
-    /* Show the menu icon */
-    .menuIconStop {
-        /* Ensures that the icon is shown on the same line as the other links in the header */
-        display: inline-block;
-        /* Should be on the right side of the screen */
-        float: right;
-        /* Comfortable spacing around the icon */
-        margin-top: 10px;
-        margin-right: 20px;
-        margin-bottom: 10px;
-    }
-    /* Selects the sibling element (menuIcon) located after the checkbox */
-    #menuToggle:checked + .menuIconStop {
-        /* Changes the menu background color to make it clear that it is selected.
-         * The color is selected to match the border of the menu */
-        background-color: #444;
-    }
-    /* Selects responsiveContent class after menuToggle */
-    #menuToggle:checked ~ .responsiveContent {
-        /* Makes responsive content visible when clicked */
-        display: block;
-    }
-
-    /* Styles the menu that pops up when the menu icon is selected */
-    .responsiveContent {
-        /* Hides the content when the menu is not selected */
-        display: none;
-        /* Sets the position of the menu */
-        position: absolute;
-        /* We set the position of the upper right corner
-         * The icon is 40px + 10px margin on the top = 50px from the top
-         * The icon has a margin of 20px from the right */
-        top: 50px;
-        right: 20px;
-        /* Gives some spacing around the content */
-        padding: 20px;
-        /* The border differentiates the menu from the rest of the page */
-        border: 5px solid #444;
-        /* The menu also differentiates the menu from the rest of the page */
-        background: #000;
-        /* Ensures that the menu maintains a reasonable width */
-        max-width: 75%;
-    }
-    
-    /* Styles the time dependent merge controls to make them stand out */
-    .responsiveTimeDependentMerge {
-        /* Repeats color from the border, but this should be fine */
-        background-color: #444;
-        /* Puts a border around the entire element to ensure it is not confused with other links.
-         * When the controls do no exist (ie on the main run page), it creates a divider that is 6px wide.
-         * This is a bit of a hack, but it seems to look reasonable */
-        border: 3px solid #4588ba;
-    }
-    /* Contains the timing information (ie info about what data was actually used) from the time dependent merge */
-    .timeSliceResults {
-        /* Adds a divider between the controls and the information in the menu */
-        border-top: 3px solid #4588ba;
-    }
-    .basicQALink {
-        /* Remove the basic QA link from the run list header.
-         * It is instead shown in the menu (using a different element). */
-        display: none;
-    }
-    /* Replaces the bottom border of the header that is provided by responsiveTimeDependentMerge in
-     * the desktop version. This is necessary since responsiveTimeDependentMerge is in the menu on mobile */
-    .headerContainer {
-        border-bottom: 3px solid #4588ba;
-    }
-}
-
-/* NOTE: The site is not really usable below approximately this size. */
-@media screen and (max-width: 350px) {
-    /* Support iPhone by narrowing the space between links so that nothing overlaps.
-     * This is really just a hack, but it should be sufficient */
-    .headerLink {
-        padding: 0px 2px;
-    }
-}

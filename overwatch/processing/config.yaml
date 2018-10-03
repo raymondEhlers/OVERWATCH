@@ -19,9 +19,6 @@ forceRecreateSubsystem: false
 # Note that this can change the merging if new information has arrived since the last merge.
 forceNewMerge: False
 
-# Transfer data to the remote system.
-sendData: False
-
 # Set the type of merging based on the data we are receiving. If set to true, that means we are receiving
 # cumulative files (i.e. the hists are not reset after they are sent by the HLT). In that case,
 # to do a partial merge we take the last run file and subtract it from the first. 
@@ -31,18 +28,4 @@ cumulativeMode: True
 # Don't include a trailing slash! (This may be mitigated by os.path calls, but not worth the
 # risk in changing it).
 dirPrefix: *dataFolder
-
-# Username at remote system for sending data.
-remoteUsername: ""
-
-# Remote system hostnames.
-# The number of entries in remoteSystems must match remoteFileLocations!
-remoteSystems:
-    - "aliceoverwatch.physics.yale.edu"
-
-# Remote locations where to store the data files.
-# The number of entries in each dict label must match remoteSystems!
-remoteFileLocations:
-    data:
-        - "/opt/www/aliceoverwatch/data/"
 

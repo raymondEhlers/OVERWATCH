@@ -17,29 +17,29 @@
 {%- endif -%}
 <hr />
 
-{# NOTE: We cannot use loop.first because we loop through many empty histGroups! #}
-{# See: https://stackoverflow.com/a/4880398 #}
-{% set firstLoopCompleted = [] %}
-{% set threshold = [] %}
+{#- NOTE: We cannot use loop.first because we loop through many empty histGroups! -#}
+{#- See: https://stackoverflow.com/a/4880398 -#}
+{%- set firstLoopCompleted = [] -%}
+{%- set threshold = [] -%}
 {% for histGroup in subsystem.histGroups %}
-    {% if selectedHistGroup == histGroup.selectionPattern or (selectedHistGroup == None and firstLoopCompleted == []) %}
+    {%- if selectedHistGroup == histGroup.selectionPattern or (selectedHistGroup == None and firstLoopCompleted == []) -%}
         {%- for histName in histGroup.histList -%}
-            {%- set hist = subsystem.hists[histName] %}
-            {% if selectedHist == hist.histName or selectedHist == None %}
-                {% if histGroup.plotInGrid == False or (histGroup.plotInGrid == True and firstLoopCompleted == []) %}
+            {%- set hist = subsystem.hists[histName] -%}
+            {%- if selectedHist == hist.histName or selectedHist == None -%}
+                {%- if histGroup.plotInGrid == False or (histGroup.plotInGrid == True and firstLoopCompleted == []) -%}
                     {# Effective increments our counter #}
-                    {% if firstLoopCompleted.append(1) %}{% endif %}
+                    {%- if firstLoopCompleted.append(1) %}{% endif %}
                     <a class="histAnchor" data-histname="{{ hist.histName }}" data-histgroup="{{ histGroup.selectionPattern }}" name="{{ hist.histName }}"></a>
                     {% if histGroup.plotInGrid == True -%}
                         <h2>{{ histGroup.prettyName }}</h2>
                     {%- else -%}
                         <h2>{{ hist.prettyName }}</h2>
                     {%- endif %}
-                    {% if hist.information != dict() %}
-                        {% for label, info in hist.information.items() %}
+                    {%- if hist.information != dict() -%}
+                        {%- for label, info in hist.information.items() -%}
                         {# Get threshold value if it exists #}
                         {%- if label == "Threshold" -%}
-                            {% if threshold.append(info) %}{% endif %}
+                            {%- if threshold.append(info) -%}{%- endif -%}
                         {%- endif -%}
                         <paper-button class="collapsibleContainerButton" id="collapse{{ loop.index0 }}Button{{ hist.histName }}">
                             <div>{{ label }}</div>
@@ -49,30 +49,30 @@
                             <div>{{ info }}</div>
                         </iron-collapse>
                         <br />
-                        {% endfor %}
-                    {% endif %}
-                {% endif %}
+                        {% endfor -%}
+                    {% endif -%}
+                {% endif -%}
                 {# If grid, then add class #}
                 {# Set histogramContainer style when we using jsRoot to set the proper shadows #}
                 {%- set histogramContainerClasses = "histogramContainerStyle" -%}
-                {% if histGroup.plotInGrid == True %}
+                {%- if histGroup.plotInGrid == True -%}
                     {# TODO: Determine how to properly show the grid with iron-flex-layout #}
                     {# See: The example on this page: https://stackoverflow.com/a/31484427 -- https://codepen.io/StijnDeWitt/pen/EyPyyL #}
                     <p>Grid!</p>
-                {% endif %}
+                {% endif -%}
                 <div id="{{ hist.histName }}" class="histogramContainer {% if jsRoot == True %}{{ histogramContainerClasses }}{% endif %}" data-filename="{{ jsonFilenameTemplate.format(hist.histName.replace("/", "_")) }}">
-                {% if jsRoot != True %}
+                {%- if jsRoot != True %}
                     <img src="{{ url_for("protected", filename=imgFilenameTemplate.format(hist.histName.replace("/", "_"))) }}" alt="{{ hist.histName }}">
-                {% else %}
+                {%- else %}
                     {# Provide indication that we are loading jsroot content #}
                     {# It will disappear once jsroot loads the histogram #}
                     <p>Loading...</p>
-                {% endif %}
+                {%- endif %}
                 </div>
-            {% endif %}
-        {% endfor -%}
-    {% endif %}
-{% endfor %}
+            {%- endif %}
+        {%- endfor -%}
+    {% endif -%}
+{% endfor -%}
 
 {# Should only get here if nothing was selected! #}
 {%- if firstLoopCompleted == [] -%}

@@ -46,12 +46,14 @@ def XRDFile(filename, mode):
     #__baseUrl__ = ""
     # Translation of modes from rootpy
     # Defined in rootpy.io.root_open.mode_map
-    __xrdModes__ = {"a": OpenFlags.UPDATE,
-                 "a+": OpenFlags.UPDATE,
-                 "r": OpenFlags.READ,
-                 "r+": OpenFlags.UPDATE,
-                 "w": OpenFlags.RECREATE,
-                 "w+": OpenFlags.RECREATE}
+    __xrdModes__ = {
+        "a": OpenFlags.UPDATE,
+        "a+": OpenFlags.UPDATE,
+        "r": OpenFlags.READ,
+        "r+": OpenFlags.UPDATE,
+        "w": OpenFlags.RECREATE,
+        "w+": OpenFlags.RECREATE
+    }
 
     print("Filename: {}, mode: {}".format(filename, mode))
     with XRootD.client.File() as f:

@@ -11,8 +11,6 @@ import logging
 
 # Configuration
 from overwatch.base import config
-## For configuring logger
-from overwatch.base import utilities
 from overwatch.base import storageWrapper
 (apiParameters, filesRead) = config.readConfig(config.configurationType.api)
 
@@ -22,7 +20,7 @@ logger = logging.getLogger(__name__)
 # Alternatively, we could set "overwatch.receiver" to get everything derived from that
 #logger = logging.getLogger("overwatch.receiver")
 
-from flask import Flask, url_for, request, render_template, redirect, flash, send_file, send_from_directory, Markup, jsonify, session, make_response, stream_with_context, Response
+from flask import Flask, request, send_file, make_response
 import flask_restful
 import flask_zodb
 from io import StringIO
@@ -115,7 +113,7 @@ class FilesAccess(flask_restful.Resource):
         print(next(itervalues(subsystemContainer.files)).filename)
         try:
             requestedFile = next(fileContainer for fileContainer in subsystemContainer.files.values() if fileContainer.filename.split("/")[-1] == filename)
-        except StopIteration as e:
+        except StopIteration:
             print("Stop iteration error!")
             response = responseForSendingFile(additionalHeaders = responseHeaders)
             response.headers["error"] = "Could not find requested file {0}".format(filename)
@@ -179,7 +177,7 @@ class FilesAccess(flask_restful.Resource):
             savedFile = True
         else:
             savedFile = False
-            raise Exception("No valid file passed.")
+            raise ValueError("No valid file passed.")
 
         return savedFile
 

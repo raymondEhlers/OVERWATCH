@@ -1,4 +1,5 @@
 #!/usr/bin/env python
+
 """ Main package supporting processing.
 
 These modules contain most of the code that actually processes ROOT files.
@@ -12,5 +13,5 @@ __all__ = [
     "mergeFiles",
     "processRuns",
     "processingClasses",
-    "qa"
+    "pluginManager",
 ]

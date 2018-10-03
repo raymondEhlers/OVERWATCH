@@ -1,0 +1,17 @@
+dataFolder: data
+dataHandlingTimeToSleep: 20
+dataTransferLocations: {EOS: /eos/experiment/alice/overwatch/, site1: ''}
+dataTransferRetries: 2
+databaseLocation: file://data/overwatch.fs
+debug: false
+emailLogger: false
+emailLoggerAddresses: ['']
+fileExtension: png
+loggingLevel: INFO
+receiverData: data
+receiverDataTempStorage: data/tempStorage
+staticFolder: static
+subsystemList: &id001 [EMC, TPC, HLT]
+subsystemsWithRootFilesToShow: *id001
+templateFolder: templates
+trending: true
