@@ -30,6 +30,7 @@ except ImportError:
 
 
 def getTPCTrendingObjectInfo():  # type: () -> List[TrendingInfo]
+    """TODO add docstring"""
     infoList = [
         ("TPCClusterTrending", "<TPC clusters>: (p_{T} > 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_0_5_7_restrictedPtEta"]),
         ("TPCFoundClusters", "<Found/Findable TPC clusters>: (p_{T} > 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_2_5_7_restrictedPtEta"]),

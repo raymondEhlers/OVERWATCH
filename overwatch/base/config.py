@@ -256,9 +256,5 @@ def readConfig(configType):
         warnings.simplefilter("ignore")
         globalConfig = yaml.load(configs, Loader = yaml.SafeLoader)
 
-    dbLoc = globalConfig["databaseLocation"]
-    dbLoc = dbLoc if dbLoc.startswith("file://") else "file://" + dbLoc
-    globalConfig["databaseLocation"] = dbLoc
-
     return (globalConfig, filesRead)
 

@@ -45,4 +45,3 @@ def findFunctionsForHLTHistogram(subsystem, hist, **kwargs):
     """
     # General HLT display options
     hist.functionsToApply.append(generalHLTOptions)
-
