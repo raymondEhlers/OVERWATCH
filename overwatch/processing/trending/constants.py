@@ -1,4 +1,4 @@
-TRENDING = 'trending2'  # TODO remove '2' after migrate
+TRENDING = 'trending'
 SUBSYSTEMS = 'subsystemList'
 DIR_PREFIX = 'dirPrefix'
 RECREATE = 'forceRecreateSubsystem'

@@ -1,5 +1,6 @@
 import logging
 import os
+from collections import defaultdict
 
 import ROOT
 from BTrees.OOBTree import BTree
@@ -24,7 +25,7 @@ class TrendingManager(Persistent):
 
     def __init__(self, dbRoot, parameters):  # type: (PersistentMapping, dict)->None
         self.parameters = parameters
-        self.histToTrending = {}  # type: Dict[str, List[TrendingObject]]
+        self.histToTrending = defaultdict(list)  # type: Dict[str, List[TrendingObject]]
 
         self.prepareDataBase(CON.TRENDING, dbRoot)
         self.trendingDB = dbRoot[CON.TRENDING]  # type: BTree[str, BTree[str, TrendingObject]]
@@ -82,43 +83,22 @@ class TrendingManager(Persistent):
 
     def subscribe(self, trendingObject, histogramNames):  # type: (TrendingObject, List[str])->None
         for histName in histogramNames:
-            self.histToTrending.setdefault(histName, []).append(trendingObject)
+            self.histToTrending[histName].append(trendingObject)
 
     def resetDB(self):
         self.trendingDB.clear()
 
     def processTrending(self):
         # Cannot have same name as other canvases, otherwise the canvas will be replaced, leading to segfaults
-        canvasName = 'processTrendingCanvas2'  # TODO remove '2'
+        canvasName = 'processTrendingCanvas'
         canvas = ROOT.TCanvas(canvasName, canvasName)
 
         for subsystemName, subsystem in self.trendingDB.items():  # type: (str, BTree[str, TrendingObject])
-            logger.debug("{}: subsystem from trending: {}".format(subsystemName, subsystem))
+            logger.debug("subsystem: {} is going to be trended".format(subsystemName))
             for name, trendingObject in subsystem.items():  # type: (str, TrendingObject)
                 logger.debug("trendingObject: {}".format(trendingObject))
-                # self.printNonZeroValues(trendingObject.retrieveHistogram())
                 trendingObject.processHist(canvas)
 
-    @staticmethod
-    def printNonZeroValues(hist):
-        import ctypes
-        x = ctypes.c_double(0.)
-        y = ctypes.c_double(0.)
-        nonzeroBins = []
-        values = []
-        for index in range(hist.hist.GetN()):
-            hist.hist.GetPoint(index, x, y)
-            values.append(y.value)
-            if y.value > 0:
-                nonzeroBins.append(index)
-        logger.debug("nonzeroBins: {}".format(nonzeroBins))
-        logger.debug("values: {}".format(values))
-
     def noticeAboutNewHistogram(self, hist):  # type: (histogramContainer) -> None
-        try:
-            trendingObjects = self.histToTrending[hist.histName]
-        except KeyError:
-            return
-        else:
-            for trend in trendingObjects:
-                trend.addNewHistogram(hist)
+        for trend in self.histToTrending.get(hist.histName, []):
+            trend.addNewHistogram(hist)

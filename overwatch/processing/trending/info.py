@@ -42,7 +42,7 @@ class TrendingInfo:
             if len(objects) < 1:
                 raise TrendingInfoException(msg='NoHistograms')
         except TypeError:
-            raise TrendingInfoException(msg='NotIterable', got=objects)
+            raise TrendingInfoException(msg='NotCollection', got=objects)
 
         for obj in objects:
             TrendingInfo.validate(obj)

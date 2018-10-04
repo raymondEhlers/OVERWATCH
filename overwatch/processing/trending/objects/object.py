@@ -6,9 +6,9 @@ import sys
 import ROOT
 
 import overwatch.processing.trending.constants as CON
-# https://stackoverflow.com/questions/35673474/using-abc-abcmeta-in-a-way-it-is-compatible-both-with-python-2-7-and-python-3-5/41622155#41622155
 from overwatch.processing.processingClasses import histogramContainer
 
+# https://stackoverflow.com/questions/35673474/using-abc-abcmeta-in-a-way-it-is-compatible-both-with-python-2-7-and-python-3-5/41622155#41622155
 if sys.version_info >= (3, 4):
     ABC = abc.ABC
 else:
@@ -48,6 +48,18 @@ class TrendingObject(ABC):
         return np.zeros((self.maxEntries, 2), dtype=np.float)
         """
 
+    @abc.abstractmethod
+    def addNewHistogram(self, hist):  # type: (histogramContainer) -> None
+        """Example:
+        if self.currentEntry > self.maxEntries:
+            self.trendedValues = np.delete(self.trendedValues, 0, axis=0)
+        else:
+            self.currentEntry += 1
+
+        newValue = self.getMeasurement(hist)
+        self.trendedValues = np.append(self.trendedValues, [newValue], axis=0)
+        """
+
     @property
     def histogram(self):
         if self._histogram is None:
@@ -60,7 +72,6 @@ class TrendingObject(ABC):
         histogram = ROOT.TGraphErrors(self.maxEntries)
         histogram.SetName(self.name)
         histogram.GetXaxis().SetTimeDisplay(True)
-        histogram.GetXaxis()
         histogram.SetTitle(self.desc)
         histogram.SetMarkerStyle(ROOT.kFullCircle)
 
@@ -98,20 +109,3 @@ class TrendingObject(ABC):
         canvas.SetLogx(False)
         canvas.SetLogy(False)
         canvas.SetLogz(False)
-
-    @abc.abstractmethod
-    def addNewHistogram(self, hist):  # type: (histogramContainer) -> None
-        """Example:
-        if self.currentEntry > self.maxEntries:
-            self.trendedValues = np.delete(self.trendedValues, 0, axis=0)
-        else:
-            self.currentEntry += 1
-
-        newValue = self.getMeasurement(hist)
-        self.trendedValues = np.append(self.trendedValues, [newValue], axis=0)
-        """
-
-    @staticmethod
-    def getMeasurement(hist):  # type: (histogramContainer) -> Any
-        value = hist.hist.GetMean(), hist.hist.GetMeanError()
-        return value

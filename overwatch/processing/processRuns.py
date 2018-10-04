@@ -52,8 +52,11 @@ from ..base import utilities
 from . import mergeFiles
 from . import pluginManager
 from . import processingClasses
+from .trending.manager import TrendingManager
 
-def processRootFile(filename, outputFormatting, subsystem, processingOptions = None, forceRecreateSubsystem = False, trendingContainer = None, trendingManager = None):
+
+def processRootFile(filename, outputFormatting, subsystem, processingOptions = None,
+                    forceRecreateSubsystem = False, trendingManager = None):
     """ Given a root file, process all histograms for a given subsystem.
 
     Processing includes assigning the contained histograms to a subsystem, allowing for customization via
@@ -87,7 +90,7 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
             are names of options, while values are the corresponding option values. Default: ``None``. Note: In this case,
             it will use the default subsystem processing options.
         forceRecreateSubsystem (bool): True if subsystems will be recreated, even if they already exist.
-        trendingContainer (trendingContainer): Contains trending objects which will be used when determining which
+        trendingManager (TrendingManager): Contains trending objects which will be used when determining which
             histograms need to be used for trending.
     Returns:
         None. However, the underlying subsystems, histograms, etc, are modified.
@@ -178,10 +181,6 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
             if classifiedHist:
                 # Determine the processing functions to apply
                 pluginManager.findFunctionsForHist(subsystem, hist)
-                # Determine the trending functions to apply
-                if trendingContainer:
-                    trendingContainer.findTrendingFunctionsForHist(hist)
-                    logger.debug("trending container: {}, hist: {}, ")
                 # Add it to the subsystem
                 subsystem.hists[hist.histName] = hist
             else:
@@ -207,62 +206,14 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
             if not retrievedHist:
                 logger.warning("Could not retrieve histogram for hist {}, histList: {}".format(hist.histName, hist.histList))
                 continue
-            processHist(subsystem = subsystem, hist = hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions, trendingManager=trendingManager)
+            processHist(subsystem = subsystem, hist = hist, canvas = canvas, outputFormatting = outputFormatting,
+                        processingOptions = processingOptions, trendingManager = trendingManager)
 
     # Since we are done, we can cleanup by closing the file.
     fIn.Close()
 
-def processTrending(outputFormatting, trending, processingOptions = None):
-    """ Process the trending objects stored in the trending container.
-
-    This function is something of an analog to ``processRootFile()``, except for the trending objects stored in the
-    trending container. It loops over the stored trending objects and retrieves their underlying objects before passing
-    them along to ``processHist()`` for any processing functions and plotting.
-
-    Note:
-        The trending objects need to already be filled by being processed in ``processRootFile()``. ``processTrending()``
-        only deals with processing the already filled trending objects.
-
-    Args:
-        outputFormatting (str): Specially formatted string which contains a generic path to be used when printing
-            histograms.  It must contain ``base``, ``name``, and ``ext``, where ``base`` is the base path, ``name``
-            is the filename and ``ext`` is the extension. Ex: ``{base}/{name}.{ext}``.
-        trending (trendingContainer): Trending object which contains all of the trending objects and additional
-            information.
-        processingOptions (dict): Implemented by the subsystem to note options used during standard processing. Keys
-            are names of options, while values are the corresponding option values. Default: ``None``. In this case,
-            it will use the default trending processing options.
-    Returns:
-        None. However, the underlying trending subsystem, trending objects, etc, are modified.
-    """
-    # Set the proper processing options
-    # If it was passed in, it was from time slices
-    if processingOptions is None:
-        processingOptions = trending.processingOptions
-    logger.debug("processingOptions: {processingOptions}".format(processingOptions = processingOptions))
-
-    # Cannot have same name as other canvases, otherwise the canvas will be replaced, leading to segfaults
-    canvas = ROOT.TCanvas("processTrendingCanvas", "processTrendingCanvas")
-
-    logger.debug("trending.trendingObjects: {}".format([key for key in trending.trendingObjects.keys()]))
-    logger.debug("trending.trendingObjects: {}".format(trending.trendingObjects["TPC"]))
-    for subsystemName, subsystem in iteritems(trending.trendingObjects):
-        logger.debug("{}: subsystem from trending: {}".format(subsystemName, subsystem))
-        for trendingObject in itervalues(subsystem):
-            hist = trendingObject.hist
-            hist.retrieveHistogram(trending = trending, ROOT = ROOT)
-            logger.debug("trendingObject: {}, hist: {}, hist.histName: {}, hist.hist: {}".format(trendingObject, hist, hist.histName, hist.hist))
-
-            # Check for entries for debugging
-            if logger.isEnabledFor(logging.DEBUG):
-                (nonzeroBins, values) = trendingObject.listOfTrendedValuesForPrinting()
-                logger.debug("nonzeroBins: {}".format(nonzeroBins))
-                logger.debug("values: {}".format(values))
-
-            # Process and output the underlying trending object.
-            processHist(subsystem = trending, hist = hist, canvas = canvas, outputFormatting = outputFormatting, processingOptions = processingOptions, subsystemName = subsystemName)
-
-def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, subsystemName = None, trendingManager = None):
+def processHist(subsystem, hist, canvas, outputFormatting, processingOptions,
+                subsystemName = None, trendingManager = None):
     """ Main histogram processing function.
 
     This function is responsible for taking a given ``histogramContainer``, process the underlying histogram
@@ -310,6 +261,7 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, su
             for processing the trending objects where we don't have access to their corresponding ``subsystemContainer``.
             The subsystem name of the ``trendingContainer`` (``TDG``) does not necessarily correspond to the subsystem
             of the object being processed, so we have to pass it here.
+        trendingManager (TrendingManager): Trending Manager will be noticed when histogram is ready
     Returns:
         None. However, the subsystem, histogram, etc are modified and their representations in images
             and ``json`` are written to disk.
@@ -350,12 +302,6 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions, su
         func(subsystem, hist, processingOptions)
 
     logger.debug("histName: {}, hist: {}".format(hist.histName, hist.hist))
-
-    # Apply trending functions
-    logger.debug("hist {} trending objects: {}".format(hist.histName, hist.trendingObjects))
-    for trendingObject in hist.trendingObjects:
-        logger.debug("Filling trending object {}".format(trendingObject.name))
-        trendingObject.fill(hist)
 
     if trendingManager:
         trendingManager.noticeAboutNewHistogram(hist)
@@ -918,27 +864,13 @@ def processAllRuns():
     if "config" not in dbRoot:
         dbRoot["config"] = persistent.mapping.PersistentMapping()
 
-    # Create trending if necessary
-    if "trending" not in dbRoot and processingParameters["trending"]:
-        dbRoot["trending"] = BTrees.OOBTree.BTree()
-
-    # Next, set up the trending.
+    # Set up the trending.
     if processingParameters["trending"]:
-        trendingContainer = processingClasses.trendingContainer(dbRoot["trending"])
-        # Create subsystem specific trending histograms.
-        # "TDG" corresponds to general trending histograms (for example, it could be trending between two subsystem).
-        for subsystem in processingParameters["subsystemList"] + ["TDG"]:
-            trendingObjects = pluginManager.defineTrendingObjects(subsystem)
-            trendingContainer.addSubsystemTrendingObjects(subsystem, trendingObjects, forceRecreateSubsystem = processingParameters["forceRecreateSubsystem"])
-
-        from .trending.manager import TrendingManager
-        trendMan = TrendingManager(dbRoot, processingParameters)  # TODO test
-        trendMan.createTrendingObjects()
+        trendingManager = TrendingManager(dbRoot, processingParameters)
+        trendingManager.createTrendingObjects()
         transaction.commit()
-
     else:
-        trendMan = None
-        trendingContainer = None
+        trendingManager = None
 
     # From here, we start the actual data processing
 
@@ -975,17 +907,19 @@ def processAllRuns():
                 # Process combined root file: plot histograms and save the results of the processing
                 # in both image and `json` on the disk.
                 logger.info("About to process {prettyName}, {subsystem}".format(prettyName = run.prettyName, subsystem = subsystem.subsystem))
-                processRootFile(filename = os.path.join(processingParameters["dirPrefix"], subsystem.combinedFile.filename),
-                                outputFormatting = outputFormattingSave,
-                                subsystem = subsystem,
-                                forceRecreateSubsystem = processingParameters["forceRecreateSubsystem"],
-                                trendingContainer = trendingContainer)
-                if trendingContainer and not trendingContainer.updateToDate:
-                    # As of August 2018, this is where the trending container should step in to
-                    # update the trending objects if they are not entirely up to date (say, if they're
-                    # missing entries because the trending objects were recreated).
-                    # TODO: Loop over process root file with various until it is up to date
-                    pass
+                processRootFile(
+                    filename = os.path.join(processingParameters["dirPrefix"], subsystem.combinedFile.filename),
+                    outputFormatting = outputFormattingSave,
+                    subsystem = subsystem,
+                    forceRecreateSubsystem = processingParameters["forceRecreateSubsystem"],
+                    trendingManager = trendingManager,
+                )
+                # TODO need additional info
+                # As of August 2018, this is where the trending container should step in to
+                # update the trending objects if they are not entirely up to date (say, if they're
+                # missing entries because the trending objects were recreated).
+                # TODO: Loop over process root file with various until it is up to date
+                pass
             else:
                 # We often want to skip processing since most runs won't have new files and will not need to be processed most times.
                 logger.debug("Don't need to process {prettyName}. It has already been processed".format(prettyName = run.prettyName))
@@ -996,20 +930,9 @@ def processAllRuns():
     logger.info("Finished standard processing!")
 
     # Run trending now that we have gotten to the most recent run
-    if trendingContainer:
-        # NOTE: The trending will loop over the trending subsystems in `processTrending()`.
-        logger.info("About to process trending")
-        processTrending(outputFormatting = outputFormattingSave,
-                        trending = trendingContainer)
-
-        # Commit after we have successfully processed the trending
-        transaction.commit()
-
-    if trendMan:
-        trendMan.processTrending()
+    if trendingManager:
+        trendingManager.processTrending()
         transaction.commit()  # Commit after we have successfully processed the trending
-
-
     logger.info("Finished trending processing!")
 
     # Update receiver last modified time if the log exists

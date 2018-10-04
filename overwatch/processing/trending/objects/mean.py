@@ -12,7 +12,6 @@ class MeanTrending(TrendingObject):
         histogram = ROOT.TGraphErrors(self.maxEntries)
         histogram.SetName(self.name)
         histogram.GetXaxis().SetTimeDisplay(True)
-        histogram.GetXaxis()
         histogram.SetTitle(self.desc)
         histogram.SetMarkerStyle(ROOT.kFullCircle)
 
@@ -28,5 +27,5 @@ class MeanTrending(TrendingObject):
         else:
             self.currentEntry += 1
 
-        newValue = self.getMeasurement(hist)
+        newValue = hist.hist.GetMean(), hist.hist.GetMeanError()
         self.trendedValues = np.append(self.trendedValues, [newValue], axis=0)
