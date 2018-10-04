@@ -158,7 +158,7 @@ try:
 except ImportError:
     pass
 from overwatch.processing.trending.info import TrendingInfo, TrendingInfoException
-from overwatch.processing.trending.objects.meanTrending import MeanTrending
+from overwatch.processing.trending.objects.mean import MeanTrending
 
 def getTPCTrendingObjectInfo():  # type: () -> List[TrendingInfo]
     infoList = [

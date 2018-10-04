@@ -26,7 +26,7 @@ def determineSubsystemName(subsystemName, trendingManager):  # type: (str, Trend
 def trending():
     """ Trending visualization"""
     logger.debug("request: {0}".format(request.args))
-    (error, subsystemName, requestedHist, jsRoot, ajaxRequest) = validation.validateTrending()
+    (error, subsystemName, requestedHist, jsRoot, ajaxRequest) = validation.validateTrending(request)
 
     # Create trending container from stored trending information
     trendingManager = TrendingManager(db, serverParameters)

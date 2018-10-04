@@ -654,7 +654,7 @@ def timeSlice():
     else:
         return render_template("error.html", errors={"error": ["Need to access through a run page!"]})
 
-@app.route("/trending", methods=["GET"])
+# @app.route("/trending", methods=["GET"])
 @login_required
 def trending():
     """ Route to provide visualization of trending information.

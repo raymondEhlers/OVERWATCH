@@ -248,7 +248,7 @@ def dqm():
         if payload:
             # Not opening as ROOT file since we are just writing the bytes to a file
             with open(outputPath, "wb") as fOut:
-                fOut.write(payload.encode())  # TODO MERGE check without encoding
+                fOut.write(payload)
 
             savedFile = True
         else:

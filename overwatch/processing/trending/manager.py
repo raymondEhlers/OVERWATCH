@@ -6,7 +6,7 @@ from BTrees.OOBTree import BTree
 from persistent import Persistent
 from persistent.mapping import PersistentMapping
 
-import overwatch.processing.qa as qa
+import overwatch.processing.pluginManager as pluginManager
 import overwatch.processing.trending.constants as CON
 from overwatch.processing.processingClasses import histogramContainer
 from overwatch.processing.trending.info import TrendingInfo
@@ -57,8 +57,8 @@ class TrendingManager(Persistent):
             self._createTrendingObjectsForSubsystem(subsystem)
 
     def _createTrendingObjectsForSubsystem(self, subsystemName):  # type: (str) -> None
-        functionName = "get{}TrendingObjectInfo".format(subsystemName)
-        getTrendingObjectInfo = getattr(qa, functionName, None)  # type: Callable[[], List[TrendingInfo]]
+        functionName = "{subsystem}_get{subsystem}TrendingObjectInfo".format(subsystem=subsystemName)
+        getTrendingObjectInfo = getattr(pluginManager, functionName, None)  # type: Callable[[], List[TrendingInfo]]
         if getTrendingObjectInfo:
             info = getTrendingObjectInfo()
             self._createTrendingObjectFromInfo(subsystemName, info)
