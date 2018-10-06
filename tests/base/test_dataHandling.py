@@ -143,17 +143,19 @@ def testCopyFilesToOverwatchSites(loggingMixin, dataHandlingSetup, transferFunct
                           destination = destination,
                           filenames = filenames)
 
-@pytest.mark.slow
 @pytest.mark.parametrize("transferFunction", [
         dataHandling.copyFilesToOverwatchSites,
         dataHandling.copyFilesToEOS,
     ], ids = ["Overwatch sites", "EOS"])
-def testCopyFilesFailure(loggingMixin, dataHandlingSetup, transferFunction):
+def testCopyFilesFailure(loggingMixin, dataHandlingSetup, transferFunction, mocker):
     """ Test failure of copying by providing invalid input files.
 
-    This test is slow because it has to try the copy (but will eventually fail).
+    This test would be slow because it has to try the copy (but will eventually fail). However, we speed it up by
+    replacing ``time.sleep`` with a mock such that it won't sleep during this test.
     """
     directory, destination, filenames = dataHandlingSetup
+    # Speed up the tests by mocking sleep
+    mocker.patch("overwatch.base.dataHandling.time.sleep")
     # We cannot just set an invalid destination because rsync will create that directory.
     filenames = [os.path.join("invalid", f) for f in filenames]
     failedFilenames = transferFunction(directory = directory,
@@ -163,10 +165,21 @@ def testCopyFilesFailure(loggingMixin, dataHandlingSetup, transferFunction):
     # All of the files should have failed.
     assert failedFilenames == filenames
 
-def testProcessReceivedFiles(loggingMixin, dataHandlingSetup):
+@pytest.mark.parametrize("debugEnabled", [
+    False,
+    True,
+    ], ids = ["Debug disabled", "Debug enabled"])
+def testProcessReceivedFiles(loggingMixin, dataHandlingSetup, mocker, debugEnabled):
     """ Test the process received files driver function. """
     directory, destination, filenames = dataHandlingSetup
+    # Also mock delete so we can test deleting
+    dataHandling.parameters["debug"] = debugEnabled
+    mRemove = mocker.patch("overwatch.base.dataHandling.os.remove")
     (successfullyTransferred, failedFilenames) = dataHandling.processReceivedFiles()
+
+    if debugEnabled is False:
+        for f in successfullyTransferred:
+            mRemove.assert_any_call(os.path.join(dataHandling.parameters["receiverData"], f))
 
     # If everything works, all files should be transferred and none should have failed.
     for siteName, failed in iteritems(failedFilenames):
