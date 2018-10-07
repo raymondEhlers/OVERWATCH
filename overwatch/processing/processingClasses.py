@@ -19,9 +19,6 @@ import persistent
 import os
 import time
 import ruamel.yaml as yaml
-import numpy as np
-import ROOT
-import ctypes
 import logging
 # Setup logger
 logger = logging.getLogger(__name__)

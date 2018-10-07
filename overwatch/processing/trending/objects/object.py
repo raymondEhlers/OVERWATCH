@@ -6,7 +6,6 @@ import sys
 import ROOT
 
 import overwatch.processing.trending.constants as CON
-from overwatch.processing.processingClasses import histogramContainer
 
 # https://stackoverflow.com/questions/35673474/using-abc-abcmeta-in-a-way-it-is-compatible-both-with-python-2-7-and-python-3-5/41622155#41622155
 if sys.version_info >= (3, 4):
@@ -15,7 +14,8 @@ else:
     ABC = abc.ABCMeta('ABC', (object,), {'__slots__': ()})
 
 try:
-    from typing import *
+    from typing import *  # noqa
+    from overwatch.processing.processingClasses import histogramContainer  # noqa
 except ImportError:
     pass
 

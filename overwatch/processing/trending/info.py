@@ -1,5 +1,5 @@
 try:
-    from typing import *
+    from typing import *  # noqa
 except ImportError:
     pass
 

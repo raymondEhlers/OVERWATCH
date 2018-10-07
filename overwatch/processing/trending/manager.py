@@ -5,18 +5,18 @@ from collections import defaultdict
 import ROOT
 from BTrees.OOBTree import BTree
 from persistent import Persistent
-from persistent.mapping import PersistentMapping
 
 import overwatch.processing.pluginManager as pluginManager
 import overwatch.processing.trending.constants as CON
-from overwatch.processing.processingClasses import histogramContainer
-from overwatch.processing.trending.info import TrendingInfo
-from overwatch.processing.trending.objects.object import TrendingObject
 
 logger = logging.getLogger(__name__)
 
 try:
-    from typing import *
+    from typing import *  # noqa
+    from persistent.mapping import PersistentMapping  # noqa
+    from overwatch.processing.processingClasses import histogramContainer  # noqa
+    from overwatch.processing.trending.info import TrendingInfo  # noqa
+    from overwatch.processing.trending.objects.object import TrendingObject  # noqa
 except ImportError:
     pass
 

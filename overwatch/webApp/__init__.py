@@ -4,7 +4,6 @@
 
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
-from . import trending  # TODO temporary solution
 
 __all__ = [
     "webApp",

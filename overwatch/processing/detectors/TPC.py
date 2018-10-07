@@ -24,7 +24,7 @@ from overwatch.processing.trending.info import TrendingInfo, TrendingInfoExcepti
 from overwatch.processing.trending.objects import mean, maximum
 
 try:
-    from typing import *
+    from typing import *  # noqa
 except ImportError:
     pass
 
@@ -46,7 +46,7 @@ def getTPCTrendingObjectInfo():  # type: () -> List[TrendingInfo]
     for name, desc, histograms in infoList:
         try:
             trendingInfoList.append(TrendingInfo(name, desc, histograms, mean.MeanTrending))
-            trendingInfoList.append(TrendingInfo(name+'Max', desc+'Max', histograms, maximum.MaximumTrending))
+            trendingInfoList.append(TrendingInfo(name + 'Max', desc + 'Max', histograms, maximum.MaximumTrending))
         except TrendingInfoException as mt:
             logger.warning(mt)
 

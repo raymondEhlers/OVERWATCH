@@ -1,15 +1,17 @@
 import logging
 from flask_login import login_required
 from flask import request, render_template, jsonify
+from flask import Blueprint
 import jinja2
 import os
 
 import overwatch.processing.trending.constants as CON
 from overwatch.processing.trending.manager import TrendingManager
-from overwatch.webApp.webApp import app, db, serverParameters
+from overwatch.webApp.webApp import db, serverParameters
 from overwatch.webApp import validation
 
 logger = logging.getLogger(__name__)
+trendingPage = Blueprint('trendingPage', __name__)
 
 
 def determineSubsystemName(subsystemName, trendingManager):  # type: (str, TrendingManager) -> str
@@ -21,7 +23,7 @@ def determineSubsystemName(subsystemName, trendingManager):  # type: (str, Trend
             return subsystemName
 
 
-@app.route("/" + CON.TRENDING, methods=["GET", "POST"])
+@trendingPage.route("/" + CON.TRENDING, methods=["GET", "POST"])
 @login_required
 def trending():
     """ Trending visualization"""

@@ -56,7 +56,6 @@ from . import utilities  # NOQA
 
 # Processing module includes
 from ..processing import processRuns
-from ..processing import processingClasses
 
 # Flask setup
 app = Flask(__name__, static_url_path=serverParameters["staticURLPath"], static_folder=serverParameters["staticFolder"], template_folder=serverParameters["templateFolder"])
@@ -64,6 +63,9 @@ app = Flask(__name__, static_url_path=serverParameters["staticURLPath"], static_
 # Setup database
 app.config["ZODB_STORAGE"] = serverParameters["databaseLocation"]
 db = ZODB(app)
+
+from .trending import trendingPage
+app.register_blueprint(trendingPage)
 
 # Set secret key for flask
 if serverParameters["debug"]:
