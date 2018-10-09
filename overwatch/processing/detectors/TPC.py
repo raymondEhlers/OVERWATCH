@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 from .. import processingClasses
 
 from overwatch.processing.trending.info import TrendingInfo, TrendingInfoException
-from overwatch.processing.trending.objects import mean, maximum
+from overwatch.processing.trending.objects import mean, maximum, stdDev
 
 try:
     from typing import *  # noqa
@@ -47,6 +47,7 @@ def getTPCTrendingObjectInfo():  # type: () -> List[TrendingInfo]
         try:
             trendingInfoList.append(TrendingInfo(name, desc, histograms, mean.MeanTrending))
             trendingInfoList.append(TrendingInfo(name + 'Max', desc + 'Max', histograms, maximum.MaximumTrending))
+            trendingInfoList.append(TrendingInfo(name + 'StdDev', desc + 'StdDev', histograms, stdDev.StdDevTrending))
         except TrendingInfoException as mt:
             logger.warning(mt)
 
