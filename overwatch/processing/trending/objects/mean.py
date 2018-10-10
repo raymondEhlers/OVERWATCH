@@ -6,7 +6,7 @@ from overwatch.processing.trending.objects.object import TrendingObject
 
 class MeanTrending(TrendingObject):
     def initStartValues(self):
-        return np.zeros((self.maxEntries, 2), dtype=np.float)
+        return np.zeros((0, 2), dtype=np.float)
 
     def retrieveHist(self):
         histogram = ROOT.TGraphErrors(self.maxEntries)
@@ -17,7 +17,7 @@ class MeanTrending(TrendingObject):
 
         for i in range(len(self.trendedValues)):
             histogram.SetPoint(i, i, self.trendedValues[i, 0])
-            histogram.SetPointError(i, i, self.trendedValues[i, 1])
+            histogram.SetPointError(i, 0, self.trendedValues[i, 1])
 
         return histogram
 

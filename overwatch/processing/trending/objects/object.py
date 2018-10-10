@@ -4,6 +4,7 @@ import os
 import sys
 
 import ROOT
+from persistent import Persistent
 
 import overwatch.processing.trending.constants as CON
 
@@ -22,7 +23,7 @@ except ImportError:
 logger = logging.getLogger(__name__)
 
 
-class TrendingObject(ABC):
+class TrendingObject(ABC, Persistent):
 
     def __init__(self, name, description, histogramNames, subsystemName, parameters):
         # type: (str, str, list, str, dict) -> None
@@ -33,10 +34,10 @@ class TrendingObject(ABC):
         self.parameters = parameters
 
         self.currentEntry = 0
-        self.maxEntries = self.parameters.get(CON.ENTRIES, 50)
+        self.maxEntries = self.parameters.get(CON.ENTRIES, 100)
         self.trendedValues = self.initStartValues()
 
-        self._histogram = None
+        self.histogram = None
         self.drawOptions = 'AP'  # Ensure that the axis and points are drawn on the TGraph
 
     def __str__(self):
@@ -60,12 +61,6 @@ class TrendingObject(ABC):
         self.trendedValues = np.append(self.trendedValues, [newValue], axis=0)
         """
 
-    @property
-    def histogram(self):
-        if self._histogram is None:
-            self._histogram = self.retrieveHist()
-        return self._histogram
-
     @abc.abstractmethod
     def retrieveHist(self):  # type: () -> ROOT.TObject
         """Example:
@@ -77,7 +72,7 @@ class TrendingObject(ABC):
 
         for i in range(len(self.trendedValues)):
             histogram.SetPoint(i, i, self.trendedValues[i, 0])
-            histogram.SetPointError(i, i, self.trendedValues[i, 1])
+            histogram.SetPointError(i, 0, self.trendedValues[i, 1])
 
         return histogram
         """
@@ -87,6 +82,7 @@ class TrendingObject(ABC):
         canvas.cd()  # Ensure we plot onto the right canvas
 
         ROOT.gStyle.SetOptTitle(False)  # turn off title
+        self.histogram = self.retrieveHist()
         self.histogram.Draw(self.drawOptions)
 
         # Replace any slashes with underscores to ensure that it can be used safely as a filename

@@ -22,6 +22,7 @@ class TrendingInfo:
 
     def __init__(self, name, desc, histogramNames, trendingClass):
         # type: (str, str, List[str],  Type[TrendingObject]) -> None
+        # trending objects within subsystem must have different names - TODO add validation?
         self.name = self.validate(name)
         self.desc = self.validate(desc)
         self.histogramNames = self.validateHist(histogramNames)
