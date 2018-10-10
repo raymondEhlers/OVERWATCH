@@ -30,6 +30,51 @@ from .. import processingClasses
 from ...base import config
 (processingParameters, filesRead) = config.readConfig(config.configurationType.processing)
 
+from overwatch.processing.trending.info import TrendingInfo
+from overwatch.processing.trending.objects import maximum, mean, stdDev
+
+
+def getEMCTrendingObjectInfo():
+    infoList = [
+        ('EMCTRQA_histAmpEdgePosEMCGAHOffline', 'Integrated amplitude EMCGAH patch Offline'),
+        ('EMCTRQA_histAmpEdgePosEMCGAHOnline', 'Integrated amplitude EMCGAH patch Online'),
+        ('EMCTRQA_histAmpEdgePosEMCGAHRecalc', 'Integrated amplitude EMCGAH patch Recalc'),
+        ('EMCTRQA_histAmpEdgePosEMCGALOnline', 'Integrated amplitude EMCGAL patch Online'),
+        ('EMCTRQA_histAmpEdgePosEMCJEHOffline', 'Integrated amplitude EMCJEH patch Offline'),
+        ('EMCTRQA_histAmpEdgePosEMCJEHOnline', 'Integrated amplitude EMCJEH patch Online'),
+        ('EMCTRQA_histAmpEdgePosEMCJEHRecalc', 'Integrated amplitude EMCJEH patch Recalc'),
+        ('EMCTRQA_histAmpEdgePosEMCJELOnline', 'Integrated amplitude EMCJEL patch Online'),
+        ('EMCTRQA_histAmpEdgePosEMCL0Offline', 'Integrated amplitude EMCL0 patch Offline'),
+        ('EMCTRQA_histAmpEdgePosEMCL0Online', 'Integrated amplitude EMCL0 patch Online'),
+        ('EMCTRQA_histAmpEdgePosEMCL0Recalc', 'Integrated amplitude EMCL0 patch Recalc'),
+        ('EMCTRQA_histEvents', 'Number of events'),
+        ('EMCTRQA_histMaxEdgePosEMCGAHOffline', 'Edge Position Max EMCGAH patch Offline'),
+        ('EMCTRQA_histMaxEdgePosEMCGAHOnline', 'Edge Position Max EMCGAH patch Online'),
+        ('EMCTRQA_histMaxEdgePosEMCGAHRecalc', 'Edge Position Max EMCGAH patch Recalc'),
+        ('EMCTRQA_histMaxEdgePosEMCGALOnline', 'Edge Position Max EMCGAL patch Online'),
+        ('EMCTRQA_histMaxEdgePosEMCJEHOffline', 'Edge Position Max EMCJEH patch Offline'),
+        ('EMCTRQA_histMaxEdgePosEMCJEHOnline', 'Edge Position Max EMCJEH patch Online'),
+        ('EMCTRQA_histMaxEdgePosEMCJEHRecalc', 'Edge Position Max EMCJEH patch Recalc'),
+        ('EMCTRQA_histMaxEdgePosEMCJELOnline', 'Edge Position Max EMCJEL patch Online'),
+        ('EMCTRQA_histMaxEdgePosEMCL0Offline', 'Edge Position Max EMCL0 patch Offline'),
+        ('EMCTRQA_histMaxEdgePosEMCL0Online', 'Edge Position Max EMCL0 patch Online'),
+        ('EMCTRQA_histMaxEdgePosEMCL0Recalc', 'Edge Position Max EMCL0 patch Recalc'),
+        ('EMCTRQA_histFastORL0', 'L0 entries vs FastOR number'),
+        ('EMCTRQA_histFastORL0Amp', 'L0 amplitudes vs position'),
+        ('EMCTRQA_histFastORL0LargeAmp', 'L0 (amp>400) vs FastOR number'),
+        ('EMCTRQA_histFastORL0Time', 'L0 trigger time vs FastOR number'),
+        ('EMCTRQA_histFastORL1', 'L1 entries vs FastOR number'),
+        ('EMCTRQA_histFastORL1Amp', 'L1 amplitudes'),
+        ('EMCTRQA_histFastORL1LargeAmp', 'L1 (amp>400)'),
+    ]
+    trendingInfo = []
+    prefixes = ('max', 'mean', 'stdDev')
+    for cls, prefix in zip((maximum.MaximumTrending, mean.MeanTrending, stdDev.StdDevTrending), prefixes):
+        for dependingFile, desc in infoList:
+            trendingInfo.append(TrendingInfo(prefix + dependingFile, desc, [dependingFile], cls))
+    return trendingInfo
+
+
 def checkForEMCHistStack(subsystem, histName, skipList, selector):
     """ Check for and create histograms stacks from existing histograms.
 

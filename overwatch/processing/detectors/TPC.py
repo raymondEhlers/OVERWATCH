@@ -21,7 +21,7 @@ logger = logging.getLogger(__name__)
 from .. import processingClasses
 
 from overwatch.processing.trending.info import TrendingInfo, TrendingInfoException
-from overwatch.processing.trending.objects import mean, maximum, stdDev
+from overwatch.processing.trending.objects import mean, maximum, stdDev, increasing
 
 try:
     from typing import *  # noqa
@@ -31,6 +31,21 @@ except ImportError:
 
 def getTPCTrendingObjectInfo():  # type: () -> List[TrendingInfo]
     """TODO add docstring"""
+    alternative_info = [
+        ('TPCQA/h_tpc_track_all_recvertex_0_5_7', 'Number of clusters'),
+        ('TPCQA/h_tpc_track_all_recvertex_2_5_7', 'Number of found/findable clusters'),
+        ('TPCQA/h_tpc_track_all_recvertex_3_5_7', 'DCA vs r inclusive'),
+        ('TPCQA/h_tpc_track_all_recvertex_4_5_7', 'DCA vs z inclusive'),
+        ('TPCQA/h_tpc_track_pos_recvertex_3_5_6', 'DCA vs r for positive tracks'),
+        ('TPCQA/h_tpc_track_neg_recvertex_3_5_6', 'DCA vs r for negative tracks'),
+        ('TPCQA/h_tpc_track_neg_recvertex_4_5_6', 'DCA vs z for positive tracks'),
+        ('TPCQA/h_tpc_track_neg_recvertex_4_5_6', 'DCA vs z for negative tracks'),
+        ('TPCQA/h_tpc_event_recvertex_4', 'Postive track mutliplicity'),
+        ('TPCQA/h_tpc_event_recvertex_5', 'Negative track multiplicity'),
+        ('TPCQA/h_tpc_event_recvertex_0', 'vertex x position'),
+        ('TPCQA/h_tpc_event_recvertex_1', 'vertex y position'),
+        ('TPCQA/h_tpc_event_recvertex_2', 'vertex z position'),
+    ]
     infoList = [
         ("TPCClusterTrending", "<TPC clusters>: (p_{T} > 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_0_5_7_restrictedPtEta"]),
         ("TPCFoundClusters", "<Found/Findable TPC clusters>: (p_{T} > 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_2_5_7_restrictedPtEta"]),
@@ -42,16 +57,13 @@ def getTPCTrendingObjectInfo():  # type: () -> List[TrendingInfo]
         ("histMpos", "<Multiplicity of pos. tracks>", ["TPCQA/h_tpc_event_recvertex_4"]),
         ("histMneg", "<Multiplicity of neg. tracks>", ["TPCQA/h_tpc_event_recvertex_5"])
     ]
-    trendingInfoList = []
-    for name, desc, histograms in infoList:
-        try:
-            trendingInfoList.append(TrendingInfo(name, desc, histograms, mean.MeanTrending))
-            trendingInfoList.append(TrendingInfo(name + 'Max', desc + 'Max', histograms, maximum.MaximumTrending))
-            trendingInfoList.append(TrendingInfo(name + 'StdDev', desc + 'StdDev', histograms, stdDev.StdDevTrending))
-        except TrendingInfoException as mt:
-            logger.warning(mt)
 
-    return trendingInfoList
+    trendingInfo = []
+    prefixes = ('max', 'mean', 'stdDev')
+    for cls, prefix in zip((maximum.MaximumTrending, mean.MeanTrending, stdDev.StdDevTrending), prefixes):
+        for name, desc, histograms in infoList:
+            trendingInfo.append(TrendingInfo(prefix + name, prefix + desc, histograms, cls))
+    return trendingInfo
 
 
 def generalOptions(subsystem, hist, processingOptions):
