@@ -53,8 +53,8 @@ def dataHandlingSetup():
     dataHandling.parameters["receiverDataTempStorage"] = os.path.join(directory, "tempStorage")
     # Set the site parameters
     dataHandling.parameters["dataTransferLocations"] = {
-        "rsync" : destination,
-        "EOS" : destination,
+        "rsync": destination,
+        "EOS": destination,
     }
 
     yield (directory, destination, filenames)
@@ -113,9 +113,9 @@ def testDetermineFilesToMove(loggingMixin, dataHandlingSetup):
     assert filenames == ["accepted.root"]
 
 @pytest.mark.parametrize("transferFunction", [
-        dataHandling.copyFilesToOverwatchSites,
-        dataHandling.copyFilesToEOS,
-    ], ids = ["Overwatch sites", "EOS"])
+    dataHandling.copyFilesToOverwatchSites,
+    dataHandling.copyFilesToEOS,
+], ids = ["Overwatch sites", "EOS"])
 def testCopyFilesToOverwatchSites(loggingMixin, dataHandlingSetup, transferFunction):
     """ Test for copying files.
 
@@ -144,9 +144,9 @@ def testCopyFilesToOverwatchSites(loggingMixin, dataHandlingSetup, transferFunct
                           filenames = filenames)
 
 @pytest.mark.parametrize("transferFunction", [
-        dataHandling.copyFilesToOverwatchSites,
-        dataHandling.copyFilesToEOS,
-    ], ids = ["Overwatch sites", "EOS"])
+    dataHandling.copyFilesToOverwatchSites,
+    dataHandling.copyFilesToEOS,
+], ids = ["Overwatch sites", "EOS"])
 def testCopyFilesFailure(loggingMixin, dataHandlingSetup, transferFunction, mocker):
     """ Test failure of copying by providing invalid input files.
 
@@ -159,8 +159,8 @@ def testCopyFilesFailure(loggingMixin, dataHandlingSetup, transferFunction, mock
     # We cannot just set an invalid destination because rsync will create that directory.
     filenames = [os.path.join("invalid", f) for f in filenames]
     failedFilenames = transferFunction(directory = directory,
-                           destination = destination,
-                           filenames = filenames)
+                                       destination = destination,
+                                       filenames = filenames)
 
     # All of the files should have failed.
     assert failedFilenames == filenames
@@ -168,7 +168,7 @@ def testCopyFilesFailure(loggingMixin, dataHandlingSetup, transferFunction, mock
 @pytest.mark.parametrize("debugEnabled", [
     False,
     True,
-    ], ids = ["Debug disabled", "Debug enabled"])
+], ids = ["Debug disabled", "Debug enabled"])
 def testProcessReceivedFiles(loggingMixin, dataHandlingSetup, mocker, debugEnabled):
     """ Test the process received files driver function. """
     directory, destination, filenames = dataHandlingSetup

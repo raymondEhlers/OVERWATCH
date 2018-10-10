@@ -15,9 +15,6 @@ This assumes you are running from the `tests` folder (as suggested above) and wi
 are the slowest as well as provide a coverage report for (in this case) the entire `overwatch` module. The
 branch coverage is particularly useful to help avoid missing coverage over control flow.
 
-You can skip slow tests (those related to intentionally failing copy tests) with the additional argument `-m
-"not slow"`.
-
 ## Installing the test dependencies
 
 Beyond ROOT (which is of course required), the python test dependencies can be installed with
@@ -30,6 +27,7 @@ $ pip install -e .[tests]
 
 These configuration reference files depend on the default configuration values. Thus, if you add, remove, or
 modify any default configuration values in any of the modules, it will cause these tests to fail. To resolve
-this issue, delete `overwatch/tests/base/configTestFiles/*.yaml` and run `test_config.py` **twice**. If it
-still fails, then the tests have actually failed. Check that you haven't introduced a bug or that you didn't
-pick up your local `config.yaml` when creating the reference files.
+this issue, delete `overwatch/tests/base/configTestFiles/*.yaml` and run `test_config.py` **twice**. It will
+fail the first time, but should succeed the second time. If it still fails, then the tests have actually
+failed. Check that you haven't introduced a bug or that you didn't pick up your local `config.yaml` when
+creating the reference files.
