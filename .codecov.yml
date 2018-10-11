@@ -9,8 +9,9 @@ coverage:
 
   status:
     project:
-      # Allow a drop of up to 1% in coverage
-      threshold: 1%
+      default:
+        # Allow a drop of up to 1% in coverage
+        threshold: 1%
     patch: yes
     changes: no
 
