@@ -67,3 +67,10 @@ automatically provide alerts and information when issues occur.
 For successful monitoring, the environment must export the `DSN` as `export SENTRY_DSN=<value>`. The value
 will be some sort of unique URL. Note that this endpoint is for _all_ Overwatch monitoring, so be certain to
 check the traceback to determine the originating source of the issue.
+
+## Data transfer
+
+Data must be moved from the ZMQ and DQM receivers to other Overwatch sites, as well as exported to EOS. All of
+these transfers are handled by the data handling module. It will transfer the data in a robust manner, retry
+on failures, and then notifying the admin if the issues continue. For further information on configuration,
+see the `dataHandling` module.
