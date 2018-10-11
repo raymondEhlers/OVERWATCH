@@ -1061,9 +1061,10 @@ def testStartOverwatch(loggingMixin, enableSupervisor, configureFromEnvironment,
     """ Test for the main driver function. """
     assert False
 
-    # TODO: Use the reference config for configuration. Everything is disabled by default, so there should
-    # be less to mock.
-    with open("deployReference.yaml", "r") as f:
+    # Use the reference config for configuration. Everything is disabled by default, so
+    # there should be less to mock.
+    referenceFilename = pkg_resources.resource_filename("overwatch.base", "deployReference.yaml")
+    with open(referenceFilename, "r") as f:
         config = deploy.yaml.load(f, Loader = yaml.SafeLoader)
 
     # Turn supervisor on or off depending on the test.

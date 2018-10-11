@@ -54,9 +54,11 @@ config file. All executables inherit from the `executable` class. As of Septembe
     - Via `uswgi`, `uwsgi` behind `nginx` or directly.
 
 For a comprehensive set of options, see the docstrings of the module, as well as the reference
-configuration, `overwatch/base/deployReferenceConfig.yaml`. Note that all executable are disabled by default,
+configuration, `overwatch/base/deployReference.yaml`. Note that all executable are disabled by default,
 so one may leave the configuration for all objects in a deployment configuration, and then just enable the
-parts that you want for a particular execution.
+parts that you want for a particular execution. However, it is also important to note that the deploy system
+doesn't support default values or overriding parts of the configuration like the Overwatch configuration
+system - every option of interest **must** be in the config passed to `overwatchDeploy`.
 
 ## Monitoring for errors
 

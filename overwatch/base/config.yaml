@@ -55,9 +55,9 @@ dataTransferLocations:
     # Overwatch sites, where the data will be transferred via rsync.
     # Entries are of the form "siteName : path"
     # The values must be valid rsync paths (ie. "a@b:/path/to/dir")
-    site1 : ""
+    site1: ""
     # EOS. If "EOS" is in the name, we will transfer the files via EOS.
-    EOS :  "/eos/experiment/alice/overwatch/"
+    EOS: "/eos/experiment/alice/overwatch/"
 # Number of times we should try to transfer data when the transfer fails.
 dataTransferRetries: 2
 # Time in seconds to wait between checking for new files
