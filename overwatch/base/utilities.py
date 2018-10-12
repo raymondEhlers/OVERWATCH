@@ -288,11 +288,6 @@ def setupLogging(logger, logLevel, debug, logFilename):
         logger.addHandler(emailHandler)
         logger.info("Added mailer handler to logging!")
 
-    # Be sure to propagate messages from modules
-    #processRunsLogger = logging.getLogger("processRuns")
-    #processRunsLogger.setLevel(logLevel)
-    #processRunsLogger.propagate = True
-
 ###################################################
 # File moving utilities
 ###################################################
