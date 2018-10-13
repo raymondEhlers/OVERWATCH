@@ -195,6 +195,11 @@ texinfo_documents = [
 
 # -- Extension configuration -------------------------------------------------
 
+# Add the css stylesheet. It is defined relative to the `_static` directory.
+# See: https://docs.readthedocs.io/en/latest/guides/adding-custom-css.html
+def setup(app):
+    app.add_stylesheet("overwatch.css")
+
 # Mock modules which won't be available when reading the docs
 # See: https://docs.readthedocs.io/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules
 try:
