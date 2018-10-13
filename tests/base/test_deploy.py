@@ -8,6 +8,7 @@
 from future.utils import iteritems
 
 import pytest
+import copy
 import os
 try:
     # For whatever reason, import StringIO from io doesn't behave nicely in python 2.
@@ -19,6 +20,7 @@ import stat
 import inspect
 import subprocess
 import collections
+import pkg_resources
 import logging
 logger = logging.getLogger(__name__)
 
@@ -411,12 +413,12 @@ def setupEnvironment(loggingMixin, mocker):
     """ Setup for testing the environment.
 
     Note:
-        ROOT must be available in your enviroonment!
+        ROOT must be available in your environment!
     """
     # Setup
     config = {
         "environment": {
-            "ROOT": {
+            "root": {
                 "path": os.environ["ROOTSYS"],
             },
             "zmqReceiver": {
@@ -461,9 +463,9 @@ def testEnvironment(loggingMixin, setupEnvironment, mocker):
     # Check ROOT setup
     # We will use ROOTSYS being set as a proxy for things working properly.
     assert "ROOTSYS" in os.environ
-    assert os.environ["ROOTSYS"] == config["environment"]["ROOT"]["path"]
+    assert os.environ["ROOTSYS"] == config["environment"]["root"]["path"]
     # Brief check of the path (but this isn't necessarily so instructive, as ROOT may be already be there).
-    assert config["environment"]["ROOT"]["path"] in os.environ["PATH"]
+    assert config["environment"]["root"]["path"] in os.environ["PATH"]
 
     # Check receiver setup
     receiverPath = os.path.join("/opt", "receiver", "bin")
@@ -645,7 +647,7 @@ def testSetupRoot(loggingMixin, rootsysInEnvironment, setupEnvironment):
     config = setupEnvironment["environment"]
     if rootsysInEnvironment:
         # setupEnvironment will restore ROOTSYS, so it's fine for us to mangle it here.
-        os.environ["ROOTSYS"] = config["ROOT"]["path"]
+        os.environ["ROOTSYS"] = config["root"]["path"]
 
     # Explicitly don't setup the environment - just run the ROOT path setup
     executable = deploy.environment(config = config)
@@ -659,9 +661,9 @@ def testSetupRoot(loggingMixin, rootsysInEnvironment, setupEnvironment):
     # Now check the ROOTSYS and related values themselves.
     # We will use ROOTSYS being set as a proxy for things working properly.
     assert "ROOTSYS" in os.environ
-    assert os.environ["ROOTSYS"] == config["ROOT"]["path"]
+    assert os.environ["ROOTSYS"] == config["root"]["path"]
     # Brief check of the path (but this isn't necessarily so instructive, as ROOT may be already be there).
-    assert config["ROOT"]["path"] in os.environ["PATH"]
+    assert config["root"]["path"] in os.environ["PATH"]
 
 def testSupervisorExecutable(loggingMixin, mocker):
     """ Tests for the supervisor executable. """
@@ -684,7 +686,7 @@ def testSupervisorExecutable(loggingMixin, mocker):
     assert exceptionInfo.value.args[0] == "The supervisor executable should be run in multiple steps."
 
 def testZMQReceiver(loggingMixin, mocker):
-    """ Tests for the ZMQ receiver and the underlying exectuables. """
+    """ Tests for the ZMQ receiver and the underlying executables. """
     config = {
         "enabled": True,
         "receiver": "EMC",
@@ -1057,23 +1059,36 @@ def testUwsgiExecutableRunFailure(loggingMixin):
     False,
     True,
 ], ids = ["Configuration file", "Configuration from environment variable"])
-def testStartOverwatch(loggingMixin, enableSupervisor, configureFromEnvironment, mocker):
+@pytest.mark.parametrize("enabledExecutables", [
+    ("zmqReceiver_EMC", "zmqReceiver_TPC", "dqmReceiver", "dataTransfer"),
+    ("zodb", "processing"),
+    ("zodb", "webApp"),
+], ids = ["Receiver", "Processing", "Web app"])
+def testStartOverwatch(loggingMixin, enableSupervisor, configureFromEnvironment, enabledExecutables, mocker):
     """ Test for the main driver function. """
-    assert False
+    # Store a clean environment for cleanup
+    cleanEnvironment = copy.deepcopy(os.environ)
 
     # Use the reference config for configuration. Everything is disabled by default, so
-    # there should be less to mock.
+    # there should be less to mock. Note that we take advantage of the reference distributed in the source.
     referenceFilename = pkg_resources.resource_filename("overwatch.base", "deployReference.yaml")
     with open(referenceFilename, "r") as f:
         config = deploy.yaml.load(f, Loader = yaml.SafeLoader)
 
     # Turn supervisor on or off depending on the test.
     config["supervisor"] = enableSupervisor
+    # Enable selected executables
+    for executable in enabledExecutables:
+        config["executables"][executable]["enabled"] = True
 
-    # Need to encode the existing config with yaml so that we can input a string...
+    # Now write the configuration to the config str.
+    # We don't perform this initially on the read because we need to update the configuration before
+    # we turn it back into a string.
     configStr = StringIO()
-    yaml.dump(config, configStr, default_flow_style = False)
+    deploy.yaml.dump(config, configStr, default_flow_style = False)
     configStr.seek(0)
+    # Convert to a standard string
+    configStr = configStr.read()
 
     # Setup config var or file.
     configVar = ""
@@ -1081,10 +1096,46 @@ def testStartOverwatch(loggingMixin, enableSupervisor, configureFromEnvironment,
     mFile = None
     if configureFromEnvironment:
         configVar = "CONFIGURE_KEY"
-        os.environ[configurationVar] = configStr
+        os.environ[configVar] = configStr
+        # Generally mock opening files. We separate this because we don't want to allow returning data
+        # except when necessary. This will help us avoid unexpected results.
+        mFile = mocker.mock_open()
     else:
         configFilename = "configFilename.yaml"
+        # Need to define here because we can't just set the read_data attribute after creating the object.
         mFile = mocker.mock_open(read_data = configStr)
-        mocker.patch("overwatch.base.deploy.open", mFile)
+    mocker.patch("overwatch.base.deploy.open", mFile)
 
-    deploy.startOverwatch(configFilename = configFilename, configEnvironmentVariable = configVar)
+    # To check the supervisor config
+    mConfigParserWrite = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.ConfigParser.write", mConfigParserWrite)
+    mPopen = mocker.MagicMock(return_value = "Fake value")
+    mocker.patch("overwatch.base.deploy.subprocess.Popen", mPopen)
+    # Replace run() by just checking whether the task should execute. That's all we really care about here.
+    mocker.patch("overwatch.base.deploy.executable.run", new = lambda self: self.executeTask)
+
+    # Make the actual call. Note that this will run the environment setup (but nearly everything is disabled by default).
+    executables = deploy.startOverwatch(configFilename = configFilename, configEnvironmentVariable = configVar)
+
+    # Check the supervisor results
+    if enableSupervisor:
+        mConfigParserWrite.assert_called_once_with(mFile())
+        # Check that supervisorctl was called
+        mPopen.assert_called_once_with(["supervisorctl", "update"])
+
+    # Check the execution status of the individual tasks.
+    names = []
+    for name, executable in iteritems(executables):
+        # Each task should be configured to execute.
+        assert executable.executeTask is True
+        # We keep track of the names so we can ensure that only the selected tasks are executed (ie that no
+        # unanticipated tasks were executed). See the block below for the completion of this check.
+        names.append(name)
+
+    # Ensure that all tasks that should be executed were actually executed.
+    assert set(names) == set(enabledExecutables)
+
+    # Cleanup
+    os.environ.clear()
+    os.environ = cleanEnvironment
+

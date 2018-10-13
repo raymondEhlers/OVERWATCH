@@ -319,10 +319,15 @@ class executable(object):
         Raises:
             RuntimeError: If the started process doesn't appear to have launched successfully.
         """
+        # Bail out immediately if the task is disabled.
+        if self.executeTask is False:
+            return False
+
         # Handle configuration, etc.
         self.setup()
 
         # Bail out immediately after task setup if the task is not supposed to be executed.
+        # We check again because this may be changed in the setup.
         if self.executeTask is False:
             return False
 
@@ -576,7 +581,7 @@ class environment(object):
         # We only want to add ROOT to the path, etc, if it's not already setup.
         # If ``ROOTSYS`` is setup, it's a pretty good bet that everything else is setup.
         if "ROOTSYS" not in os.environ:
-            thisRootPath = os.path.join(self.config["ROOT"]["path"], "bin", "thisroot.sh")
+            thisRootPath = os.path.join(self.config["root"]["path"], "bin", "thisroot.sh")
             logger.debug("Adding receiver path to PATH: {thisRootPath}".format(thisRootPath = thisRootPath))
             # Run thisroot.sh, extract the environment, and then set the python environment to those values
             # See: https://stackoverflow.com/a/3505826
@@ -608,7 +613,7 @@ class environment(object):
         for k, v in iteritems(self.config.get("vars", {})):
             # Not necessarily a problem, but I want to make the user aware.
             if k in os.environ:
-                logger.warning('Environment variable {k} is already set to {val}. It is being updated to "{v}"'.format(k = k, val = os.environ[k], v = v))
+                logger.warning('Environment variable {k} is already set to "{val}". It is being updated to "{v}"'.format(k = k, val = os.environ[k], v = v))
             os.environ[k] = v
 
     def setupReceiverPath(self):
@@ -644,8 +649,8 @@ class supervisor(executable):
         is needed at the end.
 
     Args:
-        *args (list): Absorb extra arguments.
-        **kwargs (dict): Absorb extra arguments.
+        *args (list): Absorb ignored arguments from retrieveExecutable().
+        *kwargs (dict): Absorb ignored arguments from retrieveExecutable().
     """
     def __init__(self, *args, **kwargs):
         name = "supervisor"
@@ -780,6 +785,8 @@ class sshKnownHosts(executable):
                 os.chmod(os.path.dirname(self.configFilename), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
 
             self.executeTask = True
+        else:
+            self.executeTask = False
 
 class autossh(executable):
     """ Start ``autossh`` to create a SSH tunnel.
@@ -1426,20 +1433,29 @@ def runExecutables(executables):
         executables (dict): Executable configurations to execute. Keys are the executable names (up to a "_{tag}"),
             and the values are their configurations.
     Returns:
-        None.
+        dict: Executables which were run. Key is the name in the config, while the value is the executable.
     """
-    for executableType, executableConfig in iteritems(executables):
+    ranExecutables = {}
+    for name, executableConfig in iteritems(executables):
         # Determine the executable type. It is of the form "type_identifier"
+        # name contains the entire executable name, while executableType identifies the type of the executable
+        executableType = name
         if "_" in executableType:
             executableType = executableType[:executableType.find("_")]
 
-        executable = retrieveExecutable(executableType)(config = executableConfig)
-        executable.run()
+        executable = retrieveExecutable(name = executableType, config = executableConfig)
+        result = executable.run()
+        logger.debug("name: {name}, executableType: {executableType}, result: {result}".format(name = name, executableType = executableType, result = result))
+        # Don't store executables which were not actually run.
+        if result:
+            ranExecutables[name] = executable
+
+    return ranExecutables
 
 def startOverwatch(configFilename, configEnvironmentVariable):
     """ Start the various parts of Overwatch.
 
-    Components are only started if they are included in the configuration.
+    Components are only started if they are enabled in the configuration. Note that setup() is performed for all tasks!
 
     Args:
         configFilename (str): Filename of the configuration.
@@ -1449,7 +1465,7 @@ def startOverwatch(configFilename, configEnvironmentVariable):
         None.
 
     Raises:
-        ValueError: If both a configuration filename and a configuration environment variable are specified.
+        ValueError: If both a configuration filename and a configuration environment variable are specified. Only specify one.
     """
     # Validation
     if configEnvironmentVariable and configFilename:
@@ -1470,36 +1486,35 @@ def startOverwatch(configFilename, configEnvironmentVariable):
     config = yaml.load(config, Loader=yaml.SafeLoader)
 
     # Setup supervisor if necessary
-    supervisor = None
-    if config.get("supervisor", False):
+    enableSupervisor = config.get("supervisor", False)
+    if enableSupervisor:
         logger.info("Setting up supervisor")
         # Ensure that all executables use supervisor by setting the static class member.
         # Each executable will inherit this value.
         executable.supervisor = True
         # Setup
-        supervisor.setup()
+        s = supervisor()
+        s.setup()
 
-    logger.info("Overwatch deploy configuration: {}".format(pprint.pformat(config)))
-
-    if "cert" in config and config["cert"]["enabled"]:
-        pass
-
-    if "sshKey" in config and config["sshKey"]["enabled"]:
-        pass
+    logger.info("Overwatch deploy configuration: {config}".format(config = pprint.pformat(config)))
 
     # Setup environment based executables
     env = environment(config = config["environment"])
     env.setup()
 
     # Start the standard executables
-    runExecutables(config["executables"])
+    logger.debug("Running executables")
+    executables = runExecutables(config["executables"])
 
     # Start supervisor if necessary
-    if supervisor:
-        # Reload supervisor config.
+    if enableSupervisor:
+        # Reload supervisor config. This script will then exit.
         subprocess.Popen(["supervisorctl", "update"])
 
-def run():
+    return executables
+
+def run():  # pragma: nocover
+    """ Setup and run Overwatch deployment from the terminal. """
     # Setup command line parser
     parser = argparse.ArgumentParser(description = "Start Overwatch")
     parser.add_argument("-c", "--config", metavar="configFile",
@@ -1525,7 +1540,7 @@ def run():
     level = args.logLevel.upper()
     logger.setLevel(level)
 
-    startOverwatch(configFilename = args.config, configEnvironmentVariable = args.configEnvironmentVariable)
+    return startOverwatch(configFilename = args.config, configEnvironmentVariable = args.configEnvironmentVariable)
 
 if __name__ == "__main__":  # pragma: no cover
     run()
