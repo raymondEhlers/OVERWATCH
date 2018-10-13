@@ -6,7 +6,7 @@ matrix:
         # used on Travis (ie 2.7.14 on Travis vs 2.7.15 in the docker image as of Sept 2018).
         - python: 2.7
           env: DOCKER_PYTHON_VERSION=2.7.15
-        # 3.7 doesn't run flake8 or other things cleanly at the moment.
+        # 3.7 doesn't run flake8 or a number of other packages cleanly at the moment (as of Sept 2018).
         - python: 3.6
           env: DOCKER_PYTHON_VERSION=3.6.6
 sudo: required
@@ -35,7 +35,7 @@ before_script:
     - docker run -v ${PWD}/overwatch/webApp/static/:/opt/extractJS rehlers/overwatch:latest-py${DOCKER_PYTHON_VERSION} /bin/bash -c "cd overwatch/webApp/static && cp -r bower_components /opt/extractJS/. && cp -r jsRoot /opt/extractJS/."
 script:
     # Since we ran the tests above, we just need to check code here.
-    - flake8 overwatch
+    - flake8 .
 after_success:
     # This will work for both tags and standard buidls. The build is performed for PRs, but it won't be deplyoed.
     # First, determine the Overwatch branch. If ${TRAVIS_BRANCH} is the same as ${TRAVIS_TAG}, then means that we're

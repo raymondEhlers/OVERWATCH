@@ -1,0 +1,197 @@
+# Configure each file with a file like this. It will only include the options that we
+# care about for that particular system
+supervisor: true
+
+# Define the execution environment
+environment:
+    # Options for writing sensitive variables stored in environment variables to specified files.
+    # X509 certificate (for example, for writing to EOS).
+    cert:
+        enabled: false
+        # Environment variable where the key is stoerd.
+        variableName: "myCert"
+        # Where the key should be written.
+        writeLocation: "test/cert.test"
+    # SSH key (for example, for conencting to remote systems to receive files via ZMQ).
+    sshKey:
+        enabled: false
+        # Environment variable where the key is stoerd.
+        variableName: "mySSHKey"
+        # Where the key should be written.
+        writeLocation: "test/sshKey.test"
+    root:
+        # Path to the ROOT installation. This will be used to source `bin/thisroot.sh`.
+        path: "/opt/root"
+    zmqReceiver:
+        # Path to the ZMQ receiver executable.
+        path: !expandVars "${PWD}/receiver/bin"
+    # For any additional environment configuration
+    # These will be available to the deployment system, but will not be exported to the environment
+    # under which the deployment was executed.
+    vars:
+        aEnvironmentVariable: "theValue"
+
+# Options for configuring exectuables. This allows the consoslidation of repeated options.
+# Path to our working directory.
+workingDir: &workingDir !expandVars "${PWD}"
+# Shared options for executables
+baseExecutionOptions: &baseExecutionOptions
+    # Disable all tasks by default
+    enabled: false
+    # True if the task should be run in the background. This option is incompatible with supervisor.
+    # If not using supervisor, this option is required to run multiple executables.
+    runInBackground: false
+    # Whether any existing tasks should be killed before running the executable.
+    forceRestart: false
+# SSH tunnel for receivers
+tunnel: &tunnelOptions
+    # System to which the tunnel should be open
+    address: "lxplus.cern.ch"
+    # Port for the connection.
+    port: 22
+    # Username used for the connection.
+    username: "myUsername"
+# ZMQ receiver options
+receiverOptions: &receiverOptions
+    <<: *baseExecutionOptions
+    # Path to where the received data should be stored.
+    dataPath: "data"
+    # Additional command line options to pass to the zmqReceiver executable.
+    defaultOptions: "defined whatever here"
+# uwsgi options
+uwsgiOptions: &uwsgiOptions
+    <<: *baseExecutionOptions
+    # Module path of the app, "module", is needed. Specify per app.
+# nginx options
+nginxOptions: &nginxOptions
+    <<: *baseExecutionOptions
+    # Name of the web app, "webAppName", is needed. Specify per app.
+    # Base path to where nginx configs are stored.
+    basePath: "data/config"
+    # Relative to the base path.
+    sitesPath: "sites-enabled"
+    configPath: "conf.d"
+# nginx options used in the docker container
+nginxOptionsDocker: &nginxOptionsDocker
+    # Base path to where nginx configs are stored.
+    basePath: "/etc/nginx"
+    # Relative to the base path.
+    sitesPath: "sites-enabled"
+    configPath: "conf.d"
+
+# Define the executables
+executables:
+    # EMC ZMQ receiver
+    # The `zmqReceiver` identifies the type, while the name after the underscore identifies the receiver.
+    zmqReceiver_EMC:
+        # Include the shared receiver options.
+        <<: *receiverOptions
+        tunnel: 
+            # Include the shared tunnel options.
+            <<: *tunnelOptions
+            enabled: true
+        # Enabled must be below the shared options because it is overwriting one of the shared options.
+        enabled: false
+        # Force restart the receiver if it is already running.
+        forceRestart: true
+        # Name of the receiver. Should be the three letter name.
+        receiver: "EMC"
+        # Port on the HLT system where the EMC data is provided. Will be used to configure the tunnel.
+        hltPort: 12345
+        # Port on the local system where the EMC data will be made available. Will be used to configure the tunnel.
+        localPort: 23456
+    # HLT ZMQ receiver
+    zmqReceiver_TPC:
+        <<: *receiverOptions
+        tunnel: 
+            <<: *tunnelOptions
+            enabled: true
+        # Enabled must be below the shared options because it is overwriting one of the shared options.
+        enabled: false
+        forceRestart: true
+        receiver: "TPC"
+        # Port on the HLT system where the EMC data is provided. Will be used to configure the tunnel.
+        hltPort: 12346
+        # Port on the local system where the EMC data will be made available. Will be used to configure the tunnel.
+        localPort: 23457
+    # HLT ZMQ Receiver
+    zmqReceiver_HLT:
+        <<: *receiverOptions
+        tunnel: 
+            <<: *tunnelOptions
+            enabled: true
+        # Enabled must be below the shared options because it is overwriting one of the shared options.
+        enabled: false
+        forceRestart: true
+        receiver: "HLT"
+        # Port on the HLT system where the EMC data is provided. Will be used to configure the tunnel.
+        hltPort: 12347
+        # Port on the local system where the EMC data will be made available. Will be used to configure the tunnel.
+        localPort: 23458
+    # DQM Receiver
+    dqmReceiver:
+        # Include the shared receiver options.
+        <<: *receiverOptions
+        # Enabled must be below the shared options because it is overwriting one of the shared options.
+        enabled: false
+        uwsgi:
+            <<: *uwsgiOptions
+            enabled: false
+            # Module path of the web app.
+            module: "overwatch.receiver.run"
+        nginx:
+            <<: *nginxOptions
+            enabled: false
+            # Name of the web app
+            webAppName: "dqmReceiver"
+    # Data transfer from receivers to EOS and Overwatch sites.
+    dataTransfer:
+        <<: *baseExecutionOptions
+        enabled: false
+        # Additional options to be passed into the Overwatch config. Any entries should be valid
+        # Overwatch config YAML. It will be stored in the user `config.yaml`.
+        additionalOptions:
+            dataTransferLocations:
+                yale: ""
+                EOS: "/eos/experiment/alice/overwatch/"
+    # ZODB database
+    zodb:
+        <<: *baseExecutionOptions
+        enabled: false
+        # Address where the database should be made available.
+        address: "127.0.0.1"
+        # Port where the database should be made available.
+        port: 2345
+        # File where the database should be stored.
+        databasePath: "data/overwatch.fs"
+    # Overwatch processing
+    processing:
+        <<: *baseExecutionOptions
+        enabled: false
+        # Additional options to be passed into the Overwatch config. Any entries should be valid
+        # Overwatch config YAML. It will be stored in the user `config.yaml`.
+        additionalOptions:
+            null: null
+            #subsystemsList:
+            #    - "EMC"
+            #    - "TPC"
+    webApp:
+        <<: *baseExecutionOptions
+        enabled: false
+        # If you want to include nginx, add the field here
+        uwsgi:
+            <<: *uwsgiOptions
+            enabled: false
+            # Module path of the web app.
+            module: "overwatch.webApp.run"
+        nginx:
+            <<: *nginxOptions
+            enabled: false
+            # Name of the web app
+            webAppName: "webApp"
+
+        # Additional options to be passed into the Overwatch config. Any entries should be valid
+        # Overwatch config YAML. It will be stored in the user `config.yaml`.
+        additionalOptions:
+            null: null
+

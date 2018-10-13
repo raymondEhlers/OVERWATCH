@@ -319,10 +319,15 @@ class executable(object):
         Raises:
             RuntimeError: If the started process doesn't appear to have launched successfully.
         """
+        # Bail out immediately if the task is disabled.
+        if self.executeTask is False:
+            return False
+
         # Handle configuration, etc.
         self.setup()
 
         # Bail out immediately after task setup if the task is not supposed to be executed.
+        # We check again because this may be changed in the setup.
         if self.executeTask is False:
             return False
 
@@ -376,11 +381,15 @@ class environment(object):
         name (str): Name of the process that we are starting. It doesn't need to be the executable name,
                 as it's just used for informational purposes.
         description (str): Description of the process for clearer display, etc.
-        config (dict): Configuration for the executable.
+        config (dict): Configuration for the environment.
     """
     def __init__(self, config):
         self.name = "environment"
         self.description = "Setup and create the necessary execution environment"
+
+        # Extract just the environment if we accidentally pass the entire config.
+        if "environment" in config:
+            config = config["environment"]
         self.config = config
 
     def setup(self):
@@ -389,114 +398,241 @@ class environment(object):
         In particular, we write our sensitive environment variables, configure ROOT, configure
         the ZMQ receiver, and set general environment variables.
         """
-        # TODO: Update default location to "~/.globus/overwatchCert.pem" (?)
-        self.writeSensitiveVariableToFile(name = "cert",
-                                          description = "certificate",
-                                          defaultWriteLocation = "overwatchCert.pem")
+        # Write sensitive variables from the environment to specified files.
+        self.writeCertFromVariableToFile()
+        self.writeSSHKeyFromVariableToFile()
 
-        # TODO: Update default write location to "~/ssh/id_rsa" (?)
-        self.writeSensitiveVariableToFile(name = "sshKey",
-                                          description = "SSH key",
-                                          defaultWriteLocation = "overwatch.id_rsa")
-
+        logger.debug("Setting up environment variables.")
         # Setup environment
         self.setupRoot()
         self.setupReceiverPath()
         self.setupEnvironmentVars()
 
-    def writeSensitiveVariableToFile(self, name, description, defaultWriteLocation):
-        """ Write SSH key or certificate from environment variable to file.
+    def writeSensitiveVariableToFile(self, name, defaultWriteLocation):
+        """ Write sensitive variable stored in an environment variable to file.
+
+        This function drives must of the functionality. The configuration for the variable may have:
+
+        .. code-block:: yaml
+
+            name:
+                enabled: true
+                variableName: "myVarName"
+                writeLocation: "path/to/write/location"
+
+        Only the ``enabled`` field is required. ``variableName`` defaults to ``name`` if not specified, while
+        ``writeLocation`` defaults to``defaultWriteLocation`` if not specified.
 
         Args:
-            name (str): Name of the sensitive variable to be written to a file. Acceptable values are "cert" and
-                "sshKey".
-            description (str): Description of the sensitive parameters for information purposes.
-            defaultWriteLocation (str): Default location for the file to be written (in case it isn't specified).
+            name (str): Name of the sensitive variable to be written to a file. Used to retrieve the configuration
+                in the YAML config.
+        Returns:
+            tuple: (variable, writeLocation) where variable (str) is the sensitive variable, and writeLocation (str)
+                is the path to the file where the variable was written.
+
+        Raises:
+            RuntimeError: If the task is disabled. This should be caught and execution continued.
         """
-        # Validation
-        # Check name value (also acts as proxy for the other values)
-        if name != "sshKey" and name != "cert":
-            raise ValueError('Name "{name}" is not recognized as a sensitive parameter! Aborting'.format(name = name))
+        config = self.config.get(name, {})
+        # Only continue if it's actually enabled.
+        if not config.get("enabled", False):
+            raise RuntimeError("Task {name} is not enabled".format(name = name))
 
-        # Only do so if it's actually enabled.
-        if self.config.get(name, {}).get("enabled", False):
-            return
+        # Retrieve the sensitive parameter from the environment
+        variable = environment.retrieveSensitiveVariable(name = name,
+                                                         config = config)
 
-        logger.info("Writing {} from environment variable to file".format(description))
+        # Write the variable to the desired file.
+        writeLocation = environment.writeInfoToSensitiveFile(sensitiveVariable = variable,
+                                                             defaultWriteLocation = defaultWriteLocation,
+                                                             config = config)
+
+        return (variable, writeLocation)
+
+    @staticmethod
+    def retrieveSensitiveVariable(name, config):
+        """ Retrieve the sensitive variable from an environment variable.
+
+        It retrieves it under the name specified under ``variableName`` in the config, or if not specified,
+        it uses the name of the sensitive variable. It also checks that the variable is not empty.
+
+        Args:
+            name (str): Name of the sensitive variable to be written to a file.
+            config (dict): Configuration related to the sensitive parameter. In particular, the relevant key
+                is ``variableName``, whose value specifies the name of the environment variable.
+        Returns:
+            str: Contents of the sensitive environment variable.
+
+        Raises:
+            ValueError: The requested environment variable is empty.
+        """
+        logger.info("Retrieving {name} from environment variable".format(name = name))
         # Get the name of the environment variable from which we will retrieve the sensitive information.
-        variableName = self.config[name].get("variableName", name)
+        variableName = config.get("variableName", name)
+        logger.debug("Retrieving {name} from environment variable {variableName}".format(name = name, variableName = variableName))
+        # If it doesn't exist, we want it to throw the exception.
         sensitiveVariable = os.environ[variableName]
-        # Check that the variable is not empty
-        if not sensitiveVariable:
-            raise ValueError("Empty {description} passed".format(description = description))
-        logger.debug("variableName: {}, {}: {}".format(variableName, description, sensitiveVariable))
 
+        # We don't want to write an empty variable, so check if it's empty.
+        if not sensitiveVariable:
+            raise ValueError("The environment variable {variableName} was empty!".format(variableName = variableName))
+
+        return sensitiveVariable
+
+    @staticmethod
+    def writeInfoToSensitiveFile(sensitiveVariable, defaultWriteLocation, config):
+        """ Write the sensitive information to a sensitive file.
+
+        Args:
+            sensitiveVariable (str): Value to be written to the sensitive file.
+            defaultWriteLocation (str): Default location for the file to be written (in case it isn't specified).
+            config (dict): Configuration related to the sensitive parameter. In particular, the relevant key
+                is ``writeLocation``, whose value specifies the file into which the environment variable should
+                be written.
+        Returns:
+            str: Filename where the sensitive variable was written.
+        Raises:
+            IOError: If the file already exists and therefore will not be created.
+        """
         # Write to sensitive variable to file
-        writeLocation = self.config[name].get("writeLocation", defaultWriteLocation)
-        # Expand filename
+        writeLocation = config.get("writeLocation", defaultWriteLocation)
+        # Expand filename and create the directory if necessary
         writeLocation = os.path.expanduser(os.path.expandvars(writeLocation))
         if not os.path.exists(os.path.dirname(writeLocation)):
             os.makedirs(os.path.dirname(writeLocation))
 
         # Ensure that we don't overwrite an existing file!
         if os.path.exists(writeLocation):
-            raise IOError("File at {writeLocation} already exists and will not be overwritten!".format(writeLocation = writeLocation))
+            raise IOError('File at "{writeLocation}" already exists and will not be overwritten!'.format(writeLocation = writeLocation))
+        # If it doesn't exist, we can write the file
         with open(writeLocation, "w") as f:
             f.write(sensitiveVariable)
 
-        # Set the final directory and file permissions
-        if name == "sshKey":
-            # Set the file permissions to 600
-            os.chmod(writeLocation, stat.S_IRUSR | stat.S_IWUSR)
-            # Set the folder permissions to 700
-            os.chmod(os.path.dirname(writeLocation), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
-        elif name == "cert":
-            # Set the file permissions to 400
-            os.chmod(writeLocation, stat.S_IRUSR)
+        return writeLocation
+
+    def writeSSHKeyFromVariableToFile(self):
+        """ Write SSH key from an environment variable to file.
+
+        Used primarily for setting up the key in a docker container. It looks for a config dictionary stored in
+        the environment dict under the name ``sshKey``.
+
+        Args:
+            None.
+        Returns:
+            bool: True if the var was written to file.
+        """
+        name = "sshKey"
+        defaultWriteLocation = "~/.ssh/id_rsa"
+        try:
+            (_, writeLocation) = self.writeSensitiveVariableToFile(name = name,
+                                                                   defaultWriteLocation = defaultWriteLocation)
+        except RuntimeError as e:
+            # It didn't write to the location, so we should return immediately.
+            logger.info(e.args[0])
+            return False
+
+        # Set the final permissions so the file will work properly.
+        # Set the file permissions to 600
+        os.chmod(writeLocation, stat.S_IRUSR | stat.S_IWUSR)
+        # Set the folder permissions to 700
+        os.chmod(os.path.dirname(writeLocation), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
+
+        return True
+
+    def writeCertFromVariableToFile(self):
+        """ Write certificate from an environment variable to file.
+
+        Used primarily for setting up the certificate in a docker container. It looks for a config dictionary
+        stored in the environment dict under the name ``sshKey``.
+
+        Args:
+            None.
+        Returns:
+            bool: True if the var was written to file.
+        """
+        name = "cert"
+        defaultWriteLocation = "~/.globus/overwatchCert.pem"
+        try:
+            (_, writeLocation) = self.writeSensitiveVariableToFile(name = name,
+                                                                   defaultWriteLocation = defaultWriteLocation)
+        except RuntimeError as e:
+            # It didn't write to the location, so we should return immediately.
+            logger.info(e.args[0])
+            return False
+
+        # Set the final permissions so the file will work properly.
+        # Set the file permissions to 400
+        os.chmod(writeLocation, stat.S_IRUSR)
+
+        return True
 
     def setupRoot(self):
         """ Setup ROOT in our execution environment.
 
         This is done by executing ``thisroot.sh``, capturing the output, and then assigning the updated
         environment to our current environment variables.
+
+        Args:
+            None
+        Returns:
+            bool: True if the ROOT environment was setup. Note that it may already be setup, so returning
+                ``False`` is not necessarily a problem.
         """
         # We only want to add ROOT to the path, etc, if it's not already setup.
         # If ``ROOTSYS`` is setup, it's a pretty good bet that everything else is setup.
         if "ROOTSYS" not in os.environ:
             thisRootPath = os.path.join(self.config["root"]["path"], "bin", "thisroot.sh")
+            logger.debug("Adding receiver path to PATH: {thisRootPath}".format(thisRootPath = thisRootPath))
             # Run thisroot.sh, extract the environment, and then set the python environment to those values
             # See: https://stackoverflow.com/a/3505826
             command = ["bash", "-c", "source {thisRootPath} && env".format(thisRootPath = thisRootPath)]
 
+            # We can't set the encoding directly here, because python 2.7 won't handle it properly.
             proc = subprocess.Popen(command, stdout = subprocess.PIPE)
 
             # Load into the environment
             # Note that this doesn't propagate to the shell where this was executed!
+            # Note also that it updates all environment variables (not just those updated by ROOT), but this
+            # is the easiest way to have the desired variables updated properly and it shouldn't cause any problems.
             for line in proc.stdout:
-                (key, _, value) = line.partition("=")
+                # Output is of the form "PATH=/a/b/c:/d/e/f\n", so we split on "=" and remove the excess newline.
+                # Note that subprocess returns the lines as utf-8, so we to decode before using them.
+                (key, _, value) = line.decode("utf-8").partition("=")
+                value = value.replace("\n", "")
                 os.environ[key] = value
+
+            return True
+
+        return False
 
     def setupEnvironmentVars(self):
         """ Setup execution environment.
 
         We generically add any environment variables specified in "vars".
         """
-        for k, v in iteritems(self.config["vars"]):
+        for k, v in iteritems(self.config.get("vars", {})):
             # Not necessarily a problem, but I want to make the user aware.
             if k in os.environ:
-                logger.warning("Environment variable {k} is already set to {val}. It is being updated to {v}".format(k = k, val = os.environ["k"], v = v))
+                logger.warning('Environment variable {k} is already set to "{val}". It is being updated to "{v}"'.format(k = k, val = os.environ[k], v = v))
             os.environ[k] = v
 
     def setupReceiverPath(self):
-        """ Set the PATH to include the ZMQ receiver executable. """
+        """ Set the PATH to include the ZMQ receiver executable.
+
+        Only configure if the ZMQ receiver path setup is enabled.
+        """
         # Add the executable location to the path if necessary.
-        receiverPath = self.config.get("zmqReceiver", {}).get("path", os.path.join("${PWD}", "receiver", "bin"))
-        if receiverPath:
-            # Could have environment vars introduced (because our default includes an environment variable), so we
-            # need to expand them. Also need to strip "\n" due to it being inserted when variables are expanded.
-            receiverPath = os.path.expandvars(receiverPath).replace("\n", "")
-            logger.debug('Adding receiver path "{receiverPath}" to PATH'.format(receiverPath = receiverPath))
-            os.environ["PATH"] = os.environ["PATH"].rstrip() + os.pathsep + receiverPath
+        receiverConfig = self.config.get("zmqReceiver", {})
+        if not receiverConfig.get("enabled", False):
+            return
+
+        # Actually determine the path and add it to the PATH
+        receiverPath = receiverConfig.get("path", os.path.join("${PWD}", "receiver", "bin"))
+        # Could have environment vars introduced (because our default includes an environment variable), so we
+        # need to expand them. Also need to strip "\n" due to it being inserted when variables are expanded.
+        receiverPath = os.path.expandvars(receiverPath).replace("\n", "")
+        logger.debug('Adding receiver path "{receiverPath}" to PATH'.format(receiverPath = receiverPath))
+        os.environ["PATH"] = os.environ["PATH"].rstrip() + os.pathsep + receiverPath
 
 class supervisor(executable):
     """ Start ``supervisor`` (through ``supervisord``) to manage processes.
@@ -513,8 +649,8 @@ class supervisor(executable):
         is needed at the end.
 
     Args:
-        *args (list): Absorb extra arguments.
-        **kwargs (dict): Absorb extra arguments.
+        *args (list): Absorb ignored arguments from retrieveExecutable().
+        *kwargs (dict): Absorb ignored arguments from retrieveExecutable().
     """
     def __init__(self, *args, **kwargs):
         name = "supervisor"
@@ -535,9 +671,6 @@ class supervisor(executable):
         """ Setup required for the ``supervisor`` executable.
 
         In particular, we need to write out the main configuration.
-
-        Returns:
-            bool: True if supervisor was actually configured. It will not be if the supervisor option is disabled.
         """
         # Write to the supervisor config
         logger.info("Creating supervisor main config")
@@ -652,6 +785,8 @@ class sshKnownHosts(executable):
                 os.chmod(os.path.dirname(self.configFilename), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
 
             self.executeTask = True
+        else:
+            self.executeTask = False
 
 class autossh(executable):
     """ Start ``autossh`` to create a SSH tunnel.
@@ -994,6 +1129,7 @@ class uwsgi(executable):
         super().__init__(*args, **kwargs)
         # Basic setup
         self.configFilename = os.path.join("data", "config", "{name}.yaml".format(name = self.name))
+        # Note that this will override the args that are passed.
         self.args = [
             "uwsgi",
             "--yaml",
@@ -1256,7 +1392,7 @@ _available_executables = {
                                      name = "dqmReceiver",
                                      description = "Overwatch DQM receiver",
                                      args = [
-                                         "overwatchDQMReciever",
+                                         "overwatchDQMReceiver",
                                      ]),
 }
 
@@ -1297,20 +1433,29 @@ def runExecutables(executables):
         executables (dict): Executable configurations to execute. Keys are the executable names (up to a "_{tag}"),
             and the values are their configurations.
     Returns:
-        None.
+        dict: Executables which were run. Key is the name in the config, while the value is the executable.
     """
-    for executableType, executableConfig in iteritems(executables):
+    ranExecutables = {}
+    for name, executableConfig in iteritems(executables):
         # Determine the executable type. It is of the form "type_identifier"
+        # name contains the entire executable name, while executableType identifies the type of the executable
+        executableType = name
         if "_" in executableType:
             executableType = executableType[:executableType.find("_")]
 
-        executable = retrieveExecutable(executableType)(config = executableConfig)
-        executable.run()
+        executable = retrieveExecutable(name = executableType, config = executableConfig)
+        result = executable.run()
+        logger.debug("name: {name}, executableType: {executableType}, result: {result}".format(name = name, executableType = executableType, result = result))
+        # Don't store executables which were not actually run.
+        if result:
+            ranExecutables[name] = executable
+
+    return ranExecutables
 
 def startOverwatch(configFilename, configEnvironmentVariable):
     """ Start the various parts of Overwatch.
 
-    Components are only started if they are included in the configuration.
+    Components are only started if they are enabled in the configuration. Note that setup() is performed for all tasks!
 
     Args:
         configFilename (str): Filename of the configuration.
@@ -1320,7 +1465,7 @@ def startOverwatch(configFilename, configEnvironmentVariable):
         None.
 
     Raises:
-        ValueError: If both a configuration filename and a configuration environment variable are specified.
+        ValueError: If both a configuration filename and a configuration environment variable are specified. Only specify one.
     """
     # Validation
     if configEnvironmentVariable and configFilename:
@@ -1341,36 +1486,35 @@ def startOverwatch(configFilename, configEnvironmentVariable):
     config = yaml.load(config, Loader=yaml.SafeLoader)
 
     # Setup supervisor if necessary
-    supervisor = None
-    if config.get("supervisor", False):
+    enableSupervisor = config.get("supervisor", False)
+    if enableSupervisor:
         logger.info("Setting up supervisor")
         # Ensure that all executables use supervisor by setting the static class member.
         # Each executable will inherit this value.
         executable.supervisor = True
         # Setup
-        supervisor.setup()
+        s = supervisor()
+        s.setup()
 
-    logger.info("Overwatch deploy configuration: {}".format(pprint.pformat(config)))
-
-    if "cert" in config and config["cert"]["enabled"]:
-        pass
-
-    if "sshKey" in config and config["sshKey"]["enabled"]:
-        pass
+    logger.info("Overwatch deploy configuration: {config}".format(config = pprint.pformat(config)))
 
     # Setup environment based executables
     env = environment(config = config["environment"])
     env.setup()
 
     # Start the standard executables
-    runExecutables(config["executables"])
+    logger.debug("Running executables")
+    executables = runExecutables(config["executables"])
 
     # Start supervisor if necessary
-    if supervisor:
-        # Reload supervisor config.
+    if enableSupervisor:
+        # Reload supervisor config. This script will then exit.
         subprocess.Popen(["supervisorctl", "update"])
 
-def run():
+    return executables
+
+def run():  # pragma: nocover
+    """ Setup and run Overwatch deployment from the terminal. """
     # Setup command line parser
     parser = argparse.ArgumentParser(description = "Start Overwatch")
     parser.add_argument("-c", "--config", metavar="configFile",
@@ -1396,7 +1540,7 @@ def run():
     level = args.logLevel.upper()
     logger.setLevel(level)
 
-    startOverwatch(configFilename = args.config, configEnvironmentVariable = args.configEnvironmentVariable)
+    return startOverwatch(configFilename = args.config, configEnvironmentVariable = args.configEnvironmentVariable)
 
 if __name__ == "__main__":  # pragma: no cover
     run()
