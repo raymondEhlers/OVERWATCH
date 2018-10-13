@@ -51,6 +51,9 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'sphinx_markdown_tables',
+    # For converting svg to pdf when generating latex. This won't work on RTD because the underlying
+    # converter (such as `imagemagick`) is not available as of Oct 2018.
+    'sphinx.ext.imgconverter',
 ]
 
 # Add any paths that contain templates here, relative to this directory.

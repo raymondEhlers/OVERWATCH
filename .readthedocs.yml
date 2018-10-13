@@ -1,8 +1,12 @@
 build:
     image: latest
+formats:
+    - htmlzip
+    # Disable pdf because RTD can't handle converting svg to pdf (because an underlying converter
+    # such as `imagemagick` is required).
+    #- pdf
 python:
-    # Run on py 2 to ensure that we catch any missing imports
-    # This is convenient until we have better CI
+    # No strong preference between python versions since we have CI tests for python 2 and 3.
     version: 2
     pip_install: true
     extra_requirements:
