@@ -1051,6 +1051,43 @@ def testUwsgiExecutableRunFailure(loggingMixin):
         uwsgi.run()
     assert exceptionInfo.value.args[0] == "The uwsgi object should not be run directly."
 
+@pytest.mark.parametrize("executablesToEnableFromEnvironment, additionalExecutablesToEnable, expectedEnabledExecutables", [
+    ("zodb, processing", [], ["zodb", "processing"]),
+    ("zodb,processing", [], ["zodb", "processing"]),
+    ("zodb, processing", ["processing"], ["zodb", "processing"]),
+], ids = ["Base test", "No spaces in string", "Already enabled executable"])
+def testEnableExecutablesFromEnvironmentVariables(loggingMixin, executablesToEnableFromEnvironment, additionalExecutablesToEnable, expectedEnabledExecutables):
+    """ Test enabling executables via an environment variable. """
+    # Store a clean environment for cleanup
+    cleanEnvironment = copy.deepcopy(os.environ)
+
+    # Use the reference config for configuration. Everything is disabled by default, so
+    # there should be less to mock. Note that we take advantage of the reference distributed in the source.
+    referenceFilename = pkg_resources.resource_filename("overwatch.base", "deployReference.yaml")
+    with open(referenceFilename, "r") as f:
+        config = deploy.yaml.load(f, Loader = yaml.SafeLoader)
+
+    # Setup config
+    for executable in additionalExecutablesToEnable:
+        config["executables"][executable]["enabled"] = True
+    # Setup environment
+    os.environ["OVERWATCH_EXECUTABLES"] = executablesToEnableFromEnvironment
+
+    # Add the new executables
+    config = deploy.enableExecutablesFromEnvironment(config = config)
+
+    # Check which executables are enabled
+    enabledExecutables = []
+    for name in config["executables"]:
+        if config["executables"][name]["enabled"]:
+            enabledExecutables.append(name)
+
+    assert set(enabledExecutables) == set(expectedEnabledExecutables)
+
+    # Cleanup
+    os.environ.clear()
+    os.environ = cleanEnvironment
+
 @pytest.mark.parametrize("enableSupervisor", [
     False,
     True,

@@ -94,7 +94,7 @@ class executable(object):
         description (str): Description of the process for clearer display, etc.
         args (list): List of arguments used to start the process.
         config (dict): Configuration for the executable.
-        enabled (bool): True if the task should actually be executed.
+        enabled (bool): True if the executable should actually be executed.
         runInBackground (bool): True if the process should be run in the background. This means that process will
             not be blocking, but it shouldn't be used in conjunction with supervisor. Default: False.
         forceRestart (bool): True if the process should kill any previous processes before starting. If not and the
@@ -1452,10 +1452,34 @@ def runExecutables(executables):
 
     return ranExecutables
 
+def enableExecutablesFromEnvironment(config):
+    """ Allow enabling executables in the environmental config.
+
+    This allows us to set a base config, but then enable specific executables based on the environment. This is
+    particularly useful for docker containers, where we may want to split up the services into multiple containers
+    while still maintaining the same base configuration.
+
+    The executables should be provided as a comma separated list in the environment variable
+    ``OVERWATCH_EXECUTABLES``.
+
+    Args:
+        config (dict): The base configuration. It must contain an "executables" key.
+    Returns:
+        dict: The configuration updated to execute the requested executables.
+    """
+    executablesToEnable = os.environ.get("OVERWATCH_EXECUTABLES", "")
+    # Split into individual entries (and skip empty strings)
+    executablesToEnable = [s.strip() for s in executablesToEnable.split(",") if s != ""]
+    for executableName in executablesToEnable:
+        if executableName in config["executables"]:
+            config["executables"][executableName]["enabled"] = True
+
+    return config
+
 def startOverwatch(configFilename, configEnvironmentVariable):
     """ Start the various parts of Overwatch.
 
-    Components are only started if they are enabled in the configuration. Note that setup() is performed for all tasks!
+    Components are only started if they are enabled in the configuration. Note that setup() is performed for all executables!
 
     Args:
         configFilename (str): Filename of the configuration.
@@ -1484,6 +1508,9 @@ def startOverwatch(configFilename, configEnvironmentVariable):
 
     # Load the configuration.
     config = yaml.load(config, Loader=yaml.SafeLoader)
+
+    # Enable any additional executables requested via an environment variable
+    config = enableExecutablesFromEnvironment(config)
 
     # Setup supervisor if necessary
     enableSupervisor = config.get("supervisor", False)
