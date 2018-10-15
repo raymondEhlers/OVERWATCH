@@ -1106,6 +1106,9 @@ def testStartOverwatch(loggingMixin, enableSupervisor, configureFromEnvironment,
     # Store a clean environment for cleanup
     cleanEnvironment = copy.deepcopy(os.environ)
 
+    # Ignore any interfering environment variables
+    del os.environ["OVERWATCH_EXECUTABLES"]
+
     # Use the reference config for configuration. Everything is disabled by default, so
     # there should be less to mock. Note that we take advantage of the reference distributed in the source.
     referenceFilename = pkg_resources.resource_filename("overwatch.base", "deployReference.yaml")

@@ -962,15 +962,17 @@ class zodb(executable):
     def __init__(self, config):
         name = "zodb"
         description = "ZODB database"
-        self.configFilename = os.path.join("data", "config", "database.conf")
+        configFilename = os.path.join("data", "config", "database.conf")
         args = [
             "runzeo",
-            "-C {configFilename}".format(configFilename = self.configFilename),
+            "-C {configFilename}".format(configFilename = configFilename),
         ]
         super().__init__(name = name,
                          description = description,
                          args = args,
                          config = config)
+        # Need to set this after initializing the base class. Otherwise, the name will be overwritten.
+        self.configFilename = configFilename
 
     def setup(self):
         """ Setup required for the ZODB database. """
@@ -997,6 +999,7 @@ class zodb(executable):
         # is a string on the first line (which has a different indentation that we want to ignore).
         zeoConfig = inspect.cleandoc(zeoConfig)
 
+        logger.debug("configFilename: {configFilename}".format(configFilename = self.configFilename))
         with open(self.configFilename, "w") as f:
             f.write(zeoConfig)
 
@@ -1545,7 +1548,7 @@ def run():  # pragma: nocover
     # Setup command line parser
     parser = argparse.ArgumentParser(description = "Start Overwatch")
     parser.add_argument("-c", "--config", metavar="configFile",
-                        type=str, default="deployConfig.yaml",
+                        type=str, default="",
                         help="Path to config filename")
     parser.add_argument("-e", "--configEnvironmentVariable", metavar="envVariable",
                         type=str, default="",
