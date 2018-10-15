@@ -51,6 +51,9 @@ extensions = [
     'sphinx.ext.viewcode',
     'sphinx.ext.napoleon',
     'sphinx_markdown_tables',
+    # For converting svg to pdf when generating latex. This won't work on RTD because the underlying
+    # converter (such as `imagemagick`) is not available as of Oct 2018.
+    'sphinx.ext.imgconverter',
 ]
 
 # Add any paths that contain templates here, relative to this directory.
@@ -191,6 +194,11 @@ texinfo_documents = [
 
 
 # -- Extension configuration -------------------------------------------------
+
+# Add the css stylesheet. It is defined relative to the `_static` directory.
+# See: https://docs.readthedocs.io/en/latest/guides/adding-custom-css.html
+def setup(app):
+    app.add_stylesheet("overwatch.css")
 
 # Mock modules which won't be available when reading the docs
 # See: https://docs.readthedocs.io/en/latest/faq.html#i-get-import-errors-on-libraries-that-depend-on-c-modules

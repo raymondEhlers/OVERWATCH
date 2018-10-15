@@ -54,9 +54,11 @@ config file. All executables inherit from the `executable` class. As of Septembe
     - Via `uswgi`, `uwsgi` behind `nginx` or directly.
 
 For a comprehensive set of options, see the docstrings of the module, as well as the reference
-configuration, `overwatch/base/deployReferenceConfig.yaml`. Note that all executable are disabled by default,
+configuration, `overwatch/base/deployReference.yaml`. Note that all executable are disabled by default,
 so one may leave the configuration for all objects in a deployment configuration, and then just enable the
-parts that you want for a particular execution.
+parts that you want for a particular execution. However, it is also important to note that the deploy system
+doesn't support default values or overriding parts of the configuration like the Overwatch configuration
+system - every option of interest **must** be in the config passed to `overwatchDeploy`.
 
 ## Monitoring for errors
 
@@ -67,3 +69,10 @@ automatically provide alerts and information when issues occur.
 For successful monitoring, the environment must export the `DSN` as `export SENTRY_DSN=<value>`. The value
 will be some sort of unique URL. Note that this endpoint is for _all_ Overwatch monitoring, so be certain to
 check the traceback to determine the originating source of the issue.
+
+## Data transfer
+
+Data must be moved from the ZMQ and DQM receivers to other Overwatch sites, as well as exported to EOS. All of
+these transfers are handled by the data handling module. It will transfer the data in a robust manner, retry
+on failures, and then notifying the admin if the issues continue. For further information on configuration,
+see the `dataHandling` module.

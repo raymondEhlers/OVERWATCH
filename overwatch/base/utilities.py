@@ -15,7 +15,6 @@ import os
 import sys
 import time
 from calendar import timegm
-from subprocess import call
 import shutil
 import numpy as np
 import signal
@@ -135,68 +134,6 @@ def findCurrentRunDirs(dirPrefix = ""):
     return runDirs
 
 ###################################################
-# File transfer utilities
-###################################################
-def rsyncData(dirPrefix, username, remoteSystems, remoteFileLocations):
-    """ Syncs data to a remote system using rsync.
-
-    The overall command is:
-
-    .. code-block:: bash
-
-       rsync -rvlth --chmod=ugo=rwX --omit-dir-times --exclude="Run*/*/timeSlices" --include="Run*/***" --include="ReplayData/***" --include="runList.html" --exclude="*" --delete data/ rehlers@pdsf.nersc.gov:/project/projectdirs/alice/www/emcalMonitoring/data/2016/
-
-    (assuming that we are transferring to PDSF)
-
-    Some notes on the arguments include:
-
-    - The `chmod` option is explained `here <https://unix.stackexchange.com/a/218165>`__.
-    - `omit-dir-times` does not update the timestamps on dirs (but still does on files in those directories),
-      which fixes a number of errors thrown when transferring to PDSF
-    - Information on determining the right globbing is explained `here <https://unix.stackexchange.com/a/2503>`__.
-    - Files in directories `Run*` and `ReplayData/*` are transferred, and all other files in those directories
-      are deleted! The exception to this is the timeSlice directory. Otherwise, all files in the root of the
-      data directory are not transferred.
-    - The argument order for specifying directories to include and exclude matters! The first one sets an
-      overall pattern, and then subsequent includes or excludes only work with what is still available!
-    - When we pass the arguments via call(), they are sent directly to `rsync`. Thus, quotes around each glob
-      are not necessary and do not work correctly. See `here <https://stackoverflow.com/a/12497246>`__ for more.
-
-    Note:
-        Filenames of the form `*histos_*.root` are excluded from transfer! These are
-        unprocessed files from the HLT and should not be transferred!
-
-    Args:
-        dirPrefix (str): Path to the root directory where the data is stored.
-        username (str): Username to use with `rsync`.
-        remoteSystem (str): Hostname of the remote system.
-        remoteFileLocation (str): Directory to where files should be stored on the remote system.
-    Returns:
-        None.
-    """
-    # Determine which type of file we are transfering
-    fileDestinationLabel = "data"
-
-    # An ending slash is needed so that rsync transfers the proper files (and not just the directory)
-    sendDirectory = dirPrefix
-    if not sendDirectory.endswith("/"):
-        sendDirectory = sendDirectory + "/"
-
-    if len(remoteSystems) != len(remoteFileLocations[fileDestinationLabel]):
-        logger.critical("Number of remote systems is not equal to number of remote file locations. Skipping rsync operations!")
-    else:
-        for remoteSystem, remoteFileLocation in zip(remoteSystems, remoteFileLocations[fileDestinationLabel]):
-            if not remoteFileLocation.endswith("/"):
-                remoteFileLocation = remoteFileLocation + "/"
-
-            logger.info("Utilizing user %s to send %s files to %s on %s " % (username, fileDestinationLabel, remoteFileLocation, remoteSystem))
-
-            # For more information on these arguments, see the doc string.
-            rsyncCall = ["rsync", "-rvlth", "--chmod=ugo=rwX", "--omit-dir-times", "--exclude=Run*/*/timeSlices", "--include=Run*/***", "--include=ReplayData/***", "--include=runList.html", "--exclude=*", "--delete", sendDirectory, username + "@" + remoteSystem + ":" + remoteFileLocation]
-            logger.info(rsyncCall)
-            call(rsyncCall)
-
-###################################################
 # Logging utilities
 ###################################################
 def setupLogging(logger, logLevel, debug, logFilename):
@@ -287,11 +224,6 @@ def setupLogging(logger, logLevel, debug, logFilename):
     if parameters["emailLogger"]:
         logger.addHandler(emailHandler)
         logger.info("Added mailer handler to logging!")
-
-    # Be sure to propagate messages from modules
-    #processRunsLogger = logging.getLogger("processRuns")
-    #processRunsLogger.setLevel(logLevel)
-    #processRunsLogger.propagate = True
 
 ###################################################
 # File moving utilities
