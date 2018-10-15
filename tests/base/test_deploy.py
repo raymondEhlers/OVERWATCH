@@ -1107,7 +1107,7 @@ def testStartOverwatch(loggingMixin, enableSupervisor, configureFromEnvironment,
     cleanEnvironment = copy.deepcopy(os.environ)
 
     # Ignore any interfering environment variables
-    del os.environ["OVERWATCH_EXECUTABLES"]
+    os.environ.pop("OVERWATCH_EXECUTABLES", None)
 
     # Use the reference config for configuration. Everything is disabled by default, so
     # there should be less to mock. Note that we take advantage of the reference distributed in the source.
