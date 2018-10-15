@@ -5,11 +5,11 @@ TrendingManager is responsible for keeping all Trending Objects in one place.
 In constructor, the manager takes database and all parameters.
 
 Before processing, function 'createTrendingObjects' must be called.
-It imports 'qa' module and for each subsystem tries to get information
-about trending object (by invoking 'getSYSTrendingObjectInfo' function from SYS.py).
+It imports 'pluginManager' module and for each subsystem tries to get information
+about trending object (by invoking 'getTrendingObjectInfo' function from SYS.py).
 Then creates TrendingObject indicated in info.
 
-When root hist is available, the manger is noticed about new histogram.
+When the ROOT hist is processed, the manger is notified about new histogram.
 It invokes all TrendingObjects that wanted this specific histogram.
 
 # Trending Info
@@ -23,8 +23,9 @@ TrendingInfo is a simple object containing:
 TrendingObject is an abstract class responsible for adding measurements.
 
 It contains methods to implement by subclass:
-- initStartValue() -> \[T] ---> Returns container that stores trended values
-- getMeasurement(hist: histogramContainer) -> T ---> Computes trend value from histogramContainer
+- initializeTrendingArray() -> \[T] ---> Returns container that stores trended values
+- extractTrendValue(hist: histogramContainer) -> None --->
+Computes trend value from histogramContainer and place in appropriate place
 - retrieveHist() -> TObject ---> Creates root object from trended values
 
 # General Diagram

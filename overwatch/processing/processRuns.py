@@ -90,8 +90,7 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
             are names of options, while values are the corresponding option values. Default: ``None``. Note: In this case,
             it will use the default subsystem processing options.
         forceRecreateSubsystem (bool): True if subsystems will be recreated, even if they already exist.
-        trendingManager (TrendingManager): Contains trending objects which will be used when determining which
-            histograms need to be used for trending.
+        trendingManager (TrendingManager): Manages the trending subsystem.
     Returns:
         None. However, the underlying subsystems, histograms, etc, are modified.
     """
@@ -261,7 +260,8 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions,
             for processing the trending objects where we don't have access to their corresponding ``subsystemContainer``.
             The subsystem name of the ``trendingContainer`` (``TDG``) does not necessarily correspond to the subsystem
             of the object being processed, so we have to pass it here.
-        trendingManager (TrendingManager): Trending Manager will be noticed when histogram is ready
+        trendingManager (TrendingManager): Will be notified when as histogram is processed to allow the use of
+            the histogram values in trending.
     Returns:
         None. However, the subsystem, histogram, etc are modified and their representations in images
             and ``json`` are written to disk.
@@ -304,7 +304,7 @@ def processHist(subsystem, hist, canvas, outputFormatting, processingOptions,
     logger.debug("histName: {}, hist: {}".format(hist.histName, hist.hist))
 
     if trendingManager:
-        trendingManager.noticeAboutNewHistogram(hist)
+        trendingManager.notifyAboutNewHistogramValue(hist)
 
     # Save
     outputName = hist.histName
@@ -932,7 +932,8 @@ def processAllRuns():
     # Run trending now that we have gotten to the most recent run
     if trendingManager:
         trendingManager.processTrending()
-        transaction.commit()  # Commit after we have successfully processed the trending
+        # Commit after we have successfully processed the trending
+        transaction.commit()
     logger.info("Finished trending processing!")
 
     # Update receiver last modified time if the log exists

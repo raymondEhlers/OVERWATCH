@@ -18,9 +18,21 @@ class TrendingInfoException(Exception):
 
 
 class TrendingInfo:
+    """ Container for data for TrendingObject
+
+    When TrendingInfo is initialized, data are validated.
+    """
+
     __slots__ = ['name', 'desc', 'histogramNames', 'trendingClass']
 
     def __init__(self, name, desc, histogramNames, trendingClass):
+        """
+        Args:
+            name: using in database to map name to trendingObject, must be unique
+            desc: verbose description of trendingObject, it is displayed on generated histograms
+            histogramNames: list of histogram names from which trendingObject depends
+            trendingClass:  concrete class of abstract class TrendingObject
+        """
         # type: (str, str, List[str],  Type[TrendingObject]) -> None
         # trending objects within subsystem must have different names - TODO add validation?
         self.name = self.validate(name)
@@ -37,8 +49,8 @@ class TrendingInfo:
             raise TrendingInfoException(msg='WrongType', expected=basestring, got=type(obj))
         return obj
 
-    @staticmethod
-    def validateHist(objects):  # type: (Collection[str]) -> Collection[str]
+    @classmethod
+    def validateHist(cls, objects):  # type: (Collection[str]) -> Collection[str]
         try:
             if len(objects) < 1:
                 raise TrendingInfoException(msg='NoHistograms')
@@ -46,7 +58,7 @@ class TrendingInfo:
             raise TrendingInfoException(msg='NotCollection', got=objects)
 
         for obj in objects:
-            TrendingInfo.validate(obj)
+            cls.validate(obj)
         return objects
 
     @staticmethod

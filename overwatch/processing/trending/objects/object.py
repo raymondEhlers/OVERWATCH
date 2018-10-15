@@ -16,9 +16,10 @@ else:
 
 try:
     from typing import *  # noqa
-    from overwatch.processing.processingClasses import histogramContainer  # noqa
 except ImportError:
     pass
+else:
+    from overwatch.processing.processingClasses import histogramContainer  # noqa
 
 logger = logging.getLogger(__name__)
 
@@ -35,31 +36,34 @@ class TrendingObject(ABC, Persistent):
 
         self.currentEntry = 0
         self.maxEntries = self.parameters.get(CON.ENTRIES, 100)
-        self.trendedValues = self.initStartValues()
+        self.trendedValues = self.initializeTrendingArray()
 
         self.histogram = None
-        self.drawOptions = 'AP'  # Ensure that the axis and points are drawn on the TGraph
+        # Ensure that the axis and points are drawn on the TGraph
+        self.drawOptions = 'AP'
 
     def __str__(self):
         return self.name
 
     @abc.abstractmethod
-    def initStartValues(self):  # type: () -> Any
+    def initializeTrendingArray(self):  # type: () -> Any
         """Example:
         return np.zeros((self.maxEntries, 2), dtype=np.float)
         """
+        pass
 
     @abc.abstractmethod
-    def addNewHistogram(self, hist):  # type: (histogramContainer) -> None
+    def extractTrendValue(self, hist):  # type: (histogramContainer) -> None
         """Example:
         if self.currentEntry > self.maxEntries:
             self.trendedValues = np.delete(self.trendedValues, 0, axis=0)
         else:
             self.currentEntry += 1
 
-        newValue = self.getMeasurement(hist)
+        newValue = hist.hist.GetMean(), hist.hist.GetMeanError()
         self.trendedValues = np.append(self.trendedValues, [newValue], axis=0)
         """
+        pass
 
     @abc.abstractmethod
     def retrieveHist(self):  # type: () -> ROOT.TObject
@@ -76,10 +80,12 @@ class TrendingObject(ABC, Persistent):
 
         return histogram
         """
+        pass
 
     def processHist(self, canvas):
         self.resetCanvas(canvas)
-        canvas.cd()  # Ensure we plot onto the right canvas
+        # Ensure we plot onto the right canvas
+        canvas.cd()
 
         ROOT.gStyle.SetOptTitle(False)  # turn off title
         self.histogram = self.retrieveHist()

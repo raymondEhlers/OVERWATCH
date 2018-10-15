@@ -13,12 +13,13 @@ logger = logging.getLogger(__name__)
 
 try:
     from typing import *  # noqa
+except ImportError:
+    pass
+else:
     from persistent.mapping import PersistentMapping  # noqa
     from overwatch.processing.processingClasses import histogramContainer  # noqa
     from overwatch.processing.trending.info import TrendingInfo  # noqa
     from overwatch.processing.trending.objects.object import TrendingObject  # noqa
-except ImportError:
-    pass
 
 
 class TrendingManager(Persistent):
@@ -58,7 +59,7 @@ class TrendingManager(Persistent):
             self._createTrendingObjectsForSubsystem(subsystem)
 
     def _createTrendingObjectsForSubsystem(self, subsystemName):  # type: (str) -> None
-        functionName = "{subsystem}_get{subsystem}TrendingObjectInfo".format(subsystem=subsystemName)
+        functionName = "{subsystem}_getTrendingObjectInfo".format(subsystem=subsystemName)
         getTrendingObjectInfo = getattr(pluginManager, functionName, None)  # type: Callable[[], List[TrendingInfo]]
         if getTrendingObjectInfo:
             info = getTrendingObjectInfo()
@@ -99,6 +100,6 @@ class TrendingManager(Persistent):
                 logger.debug("trendingObject: {}".format(trendingObject))
                 trendingObject.processHist(canvas)
 
-    def noticeAboutNewHistogram(self, hist):  # type: (histogramContainer) -> None
+    def notifyAboutNewHistogramValue(self, hist):  # type: (histogramContainer) -> None
         for trend in self.histToTrending.get(hist.histName, []):
-            trend.addNewHistogram(hist)
+            trend.extractTrendValue(hist)
