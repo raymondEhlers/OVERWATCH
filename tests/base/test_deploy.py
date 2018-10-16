@@ -415,6 +415,9 @@ def setupEnvironment(loggingMixin, mocker):
     Note:
         ROOT must be available in your environment!
     """
+    # Store a clean environment for cleanup
+    cleanEnvironment = copy.deepcopy(os.environ)
+
     # Setup
     config = {
         "environment": {
@@ -431,9 +434,6 @@ def setupEnvironment(loggingMixin, mocker):
             },
         },
     }
-    # Store (some of) the original environment variables
-    path = os.environ["PATH"]
-    ldLibraryPath = os.environ["LD_LIBRARY_PATH"]
     # Create a value for us to overwrite
     # It should be overwritten during setup()
     os.environ["overwriteVar"] = "overwrite"
@@ -447,12 +447,9 @@ def setupEnvironment(loggingMixin, mocker):
 
     yield config
 
-    # Restore (part of) the original environment
-    os.environ["PATH"] = path
-    os.environ["LD_LIBRARY_PATH"] = ldLibraryPath
-    del os.environ["overwriteVar"]
-    if standardROOTSYSPath:
-        os.environ["ROOTSYS"] = standardROOTSYSPath
+    # Cleanup back to the original envrionemnt
+    os.environ.clear()
+    os.environ = cleanEnvironment
 
 def testEnvironment(loggingMixin, setupEnvironment, mocker):
     """ (Effectively) integration tests for configuring the environment.  """
