@@ -2,7 +2,7 @@
 
 Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
 
-## [1.1.1] - 26 September 2018
+## [Unreleased]
 
 ### Added
 
@@ -20,7 +20,7 @@ Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
 ### Changed
 
 - Updated `overwatchDeploy` to be class based, and generally far more stable and extensible. It is also
-  broadly covered by unit tests (some branches are still missing).
+  broadly covered by unit tests.
 
 ## [1.1] - 2 September 2018
 

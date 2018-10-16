@@ -437,8 +437,8 @@ def setupEnvironment(loggingMixin, mocker):
     # Create a value for us to overwrite
     # It should be overwritten during setup()
     os.environ["overwriteVar"] = "overwrite"
-    # Ensure that the ROOTSYS that is found was actually one that was set.
-    standardROOTSYSPath = os.environ.pop("ROOTSYS")
+    # Ensure that the `ROOTSYS` that is found was actually one that was set and isn't from the existing environment.
+    os.environ.pop("ROOTSYS")
     assert "ROOTSYS" not in os.environ
     # Remove the receiver from the path if necessary
     receiverPath = config["environment"]["zmqReceiver"]["path"]
