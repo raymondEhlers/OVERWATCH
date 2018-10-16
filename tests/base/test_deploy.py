@@ -976,6 +976,9 @@ def testOverwatchExecutableProperties(loggingMixin, executableType, config, expe
     # Redirect nginx run to nginx setup so we don't have to mock all of run()
     mNginxRun = mocker.MagicMock()
     mocker.patch("overwatch.base.deploy.nginx.run", mNginxRun)
+    # Avoid creating any new directories
+    mMakedirs = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.os.makedirs", mMakedirs)
 
     # Perform task setup.
     executable.setup()
@@ -998,7 +1001,7 @@ def testOverwatchExecutableProperties(loggingMixin, executableType, config, expe
         # Effectively copied from the uwsgi config
         expectedConfig = {
             "vacuum": True,
-            "stats": "/tmp/sockets/wsgi_{name}_stats.sock",
+            "stats": "myDir/data/sockets/wsgi_{name}_stats.sock",
             "chdir": "myDir",
             "http-socket": "127.0.0.1:8850",
             "module": "overwatch.webApp.run",
@@ -1008,7 +1011,7 @@ def testOverwatchExecutableProperties(loggingMixin, executableType, config, expe
             "threads": 2,
             "cheaper": 2,
             "master": True,
-            "master-fifo": "/tmp/sockets/wsgiMasterFifo{name}",
+            "master-fifo": "myDir/data/sockets/wsgiMasterFifo{name}.sock",
         }
         # Format in the variables
         for k, v in iteritems(expectedConfig):

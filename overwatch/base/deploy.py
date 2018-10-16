@@ -1144,7 +1144,9 @@ class uwsgi(executable):
 
         Raises:
             ValueError: If there is a space in the name. This is not allowed.
-            ValueError: If both http-socket and uwsgi-socket are specified, which is invalid.
+            ValueError: If both ``http-socket`` and ``uwsgi-socket`` are specified, which is invalid.
+            ValueError: If neither ``http-socket`` and ``uwsgi-socket`` are specified. One must be
+                specified.
             KeyError: If ``module`` is not specific in the configuration, such that the ``uwsgi`` config
                 cannot not be defined.
         """
@@ -1156,6 +1158,15 @@ class uwsgi(executable):
         if " " in self.name:
             raise ValueError("There is a space in the uwsgi name! This is not allowed.")
 
+        # Setup some values for the base config. We set them here instead of waiting until we fill the rest of
+        # configuration from YAML so we only need to create directores once. Since we extract chdir
+        # from the cnofig, we don't really lose anything.
+        baseDir = self.config.get("additionalOptions", {}).get("chdir", "/opt/overwatch")
+        socketsDir = self.config.get("additionalOptions", {}).get("socketsDir", os.path.join(baseDir, "data", "sockets"))
+        # Need to create the sockets directory if it doesn't already exist. Otherwise, uwsgi will fail
+        if not os.path.exists(socketsDir):
+            os.makedirs(socketsDir)
+
         # Define the uwsgi config
         # This is the base configuration which sets the default values
         uwsgiConfig = {
@@ -1163,7 +1174,7 @@ class uwsgi(executable):
             # The rest of the config is completed below
             "vacuum": True,
             # Stats
-            "stats": "/tmp/sockets/wsgi_{name}_stats.sock",
+            "stats": os.path.join(socketsDir, "wsgi_{name}_stats.sock"),
 
             # Setup the working directory
             "chdir": "/opt/overwatch",
@@ -1187,7 +1198,7 @@ class uwsgi(executable):
 
             # Configure master fifo
             "master": True,
-            "master-fifo": "/tmp/sockets/wsgiMasterFifo{name}",
+            "master-fifo": os.path.join(socketsDir, "wsgiMasterFifo{name}.sock"),
         }
 
         # Add any additional options which we might want to the config
@@ -1206,8 +1217,11 @@ class uwsgi(executable):
 
         # Ensure that the sockets are fine.
         # The socket can be either http-socket or unix-socket
-        if "http-socket" in self.config and "uwsgi-socket" in self.config:
-            raise ValueError("Cannot specify both http-socket and uwsgi-socket! Check your config")
+        validSockets = ["http-socket", "uwsgi-socket"]
+        if all(socket not in self.config for socket in validSockets):
+            raise ValueError("Must specify either http-socket and uwsgi-socket! Check your config!")
+        if all(socket in self.config for socket in validSockets):
+            raise ValueError("Cannot specify both http-socket and uwsgi-socket! Check your config!")
 
         # Add all options in the config, such as the module and the socket
         # They should now all be valid options.
