@@ -688,23 +688,23 @@ class supervisor(executable):
             "logfile_backups": "10",
         }
 
-        # Unix http server monitoring options
-        tempConfig["unix_http_server"] = {
-            # Path to the socket file
-            "file": os.path.join("tmp", "sockets", "supervisor.sock"),
-            # Socket file mode (default 0700)
-            "chmod": "0700",
-        }
         # These options section must remain in the config file for RPC
         # (supervisorctl/web interface) to work, additional interfaces may be
         # added by defining them in separate ``rpcinterface: sections``
         tempConfig["rpcinterface:supervisor"] = {
             "supervisor.rpcinterface_factory": "supervisor.rpcinterface:make_main_rpcinterface",
         }
-        # supervisorctl options
+
+        # Define the supervisor control block
+        tempConfig["inet_http_server"] = {
+            # Server port (listening on all interfaces)
+            "port": ":9001",
+        }
+
+        # Define how supervisorctl should communicate with the instance.
         tempConfig["supervisorctl"] = {
-            # Use a unix:// URL  for a unix socket
-            "serverurl": "unix:///tmp/supervisor.sock",
+            # Server port (which is listening on all interfaces, so we just use localhost)
+            "serverurl": "http://127.0.0.1:9001",
         }
 
         # Python 2 and 3 compatible version
