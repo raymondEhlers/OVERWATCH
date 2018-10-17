@@ -200,3 +200,8 @@ The value will be some sort of unique URL. Note that this endpoint is just for O
 (called `overwatch-processing` on `sentry`). If it is not available, it will look for the general environment
 variable `SENTRY_DSN`.
 
+## Repeated execution
+
+For deployment, we want to run the processing repeatedly on a time interval. This can be achieved via the
+`processingTimeToSleep` YAML configuration option. This parameter, which is specified in seconds, is the sleep
+time between the end of the current round of processing and the start of the next round of processing.

@@ -71,11 +71,9 @@ setup(
             "overwatchDQMReceiver = overwatch.receiver.run:runDevelopment",
             "overwatchWebApp = overwatch.webApp.run:runDevelopment",
             # The processing will be launched this way in both production and development, so it
-            # points to a different type of function
+            # points to a different type of function. This function will on an interval if the
+            # sleep time is set to a positive value. Otherwise, it will run once.
             "overwatchProcessing = overwatch.processing.run:run",
-            # This processing will run repeatedly until stopped. Used during deployment because
-            # supervisor doesn't have a straightforward mechanism to repeatedly execute a task.
-            "overwatchProcessingDeploy = overwatch.processing.run:runDeploy",
             # Deployment script
             "overwatchDeploy = overwatch.base.deploy:run",
             # Utility script to update the database users

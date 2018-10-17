@@ -13,6 +13,7 @@ import datetime
 import logging
 import os
 import pprint
+import timeit
 
 import sentry_sdk
 from sentry_sdk.integrations.logging import LoggingIntegration
@@ -49,46 +50,12 @@ from overwatch.processing import processRuns
 def run():
     """ Main entry point for starting ``processAllRuns()``.
 
-    Args:
-        None.
-    Returns:
-        None.
-    """
-    # Process all of the run data
-    processRuns.processAllRuns()
-    # Function calls that be used for debugging
-
-    ## Test processTimeSlices()
-    ## TEMP
-    #(dbRoot, connection) = utilities.getDB(processingParameters["databaseLocation"])
-    #runs = dbRoot["runs"]
-    ## ENDTEMP
-
-    #logging.info("\n\t\t0-4:")
-    #returnValue = processTimeSlices(runs, "Run300005", 0, 4, "EMC", {})
-    #logging.info("0-4 UUID: {returnValue}".format(returnValue = returnValue))
-
-    #logging.info("\n\t\t0-3:")
-    #returnValue = processTimeSlices(runs, "Run300005", 0, 3, "EMC", {})
-    #logging.info("0-3 UUID: {returnValue}".format(returnValue = returnValue))
-
-    #logging.info("\n\t\t0-3 repeat:")
-    #returnValue = processTimeSlices(runs, "Run300005", 0, 3, "EMC", {})
-    #logging.info("0-3 repeat UUID: {returnValue}".format(returnValue = returnValue))
-
-    #logging.info("\n\t\t1-4:")
-    #returnValue = processTimeSlices(runs, "Run300005", 1, 4, "EMC", {})
-    #logging.info("1-4 UUID: {returnValue}".format(returnValue = returnValue))
-
-    #logging.info("\n\t\t1-3:")
-    #returnValue = processTimeSlices(runs, "Run300005", 1, 3, "EMC", {})
-    #logging.info("1-3 UUID: {returnValue}".format(returnValue = returnValue))
-
-def runDeploy():
-    """ Entry point for starting ``processAllRuns()`` persistently during deployments.
-
     This function will run on an interval determined by the value of ``processingTimeToSleep``
-    (specified in seconds).
+    (specified in seconds). If the value is 0 or less, the processing will only run once.
+
+    Note:
+        The sleep time is defined as the time between when ``processAllRuns()`` finishes and
+        when it is started again.
 
     Args:
         None.
@@ -96,11 +63,21 @@ def runDeploy():
         None.
     """
     handler = utilities.handleSignals()
-    logger.info("Starting persistent processing.")
+    sleepTime = processingParameters["processingTimeToSleep"]
+    logger.info("Starting processing with sleep time of {sleepTime}.".format(sleepTime = sleepTime))
     while not handler.exit.is_set():
+        # Note both the time that the processing started, as well as the execution time.
         logger.info("Running processing at {time}.".format(time = datetime.datetime.now()))
+        start = timeit.default_timer()
+        # Run the actual executable.
         processRuns.processAllRuns()
-        handler.exit.wait(processingParameters["processingTimeToSleep"])
+        end = timeit.default_timer()
+        logger.info("Processing complete in {time} seconds".format(time = end - start))
+        # Only execute once if the sleep time is <= 0. Otherwise, sleep and repeat.
+        if sleepTime > 0:
+            handler.exit.wait(processingParameters["processingTimeToSleep"])
+        else:
+            break
 
 if __name__ == "__main__":
     run()
