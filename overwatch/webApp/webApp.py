@@ -148,8 +148,9 @@ def load_user(user):
     return auth.User.getUser(user, db)
 
 # Sentry for monitoring errors and other issues.
+# Usually, we want the module specific DSN, but we will take the general one if it's the only one available.
 # Note that if SENTRY_DSN is not set, it simply won't activated.
-sentry_sdk.init(dsn = os.getenv("SENTRY_DSN"), integrations = [FlaskIntegration()])
+sentry_sdk.init(dsn = os.getenv("SENTRY_DSN_WEBAPP") or os.getenv("SENTRY_DSN"), integrations = [FlaskIntegration()])
 
 ######################################################################################################
 # Unauthenticated Routes

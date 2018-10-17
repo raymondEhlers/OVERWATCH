@@ -195,3 +195,8 @@ For successful monitoring, the environment must export the `DSN` as `export SENT
 will be some sort of unique URL. Note that this endpoint is for _all_ Overwatch monitoring, so be certain to
 check the traceback to determine the originating source of the issue.
 
+For successful monitoring, the environment must export the `DSN` as `export SENTRY_DSN_PROCESSING=<value>`.
+The value will be some sort of unique URL. Note that this endpoint is just for Overwatch processing errors
+(called `overwatch-processing` on `sentry`). If it is not available, it will look for the general environment
+variable `SENTRY_DSN`.
+
