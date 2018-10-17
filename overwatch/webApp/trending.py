@@ -15,6 +15,7 @@ trendingPage = Blueprint('trendingPage', __name__)
 
 
 def determineSubsystemName(subsystemName, trendingManager):  # type: (str, TrendingManager) -> str
+    """If subsystem argument is not valid, trying to return any subsystem from TrendingManager database"""
     if subsystemName:
         return subsystemName
 
@@ -26,14 +27,31 @@ def determineSubsystemName(subsystemName, trendingManager):  # type: (str, Trend
 @trendingPage.route("/" + CON.TRENDING, methods=["GET", "POST"])
 @login_required
 def trending():
-    """ Trending visualization"""
+    """ Route to provide visualization of trending information.
+
+    This method provides functionality similar to that of a run page, but focused instead on displaying
+    trending information. In particular, it displays trended objects from all subsystems, including
+    those generated through the trending subsystem.
+
+    Note:
+        Function args are provided through the flask request object.
+
+    Args:
+        jsRoot (bool): True if the response should use jsRoot instead of images.
+        ajaxRequest (bool): True if the response should be via AJAX.
+        subsystemName (str): Name of the requested subsystem. It is fine for it to be an empty string.
+        histName (str): Name of the requested histogram. It is fine for it to be an empty string.
+    Returns:
+        Response: Trending information template populated with trended objects.
+    """
+
     logger.debug("request: {0}".format(request.args))
     (error, subsystemName, requestedHist, jsRoot, ajaxRequest) = validation.validateTrending(request)
 
     # Create trending container from stored trending information
     trendingManager = TrendingManager(db, serverParameters)
     subsystemName = determineSubsystemName(subsystemName, trendingManager)
-    assert subsystemName
+    assert subsystemName  # TODO return error template
 
     # Template paths to the individual files
     filenameTemplate = os.path.join(CON.TRENDING, subsystemName, '{}', '{}.{}')
@@ -65,6 +83,8 @@ def trending():
 
 
 def safeRenderTemplate(error, *args, **kwargs):
+    """If error is empty, return rendered template from *args and **kwargs.
+    Otherwise return empty string, if exception appear return empty string."""
     if error != {}:
         return ''
     try:
@@ -76,6 +96,8 @@ def safeRenderTemplate(error, *args, **kwargs):
 
 
 def reRenderIfError(error, template, rendered):
+    """If errors exist, render new template with errors.
+     Otherwise return unchanged previously rendered object."""
     if error != {}:
         return render_template(template, error=error)
     else:

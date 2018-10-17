@@ -23,17 +23,18 @@ else:
 
 
 class TrendingManager(Persistent):
+    """ADD DOC"""
 
     def __init__(self, dbRoot, parameters):  # type: (PersistentMapping, dict)->None
         self.parameters = parameters
         self.histToTrending = defaultdict(list)  # type: Dict[str, List[TrendingObject]]
 
-        self.prepareDataBase(CON.TRENDING, dbRoot)
+        self._prepareDataBase(CON.TRENDING, dbRoot)
         self.trendingDB = dbRoot[CON.TRENDING]  # type: BTree[str, BTree[str, TrendingObject]]
 
-        self.prepareDirStructure()
+        self._prepareDirStructure()
 
-    def prepareDirStructure(self):
+    def _prepareDirStructure(self):
         trendingDir = os.path.join(self.parameters[CON.DIR_PREFIX], CON.TRENDING, '{}', '{}')
         imgDir = trendingDir.format('{}', CON.IMAGE)
         jsonDir = trendingDir.format('{}', CON.JSON)
@@ -47,14 +48,15 @@ class TrendingManager(Persistent):
             if not os.path.exists(subJsonDir):
                 os.makedirs(subJsonDir)
 
-            self.prepareDataBase(subsystemName, self.trendingDB)
+            self._prepareDataBase(subsystemName, self.trendingDB)
 
     @staticmethod
-    def prepareDataBase(objName, dbPosition):  # type: (str, Persistent)-> None
+    def _prepareDataBase(objName, dbPosition):  # type: (str, Persistent)-> None
         if objName not in dbPosition:
             dbPosition[objName] = BTree()
 
     def createTrendingObjects(self):
+        """ADD DOC"""
         for subsystem in self.parameters[CON.SUBSYSTEMS]:
             self._createTrendingObjectsForSubsystem(subsystem)
 
@@ -76,20 +78,21 @@ class TrendingManager(Persistent):
             if info.name not in self.trendingDB[subsystemName] or self.parameters[CON.RECREATE]:
                 to = info.createTrendingClass(subsystemName, self.parameters)
                 self.trendingDB[subsystemName][info.name] = to
-                self.subscribe(to, info.histogramNames)
+                self._subscribe(to, info.histogramNames)
 
                 logger.debug(success.format(info.name, subsystemName))
             else:
                 logger.debug(fail.format(self.trendingDB[subsystemName][info.name], subsystemName))
 
-    def subscribe(self, trendingObject, histogramNames):  # type: (TrendingObject, List[str])->None
+    def _subscribe(self, trendingObject, histogramNames):  # type: (TrendingObject, List[str])->None
         for histName in histogramNames:
             self.histToTrending[histName].append(trendingObject)
 
-    def resetDB(self):
+    def resetDB(self):  # TODO not used - is it needed?
         self.trendingDB.clear()
 
     def processTrending(self):
+        """ADD DOC"""
         # Cannot have same name as other canvases, otherwise the canvas will be replaced, leading to segfaults
         canvasName = 'processTrendingCanvas'
         canvas = ROOT.TCanvas(canvasName, canvasName)
@@ -101,5 +104,6 @@ class TrendingManager(Persistent):
                 trendingObject.processHist(canvas)
 
     def notifyAboutNewHistogramValue(self, hist):  # type: (histogramContainer) -> None
+        """ADD DOC"""
         for trend in self.histToTrending.get(hist.histName, []):
             trend.extractTrendValue(hist)
