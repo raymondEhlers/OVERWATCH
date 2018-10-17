@@ -41,7 +41,7 @@ def testExpandEnvironmentVars(loggingMixin):
     s.write(testYaml)
     s.seek(0)
 
-    config = deploy.yaml.load(s, Loader = yaml.SafeLoader)
+    config = deploy.configModule.yaml.load(s, Loader = yaml.SafeLoader)
 
     assert config["normalVar"] == 3
     # Should have no impact because it explicitly needs to be tagged (a `$` on it's own is not enough)
@@ -857,7 +857,7 @@ def testWriteCustomOverwatchConfig(setupOverwatchExecutable, existingConfig, moc
     # Mock yaml.dump so we can check what was written.
     # (We can't check the write directly because dump writes many times!)
     mYaml = mocker.MagicMock()
-    mocker.patch("overwatch.base.deploy.yaml.dump", mYaml)
+    mocker.patch("overwatch.base.deploy.configModule.yaml.dump", mYaml)
 
     # Perform the actual setup
     executable.setup()
@@ -897,7 +897,7 @@ def testTwoOverwatchExecutablesWithCustomConfigs(loggingMixin):
     expected.update(webAppOptions["additionalOptions"])
 
     with open(filename, "r") as f:
-        generatedConfig = deploy.yaml.load(f, Loader = yaml.SafeLoader)
+        generatedConfig = deploy.configModule.yaml.load(f, Loader = yaml.SafeLoader)
 
     assert generatedConfig == expected
 
@@ -969,7 +969,7 @@ def testOverwatchExecutableProperties(loggingMixin, executableType, config, expe
     # Mock yaml.dump so we can check what was written.
     # (We can't check the write directly because dump writes many times!)
     mYaml = mocker.MagicMock()
-    mocker.patch("overwatch.base.deploy.yaml.dump", mYaml)
+    mocker.patch("overwatch.base.deploy.configModule.yaml.dump", mYaml)
     # Redirect nginx run to nginx setup so we don't have to mock all of run()
     mNginxRun = mocker.MagicMock()
     mocker.patch("overwatch.base.deploy.nginx.run", mNginxRun)
@@ -1065,7 +1065,7 @@ def testEnableExecutablesFromEnvironmentVariables(loggingMixin, executablesToEna
     # there should be less to mock. Note that we take advantage of the reference distributed in the source.
     referenceFilename = pkg_resources.resource_filename("overwatch.base", "deployReference.yaml")
     with open(referenceFilename, "r") as f:
-        config = deploy.yaml.load(f, Loader = yaml.SafeLoader)
+        config = deploy.configModule.yaml.load(f, Loader = yaml.SafeLoader)
 
     # Setup config
     for executable in additionalExecutablesToEnable:
@@ -1113,7 +1113,7 @@ def testStartOverwatch(loggingMixin, enableSupervisor, configureFromEnvironment,
     # there should be less to mock. Note that we take advantage of the reference distributed in the source.
     referenceFilename = pkg_resources.resource_filename("overwatch.base", "deployReference.yaml")
     with open(referenceFilename, "r") as f:
-        config = deploy.yaml.load(f, Loader = yaml.SafeLoader)
+        config = deploy.configModule.yaml.load(f, Loader = yaml.SafeLoader)
 
     # Turn supervisor on or off depending on the test.
     config["supervisor"] = enableSupervisor
@@ -1125,7 +1125,7 @@ def testStartOverwatch(loggingMixin, enableSupervisor, configureFromEnvironment,
     # We don't perform this initially on the read because we need to update the configuration before
     # we turn it back into a string.
     configStr = StringIO()
-    deploy.yaml.dump(config, configStr, default_flow_style = False)
+    deploy.configModule.yaml.dump(config, configStr, default_flow_style = False)
     configStr.seek(0)
     # Convert to a standard string
     configStr = configStr.read()

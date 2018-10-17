@@ -47,17 +47,22 @@ import subprocess
 import sys
 import time
 import warnings
-import ruamel.yaml as yaml
 # Help for handling string based configurations.
 import inspect
 try:
     # Python 3
     from configparser import ConfigParser
-except ImportError:  # pragma: no cover . Py2 will cover this, but not p3. Either way, it's not interesting, so ignore it.
+except ImportError:  # pragma: no cover . Py2 will cover this, but not py3. Either way, it's not interesting, so ignore it.
     # Python 2
     from ConfigParser import SafeConfigParser as ConfigParser
 
 logger = logging.getLogger("")
+
+# Import the YAML module from the config module so we can use the loader plugins defined there. This
+# is particular important when configuring the overwatch additional options, since we may need to
+# to interpret those plugins.
+# As an exceptional case, we call this `configModule` because `config` is an extremely common variable in this module.
+import overwatch.base.config as configModule
 
 # Convenience
 import pprint
@@ -80,7 +85,7 @@ def expandEnvironmentalVars(loader, node):
     val = os.path.expandvars(val).replace("\n", "")
     return str(val)
 # Add the plugin into the loader.
-yaml.SafeLoader.add_constructor('!expandVars', expandEnvironmentalVars)
+configModule.yaml.SafeLoader.add_constructor('!expandVars', expandEnvironmentalVars)
 
 class executable(object):
     """ Base executable class.
@@ -338,6 +343,8 @@ class executable(object):
             if self.getProcessPID():
                 logger.info("Process {name} is already running and no restart was requested, so there is nothing else to do.".format(name = self.name))
                 return False
+            else:
+                logger.info("No process found, so running executable {name}".format(name = self.name))
             # If there are no PIDs, then we want to continue.
 
         # Add "nohup" if running in the background with the appropriate context
@@ -999,7 +1006,7 @@ class zodb(executable):
         # is a string on the first line (which has a different indentation that we want to ignore).
         zeoConfig = inspect.cleandoc(zeoConfig)
 
-        logger.debug("configFilename: {configFilename}".format(configFilename = self.configFilename))
+        logger.debug("zeo configFilename: {configFilename}".format(configFilename = self.configFilename))
         with open(self.configFilename, "w") as f:
             f.write(zeoConfig)
 
@@ -1059,7 +1066,7 @@ class overwatchExecutable(executable):
                 with open(self.configFilename, "r") as f:
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore")
-                        config = yaml.load(f, Loader = yaml.SafeLoader)
+                        config = configModule.yaml.load(f, Loader = configModule.yaml.SafeLoader)
 
             # Add our new options in.
             config.update(configToWrite)
@@ -1068,7 +1075,7 @@ class overwatchExecutable(executable):
             # We overwrite the previous config because we already loaded it in, so in effect we are appending
             # (but it does de-duplicate options)
             with open(self.configFilename, "w") as f:
-                yaml.dump(config, f, default_flow_style = False)
+                configModule.yaml.dump(config, f, default_flow_style = False)
 
 class uwsgi(executable):
     """ Start a ``uwsgi`` executable.
@@ -1239,7 +1246,7 @@ class uwsgi(executable):
 
         logger.info("Writing uwsgi configuration file to {configFilename}".format(configFilename = self.configFilename))
         with open(self.configFilename, "w") as f:
-            yaml.dump(uwsgiConfig, f, default_flow_style = False)
+            configModule.yaml.dump(uwsgiConfig, f, default_flow_style = False)
 
     def run(self):
         """ This should only be used to help configure another executable. """
@@ -1524,7 +1531,7 @@ def startOverwatch(configFilename, configEnvironmentVariable):
             config = f.read()
 
     # Load the configuration.
-    config = yaml.load(config, Loader=yaml.SafeLoader)
+    config = configModule.yaml.load(config, Loader = configModule.yaml.SafeLoader)
 
     # Enable any additional executables requested via an environment variable
     config = enableExecutablesFromEnvironment(config)
