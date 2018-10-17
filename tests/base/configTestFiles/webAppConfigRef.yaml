@@ -25,6 +25,7 @@ forceReprocessing: false
 ipAddress: 127.0.0.1
 loggingLevel: INFO
 port: 8850
+processingTimeToSleep: 30
 protectedFolder: data
 receiverData: data
 receiverDataTempStorage: data/tempStorage

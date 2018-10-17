@@ -66,18 +66,21 @@ setup(
     # See: https://stackoverflow.com/a/8506532
     entry_points = {
         "console_scripts": [
-            # Note that the flask apss only run the flask development server through these scripts
-            # because they will be launched directly via uwsgi (ie not through these scripts)
+            # Note that the flask apps only run the flask development server through these scripts
+            # because they will be launched directly via ``uwsgi`` (ie not through these scripts)
             "overwatchDQMReceiver = overwatch.receiver.run:runDevelopment",
             "overwatchWebApp = overwatch.webApp.run:runDevelopment",
             # The processing will be launched this way in both production and development, so it
             # points to a different type of function
             "overwatchProcessing = overwatch.processing.run:run",
+            # This processing will run repeatedly until stopped. Used during deployment because
+            # supervisor doesn't have a straightforward mechanism to repeatedly execute a task.
+            "overwatchProcessingDeploy = overwatch.processing.run:runDeploy",
             # Deployment script
             "overwatchDeploy = overwatch.base.deploy:run",
             # Utility script to update the database users
             "overwatchUpdateUsers = overwatch.base.updateDBUsers:updateDBUsers",
-            # Reciever data handling script
+            # Receiver data handling script
             "overwatchReceiverDataHandling = overwatch.base.run:runReceiverDataHandling",
         ],
     },

@@ -9,6 +9,7 @@ in the python package setup.
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
 
+import datetime
 import logging
 import pprint
 
@@ -73,6 +74,24 @@ def run():
     #logging.info("\n\t\t1-3:")
     #returnValue = processTimeSlices(runs, "Run300005", 1, 3, "EMC", {})
     #logging.info("1-3 UUID: {returnValue}".format(returnValue = returnValue))
+
+def runDeploy():
+    """ Entry point for starting ``processAllRuns()`` persistently during deployments.
+
+    This function will run on an interval determined by the value of ``processingTimeToSleep``
+    (specified in seconds).
+
+    Args:
+        None.
+    Returns:
+        None.
+    """
+    handler = utilities.handleSignals()
+    logger.info("Starting persistent processing.")
+    while not handler.exit.is_set():
+        logger.info("Running processing at {time}.".format(time = datetime.datetime.now()))
+        processRuns.processAllRuns()
+        handler.exit.wait(processingParameters["processingTimeToSleep"])
 
 if __name__ == "__main__":
     run()

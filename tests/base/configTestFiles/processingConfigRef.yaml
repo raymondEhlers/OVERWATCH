@@ -15,6 +15,7 @@ forceRecreateSubsystem: false
 forceReprocessRuns: []
 forceReprocessing: false
 loggingLevel: INFO
+processingTimeToSleep: 30
 receiverData: data
 receiverDataTempStorage: data/tempStorage
 receiverIP: 127.0.0.1

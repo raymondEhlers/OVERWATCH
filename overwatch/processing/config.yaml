@@ -29,3 +29,7 @@ cumulativeMode: True
 # risk in changing it).
 dirPrefix: *dataFolder
 
+# Can be ignored during development!
+# Time to sleep (in seconds) before repeating the main processing entry point. This is inteded to
+# only be used during deployment.
+processingTimeToSleep: 30
