@@ -11,7 +11,11 @@ in the python package setup.
 
 import datetime
 import logging
+import os
 import pprint
+
+import sentry_sdk
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 # Config
 from overwatch.base import config
@@ -33,6 +37,10 @@ utilities.setupLogging(logger = logger,
                        logFilename = "processRuns")
 # Log settings
 logger.info(processingParameters)
+
+# Setup sentry to create alerts for warning level messages.
+sentry_logging = LoggingIntegration(level = logging.WARNING, event_level = None)
+sentry_sdk.init(dsn = os.getenv("SENTRY_DSN"), integrations = [sentry_logging])
 
 # Imports are below here so that they can be logged
 from overwatch.processing import processRuns
