@@ -232,10 +232,10 @@ For a list of the available configuration options, see the `config.yaml` file in
 # Overwatch Deployment
 
 All of the components of Overwatch can be configured and launched by the `overwatchDeploy` executable.
-Overwatch is intended to be deployed with a docker image. Within this image, configurations are
-managed by `supervisord`. All web apps are deployed behind nginx.
+Overwatch is intended to be deployed with a docker image. Within this image, configurations are managed by
+`supervisord`. All web apps are deployed behind `nginx`.
 
-The Dockerfiles and additional information is available in the `deploy/docker` directory.
+The Dockerfiles and additional information is available in the `docker` directory.
 
 ## Configuring Deployment
 

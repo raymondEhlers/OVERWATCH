@@ -47,7 +47,7 @@ after_success:
     - if [[ ${TRAVIS_BRANCH} == ${TRAVIS_TAG} ]]; then OVERWATCH_BRANCH="master"; else OVERWATCH_BRANCH=${TRAVIS_BRANCH}; fi
     # NOTE: To be clear about what is done here, we set PYTHON_VERSION in the docker build to the variable
     #       ${DOCKER_PYTHON_VERSION}.
-    - cd deploy/docker; docker build --build-arg PYTHON_VERSION=${DOCKER_PYTHON_VERSION} --build-arg OVERWATCH_BRANCH=${OVERWATCH_BRANCH} -f Dockerfile -t "${DOCKER_USERNAME}/overwatch:${TRAVIS_TAG:-latest}-py${DOCKER_PYTHON_VERSION}" .; cd -
+    - cd docker; docker build --build-arg PYTHON_VERSION=${DOCKER_PYTHON_VERSION} --build-arg OVERWATCH_BRANCH=${OVERWATCH_BRANCH} -f Dockerfile -t "${DOCKER_USERNAME}/overwatch:${TRAVIS_TAG:-latest}-py${DOCKER_PYTHON_VERSION}" .; cd -
     # Print out to see if we've build it as expected.
     - docker images
 before_deploy:
@@ -67,7 +67,7 @@ deploy:
     - provider: script
       # Variables are defined in the travis CI interface
       # They include: $DOCKER_USERNAME, $DOCKER_PASSWORD
-      script: bash deploy/docker/pushToDockerHub.sh
+      script: bash docker/pushToDockerHub.sh
       # We don't need to skip cleanup here because the docker image is already built!
       on:
           # Build a docker image for master or if it has "-docker" in the branch name.
