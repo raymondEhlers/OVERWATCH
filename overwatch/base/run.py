@@ -29,8 +29,7 @@ print("parameters: {parameters}".format(
 # Setup logging
 utilities.setupLogging(logger = logger,
                        logLevel = parameters["loggingLevel"],
-                       debug = parameters["debug"],
-                       logFilename = "receiverDataHandling")
+                       debug = parameters["debug"])
 # Log settings
 logger.info(parameters)
 

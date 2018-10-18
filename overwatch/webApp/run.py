@@ -34,8 +34,7 @@ logger = logging.getLogger("")
 # Setup logger
 utilities.setupLogging(logger = logger,
                        logLevel = serverParameters["loggingLevel"],
-                       debug = serverParameters["debug"],
-                       logFilename = "webApp")
+                       debug = serverParameters["debug"])
 # Log server settings
 logger.info(serverParameters)
 

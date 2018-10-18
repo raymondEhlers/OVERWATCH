@@ -136,7 +136,7 @@ def findCurrentRunDirs(dirPrefix = ""):
 ###################################################
 # Logging utilities
 ###################################################
-def setupLogging(logger, logLevel, debug, logFilename):
+def setupLogging(logger, logLevel, debug):
     """ General function to setup the proper logging outputs for an executable.
 
     Creates loggers for logging to stdout, rotating file, and email (for warning or above logs).
@@ -147,19 +147,9 @@ def setupLogging(logger, logLevel, debug, logFilename):
         logLevel (int): Logging level. Select from any of the options defined in the logging module.
         debug (bool): Overall debug mode for the executable. True logs to the console while False logs
             to a rotating file handler and sets up the possibility of sending logs via email. Default: True
-        logFilename (str): Specifies the filename of the log file (when it is created).
     Returns:
         None. The logger is fully configured.
     """
-    # Check on docker deployment variables
-    # This overrides logging to file and instead logs to the screen,
-    # which is then stored by the container itself.
-    try:
-        dockerDeploymentOption = os.environ["deploymentOption"]
-    except KeyError:
-        # It doesn't exist
-        dockerDeploymentOption = ""
-
     # We use some of the basic parameters for configuration, so we need to grab them now.
     parameters, _ = config.readConfig(config.configurationType.base)
 
@@ -180,15 +170,10 @@ def setupLogging(logger, logLevel, debug, logFilename):
     # Log to file
     # Will be a maximum of 5 MB, rotating with 10 files
     # We will store the log in the ``exec/logs`` dir. We'll create it if necessary.
+    # NOTE: We won't actually setup logging to file here. This will be taken care of by supervisor.
     logDirPath = os.path.join("exec", "logs")
     if not os.path.exists(logDirPath):
         os.makedirs(logDirPath)
-    logFilename = os.path.join(logDirPath, "{logFilename}.log".format(logFilename = logFilename))
-    fileHandler = logging.handlers.RotatingFileHandler(logFilename,
-                                                       maxBytes = 5000000,
-                                                       backupCount = 10)
-    fileHandler.setLevel(logLevel)
-    fileHandler.setFormatter(logFormat)
 
     # Log to email
     # See: http://flask.pocoo.org/docs/1.0/errorhandling/
@@ -213,12 +198,10 @@ def setupLogging(logger, logLevel, debug, logFilename):
     emailHandler.setFormatter(emailLogFormat)
 
     # For docker, we log to stdout so that supervisor is able to handle the logging
-    if debug is True or dockerDeploymentOption:
-        logger.addHandler(streamHandler)
-        logger.info("Added streaming handler to logging!")
-    else:
-        logger.addHandler(fileHandler)
-        logger.info("Added file handler to logging!")
+    logger.addHandler(streamHandler)
+    logger.info("Added stdout streaming handler to logging!")
+    # Logging to file is taken care of by supervisor (or potentially docker), so we don't need
+    # to add it here.
 
     # Also allow for the possibility of the sending email with higher priority warnings.
     if parameters["emailLogger"]:

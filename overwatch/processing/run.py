@@ -34,8 +34,7 @@ logger = logging.getLogger("")
 # Setup logging
 utilities.setupLogging(logger = logger,
                        logLevel = processingParameters["loggingLevel"],
-                       debug = processingParameters["debug"],
-                       logFilename = "processRuns")
+                       debug = processingParameters["debug"])
 # Log settings
 logger.info(processingParameters)
 
