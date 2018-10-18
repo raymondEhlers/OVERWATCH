@@ -1,6 +1,7 @@
 # Set the python version here so that we can use it to set the base image.
 ARG PYTHON_VERSION=2.7.15
-# Docker file for the OVERWATCH web app
+# Docker file for the Overwatch base image
+# We build from the python base image, which is based on debian and contains many common and useful packages
 FROM python:${PYTHON_VERSION}-stretch
 LABEL maintainer="Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University"
 
