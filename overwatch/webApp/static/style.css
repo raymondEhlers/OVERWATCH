@@ -104,7 +104,7 @@ h2 {
     display: table;
     clear: both;
 }
-img, .histogramContainerStyle {
+.histogramImage, .histogramContainerStyle {
     /* Ensure images fit on the screen */
     max-width: 100%;
     /* Create a drop shadow-like effect for the image */
