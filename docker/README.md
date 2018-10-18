@@ -30,3 +30,7 @@ Since we use supervisor, we use that to handle the logs. Then, we need to select
 Although it appears that it would be convenient to put them in the `dataFolder` directory, this is problematic
 because they will be accessible through the `webApp`. Instead, we put them in the `exec` directory, which is a
 directory dedicated to files generated during execution. It may also contain configuration files, etc.
+
+Note that we explicitly keep empty `logs`, `config` and `sockets` directories inside of the `exec` directory
+in the git repository to ensure that supervisor doesn't fail to execute due missing those directories. It is
+not required to use the directories in the repository, but it certainly is convenient.

@@ -1,0 +1,5 @@
+# We want to ignore everything in these directories
+logs/
+nginx/
+config/
+sockets/
