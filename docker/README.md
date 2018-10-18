@@ -23,3 +23,10 @@ Docker images will automatically be created by Travis CI for both python 2 and p
 to master or to any branch with a name that contains `-docker` will create an image. These images will be
 tagged as `latest-pyX.Y.Z` (as described above). Git tags will also automatically trigger the building of
 images.
+
+## Notes on logging
+
+Since we use supervisor, we use that to handle the logs. Then, we need to select a location for those logs.
+Although it appears that it would be convenient to put them in the `dataFolder` directory, this is problematic
+because they will be accessible through the `webApp`. Instead, we put them in the `exec` directory, which is a
+directory dedicated to files generated during execution. It may also contain configuration files, etc.

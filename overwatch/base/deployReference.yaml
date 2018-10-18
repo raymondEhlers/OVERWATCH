@@ -67,7 +67,7 @@ nginxOptions: &nginxOptions
     <<: *baseExecutionOptions
     # Name of the web app, "webAppName", is needed. Specify per app.
     # Base path to where nginx configs are stored.
-    basePath: "data/config"
+    basePath: "exec/config"
     # Relative to the base path.
     sitesPath: "sites-enabled"
     configPath: "conf.d"

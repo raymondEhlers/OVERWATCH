@@ -179,8 +179,8 @@ def setupLogging(logger, logLevel, debug, logFilename):
 
     # Log to file
     # Will be a maximum of 5 MB, rotating with 10 files
-    # We will store the log in the ``data/logs`` dir. We'll create it if necessary.
-    logDirPath = os.path.join(parameters["dataFolder"], "logs")
+    # We will store the log in the ``exec/logs`` dir. We'll create it if necessary.
+    logDirPath = os.path.join("exec", "logs")
     if not os.path.exists(logDirPath):
         os.makedirs(logDirPath)
     logFilename = os.path.join(logDirPath, "{logFilename}.log".format(logFilename = logFilename))

@@ -920,12 +920,12 @@ def testTwoOverwatchExecutablesWithCustomConfigs(loggingMixin):
     ("webApp", {"uwsgi": {"enabled": True}},
      executableExpected(name = "webApp",
                         description = "Overwatch web app",
-                        args = ["uwsgi", "--yaml", "data/config/webApp_uwsgi.yaml"],
+                        args = ["uwsgi", "--yaml", "exec/config/webApp_uwsgi.yaml"],
                         config = {})),
     ("webApp", {"uwsgi": {"enabled": True}, "nginx": {"enabled": True}},
      executableExpected(name = "webApp",
                         description = "Overwatch web app",
-                        args = ["uwsgi", "--yaml", "data/config/webApp_uwsgi.yaml"],
+                        args = ["uwsgi", "--yaml", "exec/config/webApp_uwsgi.yaml"],
                         config = {})),
     ("dqmReceiver", {"uwsgi": {}},
      executableExpected(name = "dqmReceiver",
@@ -956,7 +956,7 @@ def testOverwatchExecutableProperties(loggingMixin, executableType, config, expe
         executable.config["nginx"] = {
             "enabled": True,
             "webAppName": "webApp",
-            "basePath": "data/config",
+            "basePath": "exec/config",
             "sitesPath": "sites-enabled",
             "configPath": "conf.d",
         }
@@ -998,7 +998,7 @@ def testOverwatchExecutableProperties(loggingMixin, executableType, config, expe
         # Effectively copied from the uwsgi config
         expectedConfig = {
             "vacuum": True,
-            "stats": "myDir/data/sockets/wsgi_{name}_stats.sock",
+            "stats": ":9002",
             "chdir": "myDir",
             "http-socket": "127.0.0.1:8850",
             "module": "overwatch.webApp.run",
@@ -1008,7 +1008,7 @@ def testOverwatchExecutableProperties(loggingMixin, executableType, config, expe
             "threads": 2,
             "cheaper": 2,
             "master": True,
-            "master-fifo": "myDir/data/sockets/wsgiMasterFifo{name}.sock",
+            "master-fifo": "myDir/exec/sockets/wsgiMasterFifo{name}.sock",
         }
         # Format in the variables
         for k, v in iteritems(expectedConfig):
@@ -1034,11 +1034,11 @@ def testOverwatchExecutableProperties(loggingMixin, executableType, config, expe
         expectedMainNginxConfig = expectedMainNginxConfig % {"name": executable.config["nginx"]["webAppName"]}
         expectedMainNginxConfig = inspect.cleandoc(expectedMainNginxConfig)
 
-        mFile.assert_any_call(os.path.join("data", "config", "sites-enabled", "webAppNginx.conf"), "w")
+        mFile.assert_any_call(os.path.join("exec", "config", "sites-enabled", "webAppNginx.conf"), "w")
         mFile().write.assert_any_call(expectedMainNginxConfig)
 
         # We skip the gzip config contents because they're static
-        mFile.assert_any_call(os.path.join("data", "config", "conf.d", "gzip.conf"), "w")
+        mFile.assert_any_call(os.path.join("exec", "config", "conf.d", "gzip.conf"), "w")
 
 def testUwsgiExecutableRunFailure(loggingMixin):
     """ Minimal test to ensure that the uwsgi executable fails when attempting to execute it directly. """

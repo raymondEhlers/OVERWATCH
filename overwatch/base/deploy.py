@@ -21,10 +21,10 @@ environment variables.
 Various classes of files are stored in specific locations. In particular,
 
 - socket files are stored in "/tmp/sockets".
-- config files are stored in "data/config" (except for those which must be
+- config files are stored in "exec/config" (except for those which must be
   in the current folder, such as the supervisor config, or the overwatch
   custom config).
-- log files are in "data/logs".
+- log files are in "exec/logs".
 
 Usually, this module is executed directly in docker containers. All options
 are configured via a YAML file.
@@ -650,6 +650,9 @@ class supervisor(executable):
     We don't need options for this executable. It is either going to be launched or it isn't.
 
     Note:
+        Control of ``supervisor`` is made available on port ``9001``.
+
+    Note:
         The overall program is called ``supervisor``, while the daemon is known as ``supervisord`` and the config
         is stored in ``supervisord.conf``.
 
@@ -690,9 +693,9 @@ class supervisor(executable):
         tempConfig = {}
         tempConfig["supervisord"] = {
             "nodaemon": "True",
-            # Take advantage of the overwatch data directory.
-            "logfile": os.path.join("data", "logs", "supervisord.log"),
-            "childlogdir": os.path.join("data", "logs"),
+            # Take advantage of the overwatch exec directory.
+            "logfile": os.path.join("exec", "logs", "supervisord.log"),
+            "childlogdir": os.path.join("exec", "logs"),
             # 5 MB log file with 10 backup files
             "logfile_maxbytes": "5000000",
             "logfile_backups": "10",
@@ -972,7 +975,7 @@ class zodb(executable):
     def __init__(self, config):
         name = "zodb"
         description = "ZODB database"
-        configFilename = os.path.join("data", "config", "database.conf")
+        configFilename = os.path.join("exec", "config", "database.conf")
         args = [
             "runzeo",
             "-C {configFilename}".format(configFilename = configFilename),
@@ -1083,8 +1086,17 @@ class overwatchExecutable(executable):
 class uwsgi(executable):
     """ Start a ``uwsgi`` executable.
 
+    Additional options for ``uwsgi`` can be specified in the ``additionalOptions`` dict of the config. Primary
+    options can be specified in the main ``uwsgi`` dict. (Functionality, values in either one will work fine,
+    although ``http-socket`` or ``wsgi-socket`` and ``module`` are required to be in the main config).
+
     Note:
         Arguments after ``config`` are values which are specified in the config.
+
+    Note:
+        ``uwsgi`` stats are made available by default on port ``9002`` (while ``9001`` is occupied by the =
+        ``supervisor`` controls). This value can be overridden by specifying the ``stats`` value in the config
+        (or in the additional options).
 
     Args:
         name (str): Name of the uwsgi web app. It should be unique, but without spaces!
@@ -1141,7 +1153,7 @@ class uwsgi(executable):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Basic setup
-        self.configFilename = os.path.join("data", "config", "{name}.yaml".format(name = self.name))
+        self.configFilename = os.path.join("exec", "config", "{name}.yaml".format(name = self.name))
         # Note that this will override the args that are passed.
         self.args = [
             "uwsgi",
@@ -1171,8 +1183,10 @@ class uwsgi(executable):
         # Setup some values for the base config. We set them here instead of waiting until we fill the rest of
         # configuration from YAML so we only need to create directores once. Since we extract chdir
         # from the cnofig, we don't really lose anything.
-        baseDir = self.config.get("additionalOptions", {}).get("chdir", "/opt/overwatch")
-        socketsDir = self.config.get("additionalOptions", {}).get("socketsDir", os.path.join(baseDir, "data", "sockets"))
+        # If the base dir isn't specified, we want to default to the directory in which the executable is run.
+        # Usually, this will be the overwatch root directory.
+        baseDir = self.config.get("additionalOptions", {}).get("chdir", os.getcwd())
+        socketsDir = self.config.get("additionalOptions", {}).get("socketsDir", os.path.join(baseDir, "exec", "sockets"))
         # Need to create the sockets directory if it doesn't already exist. Otherwise, uwsgi will fail
         if not os.path.exists(socketsDir):
             os.makedirs(socketsDir)
@@ -1184,10 +1198,10 @@ class uwsgi(executable):
             # The rest of the config is completed below
             "vacuum": True,
             # Stats
-            "stats": os.path.join(socketsDir, "wsgi_{name}_stats.sock"),
+            "stats": ":9002",
 
             # Setup the working directory
-            "chdir": "/opt/overwatch",
+            "chdir": baseDir,
 
             # App
             # Need either wsgi-file or module!
@@ -1383,6 +1397,7 @@ class overwatchFlaskExecutable(overwatchExecutable):
         # Create an underlying uwsgi app to handle the setup and execution.
         if "nginx" in self.config:
             if self.config["nginx"].get("enabled", False) is True:
+                # TODO: Either pass the http or unix socket
                 self.nginx = nginx(self.config["nginx"])
                 self.nginx.run()
 
