@@ -184,11 +184,13 @@ executables:
             enabled: false
             # Module path of the web app.
             module: "overwatch.webApp.run"
+            # Must specify either a http-socket or a uwsgi-socket.
         nginx:
             <<: *nginxOptions
             enabled: false
             # Name of the web app
             webAppName: "webApp"
+            # NOTE: If this is working with uwsgi, wsgi-socket should be set to "/tmp/sockets/{webAppName}.sock"!
 
         # Additional options to be passed into the Overwatch config. Any entries should be valid
         # Overwatch config YAML. It will be stored in the user `config.yaml`.

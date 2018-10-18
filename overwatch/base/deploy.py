@@ -1418,7 +1418,6 @@ class overwatchFlaskExecutable(overwatchExecutable):
         # Create an underlying uwsgi app to handle the setup and execution.
         if "nginx" in self.config:
             if self.config["nginx"].get("enabled", False) is True:
-                # TODO: Either pass the http or unix socket
                 self.nginx = nginx(self.config["nginx"])
                 self.nginx.run()
 
