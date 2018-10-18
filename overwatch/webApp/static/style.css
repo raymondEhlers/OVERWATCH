@@ -50,6 +50,13 @@ hr {
     word-wrap: break-word;
 }
 
+/* Centering for the Overwatch logo */
+.centerLogo {
+    display:block;
+    margin:auto;
+    width: 50%;
+}
+
 /* Shadow on the drawer to make the transition clearer */
 .drawerShadow {
     box-shadow: 5px 0px 6px -3px rgba(0, 0, 0, 0.4);
