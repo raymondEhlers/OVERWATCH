@@ -90,14 +90,14 @@ executables:
             # Include the shared tunnel options.
             <<: *tunnelOptions
             enabled: true
+            # Port on the HLT system where the EMC data is provided. Will be used to configure the tunnel.
+            hltPort: 12345
         # Enabled must be below the shared options because it is overwriting one of the shared options.
         enabled: false
         # Force restart the receiver if it is already running.
         forceRestart: true
         # Name of the receiver. Should be the three letter name.
         receiver: "EMC"
-        # Port on the HLT system where the EMC data is provided. Will be used to configure the tunnel.
-        hltPort: 12345
         # Port on the local system where the EMC data will be made available. Will be used to configure the tunnel.
         localPort: 23456
     # HLT ZMQ receiver
@@ -106,12 +106,12 @@ executables:
         tunnel: 
             <<: *tunnelOptions
             enabled: true
+            # Port on the HLT system where the EMC data is provided. Will be used to configure the tunnel.
+            hltPort: 12346
         # Enabled must be below the shared options because it is overwriting one of the shared options.
         enabled: false
         forceRestart: true
         receiver: "TPC"
-        # Port on the HLT system where the EMC data is provided. Will be used to configure the tunnel.
-        hltPort: 12346
         # Port on the local system where the EMC data will be made available. Will be used to configure the tunnel.
         localPort: 23457
     # HLT ZMQ Receiver
@@ -120,12 +120,12 @@ executables:
         tunnel: 
             <<: *tunnelOptions
             enabled: true
+            # Port on the HLT system where the EMC data is provided. Will be used to configure the tunnel.
+            hltPort: 12347
         # Enabled must be below the shared options because it is overwriting one of the shared options.
         enabled: false
         forceRestart: true
         receiver: "HLT"
-        # Port on the HLT system where the EMC data is provided. Will be used to configure the tunnel.
-        hltPort: 12347
         # Port on the local system where the EMC data will be made available. Will be used to configure the tunnel.
         localPort: 23458
     # DQM Receiver
