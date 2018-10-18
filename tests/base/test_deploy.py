@@ -70,6 +70,10 @@ def setupBasicExecutable(loggingMixin, mocker):
         tuple: (executable, expected) where executable is an executable object and expected are the expected
             parameters.
     """
+    # Mock folder creation. We want to make it a noop so we don't make a bunch of random empty folders.
+    mMakedirs = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.os.makedirs", mMakedirs)
+
     expected = {
         "name": "{label}Executable",
         "description": "Basic executable for {label}ing",
@@ -126,7 +130,7 @@ def testExecutableFromConfig(loggingMixin):
 
     assert executable.runInBackground == expected.config["runInBackground"]
     assert executable.executeTask == expected.config["enabled"]
-    assert executable.logFilename == "{name}.log".format(name = expected.name)
+    assert executable.logFilename == os.path.join("exec", "logs", "{name}.log".format(name = expected.name))
 
 @pytest.mark.parametrize("pid", [
     [],
@@ -295,7 +299,7 @@ def testStandardStartProcessWithLogs(setupStartProcessWithLog, setupBasicExecuta
     process = executable.startProcessWithLog()
 
     # Check that it was called successfully
-    mFile.assert_called_once_with("{}.log".format(expected.name), "w")
+    mFile.assert_called_once_with(os.path.join("exec", "logs", "{}.log".format(expected.name)), "w")
     mPopen.assert_called_once_with(expected.args, stderr = subprocess.STDOUT, stdout = mFile())
 
     # No need to actually mock up a subprocess.Popen class object.
@@ -784,6 +788,9 @@ def testZODB(loggingMixin, mocker):
     }
     executable = deploy.retrieveExecutable("zodb", config = config)
 
+    # Mock folder creation. We want to make it a noop so we don't make a bunch of random empty folders.
+    mMakedirs = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.os.makedirs", mMakedirs)
     # Mock opening the file
     mFile = mocker.mock_open()
     mocker.patch("overwatch.base.deploy.open", mFile)

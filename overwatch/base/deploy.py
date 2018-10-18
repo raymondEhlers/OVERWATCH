@@ -20,7 +20,7 @@ environment variables.
 
 Various classes of files are stored in specific locations. In particular,
 
-- socket files are stored in "/tmp/sockets".
+- socket files are stored in "exec/sockets".
 - config files are stored in "exec/config" (except for those which must be
   in the current folder, such as the supervisor config, or the overwatch
   custom config).
@@ -119,7 +119,7 @@ class executable(object):
         shortExecutionTime (bool): True if the executable executes and completes quickly. In this case, supervisor
             need special options to ensure that it doesn't think that the executable failed immediately and should be
             restarted.
-        logFilename (str): Filename for the log file. Default: ``{name}.log``.
+        logFilename (str): Filename for the log file. Default: ``exec/logs/{name}.log``.
         configFilename (str): Location where the generated configuration file should be stored. Default: ``None``.
         runInBackground (bool): True if the process should be run in the background. This means that process will
             not be blocking, but it shouldn't be used in conjunction with supervisor. Default: ``False``.
@@ -140,7 +140,7 @@ class executable(object):
 
         # Additional options
         self.shortExecutionTime = False
-        self.logFilename = "{name}.log".format(name = self.name)
+        self.logFilename = os.path.join("exec", "logs", "{name}.log".format(name = self.name))
         self.configFilename = None
         self.runInBackground = self.config.get("runInBackground", False)
         self.executeTask = self.config.get("enabled", False)
@@ -263,6 +263,8 @@ class executable(object):
             # The return value is not really meaningful in this case, since it won't be launched until the end.
             process = None
         else:
+            # Ensure that the directory in which we will create our log file is created.
+            self.createFilenameDirectory(filename = self.logFilename)
             with open(self.logFilename, "w") as logFile:
                 logger.debug("Starting '{name}' with args: {args}".format(name = self.name, args = self.args))
                 # Redirect stderr to stdout so the information isn't lost.
@@ -307,6 +309,23 @@ class executable(object):
         self.description = self.description.format(**self.config)
         self.args = [arg.format(**self.config) for arg in self.args]
         self.logFilename = self.logFilename.format(**self.config)
+
+    @staticmethod
+    def createFilenameDirectory(filename):
+        """ Create the directory which contains the specified filename.
+
+        Note:
+            If the directory already exists, nothing will be done.
+
+        Args:
+            filename (str): Filename whose directory might need to be created.
+        Returns:
+            None.
+        """
+        # Create the directory if necessary
+        configDir = os.path.dirname(filename)
+        if not os.path.exists(configDir):
+            os.makedirs(configDir)
 
     def run(self):
         """ Driver function for running executables.
@@ -1012,7 +1031,8 @@ class zodb(executable):
         # is a string on the first line (which has a different indentation that we want to ignore).
         zeoConfig = inspect.cleandoc(zeoConfig)
 
-        logger.debug("zeo configFilename: {configFilename}".format(configFilename = self.configFilename))
+        logger.info("Writing ZEO configuration file to {configFilename}".format(configFilename = self.configFilename))
+        self.createFilenameDirectory(filename = self.configFilename)
         with open(self.configFilename, "w") as f:
             f.write(zeoConfig)
 
@@ -1262,6 +1282,7 @@ class uwsgi(executable):
         }
 
         logger.info("Writing uwsgi configuration file to {configFilename}".format(configFilename = self.configFilename))
+        self.createFilenameDirectory(filename = self.configFilename)
         with open(self.configFilename, "w") as f:
             configModule.yaml.dump(uwsgiConfig, f, default_flow_style = False)
 
@@ -1486,8 +1507,9 @@ def runExecutables(executables):
             executableType = executableType[:executableType.find("_")]
 
         executable = retrieveExecutable(name = executableType, config = executableConfig)
+        logger.debug("Considering executable with name {name}, executableType: {executableType}".format(name = name, executableType = executableType))
         result = executable.run()
-        logger.debug("name: {name}, executableType: {executableType}, result: {result}".format(name = name, executableType = executableType, result = result))
+        logger.debug("Status of executable with name {name}, executableType: {executableType}: Executed: {result}".format(name = name, executableType = executableType, result = result))
         # Don't store executables which were not actually run.
         if result:
             ranExecutables[name] = executable
