@@ -336,6 +336,9 @@ class executable(object):
         if self.executeTask is False:
             return False
 
+        # Since we are continuing, store in the log that we are running the executable.
+        logger.debug('Running executable "{name}"'.format(name = self.name))
+
         # Check for existing process
         if self.config.get("forceRestart", False):
             self.killExistingProcess()
@@ -344,7 +347,7 @@ class executable(object):
                 logger.info("Process {name} is already running and no restart was requested, so there is nothing else to do.".format(name = self.name))
                 return False
             else:
-                logger.info("No process found, so running executable {name}".format(name = self.name))
+                logger.info("No existing process found, so running executable {name}".format(name = self.name))
             # If there are no PIDs, then we want to continue.
 
         # Add "nohup" if running in the background with the appropriate context
