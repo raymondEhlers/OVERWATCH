@@ -1,6 +1,6 @@
 # Docker file for ALICE OVERWATCH Dev
 ARG PYTHON_VERSION=2.7.15
-FROM overwatch:master-py${PYTHON_VERSION}
+FROM overwatch:latest-py${PYTHON_VERSION}
 LABEL maintainer="Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University"
 
 # Vim
