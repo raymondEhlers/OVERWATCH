@@ -12,7 +12,6 @@ into authenticated and unauthenticated views.
 
 # For python 3 support
 from __future__ import print_function
-from builtins import range
 from future.utils import iteritems
 
 # General includes
@@ -666,13 +665,9 @@ def testingDataArchive():
     necessary for running Overwatch successfully. These files will be zipped up and provided to the user.
     The minimum files are the combined file, and the most recent file received for the subsystem (they are
     usually the same, but it is easier to include both). If possible, an additional file is included for testing
-    the time slice functionality. It may not always be available if runs are extremely short. The zip archive will
-    include all subsystems which are available.
-
-    Note:
-        It is not guaranteed that every subsystem will be in the most recent 5 runs, since there could be a number
-        of standalone runs for a single subsystem in a row. In such a case, the easiest course of action is to wait
-        a few hours until more runs have been started.
+    the time slice and trending functionality. It may not always be available if runs are extremely short. The
+    zip archive will include all subsystems which are available. It will skip runs where any subsystem is unavailable
+    to ensure that the data provided is of more utility.
 
     Warning:
         Careful in changing the routing for this function, as the name of it is hard coded in
@@ -699,23 +694,33 @@ def testingDataArchive():
     with zipfile.ZipFile(os.path.join(serverParameters["protectedFolder"], zipFilename), "w") as zipFile:
         logger.info("Creating zipFile at %s" % os.path.join(serverParameters["protectedFolder"], zipFilename))
 
-        # Add files to the zip file
-        runKeys = runs.keys()
-        # Write the files in reverse order. However, this is fine because the order doesn't make a difference
-        # in the final archive.
-        for i in range(-1 * numberOfFilesToDownload, 0):
-            run = runs[runKeys[i]]
-            for subsystem in run.subsystems.values():
-                # Write files to the zip file
-                # Combined file
-                zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.combinedFile.filename))
-                # Uncombined file. This is the last file that was received from the subsystem.
-                zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.files[subsystem.files.keys()[-1]].filename))
-                # We select 4 as an arbitrary point to ensure that there is some different between the data stored
-                # in it and the combined file.
-                if len(subsystem.files) > 4:
-                    # Write an additional file for testing time slices.
-                    zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.files[subsystem.files.keys()[-5]].filename))
+        # Starting from the end, we look for runs which have the full set of subsystems. For each one, we write
+        # each subsystem of that run to the zip file. Note that the files are written in reverse order. However,
+        # this is fine because the order doesn't make a difference in the final archive.
+        numberOfFilesWritten = 0
+        # We need to explicitly call keys here because ``BTree`` doesn't support being reversed directly.
+        for runDir in reversed(runs.keys()):
+            if numberOfFilesWritten == numberOfFilesToDownload:
+                break
+            # It's easier to operate with the runContainer object.
+            run = runs[runDir]
+            # Ensure that we get a full set of subsystems. If the run doesn't have data for all subsystems, we skip
+            # it because otherwise the test data is much less useful.
+            if set(serverParameters["subsystemList"]) != set(run.subsystems):
+                continue
+            else:
+                for subsystem in run.subsystems.values():
+                    # Write files to the zip file
+                    # Combined file
+                    zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.combinedFile.filename))
+                    # Uncombined file. This is the last file that was received from the subsystem.
+                    zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.files[subsystem.files.keys()[-1]].filename))
+                    # We select 4 as an arbitrary point to ensure that there is some different between the data stored
+                    # in it and the combined file.
+                    if len(subsystem.files) > 4:
+                        # Write an additional file for testing time slices.
+                        zipFile.write(os.path.join(serverParameters["protectedFolder"], subsystem.files[subsystem.files.keys()[-5]].filename))
+                numberOfFilesWritten += 1
 
     # Return with a download link
     return redirect(url_for("protected", filename=zipFilename))

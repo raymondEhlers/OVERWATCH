@@ -3,9 +3,9 @@
 <h1 id="mainContentTitle">General Information</h1>
 <hr />
 <p style="text-align:center">ALICE <strong>OVERWATCH</strong>: <br> <strong>O</strong>nline <strong>V</strong>isualization of <strong>E</strong>merging t<strong>R</strong>ends and <strong>W</strong>eb <strong>A</strong>ccessible de<strong>T</strong>ector <strong>C</strong>onditions using the <strong>H</strong>LT.</p>
-<p>Comments, suggestions, and ideas are appreciated. Problems or bugs reports are also helpful. Contact: <a href="mailto:raymond.ehlers@yale.edu">Raymond Ehlers</a> and <a href="mailto:james.mulligan@yale.edu">James Mulligan</a>.</p>
+<p>Comments, suggestions, and ideas are appreciated. Problems or bugs reports are also helpful. Contact: <a target="_blank" href="mailto:raymond.ehlers@yale.edu">Raymond Ehlers</a> and <a target="_blank" href="mailto:james.mulligan@yale.edu">James Mulligan</a>.</p>
 {% if current_user.is_authenticated %}
-    <p>Overwatch development and function testing data is available <a target="_blank" href="{{ url_for("testingDataArchive") }}">here</a>.</p>
+    <p>Overwatch development and testing sample data is available <a target="_blank" href="{{ url_for("testingDataArchive") }}">here</a>.</p>
     <p>See the documentation <a target="_blank" href="https://overwatch.readthedocs.io/en/latest/">here</a>.</p>
 {% endif %}
 {% if current_user.id == "emcalAdmin" %}
