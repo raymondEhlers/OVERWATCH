@@ -599,8 +599,8 @@ def testWriteFailureDueToExistingSensitiveFile(setupSensitiveVariables):
 
 @pytest.mark.parametrize("name, func, expectedWriteLocation", [
     ("sshKey", deploy.environment.writeSSHKeyFromVariableToFile, "~/.ssh/id_rsa"),
-    ("gridCert", deploy.environment.writeGridCertFromVariableToFile, "~/.globus/overwatchCert.pem"),
-    ("gridKey", deploy.environment.writeGridKeyFromVariableToFile, "~/.globus/overwatchKey.pem"),
+    ("gridCert", deploy.environment.writeGridCertFromVariableToFile, "~/.globus/usercert.pem"),
+    ("gridKey", deploy.environment.writeGridKeyFromVariableToFile, "~/.globus/userkey.pem"),
 ], ids = ["SSH Key", "Grid Certficiate", "Grid key"])
 def testWriteSensitiveParameterDefaults(setupSensitiveVariables, name, func, expectedWriteLocation):
     """ Test the defaults for writing sensitive parameters. """

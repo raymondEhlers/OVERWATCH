@@ -581,7 +581,7 @@ class environment(object):
             bool: True if the var was written to file.
         """
         name = "gridCert"
-        defaultWriteLocation = "~/.globus/overwatchCert.pem"
+        defaultWriteLocation = "~/.globus/usercert.pem"
         try:
             (_, writeLocation) = self.writeSensitiveVariableToFile(name = name,
                                                                    defaultWriteLocation = defaultWriteLocation)
@@ -604,7 +604,7 @@ class environment(object):
             bool: True if the var was written to file.
         """
         name = "gridKey"
-        defaultWriteLocation = "~/.globus/overwatchKey.pem"
+        defaultWriteLocation = "~/.globus/userkey.pem"
         try:
             (_, writeLocation) = self.writeSensitiveVariableToFile(name = name,
                                                                    defaultWriteLocation = defaultWriteLocation)
