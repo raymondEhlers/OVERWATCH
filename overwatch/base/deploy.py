@@ -428,7 +428,8 @@ class environment(object):
         the ZMQ receiver, and set general environment variables.
         """
         # Write sensitive variables from the environment to specified files.
-        self.writeCertFromVariableToFile()
+        self.writeGridCertFromVariableToFile()
+        self.writeGridKeyFromVariableToFile()
         self.writeSSHKeyFromVariableToFile()
 
         logger.debug("Setting up environment variables.")
@@ -568,19 +569,42 @@ class environment(object):
 
         return True
 
-    def writeCertFromVariableToFile(self):
-        """ Write certificate from an environment variable to file.
+    def writeGridCertFromVariableToFile(self):
+        """ Write grid certificate from an environment variable to file.
 
         Used primarily for setting up the certificate in a docker container. It looks for a config dictionary
-        stored in the environment dict under the name ``sshKey``.
+        stored in the environment dict under the name ``gridCert``.
 
         Args:
             None.
         Returns:
             bool: True if the var was written to file.
         """
-        name = "cert"
+        name = "gridCert"
         defaultWriteLocation = "~/.globus/overwatchCert.pem"
+        try:
+            (_, writeLocation) = self.writeSensitiveVariableToFile(name = name,
+                                                                   defaultWriteLocation = defaultWriteLocation)
+        except RuntimeError as e:
+            # It didn't write to the location, so we should return immediately.
+            logger.info(e.args[0])
+            return False
+
+        return True
+
+    def writeGridKeyFromVariableToFile(self):
+        """ Write grid key from an environment variable to file.
+
+        Used primarily for setting up the key in a docker container. It looks for a config dictionary
+        stored in the environment dict under the name ``gridKey``.
+
+        Args:
+            None.
+        Returns:
+            bool: True if the var was written to file.
+        """
+        name = "gridKey"
+        defaultWriteLocation = "~/.globus/overwatchKey.pem"
         try:
             (_, writeLocation) = self.writeSensitiveVariableToFile(name = name,
                                                                    defaultWriteLocation = defaultWriteLocation)

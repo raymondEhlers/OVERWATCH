@@ -5,13 +5,20 @@ supervisor: true
 # Define the execution environment
 environment:
     # Options for writing sensitive variables stored in environment variables to specified files.
-    # X509 certificate (for example, for writing to EOS).
-    cert:
+    # Grid certificate (for example, for writing to EOS).
+    gridCert:
         enabled: false
         # Environment variable where the key is stoerd.
         variableName: "myCert"
         # Where the key should be written.
         writeLocation: "test/cert.test"
+    # Grid key (for example, for writing to EOS).
+    gridKey:
+        enabled: false
+        # Environment variable where the key is stoerd.
+        variableName: "myKey"
+        # Where the key should be written.
+        writeLocation: "test/key.test"
     # SSH key (for example, for conencting to remote systems to receive files via ZMQ).
     sshKey:
         enabled: false

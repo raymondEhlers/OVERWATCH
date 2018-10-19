@@ -486,10 +486,15 @@ def setupSensitiveVariables(setupEnvironment, mocker):
             "variableName": "mySSHKey",
             "writeLocation": os.path.join("/my", "ssh", "file"),
         },
-        "cert": {
+        "gridCert": {
             "enabled": False,
             "variableName": "myCert",
             "writeLocation": os.path.join("/my", "cert", "file"),
+        },
+        "gridKey": {
+            "enabled": False,
+            "variableName": "myKey",
+            "writeLocation": os.path.join("/my", "key", "file"),
         },
     }
     # Setup for the actual str to write to the environment.
@@ -512,8 +517,9 @@ def setupSensitiveVariables(setupEnvironment, mocker):
 
 @pytest.mark.parametrize("name, func", [
     ("sshKey", deploy.environment.writeSSHKeyFromVariableToFile),
-    ("cert", deploy.environment.writeCertFromVariableToFile),
-], ids = ["SSH Key", "Certficiate"])
+    ("gridCert", deploy.environment.writeGridCertFromVariableToFile),
+    ("gridKey", deploy.environment.writeGridKeyFromVariableToFile),
+], ids = ["SSH Key", "Grid certficiate", "Grid key"])
 @pytest.mark.parametrize("varEnabled", [
     None,
     False,
@@ -550,7 +556,9 @@ def testSensitiveVarFromEnvironment(name, func, varEnabled, setupSensitiveVariab
             # By writing out the calls explicitly, we can specify the order.
             mChmod.assert_has_calls([mocker.call(expectedWriteLocation, stat.S_IRUSR | stat.S_IWUSR),
                                      mocker.call(os.path.dirname(expectedWriteLocation), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)])
-        else:
+        elif name == "gridCert":
+            mChmod.assert_not_called()
+        elif name == "gridKey":
             mChmod.assert_called_once_with(expectedWriteLocation, stat.S_IRUSR)
 
     # Cleanup so it doesn't interfere with other tests.
@@ -591,8 +599,9 @@ def testWriteFailureDueToExistingSensitiveFile(setupSensitiveVariables):
 
 @pytest.mark.parametrize("name, func, expectedWriteLocation", [
     ("sshKey", deploy.environment.writeSSHKeyFromVariableToFile, "~/.ssh/id_rsa"),
-    ("cert", deploy.environment.writeCertFromVariableToFile, "~/.globus/overwatchCert.pem"),
-], ids = ["SSH Key", "Certficiate"])
+    ("gridCert", deploy.environment.writeGridCertFromVariableToFile, "~/.globus/overwatchCert.pem"),
+    ("gridKey", deploy.environment.writeGridKeyFromVariableToFile, "~/.globus/overwatchKey.pem"),
+], ids = ["SSH Key", "Grid Certficiate", "Grid key"])
 def testWriteSensitiveParameterDefaults(setupSensitiveVariables, name, func, expectedWriteLocation):
     """ Test the defaults for writing sensitive parameters. """
     # Setup
