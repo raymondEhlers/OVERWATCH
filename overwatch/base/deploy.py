@@ -1570,7 +1570,10 @@ def startOverwatch(configFilename, configEnvironmentVariable):
             config = f.read()
 
     # Load the configuration.
-    config = configModule.yaml.load(config, Loader = configModule.yaml.SafeLoader)
+    with warnings.catch_warnings():
+        # Ignore warning about duplicate anchor definitions
+        warnings.simplefilter("ignore")
+        config = configModule.yaml.load(config, Loader = configModule.yaml.SafeLoader)
 
     # Enable any additional executables requested via an environment variable
     config = enableExecutablesFromEnvironment(config)
