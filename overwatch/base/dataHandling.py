@@ -332,7 +332,7 @@ def processReceivedFiles():
     failedFilenames = {}
     for siteName, destination in iteritems(parameters["dataTransferLocations"]):
         transferFunc = copyFilesToOverwatchSites
-        if "EOS" in siteName:
+        if "EOS" in siteName.upper():
             transferFunc = copyFilesToEOS
         # Perform the actual transfer for each configured location.
         # We need to keep track of which files failed to transfer to which sites.

@@ -299,7 +299,7 @@ def testStandardStartProcessWithLogs(setupStartProcessWithLog, setupBasicExecuta
     process = executable.startProcessWithLog()
 
     # Check that it was called successfully
-    mFile.assert_called_once_with(os.path.join("exec", "logs", "{}.log".format(expected.name)), "w")
+    mFile.assert_called_once_with(os.path.join("exec", "logs", "{}.log".format(expected.name)), "a")
     mPopen.assert_called_once_with(expected.args, stderr = subprocess.STDOUT, stdout = mFile())
 
     # No need to actually mock up a subprocess.Popen class object.
@@ -918,11 +918,11 @@ def testTwoOverwatchExecutablesWithCustomConfigs(loggingMixin):
     assert generatedConfig == expected
 
 @pytest.mark.parametrize("executableType, config, expected", [
-    ("dataTransfer", {"additionalOptions": {"testVal": True}},
+    ("dataTransfer", {"additionalOptions": {"testVal": True, "dataTransferLocations": {"EOS": "EOSpath", "rsync": "rsyncPath"}}},
      executableExpected(name = "dataTransfer",
                         description = "Overwatch receiver data transfer",
                         args = ["overwatchReceiverDataHandling"],
-                        config = {"testVal": True})),
+                        config = {"testVal": True, "dataTransferLocations": {"EOS": "EOSpath", "rsync": "rsyncPath"}})),
     ("processing", {},
      executableExpected(name = "processing",
                         description = "Overwatch processing",
@@ -986,9 +986,15 @@ def testOverwatchExecutableProperties(loggingMixin, executableType, config, expe
     # (We can't check the write directly because dump writes many times!)
     mYaml = mocker.MagicMock()
     mocker.patch("overwatch.base.deploy.configModule.yaml.dump", mYaml)
-    # Redirect nginx run to nginx setup so we don't have to mock all of run()
+    # Mock running nginx so we don't have to mock all of run()
     mNginxRun = mocker.MagicMock()
     mocker.patch("overwatch.base.deploy.nginx.run", mNginxRun)
+    # Mock running grid toekn and ssh known hosts so we don't have to mock all of run()
+    # These are used by the data transfer module
+    mGridTokenProxy = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.gridTokenProxy", mGridTokenProxy)
+    mKnownHosts = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.sshKnownHosts", mKnownHosts)
     # Avoid creating any new directories
     mMakedirs = mocker.MagicMock()
     mocker.patch("overwatch.base.deploy.os.makedirs", mMakedirs)

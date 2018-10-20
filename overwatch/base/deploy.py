@@ -37,6 +37,7 @@ from builtins import super
 from future.utils import iteritems
 
 import functools
+import copy
 import os
 import collections
 import stat
@@ -265,7 +266,8 @@ class executable(object):
         else:
             # Ensure that the directory in which we will create our log file is created.
             self.createFilenameDirectory(filename = self.logFilename)
-            with open(self.logFilename, "w") as logFile:
+            # Append to the log file.
+            with open(self.logFilename, "a") as logFile:
                 logger.debug("Starting '{name}' with args: {args}".format(name = self.name, args = self.args))
                 # Redirect stderr to stdout so the information isn't lost.
                 process = subprocess.Popen(self.args,
@@ -816,6 +818,8 @@ class sshKnownHosts(executable):
             "-H",
             "{address}",
         ]
+        # Set a default port in the configuration
+        config["port"] = config.get("port", 22)
         super().__init__(name = name,
                          description = description,
                          args = args,
@@ -843,9 +847,8 @@ class sshKnownHosts(executable):
                 # Set the proper permissions
                 os.chmod(os.path.dirname(self.configFilename), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
 
-            self.executeTask = True
-        else:
-            self.executeTask = False
+        # Ensure that the task is executed.
+        self.executeTask = True
 
 class autossh(executable):
     """ Start ``autossh`` to create a SSH tunnel.
@@ -1078,7 +1081,7 @@ class overwatchExecutable(executable):
         self.configFilename = "config.yaml"
 
     def setup(self):
-        """ Setup required for Overwatch data handling and transfer.
+        """ Setup required for Overwatch executables.
 
         In particular, we write any passed custom configuration options out to an Overwatch YAML config file.
         """
@@ -1129,6 +1132,96 @@ class overwatchExecutable(executable):
             # (but it does de-duplicate options)
             with open(self.configFilename, "w") as f:
                 configModule.yaml.dump(config, f, default_flow_style = False)
+
+""" Initialize a grid token proxy.
+
+The configuration doesn't matter - the task just needs to be enabled.
+"""
+gridTokenProxy = functools.partial(executable,
+                                   name = "gridTokenProxy",
+                                   description = "Initialize a grid token proxy.",
+                                   args = [
+                                       "xrdgsiproxy",
+                                       "init",
+                                   ],
+                                   # Default to executing the task. It can also be overridden.
+                                   config = {"enabled": True})
+
+#class gridTokenProxy(executable):
+#    """ Initialize a grid token proxy.
+#
+#    We could effectively create this task with ``functools.partial``, but we decided to write out
+#    the entire class for consistency with the other tasks.
+#
+#    Args:
+#        *args (list): Absorb ignored arguments from retrieveExecutable().
+#        *kwargs (dict): Absorb ignored arguments from retrieveExecutable().
+#    """
+#    def __init__(self, *args, **kwargs):
+#        name = "gridTokenProxy"
+#        description = "Initialize a grid token proxy."
+#        args = [
+#            "xrdgsiproxy",
+#            "init",
+#        ]
+#        # No real configuration is necessary. The executable just needs to run.
+#        super().__init__(name = name,
+#                         description = description,
+#                         args = args,
+#                         config = {"enabled": True})
+
+class overwatchDataTransfer(overwatchExecutable):
+    """ Starts the overwatch data transfer executable.
+
+    This needs a separate executable because it may transfer data over ``rsync`` or ``xrd``, both of
+    which require their own initialization steps. ``rsync`` (really, ``ssh``) requires sshKnownHosts(),
+    while ``xrd`` requires gridTokenProxy().
+    """
+    def __init__(self, config):
+        name = "dataTransfer"
+        description = "Overwatch receiver data transfer"
+        args = [
+            "overwatchReceiverDataHandling",
+        ]
+        super().__init__(name = name,
+                         description = description,
+                         args = args,
+                         config = config)
+
+        # Keep track of the additional executables.
+        self.knownHosts = None
+        self.gridProxy = None
+
+    def setup(self):
+        """ Setup required for Overwatch data transfer.
+
+        In particular, we write any passed custom configuration options out to an Overwatch YAML config file.
+        """
+        # First we initialize the base class to ensure that the configuration is properly formatted.
+        super().setup()
+
+        # The user should always set the paths to remote sites in the deploy config (the defaults aren't meaningful),
+        # so we will rely on it to being available to determine which setup tasks we need to call.
+        dataTransferLocations = self.config["additionalOptions"]["dataTransferLocations"]
+        for siteName, destination in iteritems(dataTransferLocations):
+            if "EOS" in siteName.upper():
+                # The precise destination doesn't matter - we just need to initialize the token.
+                self.gridProxy = gridTokenProxy()
+                self.gridProxy.run()
+            else:
+                # Attempt to extract out the address from the destination.
+                # rsyn addresses will be of the form ``user@address:/path/to/destination``, so we can look for the
+                # hostname between ``@`` and ``:``. The ``+ 1`` accounts for stepping past the ``@`` that we found.
+                address = destination[destination.find("@") + 1:destination.find(":")]
+
+                # Create an independent copy of the config, as we're going to add values.
+                config = copy.deepcopy(self.config)
+                config["address"] = address
+                # For the tunnel to be created successfully, we need to add the address of the SSH server
+                # to the known_hosts file, so we create it here. In principle, this isn't safe if we're not in
+                # a safe environment, but this should be fine for our purposes.
+                self.knownHosts = sshKnownHosts(config = config)
+                self.knownHosts.run()
 
 class uwsgi(executable):
     """ Start a ``uwsgi`` executable.
@@ -1459,12 +1552,7 @@ _available_executables = {
     "zodb": zodb,
     "autossh": autossh,
     "zmqReceiver": zmqReceiver,
-    "dataTransfer": functools.partial(overwatchExecutable,
-                                      name = "dataTransfer",
-                                      description = "Overwatch receiver data transfer",
-                                      args = [
-                                          "overwatchReceiverDataHandling",
-                                      ]),
+    "dataTransfer": overwatchDataTransfer,
     "processing": functools.partial(overwatchExecutable,
                                     name = "processing",
                                     description = "Overwatch processing",
