@@ -61,7 +61,7 @@ dataTransferLocations:
 # Number of times we should try to transfer data when the transfer fails.
 dataTransferRetries: 2
 # Time in seconds to wait between checking for new files
-dataHandlingTimeToSleep: 20
+dataTransferTimeToSleep: 20
 
 # The file extension to use when printing ROOT files.
 fileExtension: "png"

@@ -12,7 +12,7 @@ Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
 - Travis CI will build new docker images on each commit, which are known as `rehlers/overwatch:latest-py*`.
   Tagged releases will be available as `rehlers/overwatch:tag-py*`.
 - Releases are automatically made on PyPI through Travis CI.
-- Added `overwatch.base.dataHandling` module, which is responsible for transferring data provided by the
+- Added `overwatch.base.dataTransfer` module, which is responsible for transferring data provided by the
   receiver to various Overwatch and EOS sites. This modules is fairly well covered by tests.
 - Added webApp monitoring via `sentry`. It hooks into everything (exceptions, logs, etc) to help identify and
   debug issues.

@@ -39,15 +39,15 @@ sentry_logging = LoggingIntegration(level = logging.WARNING, event_level = None)
 sentry_sdk.init(dsn = os.getenv("SENTRY_DSN_DATA_HANDLING") or os.getenv("SENTRY_DSN"), integrations = [sentry_logging])
 
 # Imports are below here so that they can be logged
-from overwatch.base import dataHandling
+from overwatch.base import dataTransfer
 
-def runReceiverDataHandling():
+def runReceiverDataTransfer():
     """ Run function for handling and transfering receiver data. """
     handler = utilities.handleSignals()
-    logger.info("Starting receiver data handling.")
+    logger.info("Starting receiver data handling and transfer.")
     while not handler.exit.is_set():
-        dataHandling.processReceivedFiles()
-        handler.exit.wait(parameters["dataHandlingTimeToSleep"])
+        dataTransfer.processReceivedFiles()
+        handler.exit.wait(parameters["dataTransferTimeToSleep"])
 
 if __name__ == "__main__":
-    runReceiverDataHandling()
+    runReceiverDataTransfer()

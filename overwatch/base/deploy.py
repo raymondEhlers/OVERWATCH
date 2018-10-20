@@ -1158,7 +1158,7 @@ class overwatchDataTransfer(overwatchExecutable):
         name = "dataTransfer"
         description = "Overwatch receiver data transfer"
         args = [
-            "overwatchReceiverDataHandling",
+            "overwatchReceiverDataTransfer",
         ]
         super().__init__(name = name,
                          description = description,

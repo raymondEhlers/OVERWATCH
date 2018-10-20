@@ -66,14 +66,14 @@ It is important to monitor Overwatch for errors and other issues. For the data t
 monitoring is provided by `sentry`, which hooks into exceptions, logging, and other parts of the app to
 automatically provide alerts and information when issues occur.
 
-For successful monitoring, the environment must export the `DSN` as `export SENTRY_DSN_DATA_HANDLING=<value>`.
-The value will be some sort of unique URL. Note that this endpoint is just for Overwatch data handling (called
-`overwatch-datahandling` on `sentry`). If it is not available, it will look for the general environment
+For successful monitoring, the environment must export the `DSN` as `export SENTRY_DSN_DATA_TRANSFER=<value>`.
+The value will be some sort of unique URL. Note that this endpoint is just for Overwatch data transfer (called
+`overwatch-datatransfer` on `sentry`). If it is not available, it will look for the general environment
 variable `SENTRY_DSN`.
 
 ## Data transfer
 
 Data must be moved from the ZMQ and DQM receivers to other Overwatch sites, as well as exported to EOS. All of
-these transfers are handled by the data handling module. It will transfer the data in a robust manner, retry
+these transfers are handled by the data transfer module. It will transfer the data in a robust manner, retry
 on failures, and then notifying the admin if the issues continue. For further information on configuration,
-see the `dataHandling` module.
+see the `dataTransfer` module.

@@ -921,7 +921,7 @@ def testTwoOverwatchExecutablesWithCustomConfigs(loggingMixin):
     ("dataTransfer", {"additionalOptions": {"testVal": True, "dataTransferLocations": {"EOS": "EOSpath", "rsync": "rsyncPath"}}},
      executableExpected(name = "dataTransfer",
                         description = "Overwatch receiver data transfer",
-                        args = ["overwatchReceiverDataHandling"],
+                        args = ["overwatchReceiverDataTransfer"],
                         config = {"testVal": True, "dataTransferLocations": {"EOS": "EOSpath", "rsync": "rsyncPath"}})),
     ("processing", {},
      executableExpected(name = "processing",

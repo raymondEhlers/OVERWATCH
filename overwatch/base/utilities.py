@@ -479,7 +479,7 @@ class handleSignals(object):
         handler = handleSignals()
         while not handler.exit.is_set():
             # Do something
-            handler.exit.wait(parameters["dataHandlingTimeToSleep"])
+            handler.exit.wait(parameters["dataTransferTimeToSleep"])
 
     Args:
         None.

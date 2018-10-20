@@ -78,8 +78,8 @@ setup(
             "overwatchDeploy = overwatch.base.deploy:run",
             # Utility script to update the database users
             "overwatchUpdateUsers = overwatch.base.updateDBUsers:updateDBUsers",
-            # Receiver data handling script
-            "overwatchReceiverDataHandling = overwatch.base.run:runReceiverDataHandling",
+            # Receiver data transfer script
+            "overwatchReceiverDataTransfer = overwatch.base.run:runReceiverDataTransfer",
         ],
     },
 
