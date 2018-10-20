@@ -1147,29 +1147,6 @@ gridTokenProxy = functools.partial(executable,
                                    # Default to executing the task. It can also be overridden.
                                    config = {"enabled": True})
 
-#class gridTokenProxy(executable):
-#    """ Initialize a grid token proxy.
-#
-#    We could effectively create this task with ``functools.partial``, but we decided to write out
-#    the entire class for consistency with the other tasks.
-#
-#    Args:
-#        *args (list): Absorb ignored arguments from retrieveExecutable().
-#        *kwargs (dict): Absorb ignored arguments from retrieveExecutable().
-#    """
-#    def __init__(self, *args, **kwargs):
-#        name = "gridTokenProxy"
-#        description = "Initialize a grid token proxy."
-#        args = [
-#            "xrdgsiproxy",
-#            "init",
-#        ]
-#        # No real configuration is necessary. The executable just needs to run.
-#        super().__init__(name = name,
-#                         description = description,
-#                         args = args,
-#                         config = {"enabled": True})
-
 class overwatchDataTransfer(overwatchExecutable):
     """ Starts the overwatch data transfer executable.
 
