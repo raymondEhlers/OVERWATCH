@@ -496,5 +496,5 @@ class handleSignals(object):
 
     def exitGracefully(self, signum, frame):
         """ Handle the signal by storing that it was sent, allowing the run function to exit. """
-        logger.info("Received {signum} signal. Passing on to executing function...".format(signum = signum))
+        logger.info("Received signal {signum}. Passing on to executing function...".format(signum = signum))
         self.exit.set()

@@ -15,8 +15,8 @@ It can handle the configuration and execution of:
 - Overwatch web app
     - Via ``uswgi``, ``uwsgi`` behind ``nginx`` or directly.
 
-It can also handle receiving SSH Keys and grid certificates passed in via
-environment variables.
+It can also handle receiving SSH Keys, grid certificates, and grid keys passed
+in via environment variables.
 
 Various classes of files are stored in specific locations. In particular,
 
@@ -430,6 +430,7 @@ class environment(object):
         the ZMQ receiver, and set general environment variables.
         """
         # Write sensitive variables from the environment to specified files.
+        # NOTE: Both the grid cert and the grid key are necessary for using the grid, EOS, etc!
         self.writeGridCertFromVariableToFile()
         self.writeGridKeyFromVariableToFile()
         self.writeSSHKeyFromVariableToFile()
@@ -578,6 +579,9 @@ class environment(object):
         Used primarily for setting up the certificate in a docker container. It looks for a config dictionary
         stored in the environment dict under the name ``gridCert``.
 
+        Note:
+            Both the grid cert and the grid key are necessary for using the grid, EOS, etc!
+
         Args:
             None.
         Returns:
@@ -601,6 +605,9 @@ class environment(object):
 
         Used primarily for setting up the key in a docker container. It looks for a config dictionary
         stored in the environment dict under the name ``gridKey``.
+
+        Note:
+            Both the grid cert and the grid key are necessary for using the grid, EOS, etc!
 
         Args:
             None.

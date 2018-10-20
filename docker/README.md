@@ -37,6 +37,8 @@ not required to use the directories in the repository, but it certainly is conve
 
 ## Common errors
 
+### Socket error
+
 If you see:
 
 ```bash
@@ -47,3 +49,17 @@ without any further context at the end of executing `overwatchDeploy`, you shoul
 `supervisor` in the config. If it is enabled, this error corresponds to `supervisor` being asked to update
 when it is not running. If you didn't intend to use `supervisor` (for example, if you executed
 `overwatchDeploy` manually), then this error is harmless.
+
+### `rsync` errors
+
+If you see something like:
+
+```bash
+Permission denied (publickey).
+rsync: connection unexpectedly closed (0 bytes received so far) [sender]
+rsync error: unexplained error (code 255) at io.c(235) [sender=3.1.2]
+```
+
+this is often caused by `rsync` being unable to use the ssh private key. In particular, if the key has a
+passphrase, rsync will not be able to use it in this mode. To resolve it, provide a key without a passphrase
+(of course taking appropriate care to ensure that such a key is kept well protected).

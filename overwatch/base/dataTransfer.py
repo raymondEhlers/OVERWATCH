@@ -200,9 +200,6 @@ def copyFilesToOverwatchSites(directory, destination, filenames):
     Returns:
         list: Filenames for all of the files which **failed**.
     """
-    # TODO: Determine receiver last modified times.
-    # TODO: Notify the Overwatch sites about the new files
-
     # First write the filenames out to a temp file so we can pass them to rsync.
     with tempfile.NamedTemporaryFile() as f:
         # Need encode because the file is written as bytes.
@@ -242,7 +239,7 @@ def copyFileToEOSWithRoot(directory, destination, filename):
     destination = os.path.join(destination, filename)
     # We only want to see such information if we are debugging. Otherwise, it will just clog up the logs.
     showProgressBar = parameters["debug"]
-    logger.info("Copying file from {source} to {destination}".format(source = source, destination = destination))
+    logger.debug("Copying file from {source} to {destination}".format(source = source, destination = destination))
     return ROOT.TFile.Cp(source, destination, showProgressBar)
 
 def copyFilesToEOS(directory, destination, filenames):
@@ -351,12 +348,14 @@ def processReceivedFiles():
         # long time.
         for siteName, filenames in iteritems(failedFilenames):
             totalFailedFilenames.update(filenames)
-            storeFailedFiles(siteName = siteName, filenames = filenames)
+            # Only attempt to store the failed files if some files actually failed.
+            if filenames:
+                storeFailedFiles(siteName = siteName, filenames = filenames)
 
     # Log which filenames were transferred successfully.
     # We will eventually want to return a list instead of a set, so we just convert it here.
     successfullyTransferred = list(set(filenamesToTransfer) - totalFailedFilenames)
-    logger.info("Successfully transferred: {successfullyTransferred}".format(successfullyTransferred = successfullyTransferred))
+    logger.info("Fully successfully transferred: {successfullyTransferred}".format(successfullyTransferred = successfullyTransferred))
 
     # Now we can safely remove all files, because any that have failed have already been copied.
     # Protect from data loss when debugging.

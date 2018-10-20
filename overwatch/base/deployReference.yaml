@@ -6,23 +6,26 @@ supervisor: true
 environment:
     # Options for writing sensitive variables stored in environment variables to specified files.
     # Grid certificate (for example, for writing to EOS).
+    # NOTE: Both the cert and the key are required to write to EOS.
     gridCert:
         enabled: false
-        # Environment variable where the key is stoerd.
+        # Environment variable where the key is stored.
         variableName: "myCert"
         # Where the key should be written.
         writeLocation: "test/cert.test"
     # Grid key (for example, for writing to EOS).
+    # NOTE: Both the cert and the key are required to write to EOS.
     gridKey:
         enabled: false
-        # Environment variable where the key is stoerd.
+        # Environment variable where the key is stored.
         variableName: "myKey"
         # Where the key should be written.
         writeLocation: "test/key.test"
-    # SSH key (for example, for conencting to remote systems to receive files via ZMQ).
+    # SSH key (for example, for connecting to remote systems to receive files via ZMQ).
+    # Also used when transferring receiver data to other sites via rsync.
     sshKey:
         enabled: false
-        # Environment variable where the key is stoerd.
+        # Environment variable where the key is stored.
         variableName: "mySSHKey"
         # Where the key should be written.
         writeLocation: "test/sshKey.test"
@@ -38,7 +41,7 @@ environment:
     vars:
         aEnvironmentVariable: "theValue"
 
-# Options for configuring exectuables. This allows the consoslidation of repeated options.
+# Options for configuring executables. This allows the consolidation of repeated options.
 # Path to our working directory.
 workingDir: &workingDir !expandVars "${PWD}"
 # Shared options for executables
@@ -63,7 +66,7 @@ receiverOptions: &receiverOptions
     <<: *baseExecutionOptions
     # Path to where the received data should be stored.
     dataPath: "data"
-    # Additional command line options to pass to the zmqReceiver executable.
+    # Additional command line options to pass to the `zmqReceiver` executable.
     defaultOptions: "defined whatever here"
 # uwsgi options
 uwsgiOptions: &uwsgiOptions
