@@ -992,9 +992,9 @@ def testOverwatchExecutableProperties(loggingMixin, executableType, config, expe
     # Mock running grid toekn and ssh known hosts so we don't have to mock all of run()
     # These are used by the data transfer module
     mGridTokenProxy = mocker.MagicMock()
-    mocker.patch("overwatch.base.deploy.gridTokenProxy", mGridTokenProxy)
+    mocker.patch("overwatch.base.deploy.gridTokenProxy.run", mGridTokenProxy)
     mKnownHosts = mocker.MagicMock()
-    mocker.patch("overwatch.base.deploy.sshKnownHosts", mKnownHosts)
+    mocker.patch("overwatch.base.deploy.sshKnownHosts.run", mKnownHosts)
     # Avoid creating any new directories
     mMakedirs = mocker.MagicMock()
     mocker.patch("overwatch.base.deploy.os.makedirs", mMakedirs)
