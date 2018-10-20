@@ -242,6 +242,7 @@ def copyFileToEOSWithRoot(directory, destination, filename):
     destination = os.path.join(destination, filename)
     # We only want to see such information if we are debugging. Otherwise, it will just clog up the logs.
     showProgressBar = parameters["debug"]
+    logger.info("Copying file from {source} to {destination}".format(source = source, destination = destination))
     return ROOT.TFile.Cp(source, destination, showProgressBar)
 
 def copyFilesToEOS(directory, destination, filenames):
@@ -300,7 +301,7 @@ def storeFailedFiles(siteName, filenames):
     assert set(filenames).issubset(os.listdir(storagePath))
 
     # By logging, it will be sent to the admins when appropriate.
-    logger.warning("Files failed to copy for site name {siteName}. Filenames: {filenames}".format(siteName = siteName, filenames = filenames))
+    logger.warning("Files failed to copy for site {siteName}. Filenames: {filenames}".format(siteName = siteName, filenames = filenames))
 
 def processReceivedFiles():
     """ Main driver function for receiver file processing and moving.
@@ -325,6 +326,8 @@ def processReceivedFiles():
     if not filenamesToTransfer:
         logger.info("No new files found. Returning.")
         return
+
+    logger.info("Transfering data to sites: {sites}".format(sites = ", ".join(parameters["dataTransferLocations"])))
 
     failedFilenames = {}
     for siteName, destination in iteritems(parameters["dataTransferLocations"]):

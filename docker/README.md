@@ -34,3 +34,16 @@ directory dedicated to files generated during execution. It may also contain con
 Note that we explicitly keep empty `logs`, `config` and `sockets` directories inside of the `exec` directory
 in the git repository to ensure that supervisor doesn't fail to execute due missing those directories. It is
 not required to use the directories in the repository, but it certainly is convenient.
+
+## Common errors
+
+If you see:
+
+```bash
+error: <class 'ConnectionRefusedError'>, [Errno 111] Connection refused: file: /usr/local/lib/python3.6/socket.py line: 713
+```
+
+without any further context at the end of executing `overwatchDeploy`, you should check the value of
+`supervisor` in the config. If it is enabled, this error corresponds to `supervisor` being asked to update
+when it is not running. If you didn't intend to use `supervisor` (for example, if you executed
+`overwatchDeploy` manually), then this error is harmless.

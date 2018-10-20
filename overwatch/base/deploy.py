@@ -567,6 +567,7 @@ class environment(object):
         # Set the folder permissions to 700
         os.chmod(os.path.dirname(writeLocation), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
 
+        logger.info("Successfully wrote {name} to {writeLocation}".format(name = name, writeLocation = writeLocation))
         return True
 
     def writeGridCertFromVariableToFile(self):
@@ -590,6 +591,7 @@ class environment(object):
             logger.info(e.args[0])
             return False
 
+        logger.info("Successfully wrote {name} to {writeLocation}".format(name = name, writeLocation = writeLocation))
         return True
 
     def writeGridKeyFromVariableToFile(self):
@@ -617,6 +619,7 @@ class environment(object):
         # Set the file permissions to 400
         os.chmod(writeLocation, stat.S_IRUSR)
 
+        logger.info("Successfully wrote {name} to {writeLocation}".format(name = name, writeLocation = writeLocation))
         return True
 
     def setupRoot(self):
@@ -1532,7 +1535,7 @@ def runExecutables(executables):
         executable = retrieveExecutable(name = executableType, config = executableConfig)
         logger.debug("Considering executable with name {name}, executableType: {executableType}".format(name = name, executableType = executableType))
         result = executable.run()
-        logger.debug("Status of executable with name {name}, executableType: {executableType}: Executed: {result}".format(name = name, executableType = executableType, result = result))
+        logger.debug("Status of executable with name {name} (executableType: {executableType}): Executed: {result}".format(name = name, executableType = executableType, result = result))
         # Don't store executables which were not actually run.
         if result:
             ranExecutables[name] = executable
