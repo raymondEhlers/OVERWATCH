@@ -35,6 +35,52 @@ Note that we explicitly keep empty `logs`, `config` and `sockets` directories in
 in the git repository to ensure that supervisor doesn't fail to execute due missing those directories. It is
 not required to use the directories in the repository, but it certainly is convenient.
 
+## uwsgi and ZODB
+
+Since uwsgi runs a large number of python interpreters, it will only work with ZODB when the database is
+served externally!
+
+## Modifying the hosts file on mac OS
+
+To test the `nginx` proxy, the only good way I've found is to add the address to the local hosts file. This
+can be accomplished by:
+
+```bash
+# Make necessary edits
+$ sudo vim /etc/hosts
+# Clear the DNS cache
+$ sudo dscacheutil -flushcache
+```
+
+Note that `dnsmasq` didn't seem to work (although it certainly should have, so I must have missing
+something...).
+
+One can also add a request header `Host: <address>`. Via curl, this would look like `curl -H "Host:
+dev.aliceoverwatch.physics.yale.edu" localhost`, while for the browser, the custom header must be set with an
+extension. Regardless of how the request is made, this headers approach will fail on redirects in the web app.
+
+## Variables to configure for Docker
+
+`config` should be the set to the Overwatch deploy config via `export config="$(cat deployConfig.yaml)"`.
+Similar variables should be configured for the grid certificate, grid key, and ssh key.
+
+### IP address and external access
+
+[This stack overflow answer](https://stackoverflow.com/a/24326540) is particularly useful for understanding
+how and when to make containers accessible to the outside world.
+
+`externalIP` should be set to the IP address where we want the Overwatch services to be externally accessible.
+Usually, we don't want this to happen (I'm not sure of when we would), but it is left as an option for
+completeness. It defaults to `127.0.0.1` (ie not externally accessible).
+
+`nginxIP` should be set to the IP address where we want the `nginx` reverse proxy to be available. Generally,
+this is our external facing server, so this defaults to `0.0.0.0`.
+
+## Additional docker notes
+
+- We use docker logging for the `nginx-proxy` because it is configured for such operation. However, since we
+  use supervisor in the Overwatch containers, we have supervisor handle the logs for us.
+
 ## Common errors
 
 ### Socket error
