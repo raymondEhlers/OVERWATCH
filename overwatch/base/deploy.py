@@ -1133,19 +1133,34 @@ class overwatchExecutable(executable):
             with open(self.configFilename, "w") as f:
                 configModule.yaml.dump(config, f, default_flow_style = False)
 
-""" Initialize a grid token proxy.
+class gridTokenProxy(executable):
+    """ Initialize a grid token proxy.
 
-The configuration doesn't matter - the task just needs to be enabled.
-"""
-gridTokenProxy = functools.partial(executable,
-                                   name = "gridTokenProxy",
-                                   description = "Initialize a grid token proxy.",
-                                   args = [
-                                       "xrdgsiproxy",
-                                       "init",
-                                   ],
-                                   # Default to executing the task. It can also be overridden.
-                                   config = {"enabled": True})
+    We could nearly create this task with just ``functools.partial``, but we decided to write out
+    the entire class because we need to specify it as a short execution time task.
+
+    Args:
+        *args (list): Absorb ignored arguments from retrieveExecutable().
+        *kwargs (dict): Absorb ignored arguments from retrieveExecutable().
+    """
+    def __init__(self, *args, **kwargs):
+        name = "gridTokenProxy"
+        description = "Initialize a grid token proxy."
+        args = [
+            "xrdgsiproxy",
+            "init",
+        ]
+        config = kwargs.get("config", {})
+        # Ensure that the task is eanbled.
+        config["enabled"] = True
+        # No real configuration is necessary. The executable just needs to run.
+        super().__init__(name = name,
+                         description = description,
+                         args = args,
+                         config = config)
+
+        # This will execute rather quickly.
+        self.shortExecutionTime = True
 
 class overwatchDataTransfer(overwatchExecutable):
     """ Starts the overwatch data transfer executable.
