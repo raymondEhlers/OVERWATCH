@@ -837,6 +837,9 @@ class sshKnownHosts(executable):
         self.logFilename = self.configFilename
         # This will execute rather quickly.
         self.shortExecutionTime = True
+        # This should always execute as a normal process, regardless of the supervisor setting. Otherwise, the logs
+        # (which will contain the ssh fingerprints that we need) will not be written to the proper location.
+        self.supervisor = False
 
     def setup(self):
         """ Setup creating the known_hosts file.
