@@ -664,6 +664,11 @@ def processMovedFilesIntoRuns(runs, runDict):
         # Remove the HLT mode so it doesn't get interpreted as a subsystem.
         hltMode = runDict[runDir].pop("hltMode")
 
+        # It was replay data, so we don't want to process it. Skip it (which will ensure that we don't create)
+        # it's corresponding subsystem) and continue.
+        if hltMode == "E":
+            continue
+
         # Update existing runs and subsystems or create new ones if necessary
         if runDir in runs:
             run = runs[runDir]
