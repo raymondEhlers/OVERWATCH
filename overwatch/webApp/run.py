@@ -45,11 +45,12 @@ from overwatch.webApp.webApp import app
 if not serverParameters["debug"]:
     # Connect to database ourselves and grab the secret key
     (dbRoot, connection) = utilities.getDB(serverParameters["databaseLocation"])
-    if "secretKey" in dbRoot["config"] and dbRoot["config"]["secretKey"]:
-        logger.info("Setting secret key from database!")
+    try:
+        # Set secret_key based on sensitive param value.
         secretKey = dbRoot["config"]["secretKey"]
-    else:
-        # Set secret_key based on sensitive param value
+        logger.info("Setting secret key from database!")
+    except KeyError:
+        # If not available, just generate one ourselves.
         logger.error("Could not retrieve secret_key in db! Instead setting to random value!")
         secretKey = str(os.urandom(50))
 
