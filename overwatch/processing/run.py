@@ -74,7 +74,7 @@ def run():
         logger.info("Processing complete in {time} seconds".format(time = end - start))
         # Only execute once if the sleep time is <= 0. Otherwise, sleep and repeat.
         if sleepTime > 0:
-            handler.exit.wait(processingParameters["processingTimeToSleep"])
+            handler.exit.wait(sleepTime)
         else:
             break
 
