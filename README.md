@@ -64,9 +64,9 @@ date.
 To use most parts of the Overwatch project, you need some data provided by the HLT. The latest five runs of data
 received by Overwatch can be accessed
 [here](https://aliceoverwatch.physics.yale.edu/testingDataArchive). The login credentials are available on the
-[ALICE TWiki](https://twiki.cern.ch/twiki/bin/view/ALICE/L1TriggerMonitoring). It includes at least the
-combined file and the file from which it is built. If the run is sufficiently long, it will include an
-additional file for testing of the time slice functionality.
+[ALICE TWiki](https://twiki.cern.ch/twiki/bin/view/ALICE/OverwatchProject). It includes at least the combined
+file and the file from which it is built. If the run is sufficiently long, it will include an additional file
+for testing of the time slice functionality.
 
 ### Process the data with `overwatchProcessing`
 
