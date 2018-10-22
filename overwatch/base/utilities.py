@@ -437,10 +437,12 @@ def updateDBSensitiveParameters(db, overwriteSecretKey = True):
         logger.info("Adding user {user}".format(user = user))
 
     # Secret key
-    # Set the secret key to that set in the server parameters
+    # Set the secret key to the one set in the server parameters.
     if overwriteSecretKey or "secretKey" not in db["config"]:
-        db["config"]["secretKey"] = sensitiveParameters["_secretKey"]
-        logger.info("Adding secret key to db!")
+        # Only update the secret key if we actually specified one
+        if sensitiveParameters["_secretKey"]:
+            db["config"]["secretKey"] = sensitiveParameters["_secretKey"]
+            logger.info("Adding secret key to db!")
 
     # Ensure that any additional changes are committed
     transaction.commit()
