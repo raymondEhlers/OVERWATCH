@@ -20,8 +20,8 @@ logger = logging.getLogger(__name__)
 # Used for sorting and generating html
 from .. import processingClasses
 
-from overwatch.processing.trending.info import TrendingInfo, TrendingInfoException
-from overwatch.processing.trending.objects import mean, maximum, stdDev
+from overwatch.processing.trending.info import TrendingInfo
+import overwatch.processing.trending.objects as trendingObjects
 
 try:
     from typing import *  # noqa
@@ -29,8 +29,24 @@ except ImportError:
     pass
 
 
-def getTPCTrendingObjectInfo():  # type: () -> List[TrendingInfo]
-    """TODO add docstring"""
+def getTrendingObjectInfo():  # type: () -> List[TrendingInfo]
+    """ Function create simple data objects - TrendingInfo, from which will be created TrendingObject.
+
+    Format of TrendingInfo constructor arguments:
+    name - using in database to map name to trendingObject, must be unique
+    desc - verbose description of trendingObject, it is displayed on generated histograms
+    histogramNames - list of histogram names from which trendingObject depends
+    trendingClass - concrete class of abstract class TrendingObject
+
+     It is possible to catch TrendingInfoException and continue without invalid object
+     (for example when TrendingInfo have unavailable histogram [Not implemented in current version])
+
+    Returns:
+        list: List of TrendingInfo objects
+    """
+
+    # To quick add data we iterate over info list and example trendingObjects
+    # info list has format: ["name", "desc", ["depending histogram name"]]
     infoList = [
         ("TPCClusterTrending", "<TPC clusters>: (p_{T} > 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_0_5_7_restrictedPtEta"]),
         ("TPCFoundClusters", "<Found/Findable TPC clusters>: (p_{T} > 0.25 GeV/c, |#eta| < 1)", ["TPCQA/h_tpc_track_all_recvertex_2_5_7_restrictedPtEta"]),
@@ -42,16 +58,16 @@ def getTPCTrendingObjectInfo():  # type: () -> List[TrendingInfo]
         ("histMpos", "<Multiplicity of pos. tracks>", ["TPCQA/h_tpc_event_recvertex_4"]),
         ("histMneg", "<Multiplicity of neg. tracks>", ["TPCQA/h_tpc_event_recvertex_5"])
     ]
-    trendingInfoList = []
-    for name, desc, histograms in infoList:
-        try:
-            trendingInfoList.append(TrendingInfo(name, desc, histograms, mean.MeanTrending))
-            trendingInfoList.append(TrendingInfo(name + 'Max', desc + 'Max', histograms, maximum.MaximumTrending))
-            trendingInfoList.append(TrendingInfo(name + 'StdDev', desc + 'StdDev', histograms, stdDev.StdDevTrending))
-        except TrendingInfoException as mt:
-            logger.warning(mt)
-
-    return trendingInfoList
+    trendingNameToObject = {
+        "max": trendingObjects.MaximumTrending,
+        "mean": trendingObjects.MeanTrending,
+        "stdDev": trendingObjects.StdDevTrending,
+    }
+    trendingInfo = []
+    for prefix, cls in trendingNameToObject.items():
+        for name, desc, histograms in infoList:
+            trendingInfo.append(TrendingInfo(prefix + name, prefix + desc, histograms, cls))
+    return trendingInfo
 
 
 def generalOptions(subsystem, hist, processingOptions):

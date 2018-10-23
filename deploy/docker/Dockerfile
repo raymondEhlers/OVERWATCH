@@ -66,10 +66,10 @@ RUN npm install -g bower polymer-bundler n \
 RUN echo "daemon off;" >> /etc/nginx/nginx.conf && rm /etc/nginx/sites-enabled/default
 
 # Configure supervisord
-# This launches the Overwatch configuration and parsing script
+# This launches Overwatch deploy, which will then update the supervisor config.
 COPY supervisord.conf ${OVERWATCH_ROOT}
 
 # Expose the ports for nginx and ZODB
 EXPOSE 80 8090
-CMD ["/usr/bin/supervisord"]
+CMD ["/usr/local/bin/supervisord"]
 

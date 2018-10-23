@@ -311,137 +311,6 @@ class subsystemContainer(persistent.Persistent):
         self.histsAvailable.clear()
         self.hists.clear()
 
-class trendingContainer(persistent.Persistent):
-    """ Object to represent the trending system.
-
-    The trending system is given it's own "subsystem" to handle the storage and configuration
-    of trending objects. It also can be used to handle cross subsystem trending which doesn't
-    naturally fit into a single subsystem.
-
-    The structure of this container is quite similar to that of the subsystem container.
-    This allows for the same functions to operate on both standard subsystem containers
-    as well as trending containers (with some minimal wrappers).
-
-    Args:
-        trendingDB (BTree): Dict-like object stored in the main ZODB database which is used for storing
-            trending objects persistently. Keys are the names of subsystems used for trending and values are
-            ``BTree`` objects which are used to store the trending objects for that histogram. See the
-            ``trendingObjects`` attribute description for further details.
-
-    Attributes:
-        subsystem (str): Name of trending subsystem, "TDG".
-        trendingObjects (BTree): Dict-like object stored in the main ZODB database which is used for storing
-            trending objects persistently. Keys are the names of subsystems used for trending and values are
-            ``BTree`` objects which are used to store the trending objects for that histogram. Inside of these
-            ``BTree`` objects, keys are the name of the individual trending objects and values are the trending
-            objects themselves. As an example, ``trendingObjects["TDG"]["testObj"]`` will be a trending object
-            stored within the trending "TDG" subsystem which is called "testObj".
-        updateToDate (bool): True if the trending container trending objects are entirely filled and up to date.
-            It could be used to refill the trending container if it is empty. Default: ``False``.
-        baseDir (str): Path to the base storage directory for the trending. Of the form ``trending``.
-        imgDir (str): Path to the image storage directory for the trending. Of the form ``trending/SYS/img``.
-        jsonDir (str): Path to the json storage directory for the trending. Of the form ``trending/SYS/json``.
-        processingOptions (PersistentMapping): Implemented by the trending system to note options used during
-            standard processing. The subsystem processing options can vary when processing a time slice,
-            so storing the options allow us to return to the standard options when performing a full processing.
-            Keys are the option names as string, while values are their corresponding values.
-    """
-    def __init__(self, trendingDB):
-        self.subsystem = "TDG"
-
-        # Main container of the trendingObjects
-        self.trendingObjects = trendingDB
-
-        # True if the trending container trending objects are entirely filled and up to date.
-        # Could be used to refill the trending container if it is empty
-        # TODO: Implement fully
-        self.updateToDate = False
-
-        # Directories for storage
-        # Should be of the form, for example, "tredning/SYS/json"
-        #self.baseDir = self.subsystem
-        self.baseDir = "trending"
-        # Need to define the names later because there are multiple subsystems inside of the trending container
-        self.imgDir = os.path.join(self.baseDir, "%(subsystem)s", "img")
-        self.jsonDir = os.path.join(self.baseDir, "%(subsystem)s", "json")
-        # Ensure that they exist for each subsystem
-        for subsystemName in processingParameters["subsystemList"] + ["TDG"]:
-            if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.imgDir % {"subsystem": subsystemName})):
-                os.makedirs(os.path.join(processingParameters["dirPrefix"], self.imgDir % {"subsystem": subsystemName}))
-            if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.jsonDir % {"subsystem": subsystemName})):
-                os.makedirs(os.path.join(processingParameters["dirPrefix"], self.jsonDir % {"subsystem": subsystemName}))
-
-        # Processing options
-        # Implemented by the detector to note how it was processed that may be changed during time slice processing
-        # This allows us return full processing when appropriate
-        self.processingOptions = persistent.mapping.PersistentMapping()
-
-    def addSubsystemTrendingObjects(self, subsystem, trendingObjects, forceRecreateSubsystem):
-        """ Add a given subsystem and set of associated trending objects to the trending container.
-
-        Args:
-            subsystem (str): The current subsystem by three letter, all capital name (ex. ``EMC``).
-            trendingObjects (dict): Dict of TrendingObject derived objects. Keys are names of the
-                trending objects, while the values should be already created and setup trending objects.
-            forceRecreateSubsystem (bool): True indicates that the subsystem is being recreated.
-                Consequently, the trending objects must also be recreated.
-        Returns:
-            None
-        """
-        # The storage for a particular subsystem may not always be initialized, so set it up if necessary.
-        if subsystem not in self.trendingObjects.keys():
-            self.trendingObjects[subsystem] = BTrees.OOBTree.BTree()
-
-        logger.debug("self.trendingObjects[{}]: {}".format(subsystem, self.trendingObjects[subsystem]))
-
-        # Assign the trending objects created by the subsystem to the trending object storage.
-        # There shouldn't be an namespace conflicts because each subsystem has it's own entry
-        # in the storage dict.
-        for name, obj in iteritems(trendingObjects):
-            if name not in self.trendingObjects[subsystem] or forceRecreateSubsystem:
-                logger.debug("Adding trending object {} from subsystem {} to the trending objects".format(name, subsystem))
-                self.trendingObjects[subsystem][name] = obj
-            else:
-                logger.debug("Trending object {} (name: {}) already exists in subsystem {}".format(self.trendingObjects[subsystem][name], name, subsystem))
-                logger.debug("Trending next entry value: {}".format(self.trendingObjects[subsystem][name].nextEntry))
-
-    def resetContainer(self):
-        """ Clear the stored trending objects so we can recreate (reprocess) the trending container.
-
-        Without resetting the container, reprocessing doesn't fully test the processing functions,
-        which are skipped if these list- and dict-like trending objects have entries.
-
-        Args:
-            None
-        Returns:
-            None
-        """
-        self.trendingObjects.clear()
-
-    def findTrendingFunctionsForHist(self, hist):
-        """ Given a hist, determine the trending objects (and therefore functions) which should be applied.
-
-        Each trending object select the histograms that are needed for trending by name. This function
-        loops over those names and checks if the given histogram is included in the list for any trending
-        object. We cannot optimize this loop much because multiple trending objects may use a particular
-        histogram, and the histograms requested by the trending object may not necessarily exist for a
-        given run.
-
-        Args:
-            hist (histogramContainer): Histogram to be checked for trending objects.
-        Returns:
-            None
-        """
-        logger.debug("Looking for trending objects for hist {}".format(hist.histName))
-        for subsystemName, subsystem in iteritems(self.trendingObjects):
-            for trendingObjName, trendingObj in iteritems(subsystem):
-                if hist.histName in trendingObj.histNames:
-                    # Define the temporary function so it can be executed later.
-                    #def tempFunc():
-                    #    return self.trendingObjects[subsystemName][trendingObjName].Fill(hist)
-                    #hist.append(tempFunc)
-                    logger.debug("Found trending object match for hist {}, trendingObject: {}".format(hist.histName, self.trendingObjects[subsystemName][trendingObjName].name))
-                    hist.trendingObjects.append(self.trendingObjects[subsystemName][trendingObjName])
 
 class timeSliceContainer(persistent.Persistent):
     """ Time slice information container.
@@ -725,7 +594,7 @@ class histogramContainer(persistent.Persistent):
                     else:
                         returnValue = False
                 else:
-                    logger.warning("histList for hist {} is defined, but is empty".format(histName))
+                    logger.warning("histList for hist {} is defined, but is empty".format(self.histName))
                     returnValue = False
             else:
                 logger.debug("HistName: {histName}".format(histName = self.histName))

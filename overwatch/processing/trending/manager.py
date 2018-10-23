@@ -13,92 +13,97 @@ logger = logging.getLogger(__name__)
 
 try:
     from typing import *  # noqa
+except ImportError:
+    pass
+else:
     from persistent.mapping import PersistentMapping  # noqa
     from overwatch.processing.processingClasses import histogramContainer  # noqa
     from overwatch.processing.trending.info import TrendingInfo  # noqa
     from overwatch.processing.trending.objects.object import TrendingObject  # noqa
-except ImportError:
-    pass
 
 
 class TrendingManager(Persistent):
+    """ADD DOC"""
 
     def __init__(self, dbRoot, parameters):  # type: (PersistentMapping, dict)->None
         self.parameters = parameters
         self.histToTrending = defaultdict(list)  # type: Dict[str, List[TrendingObject]]
 
-        self.prepareDataBase(CON.TRENDING, dbRoot)
+        self._prepareDataBase(CON.TRENDING, dbRoot)
         self.trendingDB = dbRoot[CON.TRENDING]  # type: BTree[str, BTree[str, TrendingObject]]
 
-        self.prepareDirStructure()
+        self._prepareDirStructure()
 
-    def prepareDirStructure(self):
-        trendingDir = os.path.join(self.parameters[CON.DIR_PREFIX], CON.TRENDING, '{}', '{}')
-        imgDir = trendingDir.format('{}', CON.IMAGE)
-        jsonDir = trendingDir.format('{}', CON.JSON)
+    def _prepareDirStructure(self):
+        trendingDir = os.path.join(self.parameters[CON.DIR_PREFIX], CON.TRENDING, '{{subsystemName}}', '{type}')
+        imgDir = trendingDir.format(type=CON.IMAGE)
+        jsonDir = trendingDir.format(type=CON.JSON)
 
         for subsystemName in self.parameters[CON.SUBSYSTEMS]:
-            subImgDir = imgDir.format(subsystemName)
+            subImgDir = imgDir.format(subsystemName=subsystemName)
             if not os.path.exists(subImgDir):
                 os.makedirs(subImgDir)
 
-            subJsonDir = jsonDir.format(subsystemName)
+            subJsonDir = jsonDir.format(subsystemName=subsystemName)
             if not os.path.exists(subJsonDir):
                 os.makedirs(subJsonDir)
 
-            self.prepareDataBase(subsystemName, self.trendingDB)
+            self._prepareDataBase(subsystemName, self.trendingDB)
 
     @staticmethod
-    def prepareDataBase(objName, dbPosition):  # type: (str, Persistent)-> None
+    def _prepareDataBase(objName, dbPosition):  # type: (str, Persistent)-> None
         if objName not in dbPosition:
             dbPosition[objName] = BTree()
 
     def createTrendingObjects(self):
+        """ADD DOC"""
         for subsystem in self.parameters[CON.SUBSYSTEMS]:
             self._createTrendingObjectsForSubsystem(subsystem)
 
     def _createTrendingObjectsForSubsystem(self, subsystemName):  # type: (str) -> None
-        functionName = "{subsystem}_get{subsystem}TrendingObjectInfo".format(subsystem=subsystemName)
+        functionName = "{subsystem}_getTrendingObjectInfo".format(subsystem=subsystemName)
         getTrendingObjectInfo = getattr(pluginManager, functionName, None)  # type: Callable[[], List[TrendingInfo]]
         if getTrendingObjectInfo:
             info = getTrendingObjectInfo()
             self._createTrendingObjectFromInfo(subsystemName, info)
         else:
-            logger.info("Could not find {}".format(functionName))
+            logger.info("Could not find {functionName}".format(functionName=functionName))
 
     def _createTrendingObjectFromInfo(self, subsystemName, infoList):
         # type: (str, List[TrendingInfo]) -> None
-        success = "Trending object {} from subsystem {} added to the trending manager"
-        fail = "Trending object {} already exists in subsystem {}"
+        success = "Trending object {name} from subsystem {subsystemName} added to the trending manager"
+        fail = "Trending object {name} already exists in subsystem {subsystemName}"
 
         for info in infoList:
             if info.name not in self.trendingDB[subsystemName] or self.parameters[CON.RECREATE]:
                 to = info.createTrendingClass(subsystemName, self.parameters)
                 self.trendingDB[subsystemName][info.name] = to
-                self.subscribe(to, info.histogramNames)
+                self._subscribe(to, info.histogramNames)
 
-                logger.debug(success.format(info.name, subsystemName))
+                logger.debug(success.format(name=info.name, subsystemName=subsystemName))
             else:
-                logger.debug(fail.format(self.trendingDB[subsystemName][info.name], subsystemName))
+                logger.debug(fail.format(name=self.trendingDB[subsystemName][info.name], subsystemName=subsystemName))
 
-    def subscribe(self, trendingObject, histogramNames):  # type: (TrendingObject, List[str])->None
+    def _subscribe(self, trendingObject, histogramNames):  # type: (TrendingObject, List[str])->None
         for histName in histogramNames:
             self.histToTrending[histName].append(trendingObject)
 
-    def resetDB(self):
+    def resetDB(self):  # TODO not used - is it needed?
         self.trendingDB.clear()
 
     def processTrending(self):
+        """ADD DOC"""
         # Cannot have same name as other canvases, otherwise the canvas will be replaced, leading to segfaults
         canvasName = 'processTrendingCanvas'
         canvas = ROOT.TCanvas(canvasName, canvasName)
 
         for subsystemName, subsystem in self.trendingDB.items():  # type: (str, BTree[str, TrendingObject])
-            logger.debug("subsystem: {} is going to be trended".format(subsystemName))
+            logger.debug("subsystem: {subsystemName} is going to be trended".format(subsystemName=subsystemName))
             for name, trendingObject in subsystem.items():  # type: (str, TrendingObject)
-                logger.debug("trendingObject: {}".format(trendingObject))
+                logger.debug("trendingObject: {trendingObject}".format(trendingObject=trendingObject))
                 trendingObject.processHist(canvas)
 
-    def noticeAboutNewHistogram(self, hist):  # type: (histogramContainer) -> None
+    def notifyAboutNewHistogramValue(self, hist):  # type: (histogramContainer) -> None
+        """ADD DOC"""
         for trend in self.histToTrending.get(hist.histName, []):
-            trend.addNewHistogram(hist)
+            trend.extractTrendValue(hist)

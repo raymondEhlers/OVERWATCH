@@ -81,14 +81,14 @@ def testSecretKey(loggingMixin, yamlConfigForParsingPlugins):
     assert parameters["secretKeyGen"] is not None
 
 @pytest.mark.parametrize("configTypeString", [
-        False,
-        True
-    ], ids = ["Using config type value", "Using config type string"])
+    False,
+    True,
+], ids = ["Using config type value", "Using config type string"])
 @pytest.mark.parametrize("configType", [
-        config.configurationType.base,
-        config.configurationType.processing,
-        config.configurationType.webApp
-    ], ids = ["base module", "processing module", "webApp module"])
+    config.configurationType.base,
+    config.configurationType.processing,
+    config.configurationType.webApp,
+], ids = ["base module", "processing module", "webApp module"])
 def testReadConfig(loggingMixin, configType, configTypeString):
     """ Integration tests for reading a configuration for a particular module. """
     # This could be different than configType if we want to use a string.

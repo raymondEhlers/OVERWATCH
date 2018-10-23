@@ -5,8 +5,17 @@ from overwatch.processing.trending.objects.object import TrendingObject
 
 
 class MaximumTrending(TrendingObject):
-    def initStartValues(self):
-        return np.zeros(self.maxEntries, dtype=np.float)
+    def initializeTrendingArray(self):
+        return np.zeros(0, dtype=np.float)
+
+    def extractTrendValue(self, hist):
+        if self.currentEntry > self.maxEntries:
+            self.trendedValues = np.delete(self.trendedValues, 0)
+        else:
+            self.currentEntry += 1
+
+        newValue = hist.hist.GetMaximum()
+        self.trendedValues = np.append(self.trendedValues, newValue)
 
     def retrieveHist(self):
         histogram = ROOT.TGraphErrors(self.maxEntries)
@@ -17,15 +26,6 @@ class MaximumTrending(TrendingObject):
 
         for i in range(len(self.trendedValues)):
             histogram.SetPoint(i, i, self.trendedValues[i])
-            histogram.SetPointError(i, i, 0)
+            histogram.SetPointError(i, 0, 0)
 
         return histogram
-
-    def addNewHistogram(self, hist):
-        if self.currentEntry > self.maxEntries:
-            self.trendedValues = np.delete(self.trendedValues, 0)
-        else:
-            self.currentEntry += 1
-
-        newValue = hist.hist.GetMaximum()
-        self.trendedValues = np.append(self.trendedValues, newValue)

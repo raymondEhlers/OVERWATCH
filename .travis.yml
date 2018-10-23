@@ -6,7 +6,7 @@ matrix:
         # used on Travis (ie 2.7.14 on Travis vs 2.7.15 in the docker image as of Sept 2018).
         - python: 2.7
           env: DOCKER_PYTHON_VERSION=2.7.15
-        # 3.7 doesn't run flake8 or other things cleanly at the moment.
+        # 3.7 doesn't run flake8 or a number of other packages cleanly at the moment (as of Sept 2018).
         - python: 3.6
           env: DOCKER_PYTHON_VERSION=3.6.6
 sudo: required
@@ -18,7 +18,7 @@ before_install:
     - docker pull rehlers/overwatch:latest-py${DOCKER_PYTHON_VERSION}
     # Needed for ZODB python 3 compatibility
     - if [[ "${DOCKER_PYTHON_VERSION}" == "3."* ]]; then pip install git+https://github.com/SpotlightKid/flask-zodb.git; fi
-install: pip install --upgrade -e .[tests,dev]
+install: pip install --upgrade -e .[tests,dev,docs]
 before_script:
     # Runs the tests in a docker container. Necessary because we can't install ROOT easily here.
     # Further, we run in the tests directory to avoid any possible config.yaml interfering with the tests.
@@ -28,14 +28,17 @@ before_script:
     # send the results from inside the container to codecov. If we try to send afterwards from outside the container,
     # the paths will be wrong and the coverage report will fail!
     - ci_env=`bash <(curl -s https://codecov.io/env)`
-    - docker run -v ${PWD}:/opt/overwatch $ci_env rehlers/overwatch:latest-py${DOCKER_PYTHON_VERSION} /bin/bash -c "pip install --upgrade -e .[tests,dev]; cd tests; pytest -l --cov=overwatch --cov-branch --durations=5 . && bash <(curl -s https://codecov.io/bash)"
+    - docker run -v ${PWD}:/opt/overwatch $ci_env rehlers/overwatch:latest-py${DOCKER_PYTHON_VERSION} /bin/bash -c "pip install --upgrade -e .[tests,dev,docs]; cd tests; pytest -l --cov=overwatch --cov-branch --durations=5 . && bash <(curl -s https://codecov.io/bash)"
     # Install polymer and jsRoot so it they will be avialable and included in a built package
     # We can't easily install nodejs to install polymer and jsRoot, so instead, we extract it from the docker image.
     # Yes, it's super hacky, but it seems to work, so why not?
     - docker run -v ${PWD}/overwatch/webApp/static/:/opt/extractJS rehlers/overwatch:latest-py${DOCKER_PYTHON_VERSION} /bin/bash -c "cd overwatch/webApp/static && cp -r bower_components /opt/extractJS/. && cp -r jsRoot /opt/extractJS/."
 script:
-    # Since we ran the tests above, we just need to check code here.
-    - flake8 overwatch
+    # Since we ran the tests above, we don't need to run them here.
+    # Check code quality
+    - flake8 .
+    # Check that the docs build successfully
+    - pushd doc && make html && popd
 after_success:
     # This will work for both tags and standard buidls. The build is performed for PRs, but it won't be deplyoed.
     # First, determine the Overwatch branch. If ${TRAVIS_BRANCH} is the same as ${TRAVIS_TAG}, then means that we're

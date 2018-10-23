@@ -42,10 +42,10 @@ def client():
     # Could perform clean-up if necessary
 
 @pytest.mark.parametrize("headers, expectedMessage, expectedStatusCode", [
-        ({}, "Must pass a token!", 400),
-        ({"token": "123456"}, "Received token, but it is invalid!", 400),
-        (None, "Not implemented", 400),
-    ], ids = ["No token", "Invalid token", "Valid token"])
+    ({}, "Must pass a token!", 400),
+    ({"token": "123456"}, "Received token, but it is invalid!", 400),
+    (None, "Not implemented", 400),
+], ids = ["No token", "Invalid token", "Valid token"])
 def testTokenVerification(loggingMixin, client, headers, expectedMessage, expectedStatusCode):
     """ Test token verification and it's possible failure modes.
 
@@ -158,12 +158,12 @@ def testPostFile(loggingMixin, sendPostRequest):
     assert comparisonText == fileText
 
 @pytest.mark.parametrize("data, expectedMessage, addToHeaders", [
-        ({}, "No file uploaded and the payload was empty", {}),
-        ({"file": (io.BytesIO(b"Hello world"), "file")}, "Successfully received the file, but the file is not valid! Perhaps it was corrupted?", {}),
-        ({}, ["invalid literal for int() with base 10: 'Hello world'"], {"runNumber": "Hello world"}),  #  The data here doesn't matter, so we leave it blank.
-        ({}, ["invalid literal for int() with base 10: 'Hello world'"], {"timeStamp": "Hello world"}),  #  The data here doesn't matter, so we leave it blank.
-        ({}, ["invalid literal for int() with base 10: 'Hello world'"], {"dataStatus": "Hello world"}),  #  The data here doesn't matter, so we leave it blank.
-    ], ids = ["Empty data", "Non-ROOT (text) file", "Invalid run number header value", "Invalid time stamp header value", "Invalid data status header value"])
+    ({}, "No file uploaded and the payload was empty", {}),
+    ({"file": (io.BytesIO(b"Hello world"), "file")}, "Successfully received the file, but the file is not valid! Perhaps it was corrupted?", {}),
+    ({}, ["invalid literal for int() with base 10: 'Hello world'"], {"runNumber": "Hello world"}),  # The data here doesn't matter, so we leave it blank.
+    ({}, ["invalid literal for int() with base 10: 'Hello world'"], {"timeStamp": "Hello world"}),  # The data here doesn't matter, so we leave it blank.
+    ({}, ["invalid literal for int() with base 10: 'Hello world'"], {"dataStatus": "Hello world"}),  # The data here doesn't matter, so we leave it blank.
+], ids = ["Empty data", "Non-ROOT (text) file", "Invalid run number header value", "Invalid time stamp header value", "Invalid data status header value"])
 def testPostFileErrors(loggingMixin, sendPostRequest, data, expectedMessage, addToHeaders):
     """ Test possible errors that could occur when sending the file.
 
