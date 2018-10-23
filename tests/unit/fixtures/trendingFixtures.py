@@ -1,7 +1,7 @@
 import ROOT
 import pytest
 
-from overwatch.processing.trending.constants import *
+from overwatch.processing.trending.constants import EXTENSION, ENTRIES
 from overwatch.processing.trending.objects.mean import MeanTrending
 
 

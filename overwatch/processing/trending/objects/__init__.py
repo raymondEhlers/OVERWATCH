@@ -1,3 +1,3 @@
-from .mean import MeanTrending
-from .stdDev import StdDevTrending
-from .maximum import MaximumTrending
+from .mean import MeanTrending  # noqa
+from .stdDev import StdDevTrending  # noqa
+from .maximum import MaximumTrending  # noqa

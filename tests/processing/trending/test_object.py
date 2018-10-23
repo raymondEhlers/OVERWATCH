@@ -1,7 +1,7 @@
 import pytest
 import ROOT
 from overwatch.processing.trending.objects.object import TrendingObject
-from overwatch.processing.trending.constants import *
+from overwatch.processing.trending.constants import TRENDING, DIR_PREFIX, IMAGE, JSON, EXTENSION
 
 
 class CounterTrendingObject(TrendingObject):
