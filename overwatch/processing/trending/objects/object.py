@@ -1,18 +1,10 @@
-import abc
 import logging
 import os
-import sys
 
 import ROOT
 from persistent import Persistent
 
 import overwatch.processing.trending.constants as CON
-
-# https://stackoverflow.com/questions/35673474/using-abc-abcmeta-in-a-way-it-is-compatible-both-with-python-2-7-and-python-3-5/41622155#41622155
-if sys.version_info >= (3, 4):
-    ABC = abc.ABC
-else:
-    ABC = abc.ABCMeta('ABC', (object,), {'__slots__': ()})
 
 try:
     from typing import *  # noqa
@@ -24,7 +16,7 @@ else:
 logger = logging.getLogger(__name__)
 
 
-class TrendingObject(ABC, Persistent):
+class TrendingObject(Persistent):
 
     def __init__(self, name, description, histogramNames, subsystemName, parameters):
         # type: (str, str, list, str, dict) -> None
@@ -45,14 +37,12 @@ class TrendingObject(ABC, Persistent):
     def __str__(self):
         return self.name
 
-    @abc.abstractmethod
     def initializeTrendingArray(self):  # type: () -> Any
         """Example:
         return np.zeros((self.maxEntries, 2), dtype=np.float)
         """
-        pass
+        raise NotImplementedError
 
-    @abc.abstractmethod
     def extractTrendValue(self, hist):  # type: (histogramContainer) -> None
         """Example:
         if self.currentEntry > self.maxEntries:
@@ -63,9 +53,8 @@ class TrendingObject(ABC, Persistent):
         newValue = hist.hist.GetMean(), hist.hist.GetMeanError()
         self.trendedValues = np.append(self.trendedValues, [newValue], axis=0)
         """
-        pass
+        raise NotImplementedError
 
-    @abc.abstractmethod
     def retrieveHist(self):  # type: () -> ROOT.TObject
         """Example:
         histogram = ROOT.TGraphErrors(self.maxEntries)
@@ -80,7 +69,7 @@ class TrendingObject(ABC, Persistent):
 
         return histogram
         """
-        pass
+        raise NotImplementedError
 
     def processHist(self, canvas):
         self.resetCanvas(canvas)
@@ -92,13 +81,13 @@ class TrendingObject(ABC, Persistent):
         self.histogram.Draw(self.drawOptions)
 
         # Replace any slashes with underscores to ensure that it can be used safely as a filename
-        outputNameWithoutExt = self.name.replace("/", "_") + '.{}'
+        outputNameWithoutExt = self.name.replace("/", "_") + '.{extension}'
         outputPath = os.path.join(self.parameters[CON.DIR_PREFIX], CON.TRENDING,
-                                  self.subsystemName, '{}', outputNameWithoutExt)
-        imgFile = outputPath.format(CON.IMAGE, self.parameters[CON.EXTENSION])
-        jsonFile = outputPath.format(CON.JSON, 'json')
+                                  self.subsystemName, '{type}', outputNameWithoutExt)
+        imgFile = outputPath.format(type=CON.IMAGE, extension=self.parameters[CON.EXTENSION])
+        jsonFile = outputPath.format(type=CON.JSON, extension='json')
 
-        logger.debug("Saving hist to {}".format(imgFile))
+        logger.debug("Saving hist to {path}".format(path=imgFile))
         canvas.SaveAs(imgFile)
 
         with open(jsonFile, "wb") as f:

@@ -35,16 +35,16 @@ class TrendingManager(Persistent):
         self._prepareDirStructure()
 
     def _prepareDirStructure(self):
-        trendingDir = os.path.join(self.parameters[CON.DIR_PREFIX], CON.TRENDING, '{}', '{}')
-        imgDir = trendingDir.format('{}', CON.IMAGE)
-        jsonDir = trendingDir.format('{}', CON.JSON)
+        trendingDir = os.path.join(self.parameters[CON.DIR_PREFIX], CON.TRENDING, '{{subsystemName}}', '{type}')
+        imgDir = trendingDir.format(type=CON.IMAGE)
+        jsonDir = trendingDir.format(type=CON.JSON)
 
         for subsystemName in self.parameters[CON.SUBSYSTEMS]:
-            subImgDir = imgDir.format(subsystemName)
+            subImgDir = imgDir.format(subsystemName=subsystemName)
             if not os.path.exists(subImgDir):
                 os.makedirs(subImgDir)
 
-            subJsonDir = jsonDir.format(subsystemName)
+            subJsonDir = jsonDir.format(subsystemName=subsystemName)
             if not os.path.exists(subJsonDir):
                 os.makedirs(subJsonDir)
 
@@ -67,12 +67,12 @@ class TrendingManager(Persistent):
             info = getTrendingObjectInfo()
             self._createTrendingObjectFromInfo(subsystemName, info)
         else:
-            logger.info("Could not find {}".format(functionName))
+            logger.info("Could not find {functionName}".format(functionName=functionName))
 
     def _createTrendingObjectFromInfo(self, subsystemName, infoList):
         # type: (str, List[TrendingInfo]) -> None
-        success = "Trending object {} from subsystem {} added to the trending manager"
-        fail = "Trending object {} already exists in subsystem {}"
+        success = "Trending object {name} from subsystem {subsystemName} added to the trending manager"
+        fail = "Trending object {name} already exists in subsystem {subsystemName}"
 
         for info in infoList:
             if info.name not in self.trendingDB[subsystemName] or self.parameters[CON.RECREATE]:
@@ -80,9 +80,9 @@ class TrendingManager(Persistent):
                 self.trendingDB[subsystemName][info.name] = to
                 self._subscribe(to, info.histogramNames)
 
-                logger.debug(success.format(info.name, subsystemName))
+                logger.debug(success.format(name=info.name, subsystemName=subsystemName))
             else:
-                logger.debug(fail.format(self.trendingDB[subsystemName][info.name], subsystemName))
+                logger.debug(fail.format(name=self.trendingDB[subsystemName][info.name], subsystemName=subsystemName))
 
     def _subscribe(self, trendingObject, histogramNames):  # type: (TrendingObject, List[str])->None
         for histName in histogramNames:
@@ -98,9 +98,9 @@ class TrendingManager(Persistent):
         canvas = ROOT.TCanvas(canvasName, canvasName)
 
         for subsystemName, subsystem in self.trendingDB.items():  # type: (str, BTree[str, TrendingObject])
-            logger.debug("subsystem: {} is going to be trended".format(subsystemName))
+            logger.debug("subsystem: {subsystemName} is going to be trended".format(subsystemName=subsystemName))
             for name, trendingObject in subsystem.items():  # type: (str, TrendingObject)
-                logger.debug("trendingObject: {}".format(trendingObject))
+                logger.debug("trendingObject: {trendingObject}".format(trendingObject=trendingObject))
                 trendingObject.processHist(canvas)
 
     def notifyAboutNewHistogramValue(self, hist):  # type: (histogramContainer) -> None

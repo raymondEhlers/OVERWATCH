@@ -51,20 +51,23 @@ def trending():
     # Create trending container from stored trending information
     trendingManager = TrendingManager(db, serverParameters)
     subsystemName = determineSubsystemName(subsystemName, trendingManager)
-    assert subsystemName  # TODO return error template
+
+    if not subsystemName:
+        error.setdefault("Subsystem", []).append("Cannot find any trended subsystem")
+        return render_template("error.html", error=error)
 
     # Template paths to the individual files
-    filenameTemplate = os.path.join(CON.TRENDING, subsystemName, '{}', '{}.{}')
-    imgFilenameTemplate = filenameTemplate.format(CON.IMAGE, '{}', serverParameters[CON.EXTENSION])
-    jsonFilenameTemplate = filenameTemplate.format(CON.JSON, '{}', 'json')
+    filenameTemplate = os.path.join(CON.TRENDING, subsystemName, "{type}", "{{}}.{extension}")
+    imgFilenameTemplate = filenameTemplate.format(type=CON.IMAGE, extension=serverParameters[CON.EXTENSION])
+    jsonFilenameTemplate = filenameTemplate.format(type=CON.JSON, extension="json")
 
     templateKwargs = {
-        'trendingManager': trendingManager,
-        'selectedHistGroup': subsystemName,
-        'selectedHist': requestedHist,
-        'jsonFilenameTemplate': jsonFilenameTemplate,
-        'imgFilenameTemplate': imgFilenameTemplate,
-        'jsRoot': jsRoot,
+        "trendingManager": trendingManager,
+        "selectedHistGroup": subsystemName,
+        "selectedHist": requestedHist,
+        "jsonFilenameTemplate": jsonFilenameTemplate,
+        "imgFilenameTemplate": imgFilenameTemplate,
+        "jsRoot": jsRoot,
     }
 
     if ajaxRequest:
