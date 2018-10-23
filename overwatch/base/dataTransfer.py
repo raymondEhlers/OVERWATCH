@@ -109,7 +109,27 @@ def determineFilesToMove(directory):
     with ``os.listdir()`` and verify that we include only files.
 
     Note:
-        These files are required to be ROOT files by looking for the ``.root`` extension.
+        These files are required to be ROOT files by requring that they end with the ``.root`` extension.
+
+    Note:
+        We explicitly have to select the filenames on ``endswith(".root")`` rather than just ``"root" in f``
+        because ROOT creates temporary files of the form ``.desiredFilename.root.randomString`` where
+        ``randomString`` is usually 6 characters long. The files disappear almost immediately (and the
+        desired filename shows up). This is presumably to ensure that writes are atomic when writing new
+        objects. Thus, we want to avoid these temporary files. And we can do that be selecting that it ends
+        with ".root".
+
+        The temporary ROOT files (detailed in the comments) failed with the following error:
+
+        .. code-block:: none
+
+            rsync: stat "data/.EMChistos_294832_C_2018_10_22_9_53_55.root.izUVHA" failed: No such file or directory (2)
+            rsync: rename "data/.EMChistos_294832_C_2018_10_22_9_53_55.root.izUVHA" -> "EMChistos_294832_C_2018_10_22_9_53_55.root": No such file or directory (2)
+            rsync error: some files/attrs were not transferred (see previous errors) (code 23) at main.c(1196) [sender=3.1.2]
+
+        Thanks to the retry capabilities, it will immediately retry, so this shouldn't cause a major problem
+        on the transfer side. However, it will cause problems on the receiver side because the malformed
+        filenames won't be handled properly by Overwatch.
 
     Args:
         directory (str): Path to the directory where the files are stored.
@@ -117,7 +137,8 @@ def determineFilesToMove(directory):
         list: List of the files available to be moved. Note that just the filenames are stored,
             so it's the callers responsibility to include the directory when using the filename.
     """
-    return [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f)) and ".root" in f]
+    # NOTE: See the information above about why we explicitly select on ``endswith("root")``.
+    return [f for f in os.listdir(directory) if os.path.isfile(os.path.join(directory, f)) and f.endswith(".root")]
 
 @retry(tries = parameters["dataTransferRetries"])
 def rsyncFilesFromFilelist(directory, destination, filelistFilename, transferredFilenames):
