@@ -318,7 +318,8 @@ def moveFiles(dirPrefix, subsystemDict):
             # that the structure of the filename follows the output of this function,
             # so it would require some additional formatting if it was used right here).
             runDir = "Run" + splitFilename[1]
-            hltMode = splitFilename[2]
+            # Just to be safe, we explicitly make it upper case (although it should be already).
+            hltMode = splitFilename[2].upper()
 
             # Determine the directory structure for each run
             # We want to start with a path of the form "Run123456"
