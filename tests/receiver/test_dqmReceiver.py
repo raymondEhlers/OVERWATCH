@@ -21,7 +21,7 @@ from overwatch.receiver.dqmReceiver import app
 import overwatch.receiver.dqmReceiver as receiver
 
 @pytest.fixture
-def client():
+def client(loggingMixin, mocker):
     """ Setup the flask client for testing.
 
     For further information, see the `flask docs <http://flask.pocoo.org/docs/1.0/testing/>`__. However, note that
@@ -46,7 +46,7 @@ def client():
     ({"token": "123456"}, "Received token, but it is invalid!", 400),
     (None, "Not implemented", 400),
 ], ids = ["No token", "Invalid token", "Valid token"])
-def testTokenVerification(loggingMixin, client, headers, expectedMessage, expectedStatusCode):
+def testTokenVerification(client, headers, expectedMessage, expectedStatusCode):
     """ Test token verification and it's possible failure modes.
 
     In the case of a valid token, we continue with the request to `/`, which will then respond
@@ -64,7 +64,7 @@ def testTokenVerification(loggingMixin, client, headers, expectedMessage, expect
     assert rvDict["message"] == expectedMessage
     assert rv.status_code == expectedStatusCode
 
-def testGetFileListing(loggingMixin, client):
+def testGetFileListing(client):
     """ Test GET requests for file listing. """
     client, validToken = client
 
@@ -74,7 +74,7 @@ def testGetFileListing(loggingMixin, client):
     # This explicitly ignores the other file in the directory, as expected.
     assert rvDict["files"] == ["EMChistos_123456_DQM_1970_01_02_16_07_24.root"]
 
-def testGetFile(loggingMixin, client):
+def testGetFile(client):
     """ Test retrieving a file. """
     # Setup.
     client, validToken = client
@@ -130,7 +130,7 @@ def sendPostRequest(client):
     with open(os.path.join(basePath, filename), "wb") as f:
         f.write(fileText)
 
-def testPostFile(loggingMixin, sendPostRequest):
+def testPostFile(sendPostRequest):
     """ Test sending a file via post. """
     # Setup.
     client, validToken, basePath, filename, fileText, data, headers = sendPostRequest
@@ -164,7 +164,7 @@ def testPostFile(loggingMixin, sendPostRequest):
     ({}, ["invalid literal for int() with base 10: 'Hello world'"], {"timeStamp": "Hello world"}),  # The data here doesn't matter, so we leave it blank.
     ({}, ["invalid literal for int() with base 10: 'Hello world'"], {"dataStatus": "Hello world"}),  # The data here doesn't matter, so we leave it blank.
 ], ids = ["Empty data", "Non-ROOT (text) file", "Invalid run number header value", "Invalid time stamp header value", "Invalid data status header value"])
-def testPostFileErrors(loggingMixin, sendPostRequest, data, expectedMessage, addToHeaders):
+def testPostFileErrors(sendPostRequest, data, expectedMessage, addToHeaders):
     """ Test possible errors that could occur when sending the file.
 
     This also checks for validation of passed header values.

@@ -31,10 +31,6 @@ ROOT.std.__file__ = "ROOT.std.py"
 
 app = Flask(__name__)
 
-# Ensure the folder to write to exists.
-if not os.path.exists(receiverParameters["dataFolder"]):
-    os.makedirs(receiverParameters["dataFolder"])
-
 # From: http://flask.pocoo.org/docs/0.12/patterns/apierrors/
 class InvalidUsage(Exception):
     """ Provide an expressive error message for invalid REST API usage.
