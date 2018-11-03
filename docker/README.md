@@ -80,6 +80,16 @@ this is our external facing server, so this defaults to `0.0.0.0`.
 
 - We use docker logging for the `nginx-proxy` because it is configured for such operation. However, since we
   use supervisor in the Overwatch containers, we have supervisor handle the logs for us.
+- To access EOS in a docker container, provide the proper grid cert and key, ensure that
+  `OVERWATCH_EXECUTABLES` is not set, then run (for example):
+
+    ```bash
+    $ docker run --rm -it -v ${PWD}/data:/opt/overwatch/data -v ${PWD}/overwatch:/opt/overwatch/overwatch -v ${PWD}/exec:/opt/overwatch/exec -e config -e gridCert -e gridKey rehlers/overwatch:latest-py3.6.6 /bin/bash
+    # In the container
+    $ overwatchDeploy -e config
+    # Now everything should be all set!
+    $ xrdfs eospublic.cern.ch ls /eos/experiment/alice
+    ```
 
 ## Common errors
 
