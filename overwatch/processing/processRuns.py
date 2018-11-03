@@ -32,8 +32,9 @@ ROOT.gROOT.SetBatch(True)
 ROOT.gROOT.ProcessLine("gErrorIgnoreLevel = kWarning;")
 
 # General includes
-import os
+import copy
 import hashlib
+import os
 import uuid
 import logging
 logger = logging.getLogger(__name__)
@@ -602,7 +603,7 @@ def createNewSubsystemFromMovedFilesInformation(runs, subsystem, runDict, runDir
     if subsystem in runDict[runDir]:
         fileLocationSubsystem = subsystem
     else:
-        # First check is applicable for an entirely new run, while the second is for # handling an
+        # First check is applicable for an entirely new run, while the second is for handling an
         # existing subsystem which where the `runDict` doesn't have any HLT files, but there may
         # already by some which exist. In particular, this may be possible if the data sync the HLT
         # receiver hasn't written it's first file yet. This shouldn't be terribly likely, but it
@@ -620,7 +621,7 @@ def createNewSubsystemFromMovedFilesInformation(runs, subsystem, runDict, runDir
     filenames = sorted(runDict[runDir][fileLocationSubsystem])
     startOfRun = utilities.extractTimeStampFromFilename(filenames[0])
     endOfRun = utilities.extractTimeStampFromFilename(filenames[-1])
-    logger.info("end of run filename: {filename}".format(filename = filenames[-1]))
+    logger.info("For subsystem {subsystem}, end of run filename: {filename}".format(subsystem = subsystem, filename = filenames[-1]))
 
     # Create the subsystem
     showRootFiles = False
@@ -660,6 +661,11 @@ def processMovedFilesIntoRuns(runs, runDict):
         None. Subsystems are created inside of the ``runContainer`` objects for which there are entries in the
             ``runDict``.
     """
+    # Copy the dict to avoid modifying the passed copy.
+    # Although it is not used after this function as of Oct 2018, since we modify the dict by adding entries for subsystems
+    # which are not their own ``fileLocationSubsystem``, as well as popping the ``hltMode``, it is safer to copy it and
+    # be certain that there are no adverse impacts.
+    runDict = copy.deepcopy(runDict)
     for runDir in runDict:
         # Remove the HLT mode so it doesn't get interpreted as a subsystem.
         hltMode = runDict[runDir].pop("hltMode")
@@ -673,9 +679,11 @@ def processMovedFilesIntoRuns(runs, runDict):
         if runDir in runs:
             run = runs[runDir]
 
-            # Possible scenarios:
+            # Possible scenarios that have to be handled below:
             # - 1) runDir has new data, and the corresponding subsystem exists. -> Update the subsystem.
-            # - 2) runDir has new data, but subsystem doens't exist in run container -> Create a new subsystem.
+            # - 1a) We received new data for a subsystem which previously didn't have it's own data, but now it does. -> Notify as having it's own files
+            #       and replace the existing ones with the existing data.
+            # - 2) runDir has new data, but subsystem doesn't exist in run container -> Create a new subsystem.
             # - 3) runDir has new data, and it is used in a subsystem which doesn't have it's own data -> Update the subsystem with HLT files (but it will be indirect)
             # - 4) runDir doesn't have new data, but the subsystem exists -> Do nothing.
 
@@ -704,6 +712,24 @@ def processMovedFilesIntoRuns(runs, runDict):
                         logger.debug("Updating files in existing subsystem {subsystemName}.".format(subsystemName = subsystemName))
                         # Update the existing subsystem
                         subsystem = run.subsystems[subsystemName]
+                        # First handle scenario 1A
+                        if subsystem.subsystem != subsystem.fileLocationSubsystem:
+                            # Use whether the ``fileLocationSubsystem`` name is in the first file as a proxy of whether we
+                            # have started receiving data for that subsystem.
+                            if subsystem.fileLocationSubsystem not in runDict[runDir][subsystemName][0]:
+                                logger.info("Received data for subsystem {subsystem}. Switching the subsystem to having it's own data source, so: fileLocationSubsystem {fileLocationSubsystem} -> {subsystem}.".format(fileLocationSubsystem = subsystem.fileLocationSubsystem, subsystem = subsystem.subsystem))
+
+                                # This should happen fairly early on. If it happens later, we provide a warning.
+                                # We define fairly early as having four files.
+                                if len(subsystem.files) > 4:
+                                    logger.warning("Conversion of subsystem {subsystem} to having it's own data source is occurring later than expected! It already has {nFiles}. Continuing with conversion, but it is worth checking!".format(subsystem = subsystem.subsystem, nFiles = len(subsystem.files)))
+
+                                # Convert by changing the fileLocationSubsystem to the subsystem name and clearing out the existing files.
+                                # The new ones will be added in below.
+                                subsystem.fileLocationSubsystem = subsystem.subsystem
+                                logger.debug("Existing files: {filenames}".format(filenames = [f.filename for f in itervalues(subsystem.files)]))
+                                subsystem.files.clear()
+
                         # Add the new files and note them in the subsystem, which will lead to reprocessing.
                         subsystem.newFile = True
                         for filename in runDict[runDir][subsystemName]:
@@ -713,9 +739,10 @@ def processMovedFilesIntoRuns(runs, runDict):
 
                         # Update time stamps
                         fileKeys = subsystem.files.keys()
-                        # This should rarely change, but in principle we could get a new file that we missed.
+                        # The start of run time should rarely change, but in principle we could get a new file that we missed.
+                        # It also could happen if we change to a subsystem which contains it's own data source.
                         subsystem.startOfRun = fileKeys[0]
-                        logger.info("Previous EOR: {endOfRun}\tNew: {fileKey}".format(endOfRun = subsystem.endOfRun, fileKey = fileKeys[-1]))
+                        logger.debug("Previous EOR: {endOfRun}\tNew: {fileKey}".format(endOfRun = subsystem.endOfRun, fileKey = fileKeys[-1]))
                         subsystem.endOfRun = fileKeys[-1]
                     else:
                         # Scenario 2
@@ -729,7 +756,7 @@ def processMovedFilesIntoRuns(runs, runDict):
                     # Scenario 4
                     # We end up here if there is now new data for subsystemName.
                     # In that case, we have nothing to do and we just continue.
-                    logger.debug('"No new data for subsystem "{subsystemName}", so not updating this subsystem in the run'.format(subsystemName = subsystemName))
+                    logger.debug("No new data for subsystem {subsystemName}, so not updating this subsystem in the run".format(subsystemName = subsystemName))
         else:
             # The run doesn't yet exist, so we'll create a new run and new subsystems.
             # First, create the new run.

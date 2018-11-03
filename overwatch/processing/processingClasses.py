@@ -59,7 +59,7 @@ class runContainer(persistent.Persistent):
             formatted as ``Run123456``
         runNumber (int): Run number extracted from the ``runDir``.
         prettyName (str): Reformatting of the ``runDir`` for improved readability.
-        mode (bool): If true, the run data was collected in cumulative mode. See the
+        fileMode (bool): If true, the run data was collected in cumulative mode. See the
             :doc:`processing README </processingReadme>` for further information. Set via ``fileMode``.
         subsystems (BTree): Dict-like object which will contain all of the subsystem containers in
             an event. The key is the corresponding subsystem three letter name.
@@ -232,7 +232,7 @@ class subsystemContainer(persistent.Persistent):
             self.fileLocationSubsystem = fileLocationSubsystem
 
         if self.showRootFiles is True and self.subsystem != self.fileLocationSubsystem:
-            logger.warning("\tIt is requested to show ROOT files for subsystem {subsystem}, but the subsystem does not have specific data files. Using HLT data files!".format(subsystem = subsystem))
+            logger.info("\tIt is requested to show ROOT files for subsystem {subsystem}, but the subsystem does not have specific data files. Using HLT data files!".format(subsystem = subsystem))
 
         # Files
         # Be certain to set these after the subsystem has been created!
