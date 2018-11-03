@@ -135,8 +135,6 @@ setup(
         ],
         "dev": [
             "flake8",
-            # Makes output easier to parse
-            "flake8-colors",
         ]
     }
 )
