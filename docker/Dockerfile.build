@@ -1,7 +1,7 @@
 # Set the python version here so that we can use it to set the base image.
 ARG PYTHON_VERSION=2.7.15
 # Docker file for the Overwatch base image
-# We build from the python base image, which is based on debian and contains many common and useful packages
+# We build from the python base image, which is based on Debian and contains many common and useful packages
 FROM python:${PYTHON_VERSION}-stretch
 LABEL maintainer="Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University"
 
@@ -27,7 +27,8 @@ ENV DEBIAN_FRONTEND noninteractive
 #   - autossh for managing ssh connects for ZMQ receivers.
 #   - rsync for installing the AliEn CAs (and for Overwatch data transfers).
 # NOTE: Most of the dependencies are commented out because the python base image already
-#       has these packages installed!
+#       has these packages installed! We keep them so we don't have to sort them out again later
+#       if the base image changes what is available.
 # NOTE: Need to setup the nodejs source before getting updates. We will install version 10.
 RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
     && apt-get update && apt-get install -y \
@@ -59,13 +60,41 @@ RUN curl -sL https://deb.nodesource.com/setup_10.x | bash - \
 # which does (but perhaps has more bugs).
 RUN /bin/bash -c 'if [[ "${PYTHON_VERSION}" == "2.7"* ]]; then pip install supervisor; else pip install git+https://github.com/Supervisor/supervisor.git#egg=supervisor; fi'
 
+# Install required packages through npm.
+# bower is required for isntalling polymer packages (should move to yarn eventually).
+# polymer-bundler is for combining polymer packages into one file for efficiency.
+# n allows updates of nodejs, which is needed for polymer-bundler.
+# We intentionally run cache clean at the end to try to reclaim as much disk space as possible.
+RUN npm install -g bower polymer-bundler n \
+        && n lts \
+        && npm cache clean --force
+
+# nginx configuration.
+# Explicitly configure nginx to run in the foreground and remove the default site. If we want to run it, we must run it explicitly.
+RUN echo "daemon off;" >> /etc/nginx/nginx.conf && rm /etc/nginx/sites-enabled/default
+
+# Setup a user so we don't have to run everything as root.
+# Many packages expect root (or at least sudo to be available), so it takes a bit more care to get things setup properly.
+# If absolutely required, one can switch back to the root user temporarily, but as of Oct 2018, this shouldn't be necessary for this Dockerfile.
+RUN groupadd -g 999 overwatch && \
+    useradd -r -u 999 -g overwatch overwatch
+# Create overwatch home directory. It makes installing things with python (and npm(?)) much easier.
+RUN mkdir -p /home/overwatch && chown -R overwatch:overwatch /home/overwatch
+
 # Setup directory structure
 ENV SCRATCH /opt/scratch
-RUN mkdir -p ${SCRATCH}
+RUN mkdir -p ${SCRATCH} && chown -R overwatch:overwatch /opt
+
+# Once we've installed the packages and setup the proper directories, root isn't needed. So switch to a less privileged user.
+# Furthermore, we actually want to build and install as many packages as possible as the less privileged user to ensure that
+# this user can access the files. If built as root, the file permissions may not be correct, which would require a chmod.
+# chmod on many files will increase the docker image size substantially, so it's best to avoid this if possible.
+USER overwatch
+
+# Provide build scripts
+COPY --chown=overwatch:overwatch buildScripts/*.sh ${SCRATCH}/buildScripts/
 
 # Install XRootD
-COPY buildScripts/buildXRootD.sh ${SCRATCH}/buildScripts/buildXRootD.sh
-
 RUN mkdir -p ${SCRATCH}/xrootd && cd ${SCRATCH}/xrootd \
         && chmod +x ${SCRATCH}/buildScripts/buildXRootD.sh \
         && git clone https://github.com/xrootd/xrootd.git . \
@@ -85,8 +114,6 @@ ARG ROOT_CMAKE_BUILD_TYPE
 ENV CMAKE_BUILD_TYPE ${ROOT_CMAKE_BUILD_TYPE:-"MINSIZEREL"}
 
 # Install ROOT
-COPY buildScripts/buildRoot.sh ${SCRATCH}/buildScripts/buildRoot.sh
-
 RUN mkdir -p ${SCRATCH}/root && cd ${SCRATCH}/root \
         && chmod +x ${SCRATCH}/buildScripts/buildRoot.sh \
         && git clone https://github.com/root-project/root.git src \
@@ -102,7 +129,6 @@ RUN mkdir -p ${SCRATCH}/root && cd ${SCRATCH}/root \
 # AliEn Certs needed for EOS
 # The certs are not a dependency until runtime, so we can install it after XRootD and ROOT.
 # We install them last because they are mostly likely to need the update (and we would like to avoid rebuilding the above)
-COPY buildScripts/buildAlienCAs.sh /opt/scratch/buildScripts/buildAlienCAs.sh
 RUN mkdir -p /opt/scratch/alienCAs && cd /opt/scratch/alienCAs \
         && git clone https://github.com/alisw/alien-cas.git . \
         && /opt/scratch/buildScripts/buildAlienCAs.sh /opt/scratch/alienCAs /opt/alienCAs \
