@@ -4,9 +4,13 @@ import pytest
 from overwatch.processing.trending.constants import EXTENSION, ENTRIES
 from overwatch.processing.trending.objects.mean import MeanTrending
 
+"""
+All fixtures for trending have 'tf_' prefix
+"""
+
 
 @pytest.fixture
-def trendingArgs():
+def tf_trendingArgs():
     parameters = {
         'test': True, ENTRIES: 20, EXTENSION: 'png',
     }
@@ -14,7 +18,7 @@ def trendingArgs():
 
 
 @pytest.fixture
-def infoArgs():
+def tf_infoArgs():
     yield ["name", "desc", ["hist1", "hist2"], MeanTrending]
 
 
@@ -37,11 +41,11 @@ class Histogram:
 
 
 @pytest.fixture
-def histogram():
+def tf_histogram():
     yield Histogram()
 
 
 @pytest.fixture
-def canvas():
+def tf_canvas():
     canvasName = 'testCanvas'
     return ROOT.TCanvas(canvasName, canvasName)
