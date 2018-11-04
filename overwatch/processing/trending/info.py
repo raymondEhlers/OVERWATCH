@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+""" Simple container of parameter for TrendingObject.
+
+.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+"""
 try:
     from typing import *  # noqa
 except ImportError:

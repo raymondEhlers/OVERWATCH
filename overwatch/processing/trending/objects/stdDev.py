@@ -1,3 +1,10 @@
+#!/usr/bin/env python
+""" Example trending object with standard deviation.
+
+.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+.. code-author: Artur Wolak <>, AGH University of Science and Technology
+"""
+
 import numpy as np
 import ROOT
 

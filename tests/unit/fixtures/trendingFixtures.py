@@ -1,12 +1,15 @@
+#!/usr/bin/env python
+""" Fixtures for trending.
+
+All fixtures for trending have 'tf_' prefix.
+
+.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+"""
 import ROOT
 import pytest
 
 from overwatch.processing.trending.constants import EXTENSION, ENTRIES
 from overwatch.processing.trending.objects.mean import MeanTrending
-
-"""
-All fixtures for trending have 'tf_' prefix
-"""
 
 
 @pytest.fixture
@@ -22,7 +25,7 @@ def tf_infoArgs():
     yield ["name", "desc", ["hist1", "hist2"], MeanTrending]
 
 
-class Histogram:
+class Histogram(object):
     functionNames = [
         'GetMaximum',
         'GetMean',

@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+""" Class for management of trends.
+
+Prepare trending part of database, create trending objects,
+notify appropriate objects about new histograms, manage processing trending histograms.
+
+.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+.. code-author: Artur Wolak <>, AGH University of Science and Technology
+"""
 import logging
 import os
 from collections import defaultdict
