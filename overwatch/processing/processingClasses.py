@@ -18,7 +18,9 @@ import persistent
 
 import os
 import time
-import ruamel.yaml as yaml
+import numpy as np
+import ROOT
+import ctypes
 import logging
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -76,32 +78,12 @@ class runContainer(persistent.Persistent):
         self.hltMode = hltMode
 
         # Try to retrieve the HLT mode if it was not passed
-        runInfoFilePath = os.path.join(processingParameters["dirPrefix"], self.runDir, "runInfo.yaml")
+        runDirectory = os.path.join(processingParameters["dirPrefix"], self.runDir)
         if not hltMode:
-            # Use the mode from the file if it exists, or otherwise note it as undefined = "U".
-            try:
-                with open(runInfoFilePath, "r") as f:
-                    runInfo = yaml.load(f.read(), Loader = yaml.SafeLoader)
+            self.hltMode = utilities.retrieveHLTModeFromStoredRunInfo(runDirectory = runDirectory)
 
-                self.hltMode = runInfo["hltMode"]
-            except IOError:
-                # File does not exist
-                # HLT mode will have to be unknown
-                self.hltMode = "U"
-
-        # Run Information
-        # Since this is only information to save (ie it doesn't update each time the object is constructed),
-        # only write it if the file doesn't exist
-        if not os.path.exists(runInfoFilePath):
-            runInfo = {}
-            # "U" for unknown
-            runInfo["hltMode"] = hltMode if hltMode else "U"
-
-            # Write information
-            if not os.path.exists(os.path.dirname(runInfoFilePath)):
-                os.makedirs(os.path.dirname(runInfoFilePath))
-            with open(runInfoFilePath, "w") as f:
-                yaml.dump(runInfo, f)
+        # Write run information
+        utilities.writeRunInfoToFile(runDirectory = runDirectory, hltMode = hltMode)
 
     def isRunOngoing(self):
         """ Checks if a run is ongoing.

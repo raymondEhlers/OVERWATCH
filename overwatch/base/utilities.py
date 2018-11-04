@@ -17,6 +17,7 @@ import time
 from calendar import timegm
 import shutil
 import numpy as np
+import ruamel.yaml as yaml
 import signal
 import threading
 
@@ -132,6 +133,66 @@ def findCurrentRunDirs(dirPrefix = ""):
 
     runDirs.sort()
     return runDirs
+
+def retrieveHLTModeFromStoredRunInfo(runDirectory):
+    """ Retrieve the HLT mode from a stored ``runInfo.yaml`` file.
+
+    The file is read from ``runDirectory/runInfo.yaml``. Use the mode from the file if it exists,
+    or otherwise set it as undefined = "U".
+
+    Args:
+        runDirectory (str): Path to the run directory where the ``runInfo.yaml`` file is stored.
+    Returns:
+        str: The HLT mode (if possible to extract), or "U" for unknown.
+    """
+    runInfoFilePath = os.path.join(runDirectory, "runInfo.yaml")
+    # Default to the mode being unknown.
+    hltMode = "U"
+    try:
+        with open(runInfoFilePath, "r") as f:
+            runInfo = yaml.load(f.read(), Loader = yaml.SafeLoader)
+
+        hltMode = runInfo["hltMode"]
+    except IOError:
+        # File does not exist
+        # HLT mode will have to be unknown
+        logger.debug("Run info file doesn't exist for run directory {runDirectory}".format(runDirectory = runDirectory))
+
+    return hltMode
+
+def writeRunInfoToFile(runDirectory, hltMode, forceWrite = False):
+    """ Write run information to YAML file for storage.
+
+    The file is written to ``runDirectory/runInfo.yaml``. Use the mode from the file if it exists,
+    or otherwise set it as undefined = "U".
+
+    Args:
+        runDirectory (str): Path to the run directory where the ``runInfo.yaml`` file is stored.
+        hltMode (str): The HLT mode if set, or "U" for unknown.
+        forceWrite (bool): Write the information to the file regardless of whether the file already
+            exists.
+    Returns:
+        None.
+    """
+    runInfoFilePath = os.path.join(runDirectory, "runInfo.yaml")
+    runInfo = {}
+    # Since this is only information to save (ie it doesn't update each time the object is constructed),
+    # only write it if the file doesn't exist
+    if forceWrite is False:
+        if os.path.exists(runInfoFilePath):
+            return
+    else:
+        # Just write it regardless of whether it exists.
+        pass
+
+    # "U" for unknown
+    runInfo["hltMode"] = hltMode if hltMode else "U"
+
+    # Write information
+    if not os.path.exists(os.path.dirname(runInfoFilePath)):
+        os.makedirs(os.path.dirname(runInfoFilePath))
+    with open(runInfoFilePath, "w") as f:
+        yaml.dump(runInfo, f)
 
 ###################################################
 # Logging utilities
