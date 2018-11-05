@@ -139,3 +139,10 @@ rsync error: unexplained error (code 255) at io.c(235) [sender=3.1.2]
 this is often caused by `rsync` being unable to use the ssh private key. In particular, if the key has a
 passphrase, rsync will not be able to use it in this mode. To resolve it, provide a key without a passphrase
 (of course taking appropriate care to ensure that such a key is kept well protected).
+
+### `docker-gen` fails on startup
+
+For no clear reason, docker-gen sometimes fails at startup with the error `nginx-gen exited with code 2`.
+According to this [issue](https://github.com/jwilder/docker-gen/issues/201#issuecomment-227990877), this seems
+to occur sometimes and can be solved by replacing the entry point. The cause is not clear, but the fix has
+been implemented, and there have been no issues so far.

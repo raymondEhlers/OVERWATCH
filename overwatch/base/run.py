@@ -24,7 +24,7 @@ from sentry_sdk.integrations.logging import LoggingIntegration
 # Config
 from overwatch.base import config
 from overwatch.base import utilities
-(parameters, filesRead) = config.readConfig(config.configurationType.processing)
+(parameters, filesRead) = config.readConfig(config.configurationType.base)
 print("Configuration files read: {filesRead}".format(filesRead = filesRead))
 print("parameters: {parameters}".format(
     parameters = pprint.pformat(parameters)))
