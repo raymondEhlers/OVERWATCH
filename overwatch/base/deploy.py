@@ -27,7 +27,9 @@ Various classes of files are stored in specific locations. In particular,
 - config files are stored in "exec/config" (except for those which must be
   in the current folder, such as the supervisor config, or the overwatch
   custom config).
-- log files are in "exec/logs".
+- log files are in "exec/logs" when the process is executed directly. In the
+  case of supervisor, we redirect the logs to the main supervisor process to
+  allow for all logs to be captured by docker.
 
 Usually, this module is executed directly in docker containers. All options
 are configured via a YAML file.
@@ -244,9 +246,10 @@ class executable(object):
             # Redirect the stderr into the stdout.
             # NOTE: All values must be strings, so we quote everything
             options["redirect_stderr"] = "True"
-            # 5 MB log file with 10 backup files.
-            options["stdout_logfile_maxbytes"] = "500000"
-            options["stdout_logfile_backups"] = "10"
+            # Redirect the logs to the supervisor main log, which can then be captured by docker.
+            # See: https://stackoverflow.com/a/45647346
+            options["stdout_logfile"] = os.path.join("/dev", "fd", "1")
+            options["stdout_logfile_maxbytes"] = "0"
 
             # Prevents supervisor from immediately restarting a process which executes quickly.
             if self.shortExecutionTime:
@@ -751,12 +754,10 @@ class supervisor(executable):
         tempConfig = {}
         tempConfig["supervisord"] = {
             "nodaemon": "True",
-            # Take advantage of the overwatch exec directory.
-            "logfile": os.path.join("exec", "logs", "supervisord.log"),
-            "childlogdir": os.path.join("exec", "logs"),
-            # 5 MB log file with 10 backup files
-            "logfile_maxbytes": "5000000",
-            "logfile_backups": "10",
+            # The log will go to stdout (where it can then be captured by docker logs)
+            # See: https://stackoverflow.com/a/45647346
+            "logfile": os.path.join("/dev", "null"),
+            "logfile_maxbytes": "0",
         }
 
         # These options section must remain in the config file for RPC
