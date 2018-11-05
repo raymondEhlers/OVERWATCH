@@ -28,7 +28,7 @@ before_script:
     # send the results from inside the container to codecov. If we try to send afterwards from outside the container,
     # the paths will be wrong and the coverage report will fail!
     - ci_env=`bash <(curl -s https://codecov.io/env)`
-    - docker run --user root -v ${PWD}:/opt/overwatch $ci_env rehlers/overwatch:latest-py${DOCKER_PYTHON_VERSION} /bin/bash -c "pip install --user --upgrade -e .[tests,dev,docs]; cd tests; pytest -l --cov=overwatch --cov-branch --durations=5 . && bash <(curl -s https://codecov.io/bash)"
+    - docker run --user root -v ${PWD}:/opt/overwatch $ci_env rehlers/overwatch:latest-py${DOCKER_PYTHON_VERSION} /bin/bash -c "pip install --user --upgrade -e .[tests,dev,docs]; cd tests; pytest -l -vv --cov=overwatch --cov-branch --durations=5 . && bash <(curl -s https://codecov.io/bash)"
     # Install polymer and jsRoot so it they will be avialable and included in a built package
     # We can't easily install nodejs to install polymer and jsRoot, so instead, we extract it from the docker image.
     # Yes, it's super hacky, but it seems to work, so why not?

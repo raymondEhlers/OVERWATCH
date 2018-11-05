@@ -146,7 +146,7 @@ def testMoveFiles(loggingMixin, mocker, nMaxFiles):
 
     # Determine expected values
     availableFiles = list(replay.availableFiles(baseDir = baseDir))
-    availableFiles = [(source, os.path.join(destinationDir, name)) for source, name in availableFiles]
+    availableFiles = [(source, os.path.join(destinationDir, name)) for source, name in availableFiles if "combined" not in source]
 
     # If there aren't enough files, don't check that we've transferred as many as requested because
     # it won't be possible.
@@ -155,3 +155,4 @@ def testMoveFiles(loggingMixin, mocker, nMaxFiles):
 
     # For each call, we expand each tuple of args.
     assert mMove.mock_calls == [mocker.call(*args) for args in availableFiles[:nMaxFiles]]
+
