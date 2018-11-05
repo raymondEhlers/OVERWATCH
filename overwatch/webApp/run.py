@@ -15,7 +15,6 @@ Note:
 
 import logging
 import socket
-import os
 import pprint
 
 # Config
@@ -50,9 +49,10 @@ if not serverParameters["debug"]:
         secretKey = dbRoot["config"]["secretKey"]
         logger.info("Setting secret key from database!")
     except KeyError:
-        # If not available, just generate one ourselves.
-        logger.error("Could not retrieve secret_key in db! Instead setting to random value!")
-        secretKey = str(os.urandom(50))
+        # If not available, just grab the one from the config.
+        # It the user doesn't provide, the default is to generate a new one, so it should be fine in all cases.
+        logger.info("Could not retrieve secret_key in db! Grabbing the value from the config instead!")
+        secretKey = serverParameters["_secretKey"]
 
     # Note the changes in values
     logger.debug("Previous secretKey: {key}".format(key = app.config["SECRET_KEY"]))
