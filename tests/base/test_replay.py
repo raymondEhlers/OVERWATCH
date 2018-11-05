@@ -114,9 +114,10 @@ def testAvailableFiles(loggingMixin, mocker, hltMode, baseDir):
     names = [f[1] for f in availableFiles]
 
     # First check the source files
-    assert sourceFilenames == expectedSourceFilenames
+    # Use a set to check the files because the order doesn't appear to be stable on different systems.
+    assert set(sourceFilenames) == set(expectedSourceFilenames)
     # Then check the destination names
-    assert names == expectedDestinationNames
+    assert set(names) == set(expectedDestinationNames)
     assert not set(expectedNotToBeDestinationNames).issubset(names)
 
 @pytest.mark.parametrize("nMaxFiles", [
