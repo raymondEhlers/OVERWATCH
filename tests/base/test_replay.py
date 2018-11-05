@@ -57,10 +57,17 @@ def testConvertProcessedOverwatchNameToUnprocessed(loggingMixin, mocker, hltMode
     "C",
     "U",
 ], ids = ["HLT Mode C", "HLT Mode U"])
-def testAvailableFiles(loggingMixin, mocker, hltMode):
+@pytest.mark.parametrize("baseDir", [
+    os.path.join(os.path.dirname(os.path.realpath(__file__)), "replayData"),
+    os.path.join(os.path.dirname(os.path.realpath(__file__)), "replayData", "Run123"),
+], ids = ["Standard base dir", "Base dir in run directory"])
+def testAvailableFiles(loggingMixin, mocker, hltMode, baseDir):
     """ Test determining which files are available for replay.
 
-    The parametrization may not be so helpful or meaningful here, but I've included it for good measure.
+    The ``hltMode`` parametrization may not be so helpful or meaningful here, but I've included it
+    for good measure. The ``baseDir`` parametrization should give the same result in either case, but it's
+    included to ensure that the ``baseDir`` is relatively position independent (and therefore will work will all
+    runs, or with a single specified run).
     """
     # Determine expected values
     expectedSourceFilenames = [
@@ -101,7 +108,6 @@ def testAvailableFiles(loggingMixin, mocker, hltMode):
     expectedNotToBeDestinationNames = [f.format(hltMode = hltMode) for f in expectedNotToBeDestinationNames]
     setupRetrieveHLTModeMock(hltMode = hltMode, mocker = mocker)
 
-    baseDir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "replayData")
     # Make the actual call. By calling list, it forces it to iterate and provide all files.
     availableFiles = list(replay.availableFiles(baseDir = baseDir))
     sourceFilenames = [os.path.split(f[0])[1] for f in availableFiles]
@@ -113,3 +119,39 @@ def testAvailableFiles(loggingMixin, mocker, hltMode):
     assert names == expectedDestinationNames
     assert not set(expectedNotToBeDestinationNames).issubset(names)
 
+@pytest.mark.parametrize("nMaxFiles", [
+    3,
+    30,
+], ids = ["Move 3 files", "Try to move 30, but move fewer"])
+def testMoveFiles(loggingMixin, mocker, nMaxFiles):
+    """ Test the driver function to move files.
+
+    This test takes advantage of the files created for ``testAvailableFiles(...)``.
+    """
+    # Setup
+    hltMode = "C"
+    # Mocks
+    # Mock for moving files
+    mMove = mocker.MagicMock()
+    mocker.patch("overwatch.base.replay.shutil.move", mMove)
+    # Mock for retrieving the HLT mode
+    setupRetrieveHLTModeMock(hltMode = hltMode, mocker = mocker)
+
+    fileLocation = os.path.dirname(os.path.realpath(__file__))
+    baseDir = os.path.join(fileLocation, "replayData")
+    destinationDir = os.path.join(fileLocation, "destinationDir")
+    nMoved = replay.moveFiles(baseDir = baseDir,
+                              destinationDir = destinationDir,
+                              nMaxFiles = nMaxFiles)
+
+    # Determine expected values
+    availableFiles = list(replay.availableFiles(baseDir = baseDir))
+    availableFiles = [(source, os.path.join(destinationDir, name)) for source, name in availableFiles]
+
+    # If there aren't enough files, don't check that we've transferred as many as requested because
+    # it won't be possible.
+    if not len(availableFiles) < nMaxFiles:
+        assert nMoved == nMaxFiles
+
+    # For each call, we expand each tuple of args.
+    assert mMove.mock_calls == [mocker.call(*args) for args in availableFiles[:nMaxFiles]]

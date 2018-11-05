@@ -164,6 +164,26 @@ executables:
             dataTransferLocations:
                 yale: ""
                 EOS: "/eos/experiment/alice/overwatch/"
+    # Overwatch data replay for data transfer via the data transfer module.
+    dataReplayDataTransfer:
+        <<: *baseExecutionOptions
+        enabled: false
+        # Additional options to be passed into the Overwatch config. Any entries should be valid
+        # Overwatch config YAML. It will be stored in the user `config.yaml`.
+        additionalOptions:
+            dataReplaySourceDirectory: "data/test/replayData"
+            dataReplayMaxFilesPerReplay: 200
+    # Data replay of Overwatch processed data
+    dataReplay:
+        <<: *baseExecutionOptions
+        enabled: false
+        # Additional options to be passed into the Overwatch config. Any entries should be valid
+        # Overwatch config YAML. It will be stored in the user `config.yaml`.
+        additionalOptions:
+            # This value must be configured!
+            dataReplaySourceDirectory: "data/test"
+            # Only wait 5 seconds between replays.
+            dataReplayTimeToSleep: 5
     # ZODB database
     zodb:
         <<: *baseExecutionOptions

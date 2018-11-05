@@ -80,6 +80,11 @@ setup(
             "overwatchUpdateUsers = overwatch.base.updateDBUsers:updateDBUsers",
             # Receiver data transfer script
             "overwatchReceiverDataTransfer = overwatch.base.run:runReceiverDataTransfer",
+            # Replay data scripts
+            # Standard data replay for a particular run
+            "overwatchReplay = overwatch.base.run:runReplayData",
+            # For moving larger quantities of data for later data transfer
+            "overwatchReplayDataTransfer = overwatch.base.run:runReplayDataTransfer"
         ],
     },
 

@@ -1,4 +1,9 @@
 dataFolder: data
+dataReplayDestinationDirectory: 'data'
+dataReplayMaxFilesPerReplay: 1
+dataReplaySourceDirectory: null
+dataReplayTempStorageDirectory: 'data/replayData'
+dataReplayTimeToSleep: 30
 dataTransferTimeToSleep: 20
 dataTransferLocations: {EOS: /eos/experiment/alice/overwatch/, site1: ''}
 dataTransferRetries: 2

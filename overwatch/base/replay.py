@@ -15,7 +15,7 @@ from __future__ import print_function
 # General
 import os
 import logging
-#import shutil
+import shutil
 logger = logging.getLogger(__name__)
 
 # Config
@@ -64,11 +64,12 @@ def availableFiles(baseDir):
     """
     for root, dirs, files in os.walk(baseDir):
         # Sort the file by their arrival time so we can replay in order.
-        files.sort(key=lambda x: utilities.extractTimeStampFromFilename(x) if ".root" in x else 0)
+        # We need to skip files which don't have ".root" in the name, as they won't have a timestamp
+        files.sort(key=lambda x: utilities.extractTimeStampFromFilename(x) if x.endswith(".root") else 0)
 
         # We move all files, regardless of where they are located.
         for name in files:
-            if ".root" in name:
+            if name.endswith(".root"):
                 source = os.path.join(root, name)
                 # If the file doesn't have a non-zero size, notify and skip.
                 # Check that the file has a non-zero size. If it doesn't then notify.
@@ -85,108 +86,78 @@ def availableFiles(baseDir):
                     name = convertProcessedOverwatchNameToUnprocessed(dirPrefix = root, name = name)
 
                 yield (source, name)
-                #files.append((source, name))
 
-        # Sort the files by their arrival time.
-        # This enables replaying the earliest time one file at a time.
-        # Determine subsystem for yield value
-        #_, subsystem = os.path.split(root)
-        #yield subsystem, files
-
-def moveFiles(destinationDir, nMaxFiles):
+def moveFiles(baseDir, destinationDir, nMaxFiles):
     """ Move available files from one directory to another.
 
     Used to moved already existing ROOT files that are perhaps in the Overwatch directory structure
-    to a directory where the can be transferred to Overwatch sites and to EOS.
+    to a directory where they can be reprocessing (ie replayed) or alternatively, can be transferred
+    to Overwatch sites and to EOS.
 
     Args:
+        baseDir (str): Directory where the ROOT files to be moved are stored.
         destinationDir (str): Directory where the files should be moved.
         nMaxFiles (int): Maximum number of files which should be moved.
+    Returns:
+        int: Number of files that were moved.
     """
-
     fileCount = 0
-    for source, destinationName in availableFiles():
-        if "combined" in source:
-            # TODO: For full replay, remove the combined file...
-            pass
-
-        # If we've alrady moved enough files, then finish up.
+    for source, destinationName in availableFiles(baseDir = baseDir):
+        # Break out if we're already moved enough files.
         if fileCount >= nMaxFiles:
             break
 
+        # Nothing to be done with a combined file or time slice file - it should just be ignored.
+        if "combined" in source or "timeSlice" in source:
+            logger.debug('Skipping filename {filename} due to "combined" or "timeSlices" in name!'.format(filename = source))
+            continue
+
         destination = os.path.join(destinationDir, destinationName)
         logger.info("Moving {source} to {destination}".format(source = source, destination = destination))
-        #shutil.move(source, destination)
+        shutil.move(source, destination)
 
         # Note that the file has been moved.
         fileCount += 1
 
-def runReplay():
-    """ Helper run function for replaying or generically moving data.
+    # We've either moved the requested number of files, or we've ran out of files (and there are no more left to move).
+    return fileCount
 
-    This function will run on an interval determined by the value of ``processingTimeToSleep``
-    (specified in seconds). If the value is 0 or less, the processing will only run once.
+def runReplay(baseDir, destinationDir, nMaxFiles):
+    """ Helper run function for moving processed data into unprocessed data.
+
+    This function basically drives the underlying implementation of replaying data. It will
+    run on an interval determined by the value of ``dataReplayTimeToSleep`` (specified in
+    seconds). If the value is 0 or less, the processing will only run once. In addition, if
+    there are no more files to move, the replay will finish.
 
     Note:
-        The sleep time is defined as the time between when ``moveFiles()`` finishes and
+        The sleep time is defined as the time between when ``moveFiles(...)`` finishes and
         when it is started again.
 
     Args:
-        ...
+        baseDir (str): Directory where the ROOT files to be moved are stored.
+        destinationDir (str): Directory where the files should be moved.
+        nMaxFiles (int): Maximum number of files which should be moved.
     Returns:
         None.
     """
+    # Now being our loop
     handler = utilities.handleSignals()
     sleepTime = parameters["dataReplayTimeToSleep"]
     logger.info("Starting data replay with sleep time of {sleepTime}.".format(sleepTime = sleepTime))
     while not handler.exit.is_set():
         # Run the actual executable.
-        moveFiles()
-        # Only execute once if the sleep time is <= 0. Otherwise, sleep and repeat.
-        if sleepTime > 0:
+        nMoved = moveFiles(baseDir = baseDir,
+                           destinationDir = destinationDir,
+                           nMaxFiles = nMaxFiles)
+        # Only execute once if the sleep time is <= 0 or no files are moved. Otherwise, sleep and repeat.
+        if sleepTime > 0 and nMoved != 0:
             handler.exit.wait(sleepTime)
         else:
+            if nMoved == 0:
+                # Inform about result so the user isn't surprised.
+                logger.info("No more files available to move! Finishing up")
             break
 
-# These functions should be moved to overwatch.base.run
-def runReplayData():
-    """ Replay Overwatch data that has already been processed.
-
-    Although force reprocessing allows this to happen without having to move files,
-    this type of functionality can be useful for replaying larger sets of data for
-    testing the base functionality, trending, etc.
-
-    This function will run on an interval determined by the value of ``dataReplayTimeToSleep``
-    (specified in seconds). If the value is 0 or less, the processing will only run once.
-
-    Note:
-        The sleep time is defined as the time between when ``moveFiles()`` finishes and
-        when it is started again.
-
-    Args:
-        None.
-    Returns:
-        None.
-    """
-    # TODO: Set the proper input parameters!
-    runReplay(...)
-
-def runDataTransition():
-    """ Handle moving files so they can be transferred to Overwatch sites and EOS.
-
-    """
-    # TODO: Set the proper input parameters!
-    runReplay(...)
-
-def replayData():
-    pass
-
-# TODO: Tests
-
-if __name__ == "__main__":
-    # Configuration parameters
-    numberOfFiles = 200
-    baseDir = ""
-    destinationDir = os.path.join("..", "data")
-
-    moveFiles(baseDir = baseDir, destinationDir = destinationDir)
+    # Inform about completion.
+    logger.info("Completed replay.")

@@ -14,6 +14,9 @@ It can handle the configuration and execution of:
 - Overwatch processing
 - Overwatch web app
     - Via ``uswgi``, ``uwsgi`` behind ``nginx`` or directly.
+- Overwatch data transfer from receivers to other Overwatch sites and EOS.
+- Overwatch data replay for data transfer via the data transfer module.
+- Overwatch data replay to simulate receiving new data using existing data.
 
 It can also handle receiving SSH Keys, grid certificates, and grid keys passed
 in via environment variables.
@@ -1555,6 +1558,18 @@ _available_executables = {
     "autossh": autossh,
     "zmqReceiver": zmqReceiver,
     "dataTransfer": overwatchDataTransfer,
+    "dataReplayDataTransfer": functools.partial(overwatchExecutable,
+                                                name = "dataReplayDataTransfer",
+                                                description = "Overwatch data replay for data transfer",
+                                                args = [
+                                                    "overwatchReplayDataTransfer",
+                                                ]),
+    "dataReplay": functools.partial(overwatchExecutable,
+                                    name = "dataReplay",
+                                    description = "Overwatch data replay",
+                                    args = [
+                                        "overwatchReplay",
+                                    ]),
     "processing": functools.partial(overwatchExecutable,
                                     name = "processing",
                                     description = "Overwatch processing",
@@ -1587,9 +1602,11 @@ def retrieveExecutable(name, config):
     - autossh
     - zmqReceiver
     - dqmReceiver
+    - dataTransfer
+    - dataReplayDataTransfer
+    - dataReplay
     - processing
     - webApp
-    - dataTransfer
 
     Args:
         name (str): Name of the executable "type". For example, "processing" for Overwatch processing.

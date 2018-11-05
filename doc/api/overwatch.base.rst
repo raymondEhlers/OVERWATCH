@@ -41,6 +41,14 @@ overwatch.base.deploy module
     :undoc-members:
     :show-inheritance:
 
+overwatch.base.replay module
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. automodule:: overwatch.base.replay
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 overwatch.base.utilities module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
