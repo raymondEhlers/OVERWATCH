@@ -14,13 +14,32 @@ Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
 - Releases are automatically made on PyPI through Travis CI.
 - Added `overwatch.base.dataTransfer` module, which is responsible for transferring data provided by the
   receiver to various Overwatch and EOS sites. This modules is fairly well covered by tests.
-- Added webApp monitoring via `sentry`. It hooks into everything (exceptions, logs, etc) to help identify and
-  debug issues.
+- Added webApp, processing, and data transfer monitoring via `sentry`. It hooks into everything (exceptions,
+  logs, etc) to help identify and debug issues.
+- Added a module for replaying data in `overwatch.base.replay`. Can be used to generically replay processed
+  data, moving from one directory to another. For further information, see the README in `overwatch.base`.
+- Units tests for timestamp extraction in `overwatch.base.utilities`. See: `62737f10`.
+- Added some integration tests for creating runs and subsystems in `overwatch.processing.processRuns`. See:
+  `b09e7388`.
 
 ### Changed
 
 - Updated `overwatchDeploy` to be class based, and generally far more stable and extensible. It is also
   broadly covered by unit tests.
+
+### Fixed
+
+- Creation of run and subsystem containers as new data arrives. Issues were caused by received files arriving
+  at different times, which split up the processing. See: `b9230b98`.
+- Fixed data transfer to only select on files which end in ".root". ROOT appears to create temporary files
+  when writing which are sometimes picked up during data transfer. See: `83412bb7`.
+- Execution data is now stored in the `exec` directory. Information includes logs, configurations (except for
+  the Overwatch config, which must be in the executing directory), and more sensitive files (SSL, etc). They
+  will be used automatically in the docker images and by `supervisor` This was changed to better reflect what
+  information was stored. See: `ec64fbd8`.
+- Removed the `deploy` directory, along with much of its obsolete contents, which have been replaced by the
+  `deploy` module. See: `97357488`.
+- A wide variety of typos.
 
 ## [1.1] - 2 September 2018
 
