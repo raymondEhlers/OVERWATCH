@@ -1,23 +1,35 @@
 # Docker
 
-## Build for python 2.7
+## Building the images
 
 Assuming python 2.7.15
 
 ```bash
-$ docker build --build-arg PYTHON_VERSION=2.7.15 -f Dockerfile.build .
-$ docker tag <firstImageID> overwatch-base:py2.7.15
-$ docker build --build-arg PYTHON_VERSION=2.7.15 -f Dockerfile .
-$ docker tag <secondImageID> overwatch:master-py2.7.15
+$ docker build --build-arg PYTHON_VERSION=2.7.15 -t overwatch-base:py2.7.15 -f Dockerfile.build .
+$ docker build --build-arg PYTHON_VERSION=2.7.15 -t overwatch:latest-py2.7.15 -f Dockerfile .
 ```
 
-For python 3, simply put in the desired python 3 version.
+For other python versions (such as python 3), simply put in the desired python 3 version. As long as there is
+a python base image with that version, it should build (subject to python versions which are supported by
+Overwatch).
 
 ## Tagged versions
 
-Each release of Overwatch will generate a tag of the form `overwatch:X.Y-py2.7.15`. Additionally, each commit
-to master will recreate the latest build, with a tag of the form `overwatch:latest-py2.7.15`. Equivalent
-images are also created for python 3.
+### Base images
+
+The base image contains software which is heavy and/or unlikely to change, such as ROOT, XRootD, etc. It is
+build via the `Dockerfile.build` file. Each new version of the build tag will be of the form
+`overwatch-base:py3.6.6` (for python 3.6.6). Note that the base image is far too heavy to be built on Travis
+(for example, ROOT will often take hours to compile), so the base image must be built on another system (such
+as a developer's laptop), and then pushed to docker hub. Once updated, the standard image will use this new
+base image.
+
+### Standard images
+
+For actually using Overwatch, one must be use the standard images, which build off the base image and sets up
+Overwatch itself. Each release of Overwatch will generate a tag of the form `overwatch:X.Y-py2.7.15`.
+Additionally, each commit to master will recreate the latest build, with a tag of the form
+`overwatch:latest-py2.7.15`. Equivalent images are also created for python 3.
 
 Docker images will automatically be created by Travis CI for both python 2 and python 3. In detail, any commit
 to master or to any branch with a name that contains `-docker` will create an image. These images will be
@@ -78,8 +90,9 @@ this is our external facing server, so this defaults to `0.0.0.0`.
 
 ## Additional docker notes
 
-- We use docker logging for the `nginx-proxy` because it is configured for such operation. However, since we
-  use supervisor in the Overwatch containers, we have supervisor handle the logs for us.
+- We use docker logging for the `nginx-proxy` because it is configured for such operation. Supervisor is
+  configured to output its logs (and its children's logs) to stdout, so it can also be handled by docker
+  logging.
 - To access EOS in a docker container, provide the proper grid cert and key, ensure that
   `OVERWATCH_EXECUTABLES` is not set, then run (for example):
 
@@ -88,7 +101,14 @@ this is our external facing server, so this defaults to `0.0.0.0`.
     # In the container
     $ overwatchDeploy -e config
     # Now everything should be all set!
-    $ xrdfs eospublic.cern.ch ls /eos/experiment/alice
+    # Note that ls on the directory above overwatch my or may not work...
+    $ xrdfs eospublic.cern.ch ls /eos/experiment/alice/overwatch
+    ```
+
+- To update the nginx template to be used with the nginx container, run in the docker directory:
+
+    ```bash
+    $ curl https://raw.githubusercontent.com/jwilder/nginx-proxy/master/nginx.tmpl > nginxProxyGen.tmpl
     ```
 
 ## Common errors
