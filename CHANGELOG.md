@@ -21,6 +21,8 @@ Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
 - Units tests for timestamp extraction in `overwatch.base.utilities`. See: `62737f10`.
 - Added some integration tests for creating runs and subsystems in `overwatch.processing.processRuns`. See:
   `b09e7388`.
+- Added rudimentary ZMQ receiver monitoring via the `dataTransfer` module. If no files have been transferred
+  in 12 hours, a warning will be emitted. See: `4ea80cf2`.
 
 ### Changed
 

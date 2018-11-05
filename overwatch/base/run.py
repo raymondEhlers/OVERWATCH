@@ -9,8 +9,9 @@ in the python package setup.
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
 
-import pprint
+import datetime
 import os
+import pprint
 import shutil
 import transaction
 import logging
@@ -45,11 +46,29 @@ from overwatch.base import dataTransfer
 from overwatch.base import replay
 
 def runReceiverDataTransfer():
-    """ Run function for handling and transfering receiver data. """
+    """ Run function for handling and transferring receiver data.
+
+    We take advantage of the log of successfully transferred files to preform some rudimentary monitoring
+    of the receivers. This function keep track of the time between when any file was transferred. If it's
+    greater than 12 hours, then a warning is emitted, which will be picked up via sentry monitoring.
+    """
     handler = utilities.handleSignals()
+    # Keep track of the time between transfers.
+    lastTransferTime = datetime.datetime.now()
     logger.info("Starting receiver data handling and transfer.")
     while not handler.exit.is_set():
-        dataTransfer.processReceivedFiles()
+        successfullyTransferred, _ = dataTransfer.processReceivedFiles()
+        if len(successfullyTransferred) > 0:
+            # Update the time of the last transfer
+            lastTransferTime = datetime.datetime.now()
+
+        timeDifference = datetime.datetime.now() - lastTransferTime
+        # 12 hours = 43200 seconds
+        if timeDifference.seconds > 43200:
+            logger.warning("No data transfer in 12 hours. Check the ZMQ receivers!")
+            # Update the last transfer time, or this will be emitted every loop (which could become annoying quickly).
+            lastTransferTime = datetime.datetime.now()
+
         handler.exit.wait(parameters["dataTransferTimeToSleep"])
 
 def runReplayData():
