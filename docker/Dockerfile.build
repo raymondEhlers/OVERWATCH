@@ -75,11 +75,15 @@ RUN echo "daemon off;" >> /etc/nginx/nginx.conf && rm /etc/nginx/sites-enabled/d
 
 # Setup a user so we don't have to run everything as root.
 # Many packages expect root (or at least sudo to be available), so it takes a bit more care to get things setup properly.
-# If absolutely required, one can switch back to the root user temporarily, but as of Oct 2018, this shouldn't be necessary for this Dockerfile.
-RUN groupadd -g 999 overwatch && \
-    useradd -r -u 999 -g overwatch overwatch
-# Create overwatch home directory. It makes installing things with python (and npm(?)) much easier.
-RUN mkdir -p /home/overwatch && chown -R overwatch:overwatch /home/overwatch
+# If absolutely required, one can switch back to the root user temporarily, but as of Oct 2018, this shouldn't be
+# necessary for this Dockerfile.
+# We also create the overwatch home directory since it makes installing things with python (and npm(?)) much easier.
+# uid of 2143 may not follow convention, but we need to select a uid which is unlikely to be used elsewhere, so we pick something
+# far away from 500 and 1000, but not too large (which can apparently trigger a docker bug).
+RUN groupadd -g 2143 overwatch \
+        && useradd -r -u 2143 -g overwatch overwatch \
+        && mkdir -p /home/overwatch \
+        && chown -R overwatch:overwatch /home/overwatch
 
 # Setup directory structure
 ENV SCRATCH /opt/scratch
