@@ -46,6 +46,8 @@ class zmqReceiver
   std::string PrintConfiguration();
   // Signal handler
   static void caughtSignal(int i);
+  // Heartbeat
+  void WriteHeartbeat();
   // Data management
   void ReceiveData();
   void ClearData();
