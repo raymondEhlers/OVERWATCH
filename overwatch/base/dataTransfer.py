@@ -343,7 +343,7 @@ def processReceivedFiles():
 
     if not filenamesToTransfer:
         logger.info("No new files found. Returning.")
-        return
+        return None, None
 
     logger.info("Transfering data to sites: {sites}".format(sites = ", ".join(parameters["dataTransferLocations"])))
 

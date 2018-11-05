@@ -58,7 +58,7 @@ def runReceiverDataTransfer():
     logger.info("Starting receiver data handling and transfer.")
     while not handler.exit.is_set():
         successfullyTransferred, _ = dataTransfer.processReceivedFiles()
-        if len(successfullyTransferred) > 0:
+        if successfullyTransferred and len(successfullyTransferred) > 0:
             # Update the time of the last transfer
             lastTransferTime = datetime.datetime.now()
 
