@@ -85,6 +85,23 @@ class runContainer(persistent.Persistent):
         # Write run information
         utilities.writeRunInfoToFile(runDirectory = runDirectory, hltMode = hltMode)
 
+    def __repr__(self):
+        """ Representation of the object. """
+        # Perform a random, useless class to initialize the object if stored in the database
+        #self.runDir
+        return "{}(runDir = {runDir}, fileMode = {mode}, hltMode = {hltMode})".format(self.__class__.__name__, **self.__dict__)
+
+    def __str__(self):
+        """ Print many of the elements of the object. """
+        return "{}: runDir: {runDir}, runNumber: {runNumber}, prettyName: {prettyName}, fileMode: {mode}," \
+               " subsystems: {subsystems}, hltMode: {hltMode}".format(self.__class__.__name__,
+                                                                      runDir = self.runDir,
+                                                                      runNumber = self.runNumber,
+                                                                      prettyName = self.prettyName,
+                                                                      mode = self.mode,
+                                                                      subsystems = list(self.subsystems.keys()),
+                                                                      hltMode = self.hltMode)
+
     def isRunOngoing(self):
         """ Checks if a run is ongoing.
 
@@ -274,6 +291,31 @@ class subsystemContainer(persistent.Persistent):
         if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.jsonDir)):
             os.makedirs(os.path.join(processingParameters["dirPrefix"], self.jsonDir))
 
+    def __repr__(self):
+        """ Representation of the object. """
+        return "{}(subsystem = {subsystem}, runDir = {runDir}, startOfRun = {startOfRun}," \
+               " endOfRun = {endOfRun}, showRootFiles = {showRootFiles}," \
+               " fileLocationSubsystem = {fileLocationSubsystem})".format(self.__class__.__name__,
+                                                                          subsystem = self.subsystem,
+                                                                          runDir = os.path.dirname(self.baseDir),
+                                                                          startOfRun = self.startOfRun,
+                                                                          endOfRun = self.endOfRun,
+                                                                          showRootFiles = self.showRootFiles,
+                                                                          fileLocationSubsystem = self.fileLocationSubsystem)
+
+    def __str__(self):
+        """ Print many of the elements of the object. """
+        return "{}: subsystem: {subsystem}, fileLocationSubsystem: {fileLocationSubsystem}," \
+               " showRootFiles: {showRootFiles}, startOfRun: {startOfRun}, endOfRun: {endOfRun}," \
+               " newFile: {newFile}, hists: {hists}".format(self.__class__.__name__,
+                                                            subsystem = self.subsystem,
+                                                            fileLocationSubsystem = self.fileLocationSubsystem,
+                                                            showRootFiles = self.showRootFiles,
+                                                            startOfRun = self.startOfRun,
+                                                            endOfRun = self.endOfRun,
+                                                            newFile = self.newFile,
+                                                            hists = list(self.hists.keys()))
+
     @staticmethod
     def prettyPrintUnixTime(unixTime):
         """ Converts the given time stamp into an appropriate manner ("pretty") for display.
@@ -368,6 +410,28 @@ class timeSliceContainer(persistent.Persistent):
         # Same as the type of options implemented in the subsystemContainer!
         self.processingOptions = persistent.mapping.PersistentMapping()
 
+    def __repr__(self):
+        """ Representation of the object. """
+        return "{}(minUnixTimeRequested = {minUnixTimeRequested}, maxUnixTimeRequested = {maxUnixTimeRequested}," \
+               " minUnixTimeAvailable = {minUnixTimeAvailable}, maxUnixTimeAvailable = {maxUnixTimeAvailable}," \
+               " startOfRun = {startOfRun}, filesToMerge = {filesToMerge}," \
+               " optionsHash = {optionsHash}".format(self.__class__.__name__, **self.__dict__)
+
+    def __str__(self):
+        """ Print many of the elements of the object. """
+        return "{}: minUnixTimeRequested = {minUnixTimeRequested}, maxUnixTimeRequested = {maxUnixTimeRequested}," \
+               " minUnixTimeAvailable = {minUnixTimeAvailable}, maxUnixTimeAvailable = {maxUnixTimeAvailable}," \
+               " filenamePrefix: {filenamePrefix}, startOfRun = {startOfRun}, filesToMerge = {filesToMerge}," \
+               " optionsHash = {optionsHash}".format(self.__class__.__name__,
+                                                     minUnixTimeRequested = self.minUnixTimeRequested,
+                                                     maxUnixTimeRequested = self.maxUnixTimeRequested,
+                                                     minUnixTimeAvailable = self.minUnixTimeAvailable,
+                                                     maxUnixTimeAvailable = self.maxUnixTimeAvailable,
+                                                     filenamePrefix = self.filenamePrefix,
+                                                     startOfRun = self.startOfRun,
+                                                     filesToMerge = self.filesToMerge,
+                                                     optionsHash = self.optionsHash)
+
     def timeInMinutes(self, inputTime):
         """ Return the time from the input unix time to the start of the run in minutes.
 
@@ -441,6 +505,17 @@ class fileContainer(persistent.Persistent):
             # Show a clearly invalid time, since timeIntoRun doesn't make much sense for a time slice
             self.timeIntoRun = -1
 
+    def __repr__(self):
+        """ Representation of the object. """
+        return "{}(filename = {filename}, startOfRun = {startOfRun})".format(self.__class__.__name__,
+                                                                             filename = self.filename,
+                                                                             startOfRun = self.fileTime - self.timeIntoRun)
+
+    def __str__(self):
+        """ Print the elements of the object. """
+        return "{}: filename = {filename}, combinedFile: {combinedFile}, timeSlice: {timeSlice}," \
+               " fileTime: {fileTime}, timeIntoRun: {timeIntoRun}".format(self.__class__.__name__, **self.__dict__)
+
 class histogramGroupContainer(persistent.Persistent):
     """ Organizes similar histograms into groups for processing and display.
 
@@ -478,6 +553,17 @@ class histogramGroupContainer(persistent.Persistent):
             self.plotInGrid = True
         else:
             self.plotInGrid = False
+
+    def __repr__(self):
+        """ Representation of the object. """
+        return "{}(prettyName = {prettyName}, groupSelectionPattern = {groupSelectionPattern}," \
+               " plotInGridSelectionPattern = {plotInGridSelectionPattern}".format(self.__class__.__name__, **self.__dict__)
+
+    def __str__(self):
+        """ Print the elements of the object. """
+        return "{}: prettyName = {prettyName}, groupSelectionPattern = {groupSelectionPattern}," \
+               " plotInGridSelectionPattern = {plotInGridSelectionPattern}, histList: {histList}," \
+               " plotInGrid: {plotInGrid}".format(self.__class__.__name__, **self.__dict__)
 
 class histogramContainer(persistent.Persistent):
     """ Histogram information container.
@@ -550,6 +636,17 @@ class histogramContainer(persistent.Persistent):
         self.functionsToApply = persistent.list.PersistentList()
         # Trending objects which use this histogram
         self.trendingObjects = persistent.list.PersistentList()
+
+    def __repr__(self):
+        """ Representation of the object. """
+        return "{}(histName = {histName}, histList = {histList}, prettyName = {prettyName})".format(self.__class__.__name__, **self.__dict__)
+
+    def __str__(self):
+        """ Print many of the elements of the object. """
+        return "{}: histName = {histName}, histList = {histList}, prettyName = {prettyName}," \
+               " information: {information}, hist: {hist}, histType: {histType}, drawOptions: {drawOptions}," \
+               " canvas: {canvas}, projectionFunctionsToApply: {projectionFunctionsToApply}," \
+               " functionsToApply: {functionsToApply}".format(self.__class__.__name__, **self.__dict__)
 
     def retrieveHistogram(self, ROOT, fIn = None, trending = None):
         """ Retrieve the histogram from the given file or trending container.
