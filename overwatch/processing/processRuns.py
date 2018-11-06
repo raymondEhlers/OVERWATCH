@@ -724,9 +724,11 @@ def processMovedFilesIntoRuns(runs, runDict):
                                 if len(subsystem.files) > 4:
                                     logger.warning("Conversion of subsystem {subsystem} to having it's own data source is occurring later than expected! It already has {nFiles}. Continuing with conversion, but it is worth checking!".format(subsystem = subsystem.subsystem, nFiles = len(subsystem.files)))
 
-                                # Convert by changing the fileLocationSubsystem to the subsystem name and clearing out the existing files.
-                                # The new ones will be added in below.
+                                # Convert by changing the fileLocationSubsystem to the subsystem name and clearing
+                                # out the existing files. The new ones will be added in below.
                                 subsystem.fileLocationSubsystem = subsystem.subsystem
+                                # Also need to update the directories
+                                subsystem.setupDirectories(runDir = runDir)
                                 logger.debug("Existing files: {filenames}".format(filenames = [f.filename for f in itervalues(subsystem.files)]))
                                 subsystem.files.clear()
 
@@ -739,8 +741,8 @@ def processMovedFilesIntoRuns(runs, runDict):
 
                         # Update time stamps
                         fileKeys = subsystem.files.keys()
-                        # The start of run time should rarely change, but in principle we could get a new file that we missed.
-                        # It also could happen if we change to a subsystem which contains it's own data source.
+                        # The start of run time should rarely change, but in principle we could get a new file that we
+                        # missed. It also could happen if we change to a subsystem which contains it's own data source.
                         subsystem.startOfRun = fileKeys[0]
                         logger.debug("Previous EOR: {endOfRun}\tNew: {fileKey}".format(endOfRun = subsystem.endOfRun, fileKey = fileKeys[-1]))
                         subsystem.endOfRun = fileKeys[-1]
@@ -985,7 +987,7 @@ def processAllRuns():
         trendingManager.processTrending()
         # Commit after we have successfully processed the trending
         transaction.commit()
-    logger.info("Finished trending processing!")
+        logger.info("Finished trending processing!")
 
     # Update receiver last modified time if the log exists
     # This allows to keep track of when we last processed a new file.

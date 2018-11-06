@@ -225,15 +225,7 @@ class subsystemContainer(persistent.Persistent):
         self.combinedFile = None
 
         # Directories
-        # Depends on whether the subsystem actually contains the files!
-        self.baseDir = os.path.join(runDir, self.fileLocationSubsystem)
-        self.imgDir = os.path.join(self.baseDir, "img")
-        self.jsonDir = os.path.join(self.baseDir, "json")
-        # Ensure that they exist
-        if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.imgDir)):
-            os.makedirs(os.path.join(processingParameters["dirPrefix"], self.imgDir))
-        if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.jsonDir)):
-            os.makedirs(os.path.join(processingParameters["dirPrefix"], self.jsonDir))
+        self.setupDirectories(runDir)
 
         # Times
         self.startOfRun = startOfRun
@@ -260,6 +252,27 @@ class subsystemContainer(persistent.Persistent):
 
         # Processing options
         self.processingOptions = persistent.mapping.PersistentMapping()
+
+    def setupDirectories(self, runDir):
+        """ Helper function to setup the subsystem directories.
+
+        Defines the base, img, and JSON directories, as well as creating the them if necessary.
+
+        Args:
+            runDir (str): String containing the run number. For an example run 123456, it should be
+                formatted as ``Run123456``
+        Returns:
+            None. However, it sets the ``baseDir``, ``imgDir``, and ``jsonDir`` properties of the ``subsystemContainer``.
+        """
+        # Depends on whether the subsystem actually contains the files!
+        self.baseDir = os.path.join(runDir, self.fileLocationSubsystem)
+        self.imgDir = os.path.join(self.baseDir, "img")
+        self.jsonDir = os.path.join(self.baseDir, "json")
+        # Ensure that they exist
+        if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.imgDir)):
+            os.makedirs(os.path.join(processingParameters["dirPrefix"], self.imgDir))
+        if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.jsonDir)):
+            os.makedirs(os.path.join(processingParameters["dirPrefix"], self.jsonDir))
 
     @staticmethod
     def prettyPrintUnixTime(unixTime):

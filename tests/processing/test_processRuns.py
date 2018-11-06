@@ -62,7 +62,7 @@ def setupNewSubsystemsFromMovedFileInfo(loggingMixin, mocker):
 
     return runs, runDir, runDict, additionalRunDict, subsystems
 
-expectedSubsystemValues_ = collections.namedtuple("expectedSubsystem", ["subsystem", "fileLocationSubsystem", "filenames", "showRootFiles", "startOfRun", "endOfRun"])
+expectedSubsystemValues_ = collections.namedtuple("expectedSubsystem", ["subsystem", "fileLocationSubsystem", "filenames", "baseDir", "imgDir", "jsonDir", "showRootFiles", "startOfRun", "endOfRun"])
 # This full class definition only exists to get the right docstring definition.
 # ``__slots__`` is necessary to keep the namedtuple properties
 # See: https://stackoverflow.com/a/1606478
@@ -78,6 +78,9 @@ class expectedSubsystemValues(expectedSubsystemValues_):
         subsystem (str): Three letter subsystem name.
         fileLocationSubsystem (str): Three letter subsystem name where the subsystem files are stored.
         filenames (list): Filenames sorted by the time in the names (but without the base path).
+        baseDir (str): Subsystem base directory.
+        imgDir (str): Image directory.
+        jsonDir (str): JSON direcotry.
         showRootFiles (bool): True if the root files are to be shown.
         startOfRun (int): Unix time for SOR.
         endOfRun (int): Unix time for EOR.
@@ -96,14 +99,20 @@ def determineExpectedValues(runDict, runDir, subsystem):
     """
     expectedFileLocationSubsystem = subsystem if runDict[runDir].get(subsystem, False) else "HLT"
     expectedFilenames = runDict[runDir].get(expectedFileLocationSubsystem)
-    expectedShowRootFiles = subsystem in processRuns.processingParameters["subsystemsWithRootFilesToShow"]
     expectedFilenamesSorted = sorted(expectedFilenames)
+    expectedBaseDir = os.path.join(runDir, expectedFileLocationSubsystem)
+    expectedImgDir = os.path.join(expectedBaseDir, "img")
+    expectedJsonDir = os.path.join(expectedBaseDir, "json")
+    expectedShowRootFiles = subsystem in processRuns.processingParameters["subsystemsWithRootFilesToShow"]
     expectedStartOfRun = utilities.extractTimeStampFromFilename(expectedFilenamesSorted[0])
     expectedEndOfRun = utilities.extractTimeStampFromFilename(expectedFilenamesSorted[-1])
 
     return expectedSubsystemValues(subsystem = subsystem,
                                    fileLocationSubsystem = expectedFileLocationSubsystem,
                                    filenames = expectedFilenamesSorted,
+                                   baseDir = expectedBaseDir,
+                                   imgDir = expectedImgDir,
+                                   jsonDir = expectedJsonDir,
                                    showRootFiles = expectedShowRootFiles,
                                    startOfRun = expectedStartOfRun,
                                    endOfRun = expectedEndOfRun)
@@ -119,10 +128,14 @@ def checkCreatedSubsystem(createdSubsystem, expectedSubsystem):
     """
     # Ensure that we've determine the file location subsystem properly.
     assert createdSubsystem.fileLocationSubsystem == expectedSubsystem.fileLocationSubsystem
+    # Check the directories
+    assert createdSubsystem.baseDir == expectedSubsystem.baseDir
+    assert createdSubsystem.imgDir == expectedSubsystem.imgDir
+    assert createdSubsystem.jsonDir == expectedSubsystem.jsonDir
     # Check keys first.
     assert list(createdSubsystem.files) == [utilities.extractTimeStampFromFilename(filename) for filename in expectedSubsystem.filenames]
     # Then check filenames themselves.
-    assert [fileCont.filename for fileCont in itervalues(createdSubsystem.files)] == [os.path.join(createdSubsystem.baseDir, filename) for filename in expectedSubsystem.filenames]
+    assert [fileCont.filename for fileCont in itervalues(createdSubsystem.files)] == [os.path.join(expectedSubsystem.baseDir, filename) for filename in expectedSubsystem.filenames]
     # Check the start and end times
     assert createdSubsystem.startOfRun == expectedSubsystem.startOfRun
     assert createdSubsystem.endOfRun == expectedSubsystem.endOfRun
