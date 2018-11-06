@@ -8,8 +8,8 @@
 {% if current_user.is_authenticated %}
     <p>Logged in as user {{ current_user.id }}. No additional authentication is needed!</p>
 {% else %}
-    <p>General users: Please login below to access the website.
-    <br />Developers (implementing detector-specific features): Proceed to the project <a href="https://github.com/raymondEhlers/OVERWATCH">Github page</a>.</p>
+    <p>General users: Please login below to access the website. See the <a target="_blank" href="https://twiki.cern.ch/twiki/bin/view/ALICE/OverwatchProject">TWiki</a> for login information.
+    <br />Developers (implementing detector-specific features): Proceed to the project <a target="_blank" href="https://github.com/raymondEhlers/OVERWATCH">Github page</a>.</p>
     {% if error %}
         <p class=error><strong>Error:</strong> {{ error }}
     {% endif %}
