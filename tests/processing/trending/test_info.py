@@ -4,85 +4,85 @@ from overwatch.processing.trending.info import TrendingInfoException, TrendingIn
 from overwatch.processing.trending.objects.object import TrendingObject
 
 
-def testValidData(infoArgs):
-    to = TrendingInfo(*infoArgs)
+def testValidData(tf_infoArgs):
+    to = TrendingInfo(*tf_infoArgs)
     assert isinstance(to.createTrendingClass('TST', {}), TrendingObject)
 
 
-def testWrongTypeName(infoArgs):
-    infoArgs[0] = 3.14
+def testWrongTypeName(tf_infoArgs):
+    tf_infoArgs[0] = 3.14
     with pytest.raises(TrendingInfoException):
-        TrendingInfo(*infoArgs)
+        TrendingInfo(*tf_infoArgs)
 
 
-def testWrongTypeDesc(infoArgs):
-    infoArgs[1] = 42
+def testWrongTypeDesc(tf_infoArgs):
+    tf_infoArgs[1] = 42
     with pytest.raises(TrendingInfoException):
-        TrendingInfo(*infoArgs)
+        TrendingInfo(*tf_infoArgs)
 
 
-def testValidCollectionType(infoArgs):
-    infoArgs[2] = ("foo", "bar")
-    to = TrendingInfo(*infoArgs)
+def testValidCollectionType(tf_infoArgs):
+    tf_infoArgs[2] = ("foo", "bar")
+    to = TrendingInfo(*tf_infoArgs)
     assert isinstance(to.createTrendingClass('TST', {}), TrendingObject)
 
 
-def testWrongCollectionType(infoArgs):
-    infoArgs[2] = 42
+def testWrongCollectionType(tf_infoArgs):
+    tf_infoArgs[2] = 42
     with pytest.raises(TrendingInfoException):
-        TrendingInfo(*infoArgs)
+        TrendingInfo(*tf_infoArgs)
 
 
-def testWrongTypeInCollection(infoArgs):
-    infoArgs[2] = ["foo", 1]
+def testWrongTypeInCollection(tf_infoArgs):
+    tf_infoArgs[2] = ["foo", 1]
     with pytest.raises(TrendingInfoException):
-        TrendingInfo(*infoArgs)
+        TrendingInfo(*tf_infoArgs)
 
 
-def testNoHistograms(infoArgs):
-    infoArgs[2] = []
+def testNoHistograms(tf_infoArgs):
+    tf_infoArgs[2] = []
     with pytest.raises(TrendingInfoException):
-        TrendingInfo(*infoArgs)
+        TrendingInfo(*tf_infoArgs)
 
 
-def testWrongClass(infoArgs):
-    infoArgs[3] = TrendingInfo
+def testWrongClass(tf_infoArgs):
+    tf_infoArgs[3] = TrendingInfo
     with pytest.raises(TrendingInfoException):
-        TrendingInfo(*infoArgs)
+        TrendingInfo(*tf_infoArgs)
 
 
-def testWrongAbstractClass(infoArgs):
-    infoArgs[3] = TrendingObject
-    tInfo = TrendingInfo(*infoArgs)
+def testWrongAbstractClass(tf_infoArgs):
+    tf_infoArgs[3] = TrendingObject
+    tInfo = TrendingInfo(*tf_infoArgs)
 
     with pytest.raises(NotImplementedError):
         tInfo.createTrendingClass('TST', {})
 
 
-def testMissingFunctions(infoArgs, histogram):
+def testMissingFunctions(tf_infoArgs, tf_histogram):
     TrendingObject.initializeTrendingArray = lambda self: None
-    infoArgs[3] = TrendingObject
-    tInfo = TrendingInfo(*infoArgs)
+    tf_infoArgs[3] = TrendingObject
+    tInfo = TrendingInfo(*tf_infoArgs)
     to = tInfo.createTrendingClass('TST', {})
 
     with pytest.raises(NotImplementedError):
-        to.extractTrendValue(histogram)
+        to.extractTrendValue(tf_histogram)
 
     with pytest.raises(NotImplementedError):
         to.retrieveHist()
 
 
-def testExceptionDesc(infoArgs):
-    infoArgs[1] = 42
+def testExceptionDesc(tf_infoArgs):
+    tf_infoArgs[1] = 42
     try:
-        TrendingInfo(*infoArgs)
+        TrendingInfo(*tf_infoArgs)
     except TrendingInfoException as ex:
         assert 'WrongType' in str(ex)
 
 
-def testTrendingObjectName(infoArgs):
+def testTrendingObjectName(tf_infoArgs):
     testName = "Test Name 123"
-    infoArgs[0] = testName
-    tInfo = TrendingInfo(*infoArgs)
+    tf_infoArgs[0] = testName
+    tInfo = TrendingInfo(*tf_infoArgs)
     to = tInfo.createTrendingClass('TST', {})
     assert str(to) == testName
