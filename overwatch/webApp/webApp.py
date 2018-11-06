@@ -484,8 +484,12 @@ def runPage(runNumber, subsystemName, requestedFileType):
                 except jinja2.exceptions.TemplateNotFound as e:
                     error.setdefault("Template Error", []).append("Request template: \"{}\", but it was not found!".format(e.name))
             elif requestedFileType == "rootFiles":
-                # Subsystem specific run pages are not available since they don't seem to be necessary
-                returnValue = render_template("rootfiles.html", run = run, subsystem = subsystemName)
+                try:
+                    # Subsystem specific run pages are not available since they don't seem to be necessary
+                    # Note that even though this file should always be found, we check for exceptions just in case.
+                    returnValue = render_template("rootFiles.html", run = run, subsystem = subsystemName)
+                except jinja2.exceptions.TemplateNotFound as e:
+                    error.setdefault("Template Error", []).append("Request template: \"{}\", but it was not found!".format(e.name))
             else:
                 # Redundant, but good to be careful
                 error.setdefault("Template Error", []).append("Request page: \"{}\", but it was not found!".format(requestedFileType))
@@ -524,8 +528,13 @@ def runPage(runNumber, subsystemName, requestedFileType):
                 except jinja2.exceptions.TemplateNotFound as e:
                     error.setdefault("Template Error", []).append("Request template: \"{}\", but it was not found!".format(e.name))
             elif requestedFileType == "rootFiles":
-                drawerContent = ""
-                mainContent = render_template("rootfilesMainContent.html", run = run, subsystem = subsystemName)
+                try:
+                    # Subsystem specific run pages are not available since they don't seem to be necessary
+                    # Note that even though this file should always be found, we check for exceptions just in case.
+                    drawerContent = ""
+                    mainContent = render_template("rootFilesMainContent.html", run = run, subsystem = subsystemName)
+                except jinja2.exceptions.TemplateNotFound as e:
+                    error.setdefault("Template Error", []).append("Request template: \"{}\", but it was not found!".format(e.name))
             else:
                 # Redundant, but good to be careful
                 error.setdefault("Template Error", []).append("Request page: \"{}\", but it was not found!".format(requestedFileType))
