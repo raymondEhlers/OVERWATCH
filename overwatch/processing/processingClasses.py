@@ -18,6 +18,7 @@ Note:
 from __future__ import print_function
 from __future__ import absolute_import
 from future.utils import iteritems
+from future.utils import itervalues
 
 # Database
 import BTrees.OOBTree
@@ -25,6 +26,7 @@ import persistent
 
 import os
 import datetime
+import pytz
 import time
 import numpy as np
 import ROOT
@@ -117,6 +119,14 @@ class runContainer(persistent.Persistent):
         any of the subsystems. If they have just received a new file, then the run
         is ongoing.
 
+        Note:
+            If ``subsystem.newFile`` is false, this is not a sufficient condition to say that
+            the run has ended. This is because ``newFile`` will be set to false if the subsystem
+            didn't have a file in the most recent processing run, even if the run is still
+            ongoing. This can happen for many reasons, including if the processing is executed
+            more frequently than the data transfer rate or receiver request rate, for example.
+            However, if ``newFile`` is true, then it is sufficient to know that the run is ongoing.
+
         Args:
             None
         Returns:
@@ -124,13 +134,57 @@ class runContainer(persistent.Persistent):
         """
         returnValue = False
         try:
-            # We just take the last subsystem in a given run. Any will do
-            lastSubsystem = self.subsystems[self.subsystems.keys()[-1]]
-            returnValue = lastSubsystem.newFile
+            for subsystem in itervalues(self.subsystems):
+                if subsystem.newFile is True:
+                    # We know we have a new file, so nothing else needs to be done. Just return it.
+                    returnValue = True
+                    break
+
+            # If we haven't found a new file yet, we'll check the time stamps.
+            if returnValue is False:
+                logger.debug("Checking timestamps for whether the run in ongoing.")
+                minutesSinceLastTimestamp = self.minutesSinceLastTimestamp()
+                # Compare the unix timestamps with a five minute buffer period.
+                # This buffer time is arbitrarily selected, but the value is motivated by a balance to ensure
+                # that a missed file doesn't cause the run to appear over, while also not claiming that the
+                # run continues much longer than it actually does.
+                if minutesSinceLastTimestamp < 5:
+                    returnValue = True
         except KeyError:
             returnValue = False
 
         return returnValue
+
+    def minutesSinceLastTimestamp(self):
+        """ Determine the time since the last file timestamp in minutes.
+
+        Args:
+            None.
+        Returns:
+            float: Minutes since the timestamp of the most recent file. Default: -1.
+        """
+        timeSinceLastTimestamp = -1
+        try:
+            mostRecentTimestamp = -1
+            for subsystem in itervalues(self.subsystems):
+                newestFile = subsystem.files[subsystem.files.keys()[-1]]
+                if newestFile.fileTime > mostRecentTimestamp:
+                    mostRecentTimestamp = newestFile.fileTime
+
+            # The timestamps of the files are set in Geneva, so we need to get the time in Geneva
+            # to compare against. The proper timezone for this is "Europe/Zurich".
+            # NOTE: We can't easily convert the mostRecentTimestamp to a datetime object because we can't
+            #       easily set the time zone. So we do the calculation in unix time.
+            genevaTimeZone = pytz.timezone("Europe/Zurich")
+            now = datetime.datetime.now(genevaTimeZone)
+            # This time is defined in seconds.
+            timeSinceLastTimestamp = time.mktime(now.timetuple()) - mostRecentTimestamp
+        except KeyError:
+            # If there is a KeyError somewhere, we just ignore it and pass back the default value.
+            pass
+
+        # Return in minutes
+        return timeSinceLastTimestamp / 60.0
 
     def startOfRunTimeStamp(self):
         """ Provides the start of the run time stamp in a format suitable for display.
