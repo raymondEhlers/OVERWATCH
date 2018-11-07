@@ -5,6 +5,13 @@
 Classes that define the structure of processing. This information can be created and processed,
 or read from file.
 
+Note:
+    For the ``__repr__`` and ``__str__`` methods defined here, they can throw ``KeyError`` for class attributes
+    if the these methods rely on ``__dict__`` and the objects have just been loaded from ZODB. Presumably, ``__dict__``
+    doesn't cause ZODB to fully load the object. To work around this issue, any methods using ``__dict__`` first
+    call some attribute (ideally, something simple) to ensure that the object is fully loaded. The result of that call
+    is ignored.
+
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
 
@@ -87,8 +94,8 @@ class runContainer(persistent.Persistent):
 
     def __repr__(self):
         """ Representation of the object. """
-        # Perform a random, useless class to initialize the object if stored in the database
-        #self.runDir
+        # Dummy call. See note at the top of the module.
+        self.runDir
         return "{}(runDir = {runDir}, fileMode = {mode}, hltMode = {hltMode})".format(self.__class__.__name__, **self.__dict__)
 
     def __str__(self):
@@ -412,6 +419,8 @@ class timeSliceContainer(persistent.Persistent):
 
     def __repr__(self):
         """ Representation of the object. """
+        # Dummy call. See note at the top of the module.
+        self.minUnixTimeRequested
         return "{}(minUnixTimeRequested = {minUnixTimeRequested}, maxUnixTimeRequested = {maxUnixTimeRequested}," \
                " minUnixTimeAvailable = {minUnixTimeAvailable}, maxUnixTimeAvailable = {maxUnixTimeAvailable}," \
                " startOfRun = {startOfRun}, filesToMerge = {filesToMerge}," \
@@ -513,6 +522,8 @@ class fileContainer(persistent.Persistent):
 
     def __str__(self):
         """ Print the elements of the object. """
+        # Dummy call. See note at the top of the module.
+        self.filename
         return "{}: filename = {filename}, combinedFile: {combinedFile}, timeSlice: {timeSlice}," \
                " fileTime: {fileTime}, timeIntoRun: {timeIntoRun}".format(self.__class__.__name__, **self.__dict__)
 
@@ -556,11 +567,15 @@ class histogramGroupContainer(persistent.Persistent):
 
     def __repr__(self):
         """ Representation of the object. """
+        # Dummy call. See note at the top of the module.
+        self.prettyName
         return "{}(prettyName = {prettyName}, groupSelectionPattern = {groupSelectionPattern}," \
                " plotInGridSelectionPattern = {plotInGridSelectionPattern}".format(self.__class__.__name__, **self.__dict__)
 
     def __str__(self):
         """ Print the elements of the object. """
+        # Dummy call. See note at the top of the module.
+        self.prettyName
         return "{}: prettyName = {prettyName}, groupSelectionPattern = {groupSelectionPattern}," \
                " plotInGridSelectionPattern = {plotInGridSelectionPattern}, histList: {histList}," \
                " plotInGrid: {plotInGrid}".format(self.__class__.__name__, **self.__dict__)
@@ -639,10 +654,14 @@ class histogramContainer(persistent.Persistent):
 
     def __repr__(self):
         """ Representation of the object. """
+        # Dummy call. See note at the top of the module.
+        self.histName
         return "{}(histName = {histName}, histList = {histList}, prettyName = {prettyName})".format(self.__class__.__name__, **self.__dict__)
 
     def __str__(self):
         """ Print many of the elements of the object. """
+        # Dummy call. See note at the top of the module.
+        self.histName
         return "{}: histName = {histName}, histList = {histList}, prettyName = {prettyName}," \
                " information: {information}, hist: {hist}, histType: {histType}, drawOptions: {drawOptions}," \
                " canvas: {canvas}, projectionFunctionsToApply: {projectionFunctionsToApply}," \
