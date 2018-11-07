@@ -77,7 +77,7 @@ def extractTimeStampFromFilename(filename):
     else:
         timeString = filename.split(".")[1]
         timeStamp = datetime.strptime(timeString, "%Y_%m_%d_%H_%M_%S")
-        return time.mktime(timeStamp.timetuple())
+        return int(time.mktime(timeStamp.timetuple()))
 
 def createFileDictionary(currentDir, runDir, subsystem):
     """ Creates dictionary of files and their unix timestamps for a given run directory.
