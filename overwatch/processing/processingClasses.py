@@ -24,6 +24,7 @@ import BTrees.OOBTree
 import persistent
 
 import os
+import datetime
 import time
 import numpy as np
 import ROOT
@@ -334,10 +335,8 @@ class subsystemContainer(persistent.Persistent):
         Returns:
             str: The time stamp converted into an appropriate manner for display.
         """
-        timeStruct = time.gmtime(unixTime)
-        timeString = time.strftime("%A, %d %b %Y %H:%M:%S", timeStruct)
-
-        return timeString
+        d = datetime.datetime.fromtimestamp(unixTime)
+        return d.strftime("%A, %d %b %Y %H:%M:%S")
 
     def resetContainer(self):
         """ Clear the stored hist information so we can recreate (reprocess) the subsystem.

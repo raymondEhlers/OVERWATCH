@@ -13,13 +13,13 @@ from future.utils import iteritems
 # General
 import os
 import sys
-import time
-from calendar import timegm
+from datetime import datetime
 import shutil
 import numpy as np
 import ruamel.yaml as yaml
 import signal
 import threading
+import time
 
 # ZODB
 import ZODB
@@ -76,8 +76,8 @@ def extractTimeStampFromFilename(filename):
         return int(timeString[2]) - int(timeString[1])
     else:
         timeString = filename.split(".")[1]
-        timeStamp = time.strptime(timeString, "%Y_%m_%d_%H_%M_%S")
-        return timegm(timeStamp)
+        timeStamp = datetime.strptime(timeString, "%Y_%m_%d_%H_%M_%S")
+        return time.mktime(timeStamp.timetuple())
 
 def createFileDictionary(currentDir, runDir, subsystem):
     """ Creates dictionary of files and their unix timestamps for a given run directory.
@@ -373,7 +373,7 @@ def moveFiles(dirPrefix, subsystemDict):
             # Extract the timestamp
             # We don't actually parse the timestamp - we just pass it on from the previous
             # filename. However, if we wanted to parse it, we could parse it as:
-            # `timeStamp = time.strptime(timeString, "%Y_%m_%d_%H_%M_%S")`
+            # `timeStamp = datetime.strptime(timeString, "%Y_%m_%d_%H_%M_%S")`
             # Alternatively, if the string was properly formatted, it could be read
             # using extractTimeStampFromFilename() (although note that it usually assumes
             # that the structure of the filename follows the output of this function,
