@@ -38,7 +38,7 @@ receiverIP: 127.0.0.1
 receiverPort: 8080
 staticFolder: static
 staticURLPath: /static
-statusRequestSites: {null: null}
+statusRequestSites: {}
 subsystemList: &id001 [EMC, TPC, HLT]
 subsystemsWithRootFilesToShow: *id001
 templateFolder: templates

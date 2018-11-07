@@ -9,8 +9,8 @@
     <p>See the documentation <a target="_blank" href="https://overwatch.readthedocs.io/en/latest/">here</a>.</p>
 {% endif %}
 {% if current_user.id == "emcalAdmin" %}
-    <p>View the <a href={{ url_for("status") }}>OVERWATCH Status</a></p>
-    <p>Upgrade the <a href={{ url_for("upgradeDocker") }}>Docker Image</a></p>
+    <p>View the <a href={{ url_for("overwatchStatus") }}>OVERWATCH Status</a></p>
+    <p>Kill the <a href={{ url_for("upgradeDocker") }}>Docker container</a></p>
 {% endif %}
 <p>Overwatch, as well as HLT components, are created by:</p>
 <table>

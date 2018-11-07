@@ -16,7 +16,6 @@ from future.utils import iteritems
 
 # General includes
 import os
-import time
 import zipfile
 import subprocess
 import signal
@@ -734,14 +733,16 @@ def testingDataArchive():
     # Return with a download link
     return redirect(url_for("protected", filename=zipFilename))
 
-@app.route("/status")
+@app.route("/overwatchStatus")
 @login_required
-def status():
-    """ Query and determine the status of the Overwatch sites.
+def overwatchStatus():
+    """ Query and determine the status of some parts of Overwatch.
 
     This function takes advantage of the status functionality of the web app to determine the state of any
     deployed web apps that are specified in the web app config. This is achieved by sending requests to all
     other sites and then aggregating the results. Each request is allowed a 0.5 second timeout.
+
+    It will also provide information on when the last files were received from other sites.
 
     This functionality will only work if the web app is accessible from the site where this is run. This may
     not always be the case.
@@ -780,17 +781,9 @@ def status():
     # Add to status
     statuses["Ongoing run?"] = "{runOngoing} {runOngoingNumber}".format(runOngoing = runOngoing, runOngoingNumber = runOngoingNumber)
 
-    if "config" in db and "receiverLogLastModified" in db["config"]:
-        receiverLogLastModified = db["config"]["receiverLogLastModified"]
-        lastModified = time.time() - receiverLogLastModified
-        # Display in minutes
-        lastModified = int(lastModified // 60)
-        lastModifiedMessage = "{lastModified} minutes ago".format(lastModified = lastModified)
-    else:
-        lastModified = -1
-        lastModifiedMessage = "Error! Could not retrieve receiver log information!"
+    # Determine the time of the most recent modification
     # Add to status
-    statuses["Last requested data"] = lastModifiedMessage
+    statuses["Time since last timestamp file"] = "{minutes} minutes".format(minutes = int(mostRecentRun.minutesSinceLastTimestamp()))
 
     # Determine server statuses
     exceptionErrorMessage = "Request to \"{site}\" at \"{url}\" {errorType} with error message {e}!"

@@ -989,22 +989,6 @@ def processAllRuns():
         transaction.commit()
         logger.info("Finished trending processing!")
 
-    # Update receiver last modified time if the log exists
-    # This allows to keep track of when we last processed a new file.
-    # However, it requires that the receiver log file is available on the same machine as where the processing
-    # is performed.
-    receiverLogFileDir = os.path.join("deploy")
-    if os.path.exists(receiverLogFileDir):
-        receiverLogFilePath = os.path.join(receiverLogFileDir,
-                                           next((name for name in os.listdir(receiverLogFileDir) if "Receiver.log" in name), ""))
-        logger.debug("receiverLogFilePath: {receiverLogFilePath}".format(receiverLogFilePath = receiverLogFilePath))
-
-        # Add the receiver last modified time
-        if receiverLogFilePath and os.path.exists(receiverLogFilePath):
-            logger.debug("Updating receiver log last modified time!")
-            receiverLogLastModified = os.path.getmtime(receiverLogFilePath)
-            dbRoot["config"]["receiverLogLastModified"] = receiverLogLastModified
-
     # Add users and secret key if debugging
     # This needs to be done manually if deploying, since this requires some care to ensure that everything is
     # configured properly. However, it's quite convenient for development.
