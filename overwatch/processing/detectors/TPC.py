@@ -8,6 +8,7 @@ The TPC has a variety of monitoring and trending functionality.
 .. codeauthor:: James Mulligan <james.mulligan@yale.edu>, Yale University
 .. codeauthor:: Anthony Timmins <anthony.timmins@cern.ch>, University of Houston
 .. codeauthor:: Charles Hughes <charles.hughes@cern.ch>, University of Tennessee
+.. codeauthor:: Raquel Quishpe <raquel.quishpe@cern.ch>, University of Houston
 """
 
 import ROOT
@@ -69,7 +70,6 @@ def getTrendingObjectInfo():  # type: () -> List[TrendingInfo]
             trendingInfo.append(TrendingInfo(prefix + name, prefix + desc, histograms, cls))
     return trendingInfo
 
-
 def generalOptions(subsystem, hist, processingOptions):
     """ Processing function where general histograms options that require the underlying histogram and/or canvas
     are set.
@@ -89,6 +89,9 @@ def generalOptions(subsystem, hist, processingOptions):
     # Show TPC titles (by request from Mikolaj)
     # NOTE: Titles are always shown by jsRoot, so this option is only relevant for png images.
     ROOT.gStyle.SetOptTitle(1)
+
+    # drawing options for TH2 hists
+    hist.hist.SetOption("COLZ")
 
 def findFunctionsForTPCHistogram(subsystem, hist):
     """ Find processing functions for TPC histograms based on their names.
@@ -157,6 +160,7 @@ def createTPCHistogramGroups(subsystem):
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("Positive RecVertex", "pos_recvertex"))
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("event_6", "event_6"))
 
+
     # Catch all other TPC hists
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("Other TPC", "TPC"))
 
@@ -178,6 +182,7 @@ def createAdditionalTPCHistograms(subsystem):
     - The DCAr and DCAz vs phi for positive and negative tracks separately. In particular, we project
       those histograms to the A side and the C side to determine their performance at the readouts on each side.
     - The DCAz vs phi for all tracks. We restrict the eta and pt ranges. This is just as an example.
+    - The eta, phi and pT projection histograms for positive and negative tracks.
 
     Note:
         Older histograms has an additional "TPCQA " in front of their names (ie. "TPCQA TPCQA/h_tpc_track_pos_recvertex_3_5_6").
@@ -200,11 +205,11 @@ def createAdditionalTPCHistograms(subsystem):
              ("DCAr_vs_Phi_postracks", "TPCQA/h_tpc_track_pos_recvertex_4_5_6"),
              ("DCAr_vs_Phi_negtracks", "TPCQA/h_tpc_track_neg_recvertex_4_5_6")]
 
-    for histName, inputHistName in names:
+    for tempName, inputHistName in names:
         # Assign the projection functions (and label for convenience)
         for label, projFunction in [("aSide", aSideProjectToXZ), ("cSide", cSideProjectToXZ)]:
             # For example, "DCAz_vs_Phi_postracks_aSide"
-            histName = "{histName}_{label}".format(histName = histName, label = label)
+            histName = "{histName}_{label}".format(histName = tempName, label = label)
             # ``histList`` must be a list, so we pass the histogram name as a single entry list
             histCont = processingClasses.histogramContainer(histName = histName, histList = [inputHistName])
             histCont.projectionFunctionsToApply.append(projFunction)
@@ -216,6 +221,27 @@ def createAdditionalTPCHistograms(subsystem):
     histCont = processingClasses.histogramContainer(histName, ["TPCQA/h_tpc_track_all_recvertex_4_5_7"])
     histCont.projectionFunctionsToApply.append(restrictInclusiveDCAzVsPhiPtEtaRangeAndProjectTo1D)
     subsystem.histsAvailable[histName] = histCont
+
+    #eta, phi and pT projections
+    #eta vs. phi pos/neg tracks
+    names = [("Eta_vs_Phi_postracks","TPCQA/h_tpc_track_pos_recvertex_2_5_6"),
+             ("Eta_vs_Phi_negtracks","TPCQA/h_tpc_track_neg_recvertex_2_5_6")]
+        
+    for histName, inputHistName in names:
+        histCont = processingClasses.histogramContainer(histName = histName, histList = [inputHistName])
+        histCont.projectionFunctionsToApply.append(projectToYZ)
+        subsystem.histsAvailable[histName] = histCont
+
+    #eta of pos/neg tracks nclust>70
+    names = [("pT_postracks","TPCQA/h_tpc_track_pos_recvertex_0_5_7"),
+             ("pT_negtracks","TPCQA/h_tpc_track_neg_recvertex_0_5_7"),
+             ("Eta_postracks","TPCQA/h_tpc_track_pos_recvertex_0_5_7"),
+             ("Eta_negtracks","TPCQA/h_tpc_track_neg_recvertex_0_5_7")]
+
+    for histName, inputHistName in names:
+        histCont = processingClasses.histogramContainer(histName = histName, histList = [inputHistName])
+        histCont.projectionFunctionsToApply.append(projectTo1D)
+        subsystem.histsAvailable[histName] = histCont
 
 def restrictInclusiveDCAzVsPhiPtEtaRangeAndProjectTo1D(subsystem, hist, processingOptions, **kwargs):
     """ Projection function to restrict the pt and eta ranges of the DCAz vs Phi inclusive histogram.
@@ -315,5 +341,58 @@ def projectToXZ(subsystem, hist, processingOptions, aSide):
     # NOTE: The ``histName`` of the ``histogramContainer`` corresponds to the name of the histogram (container) that we
     #       created. Thus, we can use it here to set the projection to the proper histogram name.
     tempHist.SetName(hist.histName)
+    tempHist.SetTitle(hist.histName)
+    if "DCAr" in hist.histName:
+        tempHist.GetYaxis().SetTitle("DCAr (cm)")
+    if "DCAz" in hist.histName:
+        tempHist.GetYaxis().SetTitle("DCAz (cm)")
 
     return tempHist
+
+def projectToYZ(subsystem, hist, processingOptions):
+    """ Project a given TH3 histogram onto the YZ axis.
+        
+    This function was built to get an eta vs. phi histograms for positive and negative tracks.
+    
+    Args:
+    subsystem (subsystemContainer): Subsystem which contains the projected histogram.
+    hist (histogramContainer): Histogram container corresponding to the projected histogram.
+    When this function is called, it contains the histogram to project from, so the hist
+    to project from can be retrieved via ``hist.hist``.
+    processingOptions (dict): Dictionary of processing options for the given subsystem.
+    
+    Returns:
+    ROOT.TH2: The projected histogram
+    """
+
+    tempHist = hist.hist.Project3D("YZ")
+    tempHist.SetName(hist.histName)
+    tempHist.SetTitle(hist.histName)
+
+    return tempHist
+
+def projectTo1D(subsystem, hist, processingOptions):
+    """ Project a given TH3 histogram onto the Z or Y axis.
+        
+        This function was built to get P_T or eta histograms for positive and negative tracks.
+        
+        Args:
+        subsystem (subsystemContainer): Subsystem which contains the projected histogram.
+        hist (histogramContainer): Histogram container corresponding to the projected histogram.
+        When this function is called, it contains the histogram to project from, so the hist
+        to project from can be retrieved via ``hist.hist``.
+        processingOptions (dict): Dictionary of processing options for the given subsystem.
+        
+        Returns:
+        ROOT.TH1: The projected histogram
+        """
+    if "pT" in hist.histName:
+        tempHist = hist.hist.ProjectionZ(hist.histName, 71, 160, 1, 30)
+
+    if "Eta" in hist.histName:
+        tempHist = hist.hist.ProjectionY(hist.histName, 71, 160, 1, 25)
+
+    tempHist.SetTitle("{histName} (ncl>70)".format(histName = hist.histName))
+
+    return tempHist
+
