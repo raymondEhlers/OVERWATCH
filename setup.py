@@ -93,6 +93,7 @@ setup(
     install_requires = [
         "aenum",
         "future",
+        "pendulum",
         "ruamel.yaml",
         "numpy",
         # rootpy is only used peripherally and it's installation process is sometimes difficult,

@@ -22,7 +22,7 @@ import signal
 import jinja2
 import json
 import collections
-import datetime
+import pendulum
 import pkg_resources
 # For server status
 import requests
@@ -290,7 +290,7 @@ def contact():
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
     # Provide current year for copyright information
-    currentYear = datetime.datetime.utcnow().year
+    currentYear = pendulum.now(tz = "UTC").year
     if ajaxRequest is False:
         return render_template("contact.html", currentYear = currentYear)
     else:

@@ -13,13 +13,12 @@ from future.utils import iteritems
 # General
 import os
 import sys
-from datetime import datetime
 import shutil
 import numpy as np
+import pendulum
 import ruamel.yaml as yaml
 import signal
 import threading
-import time
 
 # ZODB
 import ZODB
@@ -54,7 +53,8 @@ def extractTimeStampFromFilename(filename):
       times, subtract them, and return the difference. Note that this makes it a different format than the other
       two timestamps.
     - For other files processed into subsystems, the format is `prefix/SYShists.%Y_%m_%d_%H_%M_%S.root`. We
-      extract the time stamp and convert it to unix time. The time stamp is assumed to be in the CERN time zone.
+      extract the time stamp and convert it to unix time. The time stamp is assumed to be in the CERN time zone,
+      so we convert it to UTC and store the timestamp.
 
     Note:
         The ``prefix/`` can be anything (or non-existent), as long as it doesn't contain any ``.``.
@@ -75,9 +75,12 @@ def extractTimeStampFromFilename(filename):
         timeString = filename.split(".")
         return int(timeString[2]) - int(timeString[1])
     else:
+        # Extract the time string and then convert it to a pendulum datetime object. Sicne it was
+        # recorded in Geneva, we create it in that timezone so we can convert it to UTC.
         timeString = filename.split(".")[1]
-        timeStamp = datetime.strptime(timeString, "%Y_%m_%d_%H_%M_%S")
-        return int(time.mktime(timeStamp.timetuple()))
+        timeStamp = pendulum.from_format(timeString, "YYYY_MM_DD_HH_mm_ss", tz = "Europe/Zurich")
+        # This timestamp is unix time in UTC.
+        return int(timeStamp.timestamp())
 
 def createFileDictionary(currentDir, runDir, subsystem):
     """ Creates dictionary of files and their unix timestamps for a given run directory.
@@ -373,7 +376,7 @@ def moveFiles(dirPrefix, subsystemDict):
             # Extract the timestamp
             # We don't actually parse the timestamp - we just pass it on from the previous
             # filename. However, if we wanted to parse it, we could parse it as:
-            # `timeStamp = datetime.strptime(timeString, "%Y_%m_%d_%H_%M_%S")`
+            # timeStamp = pendulum.from_format(timeStamp, "YYYY_MM_DD_HH_mm_ss", tz = "Europe/Zurich")
             # Alternatively, if the string was properly formatted, it could be read
             # using extractTimeStampFromFilename() (although note that it usually assumes
             # that the structure of the filename follows the output of this function,

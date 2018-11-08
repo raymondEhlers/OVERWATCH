@@ -9,9 +9,9 @@ in the python package setup.
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
 
-import datetime
 import logging
 import os
+import pendulum
 import pprint
 import timeit
 
@@ -66,7 +66,7 @@ def run():
     logger.info("Starting processing with sleep time of {sleepTime}.".format(sleepTime = sleepTime))
     while not handler.exit.is_set():
         # Note both the time that the processing started, as well as the execution time.
-        logger.info("Running processing at {time}.".format(time = datetime.datetime.now()))
+        logger.info("Running processing at {time}.".format(time = pendulum.now()))
         start = timeit.default_timer()
         # Run the actual executable.
         processRuns.processAllRuns()

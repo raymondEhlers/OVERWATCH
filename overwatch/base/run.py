@@ -9,8 +9,8 @@ in the python package setup.
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
 
-import datetime
 import os
+import pendulum
 import pprint
 import shutil
 import transaction
@@ -54,20 +54,20 @@ def runReceiverDataTransfer():
     """
     handler = utilities.handleSignals()
     # Keep track of the time between transfers.
-    lastTransferTime = datetime.datetime.now()
+    lastTransferTime = pendulum.now()
     logger.info("Starting receiver data handling and transfer.")
     while not handler.exit.is_set():
         successfullyTransferred, _ = dataTransfer.processReceivedFiles()
         if successfullyTransferred and len(successfullyTransferred) > 0:
             # Update the time of the last transfer
-            lastTransferTime = datetime.datetime.now()
+            lastTransferTime = pendulum.now()
 
-        timeDifference = datetime.datetime.now() - lastTransferTime
+        timeDifference = pendulum.now() - lastTransferTime
         # 12 hours = 43200 seconds
         if timeDifference.seconds > 43200:
             logger.warning("No data transfer in 12 hours. Check the ZMQ receivers!")
             # Update the last transfer time, or this will be emitted every loop (which could become annoying quickly).
-            lastTransferTime = datetime.datetime.now()
+            lastTransferTime = pendulum.now()
 
         handler.exit.wait(parameters["dataTransferTimeToSleep"])
 

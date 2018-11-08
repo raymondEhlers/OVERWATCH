@@ -25,10 +25,8 @@ import BTrees.OOBTree
 import persistent
 
 import os
-import datetime
-import pytz
-import time
 import numpy as np
+import pendulum
 import ROOT
 import ctypes
 import logging
@@ -144,6 +142,7 @@ class runContainer(persistent.Persistent):
             if returnValue is False:
                 logger.debug("Checking timestamps for whether the run in ongoing.")
                 minutesSinceLastTimestamp = self.minutesSinceLastTimestamp()
+                logger.debug("{minutesSinceLastTimestamp} minutes since the last timestamp.".format(minutesSinceLastTimestamp = minutesSinceLastTimestamp))
                 # Compare the unix timestamps with a five minute buffer period.
                 # This buffer time is arbitrarily selected, but the value is motivated by a balance to ensure
                 # that a missed file doesn't cause the run to appear over, while also not claiming that the
@@ -171,20 +170,17 @@ class runContainer(persistent.Persistent):
                 if newestFile.fileTime > mostRecentTimestamp:
                     mostRecentTimestamp = newestFile.fileTime
 
-            # The timestamps of the files are set in Geneva, so we need to get the time in Geneva
+            # The timestamps of the files are set in Geneva, so we need to construct the timestamp in Geneva
             # to compare against. The proper timezone for this is "Europe/Zurich".
-            # NOTE: We can't easily convert the mostRecentTimestamp to a datetime object because we can't
-            #       easily set the time zone. So we do the calculation in unix time.
-            genevaTimeZone = pytz.timezone("Europe/Zurich")
-            now = datetime.datetime.now(genevaTimeZone)
-            # This time is defined in seconds.
-            timeSinceLastTimestamp = time.mktime(now.timetuple()) - mostRecentTimestamp
+            geneva = pendulum.from_timestamp(mostRecentTimestamp, tz = "Europe/Zurich")
+            now = pendulum.now()
+            # Return in minutes
+            timeSinceLastTimestamp = now.diff(geneva).in_minutes()
         except KeyError:
             # If there is a KeyError somewhere, we just ignore it and pass back the default value.
             pass
 
-        # Return in minutes
-        return timeSinceLastTimestamp / 60.0
+        return timeSinceLastTimestamp
 
     def startOfRunTimeStamp(self):
         """ Provides the start of the run time stamp in a format suitable for display.
@@ -382,15 +378,19 @@ class subsystemContainer(persistent.Persistent):
     def prettyPrintUnixTime(unixTime):
         """ Converts the given time stamp into an appropriate manner ("pretty") for display.
 
-        Needed mostly in Jinja templates were arbitrary functions are not allowed.
+        The time is returned in the format: "Tuesday, 6 Nov 2018 20:55:10". This function is
+        mainly needed in Jinja templates were arbitrary functions are not allowed.
+
+        Note:
+            We display this in the CERN time zone, so we convert it here to that timezone.
 
         Args:
             unixTime (int): Unix time to be converted.
         Returns:
             str: The time stamp converted into an appropriate manner for display.
         """
-        d = datetime.datetime.fromtimestamp(unixTime)
-        return d.strftime("%A, %d %b %Y %H:%M:%S")
+        d = pendulum.from_timestamp(unixTime, tz = "Europe/Zurich")
+        return d.format("dddd, D MMM YYYY HH:mm:ss")
 
     def resetContainer(self):
         """ Clear the stored hist information so we can recreate (reprocess) the subsystem.
