@@ -374,7 +374,7 @@ def projectToYZ(subsystem, hist, processingOptions):
 def projectTo1D(subsystem, hist, processingOptions):
     """ Project a given TH3 histogram onto the Z or Y axis.
         
-        This function was built to get P_T or eta histograms for positive and negative tracks.
+        This function was built to get pT or eta histograms for positive and negative tracks.
         
         Args:
         subsystem (subsystemContainer): Subsystem which contains the projected histogram.
