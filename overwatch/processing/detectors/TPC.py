@@ -233,15 +233,15 @@ def createAdditionalTPCHistograms(subsystem):
         subsystem.histsAvailable[histName] = histCont
 
     #eta of pos/neg tracks nclust>70
-    names = [("pT_postracks","TPCQA/h_tpc_track_pos_recvertex_0_5_7"),
-             ("pT_negtracks","TPCQA/h_tpc_track_neg_recvertex_0_5_7"),
-             ("Eta_postracks","TPCQA/h_tpc_track_pos_recvertex_0_5_7"),
-             ("Eta_negtracks","TPCQA/h_tpc_track_neg_recvertex_0_5_7")]
+    names = [("postracks","TPCQA/h_tpc_track_pos_recvertex_0_5_7"),
+             ("negtracks","TPCQA/h_tpc_track_neg_recvertex_0_5_7")]
 
-    for histName, inputHistName in names:
-        histCont = processingClasses.histogramContainer(histName = histName, histList = [inputHistName])
-        histCont.projectionFunctionsToApply.append(projectTo1D)
-        subsystem.histsAvailable[histName] = histCont
+    for tempName, inputHistName in names:
+        for label in [("pT"),("Eta")]:
+            histName = "{label}_{histName}".format(histName = tempName, label = label)
+            histCont = processingClasses.histogramContainer(histName = histName, histList = [inputHistName])
+            histCont.projectionFunctionsToApply.append(projectTo1D)
+            subsystem.histsAvailable[histName] = histCont
 
 def restrictInclusiveDCAzVsPhiPtEtaRangeAndProjectTo1D(subsystem, hist, processingOptions, **kwargs):
     """ Projection function to restrict the pt and eta ranges of the DCAz vs Phi inclusive histogram.
@@ -374,7 +374,7 @@ def projectToYZ(subsystem, hist, processingOptions):
 def projectTo1D(subsystem, hist, processingOptions):
     """ Project a given TH3 histogram onto the Z or Y axis.
         
-        This function was built to get pT or eta histograms for positive and negative tracks.
+        This function was built to get P_T or eta histograms for positive and negative tracks.
         
         Args:
         subsystem (subsystemContainer): Subsystem which contains the projected histogram.
