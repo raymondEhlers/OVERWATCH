@@ -105,7 +105,8 @@ def createFileDictionary(currentDir, runDir, subsystem):
 
     # Add uncombined .root files to mergeDict, then sort by timestamp
     for name in os.listdir(os.path.join(currentDir, runDir, subsystem)):
-        if ".root" in name and "combined" not in name and "timeSlice" not in name:
+        # Need to avoid temporary files, so avoid those which starts with ".".
+        if ".root" in name and "combined" not in name and "timeSlice" not in name and not name.startswith("."):
             filename = os.path.join(filenamePrefix, name)
             mergeDict[extractTimeStampFromFilename(filename)] = filename
 
@@ -292,7 +293,8 @@ def enumerateFiles(dirPrefix, subsystem):
 
     filesToMove = []
     for name in os.listdir(currentDir):
-        if subsystem in name and ".root" in name:
+        # Need to avoid temporary files, so avoid those which starts with ".".
+        if subsystem in name and ".root" in name and not name.startswith("."):
             filesToMove.append(name)
             #logger.debug("name: %s" % name)
 
