@@ -25,10 +25,7 @@ import BTrees.OOBTree
 import persistent
 
 import os
-import numpy as np
 import pendulum
-import ROOT
-import ctypes
 import logging
 # Setup logger
 logger = logging.getLogger(__name__)
