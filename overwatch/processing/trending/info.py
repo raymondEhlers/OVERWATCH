@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+""" Trending information class used to describe trending objects.
+
+"""
+
 try:
     from typing import *  # noqa
 except ImportError:

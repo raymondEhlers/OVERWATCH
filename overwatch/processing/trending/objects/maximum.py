@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+""" Trending object to extract the maximum value of a histogram.
+
+"""
+
 import numpy as np
 import ROOT
 

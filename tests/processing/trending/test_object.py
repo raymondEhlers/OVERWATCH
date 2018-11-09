@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+""" Tests for the trending object base class.
+
+"""
+
 import pytest
 import ROOT
 from overwatch.processing.trending.objects.object import TrendingObject

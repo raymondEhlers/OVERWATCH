@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+""" Trending manager to direct the trending system.
+
+"""
+
 import logging
 import os
 from collections import defaultdict

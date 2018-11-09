@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+""" Fixtures for testing the trending subsystem.
+
+"""
+
 import ROOT
 import pytest
 

@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+""" Base trending object.
+
+"""
+
 import logging
 import os
 

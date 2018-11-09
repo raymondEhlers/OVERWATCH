@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+""" Tests for trending objects.
+
+"""
+
 import pytest
 import ROOT
 

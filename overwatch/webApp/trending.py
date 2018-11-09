@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+""" Blueprint for serving trending results.
+
+"""
+
 import logging
 from flask_login import login_required
 from flask import request, render_template, jsonify
