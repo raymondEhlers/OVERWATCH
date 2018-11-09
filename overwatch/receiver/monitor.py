@@ -12,10 +12,11 @@ in the python package setup.
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
 
+import logging
 import os
 import pendulum
 import pprint
-import logging
+
 # We want to log everything, so we give it empty quotes.
 logger = logging.getLogger("")
 
@@ -57,8 +58,7 @@ def getHeartbeat(subsystem):
     try:
         with open(heartbeatFilename, "r") as f:
             heartbeatTimestamp = int(f.read())
-    except (IOError, ValueError) as e:
-        logger.info("e: {e}".format(e = type(e)))
+    except (IOError, ValueError):
         # If the file doesn't exist, return -1 to indicate that the receiver heartbeat wasn't found.
         heartbeatTimestamp = -1
 
@@ -87,12 +87,9 @@ def checkHeartbeat(deadReceivers):
         now = pendulum.now(tz = "UTC")
         # If the receiver doesn't have a heartbeat for 5 minutes, then it is considered dead.
         subsystemDead = False
-        logger.debug("now: {}, heartbeat: {}".format(now.timestamp(), heartbeat.timestamp()))
-        logger.debug("Diff: {}".format(now.diff(heartbeat).in_minutes()))
         if now.diff(heartbeat).in_minutes() >= 5:
             subsystemDead = True
 
-        logger.info("subsystemDead: {}".format(subsystemDead))
         if subsystem in deadReceivers:
             if subsystemDead is True:
                 # Reduced notification frequency so we don't overwhelm ourselves with errors.
@@ -119,9 +116,14 @@ def run():
     # We can also keep track of when it has been restored.
     deadReceivers = set()
     logger.info("Starting ZMQ receiver monitoring.")
+    # We put a wait here first because the receivers will take a moment to startup and
+    # we don't want to immediately report that the receivers are not working.
+    handler.exit.wait(60)
     while not handler.exit.is_set():
+        # Check the status of the receivers
         deadReceivers = checkHeartbeat(deadReceivers)
-        # Repeat every minute. We shouldn't need to configure this vgalue.
+        # Repeat every minute. We shouldn't need to configure this value.
+        # Note that this check is last to ensure that the check won't run again when the process is terminated
         handler.exit.wait(60)
 
 if __name__ == "__main__":  # pragma: nocover

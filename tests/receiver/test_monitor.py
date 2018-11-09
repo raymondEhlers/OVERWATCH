@@ -27,7 +27,7 @@ def testGetHeartbeatFailures(loggingMixin, mocker, timestamp, expected):
 
     if timestamp == "invalidFile":
         # We don't need to configure the values - they don't really matter. We just want this
-        # excpetion to be raised.
+        # exception to be raised.
         mOpen.side_effect = IOError()
 
     result = monitor.getHeartbeat(subsystem = subsystem)
@@ -45,22 +45,30 @@ def testGetHeartbeatFailures(loggingMixin, mocker, timestamp, expected):
 def testCheckHeartbeat(loggingMixin, mocker, inputTimestamps, expectedTimestamps, expectedDeadReceivers):
     """ Test checking the heartbeat of given subsystems. """
     # Setup subsystems
-    monitor.parameters["subsystemList"] = inputTimestamps[0].keys()
+    # Normally, we could just get the subsystems by calling `el.keys() for el in inputTimestamps`.
+    # Hoewver, specifing the ``mockInputTimestamps`` and ``expectedTimestamps`` properly depends on the
+    # order in which the values are insert, which in turn depends on the order in which the subsystems
+    # are interated over. Py2 dict keys don't preserve order, so these tests will sometimes fail. By
+    # specifying the order in the ``subsystems`` list, we don't have to get the keys from the dict.
+    subsystems = ["EMC", "HLT"]
+    monitor.parameters["subsystemList"] = subsystems
     # Setup input values
     # Converts into [emc1, hlt1, emc2, hlt2] so that the return values are in the appropriate order.
-    mockInputTimestamps = [el[subsystem] for el in inputTimestamps for subsystem in el.keys()]
+    mockInputTimestamps = [el[subsystem] for el in inputTimestamps for subsystem in subsystems]
     # Spot check the third element.
     assert mockInputTimestamps[2] == inputTimestamps[1]["EMC"]
+    # Sanity check to ensure that we haven't missed any subsystems
+    assert set(subsystems) == set(inputTimestamps[1].keys())
     # Setup expected values
     if isinstance(expectedTimestamps, int):
-        logger.debug("Using fixed offset")
+        logger.debug("Using fixed offset.")
         offset = expectedTimestamps
         expectedSource = inputTimestamps
     else:
-        logger.debug("Using fullly specified expected timestamps.")
+        logger.debug("Using expected timestamps specified in the parametrization.")
         offset = 0
         expectedSource = expectedTimestamps
-    expectedTimestamps = [pendulum.from_timestamp(el[subsystem] + offset, tz = "Europe/Zurich") for el in expectedSource for subsystem in el.keys()]
+    expectedTimestamps = [pendulum.from_timestamp(el[subsystem] + offset, tz = "Europe/Zurich") for el in expectedSource for subsystem in subsystems]
     # Setup mocks using expected input and output values.
     mHeartbeat = mocker.MagicMock(side_effect = mockInputTimestamps)
     mocker.patch("overwatch.receiver.monitor.getHeartbeat", mHeartbeat)
