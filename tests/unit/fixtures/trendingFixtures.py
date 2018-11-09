@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+""" Fixtures for testing the trending subsystem.
+
+"""
+
 import ROOT
 import pytest
 
@@ -22,7 +28,7 @@ def tf_infoArgs():
     yield ["name", "desc", ["hist1", "hist2"], MeanTrending]
 
 
-class Histogram:
+class Histogram(object):
     functionNames = [
         'GetMaximum',
         'GetMean',

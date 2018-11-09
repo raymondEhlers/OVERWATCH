@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+""" Tests for trending info objects.
+
+"""
+
 import pytest
 
 from overwatch.processing.trending.info import TrendingInfoException, TrendingInfo

@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+""" Base trending object.
+
+"""
+
 import logging
 import os
 
@@ -11,6 +17,7 @@ try:
 except ImportError:
     pass
 else:
+    # Needed for typing information
     from overwatch.processing.processingClasses import histogramContainer  # noqa
 
 logger = logging.getLogger(__name__)

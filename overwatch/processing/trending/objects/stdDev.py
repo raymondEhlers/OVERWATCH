@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+""" Trending object to extract the standard deviation of a histogram.
+
+"""
+
 import numpy as np
 import ROOT
 

@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+""" Trending manager to direct the trending system.
+
+"""
+
 import logging
 import os
 from collections import defaultdict
@@ -16,6 +22,7 @@ try:
 except ImportError:
     pass
 else:
+    # Needed for typing information
     from persistent.mapping import PersistentMapping  # noqa
     from overwatch.processing.processingClasses import histogramContainer  # noqa
     from overwatch.processing.trending.info import TrendingInfo  # noqa
