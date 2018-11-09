@@ -62,7 +62,7 @@
                 {% endif -%}
                 <div id="{{ hist.histName }}" class="histogramContainer {% if jsRoot == True %}{{ histogramContainerClasses }}{% endif %}" data-filename="{{ jsonFilenameTemplate.format(hist.histName.replace("/", "_")) }}">
                 {%- if jsRoot != True %}
-                    <img src="{{ url_for("protected", filename=imgFilenameTemplate.format(hist.histName.replace("/", "_"))) }}" alt="{{ hist.histName }}">
+                    <img src="{{ url_for("protected", filename=imgFilenameTemplate.format(hist.histName.replace("/", "_"))) }}" alt="{{ hist.histName }}" class="histogramImage">
                 {%- else %}
                     {# Provide indication that we are loading jsroot content #}
                     {# It will disappear once jsroot loads the histogram #}

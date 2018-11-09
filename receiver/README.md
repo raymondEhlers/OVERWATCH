@@ -8,7 +8,7 @@ automatically if `AliRoot` is not available.
 
 To compile, from the receiver directory, run
 
-```
+```bash
 mkdir build && cd build
 # Configure cmake and provide the software locations
 # With the options below, it will install to receiver/bin

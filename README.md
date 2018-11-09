@@ -64,9 +64,9 @@ date.
 To use most parts of the Overwatch project, you need some data provided by the HLT. The latest five runs of data
 received by Overwatch can be accessed
 [here](https://aliceoverwatch.physics.yale.edu/testingDataArchive). The login credentials are available on the
-[ALICE TWiki](https://twiki.cern.ch/twiki/bin/view/ALICE/L1TriggerMonitoring). It includes at least the
-combined file and the file from which it is built. If the run is sufficiently long, it will include an
-additional file for testing of the time slice functionality.
+[ALICE TWiki](https://twiki.cern.ch/twiki/bin/view/ALICE/OverwatchProject). It includes at least the combined
+file and the file from which it is built. If the run is sufficiently long, it will include an additional file
+for testing of the time slice functionality.
 
 ### Process the data with `overwatchProcessing`
 
@@ -120,8 +120,9 @@ configuration file.
     - [Web App](@overwatch-webapp)
     - [Data Receivers](#overwatch-receivers)
 2. [Overwatch Configuration](#overwatch-configuration)
-3. [Overwatch Deployment](#overwatch-deployment)
-4. [Citation](#citation)
+3. [Overwatch Executables](#overwatch-executables)
+4. [Overwatch Deployment](#overwatch-deployment)
+5. [Citation](#citation)
 
 # Overwatch Architecture
 
@@ -229,13 +230,37 @@ configuration.
 
 For a list of the available configuration options, see the `config.yaml` file in the desired module.
 
+# Overwatch Executables
+
+In addition to processing and web application, there are a number of other executables available within the
+Overwatch project. They predominately play supporting roles for those two main packages.
+
+A large number of executables are based on modules defined in `overwatch.base`. For further information, see
+the documentation and the README in `overwatch.base`. The following executables are defined there:
+
+- `overwatchDeploy` - Handle execution of Overwatch executables in deployments. Although not recommended, it
+  can also be used locally. See also [below](#overwatch-deployment)
+- `overwatchUpdateUsers` - Simple helper to update the database with the user information defined in the configuration.
+- `overwatchReceiverDataTransfer` - Transfer data received by the ZMQ and DQM receivers to other Overwatch
+  sites and EOS.
+- `overwatchReplay` - Replay processed Overwatch data as if it was newly received. Allows for full trending and
+  other testing of the data receiving process.
+- `overwatchReplayDataTransfer` - Replay process Overwatch data to a specified data at a high rate. It is a
+  more general tool than `overwatchReplay` and is used for moving processed data via
+  `overwatchReceiverDataTransfer`.
+
+The DQM receiver is defined in `overwatch.receiver`. For further information, see the documentation and the
+README in `overwatch.receiver`. The following executables are defined there:
+
+- `overwatchDQMReceiver`. Receiver data from the AMORE DQM system. Usage requires coordination with the DQM project.
+
 # Overwatch Deployment
 
 All of the components of Overwatch can be configured and launched by the `overwatchDeploy` executable.
-Overwatch is intended to be deployed with a docker image. Within this image, configurations are
-managed by `supervisord`. All web apps are deployed behind nginx.
+Overwatch is intended to be deployed with a docker image. Within this image, configurations are managed by
+`supervisord`. All web apps are deployed behind `nginx`.
 
-The Dockerfiles and additional information is available in the `deploy/docker` directory.
+The Dockerfiles and additional information is available in the `docker` directory.
 
 ## Configuring Deployment
 

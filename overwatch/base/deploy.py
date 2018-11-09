@@ -14,17 +14,22 @@ It can handle the configuration and execution of:
 - Overwatch processing
 - Overwatch web app
     - Via ``uswgi``, ``uwsgi`` behind ``nginx`` or directly.
+- Overwatch data transfer from receivers to other Overwatch sites and EOS.
+- Overwatch data replay for data transfer via the data transfer module.
+- Overwatch data replay to simulate receiving new data using existing data.
 
-It can also handle receiving SSH Keys and grid certificates passed in via
-environment variables.
+It can also handle receiving SSH Keys, grid certificates, and grid keys passed
+in via environment variables.
 
 Various classes of files are stored in specific locations. In particular,
 
-- socket files are stored in "/tmp/sockets".
-- config files are stored in "data/config" (except for those which must be
+- socket files are stored in "exec/sockets".
+- config files are stored in "exec/config" (except for those which must be
   in the current folder, such as the supervisor config, or the overwatch
   custom config).
-- log files are in "data/logs".
+- log files are in "exec/logs" when the process is executed directly. In the
+  case of supervisor, we redirect the logs to the main supervisor process to
+  allow for all logs to be captured by docker.
 
 Usually, this module is executed directly in docker containers. All options
 are configured via a YAML file.
@@ -37,6 +42,7 @@ from builtins import super
 from future.utils import iteritems
 
 import functools
+import copy
 import os
 import collections
 import stat
@@ -47,17 +53,22 @@ import subprocess
 import sys
 import time
 import warnings
-import ruamel.yaml as yaml
 # Help for handling string based configurations.
 import inspect
 try:
     # Python 3
     from configparser import ConfigParser
-except ImportError:  # pragma: no cover . Py2 will cover this, but not p3. Either way, it's not interesting, so ignore it.
+except ImportError:  # pragma: no cover . Py2 will cover this, but not py3. Either way, it's not interesting, so ignore it.
     # Python 2
     from ConfigParser import SafeConfigParser as ConfigParser
 
 logger = logging.getLogger("")
+
+# Import the YAML module from the config module so we can use the loader plugins defined there. This
+# is particular important when configuring the overwatch additional options, since we may need to
+# to interpret those plugins.
+# As an exceptional case, we call this `configModule` because `config` is an extremely common variable in this module.
+import overwatch.base.config as configModule
 
 # Convenience
 import pprint
@@ -80,7 +91,7 @@ def expandEnvironmentalVars(loader, node):
     val = os.path.expandvars(val).replace("\n", "")
     return str(val)
 # Add the plugin into the loader.
-yaml.SafeLoader.add_constructor('!expandVars', expandEnvironmentalVars)
+configModule.yaml.SafeLoader.add_constructor('!expandVars', expandEnvironmentalVars)
 
 class executable(object):
     """ Base executable class.
@@ -114,7 +125,7 @@ class executable(object):
         shortExecutionTime (bool): True if the executable executes and completes quickly. In this case, supervisor
             need special options to ensure that it doesn't think that the executable failed immediately and should be
             restarted.
-        logFilename (str): Filename for the log file. Default: ``{name}.log``.
+        logFilename (str): Filename for the log file. Default: ``exec/logs/{name}.log``.
         configFilename (str): Location where the generated configuration file should be stored. Default: ``None``.
         runInBackground (bool): True if the process should be run in the background. This means that process will
             not be blocking, but it shouldn't be used in conjunction with supervisor. Default: ``False``.
@@ -135,7 +146,7 @@ class executable(object):
 
         # Additional options
         self.shortExecutionTime = False
-        self.logFilename = "{name}.log".format(name = self.name)
+        self.logFilename = os.path.join("exec", "logs", "{name}.log".format(name = self.name))
         self.configFilename = None
         self.runInBackground = self.config.get("runInBackground", False)
         self.executeTask = self.config.get("enabled", False)
@@ -235,9 +246,10 @@ class executable(object):
             # Redirect the stderr into the stdout.
             # NOTE: All values must be strings, so we quote everything
             options["redirect_stderr"] = "True"
-            # 5 MB log file with 10 backup files.
-            options["stdout_logfile_maxbytes"] = "500000"
-            options["stdout_logfile_backups"] = "10"
+            # Redirect the logs to the supervisor main log, which can then be captured by docker.
+            # See: https://stackoverflow.com/a/45647346
+            options["stdout_logfile"] = os.path.join("/dev", "fd", "1")
+            options["stdout_logfile_maxbytes"] = "0"
 
             # Prevents supervisor from immediately restarting a process which executes quickly.
             if self.shortExecutionTime:
@@ -258,7 +270,10 @@ class executable(object):
             # The return value is not really meaningful in this case, since it won't be launched until the end.
             process = None
         else:
-            with open(self.logFilename, "w") as logFile:
+            # Ensure that the directory in which we will create our log file is created.
+            self.createFilenameDirectory(filename = self.logFilename)
+            # Append to the log file.
+            with open(self.logFilename, "a") as logFile:
                 logger.debug("Starting '{name}' with args: {args}".format(name = self.name, args = self.args))
                 # Redirect stderr to stdout so the information isn't lost.
                 process = subprocess.Popen(self.args,
@@ -303,6 +318,23 @@ class executable(object):
         self.args = [arg.format(**self.config) for arg in self.args]
         self.logFilename = self.logFilename.format(**self.config)
 
+    @staticmethod
+    def createFilenameDirectory(filename):
+        """ Create the directory which contains the specified filename.
+
+        Note:
+            If the directory already exists, nothing will be done.
+
+        Args:
+            filename (str): Filename whose directory might need to be created.
+        Returns:
+            None.
+        """
+        # Create the directory if necessary
+        configDir = os.path.dirname(filename)
+        if not os.path.exists(configDir):
+            os.makedirs(configDir)
+
     def run(self):
         """ Driver function for running executables.
 
@@ -331,6 +363,9 @@ class executable(object):
         if self.executeTask is False:
             return False
 
+        # Since we are continuing, store in the log that we are running the executable.
+        logger.debug('Running executable "{name}"'.format(name = self.name))
+
         # Check for existing process
         if self.config.get("forceRestart", False):
             self.killExistingProcess()
@@ -338,6 +373,8 @@ class executable(object):
             if self.getProcessPID():
                 logger.info("Process {name} is already running and no restart was requested, so there is nothing else to do.".format(name = self.name))
                 return False
+            else:
+                logger.info("No existing process found, so running executable {name}".format(name = self.name))
             # If there are no PIDs, then we want to continue.
 
         # Add "nohup" if running in the background with the appropriate context
@@ -399,7 +436,9 @@ class environment(object):
         the ZMQ receiver, and set general environment variables.
         """
         # Write sensitive variables from the environment to specified files.
-        self.writeCertFromVariableToFile()
+        # NOTE: Both the grid cert and the grid key are necessary for using the grid, EOS, etc!
+        self.writeGridCertFromVariableToFile()
+        self.writeGridKeyFromVariableToFile()
         self.writeSSHKeyFromVariableToFile()
 
         logger.debug("Setting up environment variables.")
@@ -537,21 +576,52 @@ class environment(object):
         # Set the folder permissions to 700
         os.chmod(os.path.dirname(writeLocation), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
 
+        logger.info("Successfully wrote {name} to {writeLocation}".format(name = name, writeLocation = writeLocation))
         return True
 
-    def writeCertFromVariableToFile(self):
-        """ Write certificate from an environment variable to file.
+    def writeGridCertFromVariableToFile(self):
+        """ Write grid certificate from an environment variable to file.
 
         Used primarily for setting up the certificate in a docker container. It looks for a config dictionary
-        stored in the environment dict under the name ``sshKey``.
+        stored in the environment dict under the name ``gridCert``.
+
+        Note:
+            Both the grid cert and the grid key are necessary for using the grid, EOS, etc!
 
         Args:
             None.
         Returns:
             bool: True if the var was written to file.
         """
-        name = "cert"
-        defaultWriteLocation = "~/.globus/overwatchCert.pem"
+        name = "gridCert"
+        defaultWriteLocation = "~/.globus/usercert.pem"
+        try:
+            (_, writeLocation) = self.writeSensitiveVariableToFile(name = name,
+                                                                   defaultWriteLocation = defaultWriteLocation)
+        except RuntimeError as e:
+            # It didn't write to the location, so we should return immediately.
+            logger.info(e.args[0])
+            return False
+
+        logger.info("Successfully wrote {name} to {writeLocation}".format(name = name, writeLocation = writeLocation))
+        return True
+
+    def writeGridKeyFromVariableToFile(self):
+        """ Write grid key from an environment variable to file.
+
+        Used primarily for setting up the key in a docker container. It looks for a config dictionary
+        stored in the environment dict under the name ``gridKey``.
+
+        Note:
+            Both the grid cert and the grid key are necessary for using the grid, EOS, etc!
+
+        Args:
+            None.
+        Returns:
+            bool: True if the var was written to file.
+        """
+        name = "gridKey"
+        defaultWriteLocation = "~/.globus/userkey.pem"
         try:
             (_, writeLocation) = self.writeSensitiveVariableToFile(name = name,
                                                                    defaultWriteLocation = defaultWriteLocation)
@@ -564,6 +634,7 @@ class environment(object):
         # Set the file permissions to 400
         os.chmod(writeLocation, stat.S_IRUSR)
 
+        logger.info("Successfully wrote {name} to {writeLocation}".format(name = name, writeLocation = writeLocation))
         return True
 
     def setupRoot(self):
@@ -640,6 +711,9 @@ class supervisor(executable):
     We don't need options for this executable. It is either going to be launched or it isn't.
 
     Note:
+        Control of ``supervisor`` is made available on port ``9001``.
+
+    Note:
         The overall program is called ``supervisor``, while the daemon is known as ``supervisord`` and the config
         is stored in ``supervisord.conf``.
 
@@ -680,31 +754,29 @@ class supervisor(executable):
         tempConfig = {}
         tempConfig["supervisord"] = {
             "nodaemon": "True",
-            # Take advantage of the overwatch data directory.
-            "logfile": os.path.join("data", "logs", "supervisord.log"),
-            "childlogdir": os.path.join("data", "logs"),
-            # 5 MB log file with 10 backup files
-            "logfile_maxbytes": "5000000",
-            "logfile_backups": "10",
+            # The log will go to stdout (where it can then be captured by docker logs)
+            # See: https://stackoverflow.com/a/45647346
+            "logfile": os.path.join("/dev", "null"),
+            "logfile_maxbytes": "0",
         }
 
-        # Unix http server monitoring options
-        tempConfig["unix_http_server"] = {
-            # Path to the socket file
-            "file": os.path.join("tmp", "sockets", "supervisor.sock"),
-            # Socket file mode (default 0700)
-            "chmod": "0700",
-        }
         # These options section must remain in the config file for RPC
         # (supervisorctl/web interface) to work, additional interfaces may be
         # added by defining them in separate ``rpcinterface: sections``
         tempConfig["rpcinterface:supervisor"] = {
             "supervisor.rpcinterface_factory": "supervisor.rpcinterface:make_main_rpcinterface",
         }
-        # supervisorctl options
+
+        # Define the supervisor control block
+        tempConfig["inet_http_server"] = {
+            # Server port (listening on all interfaces)
+            "port": ":9001",
+        }
+
+        # Define how supervisorctl should communicate with the instance.
         tempConfig["supervisorctl"] = {
-            # Use a unix:// URL  for a unix socket
-            "serverurl": "unix:///tmp/supervisor.sock",
+            # Server port (which is listening on all interfaces, so we just use localhost)
+            "serverurl": "http://127.0.0.1:9001",
         }
 
         # Python 2 and 3 compatible version
@@ -757,6 +829,8 @@ class sshKnownHosts(executable):
             "-H",
             "{address}",
         ]
+        # Set a default port in the configuration
+        config["port"] = config.get("port", 22)
         super().__init__(name = name,
                          description = description,
                          args = args,
@@ -767,6 +841,9 @@ class sshKnownHosts(executable):
         self.logFilename = self.configFilename
         # This will execute rather quickly.
         self.shortExecutionTime = True
+        # This should always execute as a normal process, regardless of the supervisor setting. Otherwise, the logs
+        # (which will contain the ssh fingerprints that we need) will not be written to the proper location.
+        self.supervisor = False
 
     def setup(self):
         """ Setup creating the known_hosts file.
@@ -784,9 +861,8 @@ class sshKnownHosts(executable):
                 # Set the proper permissions
                 os.chmod(os.path.dirname(self.configFilename), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)
 
-            self.executeTask = True
-        else:
-            self.executeTask = False
+        # Ensure that the task is executed.
+        self.executeTask = True
 
 class autossh(executable):
     """ Start ``autossh`` to create a SSH tunnel.
@@ -962,7 +1038,7 @@ class zodb(executable):
     def __init__(self, config):
         name = "zodb"
         description = "ZODB database"
-        configFilename = os.path.join("data", "config", "database.conf")
+        configFilename = os.path.join("exec", "config", "database.conf")
         args = [
             "runzeo",
             "-C {configFilename}".format(configFilename = configFilename),
@@ -999,7 +1075,8 @@ class zodb(executable):
         # is a string on the first line (which has a different indentation that we want to ignore).
         zeoConfig = inspect.cleandoc(zeoConfig)
 
-        logger.debug("configFilename: {configFilename}".format(configFilename = self.configFilename))
+        logger.info("Writing ZEO configuration file to {configFilename}".format(configFilename = self.configFilename))
+        self.createFilenameDirectory(filename = self.configFilename)
         with open(self.configFilename, "w") as f:
             f.write(zeoConfig)
 
@@ -1018,7 +1095,7 @@ class overwatchExecutable(executable):
         self.configFilename = "config.yaml"
 
     def setup(self):
-        """ Setup required for Overwatch data handling and transfer.
+        """ Setup required for Overwatch executables.
 
         In particular, we write any passed custom configuration options out to an Overwatch YAML config file.
         """
@@ -1059,7 +1136,7 @@ class overwatchExecutable(executable):
                 with open(self.configFilename, "r") as f:
                     with warnings.catch_warnings():
                         warnings.simplefilter("ignore")
-                        config = yaml.load(f, Loader = yaml.SafeLoader)
+                        config = configModule.yaml.load(f, Loader = configModule.yaml.SafeLoader)
 
             # Add our new options in.
             config.update(configToWrite)
@@ -1068,13 +1145,104 @@ class overwatchExecutable(executable):
             # We overwrite the previous config because we already loaded it in, so in effect we are appending
             # (but it does de-duplicate options)
             with open(self.configFilename, "w") as f:
-                yaml.dump(config, f, default_flow_style = False)
+                configModule.yaml.dump(config, f, default_flow_style = False)
+
+class gridTokenProxy(executable):
+    """ Initialize a grid token proxy.
+
+    We could nearly create this task with just ``functools.partial``, but we decided to write out
+    the entire class because we need to specify it as a short execution time task.
+
+    Args:
+        *args (list): Absorb ignored arguments from retrieveExecutable().
+        *kwargs (dict): Absorb ignored arguments from retrieveExecutable().
+    """
+    def __init__(self, *args, **kwargs):
+        name = "gridTokenProxy"
+        description = "Initialize a grid token proxy."
+        args = [
+            "xrdgsiproxy",
+            "init",
+        ]
+        config = kwargs.get("config", {})
+        # Ensure that the task is eanbled.
+        config["enabled"] = True
+        # No real configuration is necessary. The executable just needs to run.
+        super().__init__(name = name,
+                         description = description,
+                         args = args,
+                         config = config)
+
+        # This will execute rather quickly.
+        self.shortExecutionTime = True
+
+class overwatchDataTransfer(overwatchExecutable):
+    """ Starts the overwatch data transfer executable.
+
+    This needs a separate executable because it may transfer data over ``rsync`` or ``xrd``, both of
+    which require their own initialization steps. ``rsync`` (really, ``ssh``) requires sshKnownHosts(),
+    while ``xrd`` requires gridTokenProxy().
+    """
+    def __init__(self, config):
+        name = "dataTransfer"
+        description = "Overwatch receiver data transfer"
+        args = [
+            "overwatchReceiverDataTransfer",
+        ]
+        super().__init__(name = name,
+                         description = description,
+                         args = args,
+                         config = config)
+
+        # Keep track of the additional executables.
+        self.knownHosts = None
+        self.gridProxy = None
+
+    def setup(self):
+        """ Setup required for Overwatch data transfer.
+
+        In particular, we write any passed custom configuration options out to an Overwatch YAML config file.
+        """
+        # First we initialize the base class to ensure that the configuration is properly formatted.
+        super().setup()
+
+        # The user should always set the paths to remote sites in the deploy config (the defaults aren't meaningful),
+        # so we will rely on it to being available to determine which setup tasks we need to call.
+        dataTransferLocations = self.config["additionalOptions"]["dataTransferLocations"]
+        for siteName, destination in iteritems(dataTransferLocations):
+            if "EOS" in siteName.upper():
+                # The precise destination doesn't matter - we just need to initialize the token.
+                self.gridProxy = gridTokenProxy()
+                self.gridProxy.run()
+            else:
+                # Attempt to extract out the address from the destination.
+                # rsyn addresses will be of the form ``user@address:/path/to/destination``, so we can look for the
+                # hostname between ``@`` and ``:``. The ``+ 1`` accounts for stepping past the ``@`` that we found.
+                address = destination[destination.find("@") + 1:destination.find(":")]
+
+                # Create an independent copy of the config, as we're going to add values.
+                config = copy.deepcopy(self.config)
+                config["address"] = address
+                # For the tunnel to be created successfully, we need to add the address of the SSH server
+                # to the known_hosts file, so we create it here. In principle, this isn't safe if we're not in
+                # a safe environment, but this should be fine for our purposes.
+                self.knownHosts = sshKnownHosts(config = config)
+                self.knownHosts.run()
 
 class uwsgi(executable):
     """ Start a ``uwsgi`` executable.
 
+    Additional options for ``uwsgi`` can be specified in the ``additionalOptions`` dict of the config. Primary
+    options can be specified in the main ``uwsgi`` dict. (Functionality, values in either one will work fine,
+    although ``http-socket`` or ``wsgi-socket`` and ``module`` are required to be in the main config).
+
     Note:
         Arguments after ``config`` are values which are specified in the config.
+
+    Note:
+        ``uwsgi`` stats are made available by default on port ``9002`` (while ``9001`` is occupied by the =
+        ``supervisor`` controls). This value can be overridden by specifying the ``stats`` value in the config
+        (or in the additional options).
 
     Args:
         name (str): Name of the uwsgi web app. It should be unique, but without spaces!
@@ -1131,7 +1299,7 @@ class uwsgi(executable):
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         # Basic setup
-        self.configFilename = os.path.join("data", "config", "{name}.yaml".format(name = self.name))
+        self.configFilename = os.path.join("exec", "config", "{name}.yaml".format(name = self.name))
         # Note that this will override the args that are passed.
         self.args = [
             "uwsgi",
@@ -1161,8 +1329,10 @@ class uwsgi(executable):
         # Setup some values for the base config. We set them here instead of waiting until we fill the rest of
         # configuration from YAML so we only need to create directores once. Since we extract chdir
         # from the cnofig, we don't really lose anything.
-        baseDir = self.config.get("additionalOptions", {}).get("chdir", "/opt/overwatch")
-        socketsDir = self.config.get("additionalOptions", {}).get("socketsDir", os.path.join(baseDir, "data", "sockets"))
+        # If the base dir isn't specified, we want to default to the directory in which the executable is run.
+        # Usually, this will be the overwatch root directory.
+        baseDir = self.config.get("additionalOptions", {}).get("chdir", os.getcwd())
+        socketsDir = self.config.get("additionalOptions", {}).get("socketsDir", os.path.join(baseDir, "exec", "sockets"))
         # Need to create the sockets directory if it doesn't already exist. Otherwise, uwsgi will fail
         if not os.path.exists(socketsDir):
             os.makedirs(socketsDir)
@@ -1174,10 +1344,10 @@ class uwsgi(executable):
             # The rest of the config is completed below
             "vacuum": True,
             # Stats
-            "stats": os.path.join(socketsDir, "wsgi_{name}_stats.sock"),
+            "stats": ":9002",
 
             # Setup the working directory
-            "chdir": "/opt/overwatch",
+            "chdir": baseDir,
 
             # App
             # Need either wsgi-file or module!
@@ -1238,8 +1408,9 @@ class uwsgi(executable):
         }
 
         logger.info("Writing uwsgi configuration file to {configFilename}".format(configFilename = self.configFilename))
+        self.createFilenameDirectory(filename = self.configFilename)
         with open(self.configFilename, "w") as f:
-            yaml.dump(uwsgiConfig, f, default_flow_style = False)
+            configModule.yaml.dump(uwsgiConfig, f, default_flow_style = False)
 
     def run(self):
         """ This should only be used to help configure another executable. """
@@ -1387,12 +1558,19 @@ _available_executables = {
     "zodb": zodb,
     "autossh": autossh,
     "zmqReceiver": zmqReceiver,
-    "dataTransfer": functools.partial(overwatchExecutable,
-                                      name = "dataTransfer",
-                                      description = "Overwatch receiver data transfer",
-                                      args = [
-                                          "overwatchReceiverDataHandling",
-                                      ]),
+    "dataTransfer": overwatchDataTransfer,
+    "dataReplayDataTransfer": functools.partial(overwatchExecutable,
+                                                name = "dataReplayDataTransfer",
+                                                description = "Overwatch data replay for data transfer",
+                                                args = [
+                                                    "overwatchReplayDataTransfer",
+                                                ]),
+    "dataReplay": functools.partial(overwatchExecutable,
+                                    name = "dataReplay",
+                                    description = "Overwatch data replay",
+                                    args = [
+                                        "overwatchReplay",
+                                    ]),
     "processing": functools.partial(overwatchExecutable,
                                     name = "processing",
                                     description = "Overwatch processing",
@@ -1425,9 +1603,11 @@ def retrieveExecutable(name, config):
     - autossh
     - zmqReceiver
     - dqmReceiver
+    - dataTransfer
+    - dataReplayDataTransfer
+    - dataReplay
     - processing
     - webApp
-    - dataTransfer
 
     Args:
         name (str): Name of the executable "type". For example, "processing" for Overwatch processing.
@@ -1461,8 +1641,9 @@ def runExecutables(executables):
             executableType = executableType[:executableType.find("_")]
 
         executable = retrieveExecutable(name = executableType, config = executableConfig)
+        logger.debug("Considering executable with name {name}, executableType: {executableType}".format(name = name, executableType = executableType))
         result = executable.run()
-        logger.debug("name: {name}, executableType: {executableType}, result: {result}".format(name = name, executableType = executableType, result = result))
+        logger.debug("Status of executable with name {name} (executableType: {executableType}): Executed: {result}".format(name = name, executableType = executableType, result = result))
         # Don't store executables which were not actually run.
         if result:
             ranExecutables[name] = executable
@@ -1524,7 +1705,10 @@ def startOverwatch(configFilename, configEnvironmentVariable):
             config = f.read()
 
     # Load the configuration.
-    config = yaml.load(config, Loader=yaml.SafeLoader)
+    with warnings.catch_warnings():
+        # Ignore warning about duplicate anchor definitions
+        warnings.simplefilter("ignore")
+        config = configModule.yaml.load(config, Loader = configModule.yaml.SafeLoader)
 
     # Enable any additional executables requested via an environment variable
     config = enableExecutablesFromEnvironment(config)

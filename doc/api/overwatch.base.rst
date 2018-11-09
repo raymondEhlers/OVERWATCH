@@ -25,10 +25,26 @@ overwatch.base.config module
     :undoc-members:
     :show-inheritance:
 
+overwatch.base.dataTransfer module 
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. automodule:: overwatch.base.dataTransfer
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
 overwatch.base.deploy module
 ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
 
 .. automodule:: overwatch.base.deploy
+    :members:
+    :undoc-members:
+    :show-inheritance:
+
+overwatch.base.replay module
+^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+
+.. automodule:: overwatch.base.replay
     :members:
     :undoc-members:
     :show-inheritance:

@@ -66,19 +66,25 @@ setup(
     # See: https://stackoverflow.com/a/8506532
     entry_points = {
         "console_scripts": [
-            # Note that the flask apss only run the flask development server through these scripts
-            # because they will be launched directly via uwsgi (ie not through these scripts)
+            # Note that the flask apps only run the flask development server through these scripts
+            # because they will be launched directly via ``uwsgi`` (ie not through these scripts)
             "overwatchDQMReceiver = overwatch.receiver.run:runDevelopment",
             "overwatchWebApp = overwatch.webApp.run:runDevelopment",
             # The processing will be launched this way in both production and development, so it
-            # points to a different type of function
+            # points to a different type of function. This function will on an interval if the
+            # sleep time is set to a positive value. Otherwise, it will run once.
             "overwatchProcessing = overwatch.processing.run:run",
             # Deployment script
             "overwatchDeploy = overwatch.base.deploy:run",
             # Utility script to update the database users
             "overwatchUpdateUsers = overwatch.base.updateDBUsers:updateDBUsers",
-            # Reciever data handling script
-            "overwatchReceiverDataHandling = overwatch.base.run:runReceiverDataHandling",
+            # Receiver data transfer script
+            "overwatchReceiverDataTransfer = overwatch.base.run:runReceiverDataTransfer",
+            # Replay data scripts
+            # Standard data replay for a particular run
+            "overwatchReplay = overwatch.base.run:runReplayData",
+            # For moving larger quantities of data for later data transfer
+            "overwatchReplayDataTransfer = overwatch.base.run:runReplayDataTransfer"
         ],
     },
 
@@ -87,6 +93,7 @@ setup(
     install_requires = [
         "aenum",
         "future",
+        "pendulum",
         "ruamel.yaml",
         "numpy",
         # rootpy is only used peripherally and it's installation process is sometimes difficult,

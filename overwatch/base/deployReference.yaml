@@ -5,17 +5,27 @@ supervisor: true
 # Define the execution environment
 environment:
     # Options for writing sensitive variables stored in environment variables to specified files.
-    # X509 certificate (for example, for writing to EOS).
-    cert:
+    # Grid certificate (for example, for writing to EOS).
+    # NOTE: Both the cert and the key are required to write to EOS.
+    gridCert:
         enabled: false
-        # Environment variable where the key is stoerd.
+        # Environment variable where the key is stored.
         variableName: "myCert"
         # Where the key should be written.
         writeLocation: "test/cert.test"
-    # SSH key (for example, for conencting to remote systems to receive files via ZMQ).
+    # Grid key (for example, for writing to EOS).
+    # NOTE: Both the cert and the key are required to write to EOS.
+    gridKey:
+        enabled: false
+        # Environment variable where the key is stored.
+        variableName: "myKey"
+        # Where the key should be written.
+        writeLocation: "test/key.test"
+    # SSH key (for example, for connecting to remote systems to receive files via ZMQ).
+    # Also used when transferring receiver data to other sites via rsync.
     sshKey:
         enabled: false
-        # Environment variable where the key is stoerd.
+        # Environment variable where the key is stored.
         variableName: "mySSHKey"
         # Where the key should be written.
         writeLocation: "test/sshKey.test"
@@ -31,7 +41,7 @@ environment:
     vars:
         aEnvironmentVariable: "theValue"
 
-# Options for configuring exectuables. This allows the consoslidation of repeated options.
+# Options for configuring executables. This allows the consolidation of repeated options.
 # Path to our working directory.
 workingDir: &workingDir !expandVars "${PWD}"
 # Shared options for executables
@@ -56,7 +66,7 @@ receiverOptions: &receiverOptions
     <<: *baseExecutionOptions
     # Path to where the received data should be stored.
     dataPath: "data"
-    # Additional command line options to pass to the zmqReceiver executable.
+    # Additional command line options to pass to the `zmqReceiver` executable.
     defaultOptions: "defined whatever here"
 # uwsgi options
 uwsgiOptions: &uwsgiOptions
@@ -67,7 +77,7 @@ nginxOptions: &nginxOptions
     <<: *baseExecutionOptions
     # Name of the web app, "webAppName", is needed. Specify per app.
     # Base path to where nginx configs are stored.
-    basePath: "data/config"
+    basePath: "exec/config"
     # Relative to the base path.
     sitesPath: "sites-enabled"
     configPath: "conf.d"
@@ -90,14 +100,14 @@ executables:
             # Include the shared tunnel options.
             <<: *tunnelOptions
             enabled: true
+            # Port on the HLT system where the EMC data is provided. Will be used to configure the tunnel.
+            hltPort: 12345
         # Enabled must be below the shared options because it is overwriting one of the shared options.
         enabled: false
         # Force restart the receiver if it is already running.
         forceRestart: true
         # Name of the receiver. Should be the three letter name.
         receiver: "EMC"
-        # Port on the HLT system where the EMC data is provided. Will be used to configure the tunnel.
-        hltPort: 12345
         # Port on the local system where the EMC data will be made available. Will be used to configure the tunnel.
         localPort: 23456
     # HLT ZMQ receiver
@@ -106,12 +116,12 @@ executables:
         tunnel: 
             <<: *tunnelOptions
             enabled: true
+            # Port on the HLT system where the EMC data is provided. Will be used to configure the tunnel.
+            hltPort: 12346
         # Enabled must be below the shared options because it is overwriting one of the shared options.
         enabled: false
         forceRestart: true
         receiver: "TPC"
-        # Port on the HLT system where the EMC data is provided. Will be used to configure the tunnel.
-        hltPort: 12346
         # Port on the local system where the EMC data will be made available. Will be used to configure the tunnel.
         localPort: 23457
     # HLT ZMQ Receiver
@@ -120,12 +130,12 @@ executables:
         tunnel: 
             <<: *tunnelOptions
             enabled: true
+            # Port on the HLT system where the EMC data is provided. Will be used to configure the tunnel.
+            hltPort: 12347
         # Enabled must be below the shared options because it is overwriting one of the shared options.
         enabled: false
         forceRestart: true
         receiver: "HLT"
-        # Port on the HLT system where the EMC data is provided. Will be used to configure the tunnel.
-        hltPort: 12347
         # Port on the local system where the EMC data will be made available. Will be used to configure the tunnel.
         localPort: 23458
     # DQM Receiver
@@ -154,6 +164,26 @@ executables:
             dataTransferLocations:
                 yale: ""
                 EOS: "/eos/experiment/alice/overwatch/"
+    # Overwatch data replay for data transfer via the data transfer module.
+    dataReplayDataTransfer:
+        <<: *baseExecutionOptions
+        enabled: false
+        # Additional options to be passed into the Overwatch config. Any entries should be valid
+        # Overwatch config YAML. It will be stored in the user `config.yaml`.
+        additionalOptions:
+            dataReplaySourceDirectory: "data/test/replayData"
+            dataReplayMaxFilesPerReplay: 200
+    # Data replay of Overwatch processed data
+    dataReplay:
+        <<: *baseExecutionOptions
+        enabled: false
+        # Additional options to be passed into the Overwatch config. Any entries should be valid
+        # Overwatch config YAML. It will be stored in the user `config.yaml`.
+        additionalOptions:
+            # This value must be configured!
+            dataReplaySourceDirectory: "data/test"
+            # Only wait 5 seconds between replays.
+            dataReplayTimeToSleep: 5
     # ZODB database
     zodb:
         <<: *baseExecutionOptions
@@ -184,11 +214,13 @@ executables:
             enabled: false
             # Module path of the web app.
             module: "overwatch.webApp.run"
+            # Must specify either a http-socket or a uwsgi-socket.
         nginx:
             <<: *nginxOptions
             enabled: false
             # Name of the web app
             webAppName: "webApp"
+            # NOTE: If this is working with uwsgi, wsgi-socket should be set to "/tmp/sockets/{webAppName}.sock"!
 
         # Additional options to be passed into the Overwatch config. Any entries should be valid
         # Overwatch config YAML. It will be stored in the user `config.yaml`.

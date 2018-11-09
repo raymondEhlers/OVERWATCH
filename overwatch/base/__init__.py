@@ -8,5 +8,6 @@
 __all__ = [
     "config",
     "utilities",
-    "dataHandling",
+    "dataTransfer",
+    "deploy",
 ]

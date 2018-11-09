@@ -10,7 +10,13 @@ in the python package setup.
 """
 
 import logging
+import os
+import pendulum
 import pprint
+import timeit
+
+import sentry_sdk
+from sentry_sdk.integrations.logging import LoggingIntegration
 
 # Config
 from overwatch.base import config
@@ -28,10 +34,14 @@ logger = logging.getLogger("")
 # Setup logging
 utilities.setupLogging(logger = logger,
                        logLevel = processingParameters["loggingLevel"],
-                       debug = processingParameters["debug"],
-                       logFilename = "processRuns")
+                       debug = processingParameters["debug"])
 # Log settings
 logger.info(processingParameters)
+
+# Setup sentry to create alerts for warning level messages.
+sentry_logging = LoggingIntegration(level = logging.WARNING, event_level = None)
+# Usually, we want the module specific DSN, but we will take the general one if it's the only one available.
+sentry_sdk.init(dsn = os.getenv("SENTRY_DSN_PROCESSING") or os.getenv("SENTRY_DSN"), integrations = [sentry_logging])
 
 # Imports are below here so that they can be logged
 from overwatch.processing import processRuns
@@ -39,40 +49,34 @@ from overwatch.processing import processRuns
 def run():
     """ Main entry point for starting ``processAllRuns()``.
 
+    This function will run on an interval determined by the value of ``processingTimeToSleep``
+    (specified in seconds). If the value is 0 or less, the processing will only run once.
+
+    Note:
+        The sleep time is defined as the time between when ``processAllRuns()`` finishes and
+        when it is started again.
+
     Args:
         None.
     Returns:
         None.
     """
-    # Process all of the run data
-    processRuns.processAllRuns()
-    # Function calls that be used for debugging
-
-    ## Test processTimeSlices()
-    ## TEMP
-    #(dbRoot, connection) = utilities.getDB(processingParameters["databaseLocation"])
-    #runs = dbRoot["runs"]
-    ## ENDTEMP
-
-    #logging.info("\n\t\t0-4:")
-    #returnValue = processTimeSlices(runs, "Run300005", 0, 4, "EMC", {})
-    #logging.info("0-4 UUID: {returnValue}".format(returnValue = returnValue))
-
-    #logging.info("\n\t\t0-3:")
-    #returnValue = processTimeSlices(runs, "Run300005", 0, 3, "EMC", {})
-    #logging.info("0-3 UUID: {returnValue}".format(returnValue = returnValue))
-
-    #logging.info("\n\t\t0-3 repeat:")
-    #returnValue = processTimeSlices(runs, "Run300005", 0, 3, "EMC", {})
-    #logging.info("0-3 repeat UUID: {returnValue}".format(returnValue = returnValue))
-
-    #logging.info("\n\t\t1-4:")
-    #returnValue = processTimeSlices(runs, "Run300005", 1, 4, "EMC", {})
-    #logging.info("1-4 UUID: {returnValue}".format(returnValue = returnValue))
-
-    #logging.info("\n\t\t1-3:")
-    #returnValue = processTimeSlices(runs, "Run300005", 1, 3, "EMC", {})
-    #logging.info("1-3 UUID: {returnValue}".format(returnValue = returnValue))
+    handler = utilities.handleSignals()
+    sleepTime = processingParameters["processingTimeToSleep"]
+    logger.info("Starting processing with sleep time of {sleepTime}.".format(sleepTime = sleepTime))
+    while not handler.exit.is_set():
+        # Note both the time that the processing started, as well as the execution time.
+        logger.info("Running processing at {time}.".format(time = pendulum.now()))
+        start = timeit.default_timer()
+        # Run the actual executable.
+        processRuns.processAllRuns()
+        end = timeit.default_timer()
+        logger.info("Processing complete in {time} seconds".format(time = end - start))
+        # Only execute once if the sleep time is <= 0. Otherwise, sleep and repeat.
+        if sleepTime > 0:
+            handler.exit.wait(sleepTime)
+        else:
+            break
 
 if __name__ == "__main__":
     run()

@@ -66,13 +66,56 @@ It is important to monitor Overwatch for errors and other issues. For the data t
 monitoring is provided by `sentry`, which hooks into exceptions, logging, and other parts of the app to
 automatically provide alerts and information when issues occur.
 
-For successful monitoring, the environment must export the `DSN` as `export SENTRY_DSN=<value>`. The value
-will be some sort of unique URL. Note that this endpoint is for _all_ Overwatch monitoring, so be certain to
-check the traceback to determine the originating source of the issue.
+For successful monitoring, the environment must export the `DSN` as `export SENTRY_DSN_DATA_TRANSFER=<value>`.
+The value will be some sort of unique URL. Note that this endpoint is just for Overwatch data transfer (called
+`overwatch-datatransfer` on `sentry`). If it is not available, it will look for the general environment
+variable `SENTRY_DSN`.
 
 ## Data transfer
 
 Data must be moved from the ZMQ and DQM receivers to other Overwatch sites, as well as exported to EOS. All of
-these transfers are handled by the data handling module. It will transfer the data in a robust manner, retry
+these transfers are handled by the data transfer module. It will transfer the data in a robust manner, retry
 on failures, and then notifying the admin if the issues continue. For further information on configuration,
-see the `dataHandling` module.
+see the `dataTransfer` module.
+
+## Data replay
+
+In order to fully test the entire Overwatch processing and visualization chain, as well as test trending
+values as they evolve, data must be replayed over some time as if it was actually being received from the
+receivers. In order to fully simulate data this arrival, Overwatch provides a `dataReplay` module. This module
+will take an existing run directory, and replay all of the files within one by one.
+
+This module can be configured via a number of parameters:
+
+- `dataReplayTimeToSleep`: Time to sleep between each replay execution.
+- `dataReplaySourceDirectory`: Select which Run directory will be replayed. This must be the path to the full
+  run directory. For example, it may be "data/Run123456". "Run" must be in the directory name. It is null be
+  default because we don't want to unexpected begin replaying, which could lead to data loss.
+- `dataReplayDestinationDirectory`: Where the data should be replayed to. Usually, this is just the data
+  folder, because Overwatch will then process the files from there.
+- `dataReplayTempStorageDirectory`: Location where directories and files are temporarily stored when replaying
+  a run.
+- `dataReplayMaxFilesPerReplay`:  Maximum number of files to move per replay. `nMaxFiles` defaults to one,
+  which will ensure that files are transferred one by one, which is the desired behavior if one wants to test
+  the evolution of dataset. Such an approach is the best possible simulation of actually receiving data.
+
+This module can also be utilized to generically transform processed Overwatch data to appear as if it hasn't
+been processed yet by moving and renaming the underlying `ROOT` files. This is particularly useful if one
+wants to transfer processed data via the `dataTransfer` module. Simply set the replay destination directory as
+the data transfer input directory, and the data will be transferred as if it was just received from the HLT.
+
+### Common Issues
+
+When replaying data, if you receive an error similar to:
+
+```
+  File "/overwatch/overwatch/base/replay.py", line 86, in availableFiles
+    name = convertProcessedOverwatchNameToUnprocessed(dirPrefix = root, name = name)
+  File "/overwatch/overwatch/base/replay.py", line 45, in convertProcessedOverwatchNameToUnprocessed
+    runNumber = int(prefixAndRunDir[runDirLocation:])
+ValueError: invalid literal for int() with base 10: 'ta/tempReplayData/testDirectory/input'
+```
+
+you should closely check your directory structure. This is likely caused by a root file being located outside
+of the standard Overwatch directory structure. For example, a root file in `Run123/.` will cause this issue.
+Moving the root files to the proper location should resolve the issue.

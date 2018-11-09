@@ -13,10 +13,10 @@ from future.utils import iteritems
 # General
 import os
 import sys
-import time
-from calendar import timegm
 import shutil
 import numpy as np
+import pendulum
+import ruamel.yaml as yaml
 import signal
 import threading
 
@@ -53,7 +53,8 @@ def extractTimeStampFromFilename(filename):
       times, subtract them, and return the difference. Note that this makes it a different format than the other
       two timestamps.
     - For other files processed into subsystems, the format is `prefix/SYShists.%Y_%m_%d_%H_%M_%S.root`. We
-      extract the time stamp and convert it to unix time. The time stamp is assumed to be in the CERN time zone.
+      extract the time stamp and convert it to unix time. The time stamp is assumed to be in the CERN time zone,
+      so we convert it to UTC and store the timestamp.
 
     Note:
         The ``prefix/`` can be anything (or non-existent), as long as it doesn't contain any ``.``.
@@ -74,9 +75,12 @@ def extractTimeStampFromFilename(filename):
         timeString = filename.split(".")
         return int(timeString[2]) - int(timeString[1])
     else:
+        # Extract the time string and then convert it to a pendulum datetime object. Sicne it was
+        # recorded in Geneva, we create it in that timezone so we can convert it to UTC.
         timeString = filename.split(".")[1]
-        timeStamp = time.strptime(timeString, "%Y_%m_%d_%H_%M_%S")
-        return timegm(timeStamp)
+        timeStamp = pendulum.from_format(timeString, "YYYY_MM_DD_HH_mm_ss", tz = "Europe/Zurich")
+        # This timestamp is unix time in UTC.
+        return int(timeStamp.timestamp())
 
 def createFileDictionary(currentDir, runDir, subsystem):
     """ Creates dictionary of files and their unix timestamps for a given run directory.
@@ -101,7 +105,8 @@ def createFileDictionary(currentDir, runDir, subsystem):
 
     # Add uncombined .root files to mergeDict, then sort by timestamp
     for name in os.listdir(os.path.join(currentDir, runDir, subsystem)):
-        if ".root" in name and "combined" not in name and "timeSlice" not in name:
+        # Need to avoid temporary files, so avoid those which starts with ".".
+        if ".root" in name and "combined" not in name and "timeSlice" not in name and not name.startswith("."):
             filename = os.path.join(filenamePrefix, name)
             mergeDict[extractTimeStampFromFilename(filename)] = filename
 
@@ -133,10 +138,70 @@ def findCurrentRunDirs(dirPrefix = ""):
     runDirs.sort()
     return runDirs
 
+def retrieveHLTModeFromStoredRunInfo(runDirectory):
+    """ Retrieve the HLT mode from a stored ``runInfo.yaml`` file.
+
+    The file is read from ``runDirectory/runInfo.yaml``. Use the mode from the file if it exists,
+    or otherwise set it as undefined = "U".
+
+    Args:
+        runDirectory (str): Path to the run directory where the ``runInfo.yaml`` file is stored.
+    Returns:
+        str: The HLT mode (if possible to extract), or "U" for unknown.
+    """
+    runInfoFilePath = os.path.join(runDirectory, "runInfo.yaml")
+    # Default to the mode being unknown.
+    hltMode = "U"
+    try:
+        with open(runInfoFilePath, "r") as f:
+            runInfo = yaml.load(f.read(), Loader = yaml.SafeLoader)
+
+        hltMode = runInfo["hltMode"]
+    except IOError:
+        # File does not exist
+        # HLT mode will have to be unknown
+        logger.debug("Run info file doesn't exist for run directory {runDirectory}".format(runDirectory = runDirectory))
+
+    return hltMode
+
+def writeRunInfoToFile(runDirectory, hltMode, forceWrite = False):
+    """ Write run information to YAML file for storage.
+
+    The file is written to ``runDirectory/runInfo.yaml``. Use the mode from the file if it exists,
+    or otherwise set it as undefined = "U".
+
+    Args:
+        runDirectory (str): Path to the run directory where the ``runInfo.yaml`` file is stored.
+        hltMode (str): The HLT mode if set, or "U" for unknown.
+        forceWrite (bool): Write the information to the file regardless of whether the file already
+            exists.
+    Returns:
+        None.
+    """
+    runInfoFilePath = os.path.join(runDirectory, "runInfo.yaml")
+    runInfo = {}
+    # Since this is only information to save (ie it doesn't update each time the object is constructed),
+    # only write it if the file doesn't exist
+    if forceWrite is False:
+        if os.path.exists(runInfoFilePath):
+            return
+    else:
+        # Just write it regardless of whether it exists.
+        pass
+
+    # "U" for unknown
+    runInfo["hltMode"] = hltMode if hltMode else "U"
+
+    # Write information
+    if not os.path.exists(os.path.dirname(runInfoFilePath)):
+        os.makedirs(os.path.dirname(runInfoFilePath))
+    with open(runInfoFilePath, "w") as f:
+        yaml.dump(runInfo, f)
+
 ###################################################
 # Logging utilities
 ###################################################
-def setupLogging(logger, logLevel, debug, logFilename):
+def setupLogging(logger, logLevel, debug):
     """ General function to setup the proper logging outputs for an executable.
 
     Creates loggers for logging to stdout, rotating file, and email (for warning or above logs).
@@ -147,19 +212,9 @@ def setupLogging(logger, logLevel, debug, logFilename):
         logLevel (int): Logging level. Select from any of the options defined in the logging module.
         debug (bool): Overall debug mode for the executable. True logs to the console while False logs
             to a rotating file handler and sets up the possibility of sending logs via email. Default: True
-        logFilename (str): Specifies the filename of the log file (when it is created).
     Returns:
         None. The logger is fully configured.
     """
-    # Check on docker deployment variables
-    # This overrides logging to file and instead logs to the screen,
-    # which is then stored by the container itself.
-    try:
-        dockerDeploymentOption = os.environ["deploymentOption"]
-    except KeyError:
-        # It doesn't exist
-        dockerDeploymentOption = ""
-
     # We use some of the basic parameters for configuration, so we need to grab them now.
     parameters, _ = config.readConfig(config.configurationType.base)
 
@@ -179,16 +234,11 @@ def setupLogging(logger, logLevel, debug, logFilename):
 
     # Log to file
     # Will be a maximum of 5 MB, rotating with 10 files
-    # We will store the log in the ``data/logs`` dir. We'll create it if necessary.
-    logDirPath = os.path.join(parameters["dataFolder"], "logs")
+    # We will store the log in the ``exec/logs`` dir. We'll create it if necessary.
+    # NOTE: We won't actually setup logging to file here. This will be taken care of by supervisor.
+    logDirPath = os.path.join("exec", "logs")
     if not os.path.exists(logDirPath):
         os.makedirs(logDirPath)
-    logFilename = os.path.join(logDirPath, "{logFilename}.log".format(logFilename = logFilename))
-    fileHandler = logging.handlers.RotatingFileHandler(logFilename,
-                                                       maxBytes = 5000000,
-                                                       backupCount = 10)
-    fileHandler.setLevel(logLevel)
-    fileHandler.setFormatter(logFormat)
 
     # Log to email
     # See: http://flask.pocoo.org/docs/1.0/errorhandling/
@@ -213,12 +263,10 @@ def setupLogging(logger, logLevel, debug, logFilename):
     emailHandler.setFormatter(emailLogFormat)
 
     # For docker, we log to stdout so that supervisor is able to handle the logging
-    if debug is True or dockerDeploymentOption:
-        logger.addHandler(streamHandler)
-        logger.info("Added streaming handler to logging!")
-    else:
-        logger.addHandler(fileHandler)
-        logger.info("Added file handler to logging!")
+    logger.addHandler(streamHandler)
+    logger.info("Added stdout streaming handler to logging!")
+    # Logging to file is taken care of by supervisor (or potentially docker), so we don't need
+    # to add it here.
 
     # Also allow for the possibility of the sending email with higher priority warnings.
     if parameters["emailLogger"]:
@@ -245,7 +293,8 @@ def enumerateFiles(dirPrefix, subsystem):
 
     filesToMove = []
     for name in os.listdir(currentDir):
-        if subsystem in name and ".root" in name:
+        # Need to avoid temporary files, so avoid those which starts with ".".
+        if subsystem in name and ".root" in name and not name.startswith("."):
             filesToMove.append(name)
             #logger.debug("name: %s" % name)
 
@@ -329,13 +378,14 @@ def moveFiles(dirPrefix, subsystemDict):
             # Extract the timestamp
             # We don't actually parse the timestamp - we just pass it on from the previous
             # filename. However, if we wanted to parse it, we could parse it as:
-            # `timeStamp = time.strptime(timeString, "%Y_%m_%d_%H_%M_%S")`
+            # timeStamp = pendulum.from_format(timeStamp, "YYYY_MM_DD_HH_mm_ss", tz = "Europe/Zurich")
             # Alternatively, if the string was properly formatted, it could be read
             # using extractTimeStampFromFilename() (although note that it usually assumes
             # that the structure of the filename follows the output of this function,
             # so it would require some additional formatting if it was used right here).
             runDir = "Run" + splitFilename[1]
-            hltMode = splitFilename[2]
+            # Just to be safe, we explicitly make it upper case (although it should be already).
+            hltMode = splitFilename[2].upper()
 
             # Determine the directory structure for each run
             # We want to start with a path of the form "Run123456"
@@ -454,8 +504,10 @@ def updateDBSensitiveParameters(db, overwriteSecretKey = True):
         logger.info("Adding user {user}".format(user = user))
 
     # Secret key
-    # Set the secret key to that set in the server parameters
+    # Set the secret key to the one set in the server parameters.
     if overwriteSecretKey or "secretKey" not in db["config"]:
+        # NOTE: There will always be a secret key in the sensitive paramers (by default, it just generates a random one),
+        #       so we can just use the value without worrying whether it exists.
         db["config"]["secretKey"] = sensitiveParameters["_secretKey"]
         logger.info("Adding secret key to db!")
 
@@ -496,7 +548,7 @@ class handleSignals(object):
         handler = handleSignals()
         while not handler.exit.is_set():
             # Do something
-            handler.exit.wait(parameters["dataHandlingTimeToSleep"])
+            handler.exit.wait(parameters["dataTransferTimeToSleep"])
 
     Args:
         None.
@@ -513,5 +565,5 @@ class handleSignals(object):
 
     def exitGracefully(self, signum, frame):
         """ Handle the signal by storing that it was sent, allowing the run function to exit. """
-        logger.info("Received signal. Passing on to executing function...")
+        logger.info("Received signal {signum}. Passing on to executing function...".format(signum = signum))
         self.exit.set()
