@@ -23,11 +23,16 @@ Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
   `b09e7388`.
 - Added rudimentary ZMQ receiver monitoring via the `dataTransfer` module. If no files have been transferred
   in 12 hours, a warning will be emitted. See: `4ea80cf2`.
+- `repr` and `str` methods to most of the processing classes to aid in debugging. See: `3a544d67` and
+  `43657bcf`
 
 ### Changed
 
 - Updated `overwatchDeploy` to be class based, and generally far more stable and extensible. It is also
   broadly covered by unit tests.
+- Improved webApp status information (and removed obsolete code). See: `c41e5599`.
+- Changed all time related functionality to utilize the `pendulum` package. It makes live so much easier! See:
+  `8fe66ba3`.
 
 ### Fixed
 
@@ -41,6 +46,10 @@ Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
   information was stored. See: `ec64fbd8`.
 - Removed the `deploy` directory, along with much of its obsolete contents, which have been replaced by the
   `deploy` module. See: `97357488`.
+- Timestamp handling was inconsistent, which caused problems when trying to improve the `isRunOngoing(...)`
+  logic. Switch to explicitly handling the time zones with the `pendulum` package, which makes things much
+  easier. See: `819fa6a9` for the start, and `8fe66ba3` for the last commit, which resolved all known issues.
+- The docker images now run in a less privileged user.
 - A wide variety of typos.
 
 ## [1.1] - 2 September 2018
