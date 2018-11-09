@@ -22,7 +22,7 @@ def tf_infoArgs():
     yield ["name", "desc", ["hist1", "hist2"], MeanTrending]
 
 
-class Histogram:
+class Histogram(object):
     functionNames = [
         'GetMaximum',
         'GetMean',
