@@ -160,7 +160,6 @@ def createTPCHistogramGroups(subsystem):
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("Positive RecVertex", "pos_recvertex"))
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("event_6", "event_6"))
 
-
     # Catch all other TPC hists
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("Other TPC", "TPC"))
 
@@ -224,20 +223,24 @@ def createAdditionalTPCHistograms(subsystem):
 
     #eta, phi and pT projections
     #eta vs. phi pos/neg tracks
-    names = [("Eta_vs_Phi_postracks","TPCQA/h_tpc_track_pos_recvertex_2_5_6"),
-             ("Eta_vs_Phi_negtracks","TPCQA/h_tpc_track_neg_recvertex_2_5_6")]
-        
+    names = [
+        ("Eta_vs_Phi_postracks", "TPCQA/h_tpc_track_pos_recvertex_2_5_6"),
+        ("Eta_vs_Phi_negtracks", "TPCQA/h_tpc_track_neg_recvertex_2_5_6"),
+    ]
+
     for histName, inputHistName in names:
         histCont = processingClasses.histogramContainer(histName = histName, histList = [inputHistName])
         histCont.projectionFunctionsToApply.append(projectToYZ)
         subsystem.histsAvailable[histName] = histCont
 
     #eta of pos/neg tracks nclust>70
-    names = [("postracks","TPCQA/h_tpc_track_pos_recvertex_0_5_7"),
-             ("negtracks","TPCQA/h_tpc_track_neg_recvertex_0_5_7")]
+    names = [
+        ("postracks", "TPCQA/h_tpc_track_pos_recvertex_0_5_7"),
+        ("negtracks", "TPCQA/h_tpc_track_neg_recvertex_0_5_7"),
+    ]
 
     for tempName, inputHistName in names:
-        for label in [("pT"),("Eta")]:
+        for label in [("pT"), ("Eta")]:
             histName = "{label}_{histName}".format(histName = tempName, label = label)
             histCont = processingClasses.histogramContainer(histName = histName, histList = [inputHistName])
             histCont.projectionFunctionsToApply.append(projectTo1D)
@@ -351,18 +354,17 @@ def projectToXZ(subsystem, hist, processingOptions, aSide):
 
 def projectToYZ(subsystem, hist, processingOptions):
     """ Project a given TH3 histogram onto the YZ axis.
-        
+
     This function was built to get an eta vs. phi histograms for positive and negative tracks.
-    
+
     Args:
-    subsystem (subsystemContainer): Subsystem which contains the projected histogram.
-    hist (histogramContainer): Histogram container corresponding to the projected histogram.
-    When this function is called, it contains the histogram to project from, so the hist
-    to project from can be retrieved via ``hist.hist``.
-    processingOptions (dict): Dictionary of processing options for the given subsystem.
-    
+        subsystem (subsystemContainer): Subsystem which contains the projected histogram.
+        hist (histogramContainer): Histogram container corresponding to the projected histogram.
+            When this function is called, it contains the histogram to project from, so the hist
+            to project from can be retrieved via ``hist.hist``.
+        processingOptions (dict): Dictionary of processing options for the given subsystem.
     Returns:
-    ROOT.TH2: The projected histogram
+        ROOT.TH2: The projected histogram
     """
 
     tempHist = hist.hist.Project3D("YZ")
@@ -373,19 +375,18 @@ def projectToYZ(subsystem, hist, processingOptions):
 
 def projectTo1D(subsystem, hist, processingOptions):
     """ Project a given TH3 histogram onto the Z or Y axis.
-        
-        This function was built to get P_T or eta histograms for positive and negative tracks.
-        
-        Args:
+
+    This function was built to get P_T or eta histograms for positive and negative tracks.
+
+    Args:
         subsystem (subsystemContainer): Subsystem which contains the projected histogram.
         hist (histogramContainer): Histogram container corresponding to the projected histogram.
-        When this function is called, it contains the histogram to project from, so the hist
-        to project from can be retrieved via ``hist.hist``.
+            When this function is called, it contains the histogram to project from, so the hist
+            to project from can be retrieved via ``hist.hist``.
         processingOptions (dict): Dictionary of processing options for the given subsystem.
-        
-        Returns:
+    Returns:
         ROOT.TH1: The projected histogram
-        """
+    """
     if "pT" in hist.histName:
         tempHist = hist.hist.ProjectionZ(hist.histName, 71, 160, 1, 30)
 
