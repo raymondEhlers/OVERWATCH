@@ -6,7 +6,6 @@ import os
 import contextlib
 import tempfile
 
-import rootpy
 import rootpy.io
 import rootpy.ROOT as ROOT
 
@@ -53,8 +52,8 @@ def putFile(filename, file = None, localFilename = None):
 
 @contextlib.contextmanager
 def FileInMemory(filename, writeFile = False):
+    fileInMemory = StringIO()
     try:
-        fileInMemory = StringIO.StringIO()
         yield getFile(filename = filename, fileObject = fileInMemory)
         print("Successfully completed FileInMemory")
     except IOError as e:
@@ -82,7 +81,7 @@ def FileWithLocalFilename(filename, writeFile = False):
                     print("success: {}, status: {}".format(success, status))
                     f.write(fileInMemory.read().encode())
                     f.flush()
-                    #f.write("Hello")
+                    #f.write("Hello".encode())
                     # Return to start of file so the read is seamless
                     f.seek(0)
                     # May be required to fully flush, although flush() seems sufficient for now
@@ -128,7 +127,7 @@ if __name__ == "__main__":
                     print("fileInMemory.read(): {}".format(fileInMemory.read()))
                     fileInMemory.seek(0, os.SEEK_END)
                     print("success: {}, status: {}, file length: {}".format(success, status, fileInMemory.tell()))
-                    fileInMemory.write("Appended information in memory.\n")
+                    fileInMemory.write("Appended information in memory.\n".encode())
                     fileInMemory.seek(0)
                     print("fileInMemory.read(): {}".format(fileInMemory.read()))
                 else:
@@ -147,7 +146,7 @@ if __name__ == "__main__":
                     print("Temporary filename: {}".format(filename))
                     f.seek(0, os.SEEK_END)
                     print("f length with localfile: {}".format(f.tell()))
-                    f.write("Appended information in temp file.\n")
+                    f.write("Appended information in temp file.\n".encode())
                     f.seek(0)
                     print("f.read(): {}".format(f.read()))
         except ErrorInGettingFile as e:
@@ -190,7 +189,7 @@ if __name__ == "__main__":
 
     ### Additional testing
     with tempfile.NamedTemporaryFile() as f:
-        f.write("Hello")
+        f.write("Hello".encode())
         f.seek(0)
         print("temp named file: {}".format(f.read()))
         f.seek(0)

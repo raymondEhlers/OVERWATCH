@@ -474,11 +474,8 @@ def removeOldestValueAndInsert(arr, value):
     Returns:
         numpy.ndarray: The modified array.
     """
-    # Remove oldest value
-    np.delete(arr, 0, axis=0)
-    # Insert at the end
-    arr[-1] = value
-
+    arr = np.delete(arr, 0, axis=0)
+    arr = np.append(arr, [value], axis=0)
     return arr
 
 #############
