@@ -307,26 +307,44 @@ def testProcessMovedFilesWithNewFileArrival(setupNewSubsystemsFromMovedFileInfo)
     # certain that I haven't been confused by using the generated values.
     assert len(runs[runDir].subsystems["TPC"].files) == 4
 
-def testProcessMovedFilesWithInitialFileArrival(setupNewSubsystemsFromMovedFileInfo):
+def testProcessMovedFilesWithInitialFileArrival(setupNewSubsystemsFromMovedFileInfo, mocker):
     """ Test for creating new runs and subsystems with files that are simulated to arrive.
 
     Here, we create a new run container with simulated file arrival. This is particularly important to check the conversion
-    from a file which does not have it's own files to one which does.
+    from a file which does not have it's own files to one which does. For this test, the HLT has it's own files, the EMC
+    is converted to having it's own files, and the TPC always uses the HLT files.
     """
     runs, runDir, runDict, additionalRunDict, subsystems = setupNewSubsystemsFromMovedFileInfo
     # Remove the initial run container.
     runs.pop(runDir)
 
-    for simulatedRunDict in simulatedFileArrival(runDir = runDir,
-                                                 runDictForSimulatedArrival = runDict):
+    # We need to mock the combined files to ensure that they are removed later.
+    mCombinedFiles = {}
+    for i, simulatedRunDict in enumerate(simulatedFileArrival(runDir = runDir,
+                                                              runDictForSimulatedArrival = runDict)):
         processRuns.processMovedFilesIntoRuns(runs = runs, runDict = simulatedRunDict)
+        # After the first file arrives, we want to add mock combined files. However, processing
+        # could affect these values, so we only want to do that once.
+        if i == 0:
+            # Add in a mock combined file so we can check whether it exists later
+            for subsystem in subsystems:
+                mCombinedFile = mocker.MagicMock()
+                runs[runDir].subsystems[subsystem].combinedFile = mCombinedFile
+                mCombinedFiles[subsystem] = mCombinedFile
 
-    # Check the final results
+    # Check the initial results
     assert checkAllCreatedSubsystems(runs = runs, subsystems = subsystems, expectedRunDict = runDict, runDir = runDir) is True
 
     # Explicit check on the number of TPC files. This is less flexible, but I want to be entirely
     # certain that I haven't been confused by using the generated values.
     assert len(runs[runDir].subsystems["TPC"].files) == 2
+
+    # Check that the combined file was removed when appropriate.
+    for subsystem in subsystems:
+        if subsystem == "EMC":
+            assert runs[runDir].subsystems[subsystem].combinedFile is None
+        else:
+            assert runs[runDir].subsystems[subsystem].combinedFile == mCombinedFiles[subsystem]
 
     # Now, use the additionalRunDict just for good measure to make sure that our conversion from
     # fileLocationSubsystem -> subsystem for EMC worked properly.
@@ -342,9 +360,17 @@ def testProcessMovedFilesWithInitialFileArrival(setupNewSubsystemsFromMovedFileI
             if s != "hltMode":
                 expectedRunDict[r][s].extend(additionalRunDict[r][s])
 
-    # Check the final results
+    # Check the results
     assert checkAllCreatedSubsystems(runs = runs, subsystems = subsystems, expectedRunDict = expectedRunDict, runDir = runDir) is True
 
     # Explicit check on the number of TPC files. This is less flexible, but I want to be entirely
     # certain that I haven't been confused by using the generated values.
     assert len(runs[runDir].subsystems["TPC"].files) == 4
+
+    # Check that the combined file was removed when appropriate.
+    for subsystem in subsystems:
+        if subsystem == "EMC":
+            assert runs[runDir].subsystems[subsystem].combinedFile is None
+        else:
+            assert runs[runDir].subsystems[subsystem].combinedFile == mCombinedFiles[subsystem]
+

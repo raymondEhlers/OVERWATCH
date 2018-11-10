@@ -731,8 +731,15 @@ def processMovedFilesIntoRuns(runs, runDict):
                                 subsystem.setupDirectories(runDir = runDir)
                                 logger.debug("Existing files: {filenames}".format(filenames = [f.filename for f in itervalues(subsystem.files)]))
                                 subsystem.files.clear()
+                                # Also need to remove the existing combined file. A new one will be generated
+                                # and added to the subsystem.
+                                subsystem.combinedFile = None
 
                         # Add the new files and note them in the subsystem, which will lead to reprocessing.
+                        # NOTE: Recall that the BTree that stores the files is a sorted object, so we don't
+                        #       need to worry about inserting files out of timestamp order - the new values
+                        #       will automatically be sorted by their keys, which will result in the entire
+                        #       files BTree sorted by time. This is exactly the desired structure!
                         subsystem.newFile = True
                         for filename in runDict[runDir][subsystemName]:
                             # We need the full path to the file (ie everything except for the dirPrefix).
