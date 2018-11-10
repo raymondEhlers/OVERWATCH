@@ -38,10 +38,15 @@ utilities.setupLogging(logger = logger,
 # Log settings
 logger.info(parameters)
 
-# Setup sentry to create alerts for warning level messages.
-sentry_logging = LoggingIntegration(level = logging.WARNING, event_level = None)
-# Usually, we want the module specific DSN, but we will take the general one if it's the only one available.
-sentry_sdk.init(dsn = os.getenv("SENTRY_DSN_RECEIVER_MONITOR") or os.getenv("SENTRY_DSN"), integrations = [sentry_logging])
+# Setup sentry to create alerts for warning level messages. Those will include info level breadcrumbs.
+sentry_logging = LoggingIntegration(level = logging.INFO, event_level = logging.WARNING)
+# Usually, we want the module specific DSN, but we will take a generic one if it's the only one available.
+sentryDSN = os.getenv("SENTRY_DSN_RECEIVER_MONITOR") or os.getenv("SENTRY_DSN")
+if sentryDSN:
+    # It's helpful to know that sentry is setup, but we also don't want to put the DSN itself in the logs,
+    # so we simply note that it is enabled.
+    logger.info("Sentry DSN set and integrations enabled.")
+sentry_sdk.init(dsn = sentryDSN, integrations = [sentry_logging])
 
 def getHeartbeat(subsystem):
     """ Get the heartbeat of a ZMQ receiver for a given subsystem.
