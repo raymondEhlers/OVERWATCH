@@ -252,7 +252,16 @@ the documentation and the README in `overwatch.base`. The following executables 
 The DQM receiver is defined in `overwatch.receiver`. For further information, see the documentation and the
 README in `overwatch.receiver`. The following executables are defined there:
 
-- `overwatchDQMReceiver`. Receiver data from the AMORE DQM system. Usage requires coordination with the DQM project.
+- `overwatchDQMReceiver` - Receiver data from the AMORE DQM system. Usage requires coordination with the DQM project.
+- `overwatchReceiverMonitor` - Monitor the ZMQ receivers via timestamps written by the C++ executables to ensure that
+  they haven't died.
+
+The ZMQ receiver is defined in `receiver.src`. It is a small C++ code base which receives files from the HLT
+and writes them to disk. It automatically downloads and compiles a few minor AliRoot dependency classes as
+needed, such that the only dependencies that must be install are ZMQ and ROOT. For further information, see
+the documentation and the README in `receiver`. The following executables are defined there:
+
+- `zmqReceive` - The main executable which handles receiving QA information from the HLT.
 
 # Overwatch Deployment
 

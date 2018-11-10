@@ -84,7 +84,9 @@ setup(
             # Standard data replay for a particular run
             "overwatchReplay = overwatch.base.run:runReplayData",
             # For moving larger quantities of data for later data transfer
-            "overwatchReplayDataTransfer = overwatch.base.run:runReplayDataTransfer"
+            "overwatchReplayDataTransfer = overwatch.base.run:runReplayDataTransfer",
+            # Simple script to monitor ZMQ receivers
+            "overwatchReceiverMonitor = overwatch.receiver.monitor:run",
         ],
     },
 

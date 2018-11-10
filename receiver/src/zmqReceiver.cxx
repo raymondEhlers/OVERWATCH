@@ -5,6 +5,7 @@
 #include "zmqReceiver.h"
 
 #include <zmq.h>
+#include <fstream>
 #include <iostream>
 #include <string>
 #include <sstream>
@@ -99,6 +100,9 @@ int zmqReceiver::Run()
   // Main loop
   while(1)
   {
+    // Write heartbeat to a file to show that the receiver is alive.
+    WriteHeartbeat();
+
     errno = 0;
 
     // Request the data
@@ -155,6 +159,17 @@ int zmqReceiver::Run()
   }
 
   return 0;
+}
+
+/**
+ * Write a unix timestamp to file to act as a heartbeat for the receiver running properly.
+ */
+void zmqReceiver::WriteHeartbeat()
+{
+  std::string filename = fDataPath + "/heartbeat." + fSubsystem + "Receiver";
+  std::ofstream heartbeat(filename);
+  heartbeat << std::time(nullptr);
+  heartbeat.close();
 }
 
 /**

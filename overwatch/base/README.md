@@ -46,7 +46,9 @@ config file. All executables inherit from the `executable` class. As of Septembe
 - `autossh` for SSH tunnels.
 - `ZODB` for the Overwatch Database
 - Overwatch ZMQ receiver
+- Overwatch ZMQ receiver monitoring
 - Overwatch receiver data transfer
+- Overwatch data replay (for local development, as well as larger number of files for data transfer)
 - Overwatch DQM receiver
     - Via `uswgi`, `uwsgi` behind `nginx` or directly.
 - Overwatch processing

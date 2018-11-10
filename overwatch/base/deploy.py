@@ -17,6 +17,7 @@ It can handle the configuration and execution of:
 - Overwatch data transfer from receivers to other Overwatch sites and EOS.
 - Overwatch data replay for data transfer via the data transfer module.
 - Overwatch data replay to simulate receiving new data using existing data.
+- Overwatch ZMQ receiver monitoring to watch for dead ZMQ receivers.
 
 It can also handle receiving SSH Keys, grid certificates, and grid keys passed
 in via environment variables.
@@ -1571,6 +1572,12 @@ _available_executables = {
                                     args = [
                                         "overwatchReplay",
                                     ]),
+    "receiverMonitor": functools.partial(overwatchExecutable,
+                                         name = "overwatchReceiverMonitor",
+                                         description = "Overwatch ZMQ receiver monitor",
+                                         args = [
+                                             "overwatchReceiverMonitor",
+                                         ]),
     "processing": functools.partial(overwatchExecutable,
                                     name = "processing",
                                     description = "Overwatch processing",
@@ -1606,6 +1613,7 @@ def retrieveExecutable(name, config):
     - dataTransfer
     - dataReplayDataTransfer
     - dataReplay
+    - receiverMonitor
     - processing
     - webApp
 
