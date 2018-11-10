@@ -118,7 +118,7 @@ def run():
     logger.info("Starting ZMQ receiver monitoring.")
     # We put a wait here first because the receivers will take a moment to startup and
     # we don't want to immediately report that the receivers are not working.
-    handler.exit.wait(60)
+    handler.exit.wait(300)
     while not handler.exit.is_set():
         # Check the status of the receivers
         deadReceivers = checkHeartbeat(deadReceivers)

@@ -184,6 +184,14 @@ executables:
             dataReplaySourceDirectory: "data/test"
             # Only wait 5 seconds between replays.
             dataReplayTimeToSleep: 5
+    # ZMQ receivers monitor
+    receiverMonitor:
+        <<: *baseExecutionOptions
+        enabled: false
+        # Additional options to be passed into the Overwatch config. Any entries should be valid
+        # Overwatch config yaml. It will be stored in the user config.yaml
+        additionalOptions:
+            receiverData: &receiverData "data"
     # ZODB database
     zodb:
         <<: *baseExecutionOptions
