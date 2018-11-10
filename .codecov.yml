@@ -12,7 +12,7 @@ coverage:
       default:
         # Allow a drop of up to 1% in coverage
         threshold: 1%
-    patch: yes
+    patch: no
     changes: no
 
 parsers:
