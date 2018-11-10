@@ -405,7 +405,6 @@ class subsystemContainer(persistent.Persistent):
         self.histsAvailable.clear()
         self.hists.clear()
 
-
 class timeSliceContainer(persistent.Persistent):
     """ Time slice information container.
 

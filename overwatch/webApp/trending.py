@@ -50,9 +50,17 @@ def trending():
     Returns:
         Response: Trending information template populated with trended objects.
     """
-
     logger.debug("request: {0}".format(request.args))
     (error, subsystemName, requestedHist, jsRoot, ajaxRequest) = validation.validateTrending(request)
+
+    # Return a useful error if trending is disabled
+    if "trending" not in db:
+        error.setdefault("Trending", []).append("Trending is disabled.")
+        if ajaxRequest:
+            drawerContent = ""
+            mainContent = render_template("errorMainContent.html", errors = error)
+            return jsonify(drawerContent = drawerContent, mainContent = mainContent)
+        return render_template("error.html", errors = error)
 
     # Create trending container from stored trending information
     trendingManager = TrendingManager(db, serverParameters)
@@ -60,7 +68,11 @@ def trending():
 
     if not subsystemName:
         error.setdefault("Subsystem", []).append("Cannot find any trended subsystem")
-        return render_template("error.html", error=error)
+        if ajaxRequest:
+            drawerContent = ""
+            mainContent = render_template("errorMainContent.html", errors = error)
+            return jsonify(drawerContent = drawerContent, mainContent = mainContent)
+        return render_template("error.html", errors = error)
 
     # Template paths to the individual files
     filenameTemplate = os.path.join(CON.TRENDING, subsystemName, "{type}", "{{}}.{extension}")
@@ -90,7 +102,6 @@ def trending():
     returnValue = reRenderIfError(error, "error.html", returnValue)
     return returnValue
 
-
 def safeRenderTemplate(error, *args, **kwargs):
     """If error is empty, return rendered template from *args and **kwargs.
     Otherwise return empty string, if exception appear return empty string."""
@@ -103,11 +114,10 @@ def safeRenderTemplate(error, *args, **kwargs):
             'Request template: "{0}", but it was not found!'.format(e.name))
         return ''
 
-
 def reRenderIfError(error, template, rendered):
     """If errors exist, render new template with errors.
      Otherwise return unchanged previously rendered object."""
     if error != {}:
-        return render_template(template, error=error)
+        return render_template(template, errors = error)
     else:
         return rendered
