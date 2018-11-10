@@ -107,8 +107,14 @@ def runReplayData():
     # We need to explicitly add this additional directory - otherwise ``move(...)`` will dump the directory
     # contents right into the dataReplayTempStorageDirectory directory.
     _, runDir = os.path.split(baseDir)
-    temporaryDir = os.path.join(temporaryDir, runDir)
-    shutil.move(baseDir, temporaryDir)
+    temporaryRunDir = os.path.join(temporaryDir, runDir)
+    # Need to remove the temporary run directory before moving if it exists. Otherwise ``move(...)`` will move
+    # the directoy we are moving __inside__ of the existing directory...
+    if os.path.exists(temporaryRunDir):
+        shutil.rmtree(temporaryRunDir)
+    # Now actually move the file.
+    logger.debug("Moving existing runDir at {baseDir} to {temporaryRunDir}".format(baseDir = baseDir, temporaryRunDir = temporaryRunDir))
+    shutil.move(baseDir, temporaryRunDir)
 
     # Attempt to remove the runDir from the database so that replay is successful (otherwise, it looks for entries
     # and files that don't exist since replay moved the files).
@@ -121,7 +127,7 @@ def runReplayData():
         logger.debug("Successfully removed the existing run directory from the database.")
 
     # Now begin the actual replay.
-    replay.runReplay(baseDir = temporaryDir,
+    replay.runReplay(baseDir = temporaryRunDir,
                      destinationDir = parameters["dataReplayDestinationDirectory"],
                      nMaxFiles = parameters["dataReplayMaxFilesPerReplay"])
 
