@@ -76,7 +76,12 @@
 
 {# Should only get here if nothing was selected! #}
 {%- if firstLoopCompleted == [] -%}
+    {#- We want to differentiate if this is because the subsystem just had nothing to extract, or because there was a problem with the request. -#}
+    {%- if subsystem.hists | length == 0 -%}
+    <p>No data available for this subsystem during this run! If you think this is in error, please contact the admin!</p>
+    {%- else -%}
     <p>Error! No hist group (input: {{ selectedHistGroup }}) or hist (input: {{ selectedHist }}) was selected! Please try again with a different value or contact the admin!</p>
+    {%- endif -%}
 {%- endif -%}
 
 {# Content for time slices #}

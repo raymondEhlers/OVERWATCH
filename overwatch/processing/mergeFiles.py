@@ -13,15 +13,16 @@ from __future__ import print_function
 from __future__ import absolute_import
 from future.utils import iteritems
 
-# ROOT
-import ROOT
-
 # General
+import copy
 import os
 import shutil
 import logging
 # Setup logger
 logger = logging.getLogger(__name__)
+
+# ROOT
+import ROOT
 
 from . import processingClasses
 
@@ -243,8 +244,8 @@ def mergeRootFiles(runs, dirPrefix, forceNewMerge = False, cumulativeMode = True
                     continue
 
                 # Perform the merge
-                # Check for a combined file. The file has a name of the form hists.combined.(number of uncombined
-                #  files in directory).(timestamp of combined file).root
+                # Check for a combined file. The file has a name of the form:
+                # `hists.combined.(number of files which contributed to the combined file).(timestamp of combined file).root`
                 combinedFile = run.subsystems[subsystem].combinedFile
                 # If it doesn't exist then we go directly to merging; otherwise we remove the old one and then merge
                 # Previously, we handled the two modes as:
@@ -264,3 +265,9 @@ def mergeRootFiles(runs, dirPrefix, forceNewMerge = False, cumulativeMode = True
                 # We have successfully merged!
                 # Still considered a new file until we have processed it entirely, so don't change state here
 
+        # Now we handle subsystems which are not their own fileLocationSubsystem - they also need a combinedFile. Note that we
+        # must do this after the above to ensure that the combined files to which they will refer actually exists.
+        for subsystem in run.subsystems:
+            if run.subsystems[subsystem].newFile is True or forceNewMerge:
+                if run.subsystems[subsystem].subsystem != run.subsystems[subsystem].fileLocationSubsystem:
+                    run.subsystems[subsystem].combinedFile = copy.deepcopy(run.subsystems[run.subsystems[subsystem].fileLocationSubsystem].combinedFile)
