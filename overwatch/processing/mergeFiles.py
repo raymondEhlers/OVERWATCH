@@ -239,8 +239,12 @@ def mergeRootFiles(runs, dirPrefix, forceNewMerge = False, cumulativeMode = True
         for subsystem in run.subsystems:
             # Only merge if we there are new files to merge
             if run.subsystems[subsystem].newFile is True or forceNewMerge:
+                # Convenience variable to prvoide direct access to the subsystem container.
+                # By defining here, it also means that the subsystem container details will be
+                # available for debugging.
+                subsystemObject = run.subsystems[subsystem]
                 # Skip if the subsystem does not have it's own files
-                if run.subsystems[subsystem].subsystem != run.subsystems[subsystem].fileLocationSubsystem:
+                if subsystemObject.subsystem != subsystemObject.fileLocationSubsystem:
                     continue
 
                 # Perform the merge
