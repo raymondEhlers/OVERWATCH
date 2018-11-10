@@ -944,7 +944,7 @@ def processAllRuns():
     # in which Overwatch is operating. See more on this in the `mergeFiles` module).
     # Regardless of the mode, this will result in a single "combined" file which contains all of the
     # most up to date files.
-    # NOTE: We will only subsystems which contain new files.
+    # NOTE: We will only merge subsystems which contain new files.
     mergeFiles.mergeRootFiles(runs, processingParameters["dirPrefix"],
                               processingParameters["forceNewMerge"],
                               processingParameters["cumulativeMode"])
@@ -975,7 +975,7 @@ def processAllRuns():
                 pass
             else:
                 # We often want to skip processing since most runs won't have new files and will not need to be processed most times.
-                logger.debug("Don't need to process {prettyName}. It has already been processed".format(prettyName = run.prettyName))
+                logger.debug("Don't need to process {prettyName} for subsystem {subsystem}. It has already been processed".format(prettyName = run.prettyName, subsystem = subsystem.subsystem))
 
         # Commit after we have successfully processed each run
         transaction.commit()
