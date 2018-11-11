@@ -319,7 +319,11 @@ def storeFailedFiles(siteName, filenames):
     assert set(filenames).issubset(os.listdir(storagePath))
 
     # By logging, it will be sent to the admins when appropriate.
-    logger.warning("Files failed to copy for site {siteName}. Filenames: {filenames}".format(siteName = siteName, filenames = filenames))
+    # To ensure that we don't get overwhelmed by messages which only vary by the filename used, we
+    # only include the sitename in the error. However, by printing the information at the info level,
+    # it will be included via sentry, so we'll still have information the filenames which failed.
+    logger.info("Files failed to copy for site {siteName}. Filenames: {filenames}".format(siteName = siteName, filenames = filenames))
+    logger.error("Files failed to copy for site {siteName}".format(siteName = siteName))
 
 def processReceivedFiles():
     """ Main driver function for receiver file processing and moving.
