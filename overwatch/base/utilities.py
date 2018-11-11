@@ -48,13 +48,17 @@ def extractTimeStampFromFilename(filename):
 
     For possibles filenames are as follows:
 
-    - For combined files, the format is `prefix/combined.unixTimeStamp.root`, so we can just extract it directly.
-    - For time slices, the format is `prefix/timeSlices.unixStartTime.unixEndTime.root`, so we extract the two
+    - For combined files, the format is ``prefix/combined.unixTimeStamp.root``, so we can just extract it directly.
+    - For time slices, the format is ``prefix/timeSlices.unixStartTime.unixEndTime.root``, so we extract the two
       times, subtract them, and return the difference. Note that this makes it a different format than the other
       two timestamps.
-    - For other files processed into subsystems, the format is `prefix/SYShists.%Y_%m_%d_%H_%M_%S.root`. We
+    - For unprocessed files, the format is ``prefix/SYShistos_runNumber_hltMode_YYYY_MM_DD_HH_mm_ss.root`, so we
+      can extract it by selecting ".root" files which do not have "combined" or "timeSlice" in their name, and
+      also only contain one ``.``. The time stamp is assumed to be in the CERN time zone, so we convert it to UTC
+      and return the timestamp.
+    - For other files processed into subsystems, the format is ``prefix/SYShists.YYYY_MM_DD_HH_mm_ss.root``. We
       extract the time stamp and convert it to unix time. The time stamp is assumed to be in the CERN time zone,
-      so we convert it to UTC and store the timestamp.
+      so we convert it to UTC and return the timestamp.
 
     Note:
         The ``prefix/`` can be anything (or non-existent), as long as it doesn't contain any ``.``.
@@ -74,13 +78,21 @@ def extractTimeStampFromFilename(filename):
         # This will be the length of the time slice
         timeString = filename.split(".")
         return int(timeString[2]) - int(timeString[1])
+    elif filename.count(".") == 1:
+        # Unprocessed filename
+        splitFilename = filename.replace(".root", "").split("_")
+        timeString = "_".join(splitFilename[3:])
     else:
-        # Extract the time string and then convert it to a pendulum datetime object. Sicne it was
-        # recorded in Geneva, we create it in that timezone so we can convert it to UTC.
+        # Processed filename
         timeString = filename.split(".")[1]
-        timeStamp = pendulum.from_format(timeString, "YYYY_MM_DD_HH_mm_ss", tz = "Europe/Zurich")
-        # This timestamp is unix time in UTC.
-        return int(timeStamp.timestamp())
+
+    # The timestamp format is the same for unprocessed and processed filenames, so once the
+    # timeString is extracted, we can handle both the same.
+    # Extract the time string and then convert it to a pendulum datetime object. Sicne it was
+    # recorded in Geneva, we create it in that timezone so we can convert it to UTC.
+    timeStamp = pendulum.from_format(timeString, "YYYY_MM_DD_HH_mm_ss", tz = "Europe/Zurich")
+    # This timestamp is unix time in UTC.
+    return int(timeStamp.timestamp())
 
 def createFileDictionary(currentDir, runDir, subsystem):
     """ Creates dictionary of files and their unix timestamps for a given run directory.
@@ -359,12 +371,10 @@ def moveFiles(dirPrefix, subsystemDict):
             logger.info("No files to move in %s" % key)
         for filename in filesToMove:
             # Split the filename to extract the relevant information
-            # We remove the ".root" so we can split on "_" without having an extraneous
+            # We remove the ".root" so we can split on "_" without having any extraneous
             # information tacked on.
-            tempFilename = filename
-            splitFilename = tempFilename.replace(".root", "").split("_")
-            #logger.debug("tempFilename: %s" % tempFilename)
-            #logger.debug("splitFilename: ", splitFilename)
+            splitFilename = filename.replace(".root", "").split("_")
+            #logger.debug("splitFilename: {splitFilename}".format(splitFilename = splitFilename))
 
             # Skip filenames that don't conform to the expectation.
             # These should be fairly uncommon, as we require the files to be ROOT files received
@@ -373,7 +383,7 @@ def moveFiles(dirPrefix, subsystemDict):
             if len(splitFilename) < 3:
                 continue
             timeString = "_".join(splitFilename[3:])
-            #logger.debug("timeString: ", timeString)
+            #logger.debug("timeString: {timeString}".format(timeString = timeString))
 
             # Extract the timestamp
             # We don't actually parse the timestamp - we just pass it on from the previous
@@ -409,7 +419,7 @@ def moveFiles(dirPrefix, subsystemDict):
             newFilename = key + "hists." + timeString + ".root"
 
             # Determine the final paths and move the file.
-            oldPath = os.path.join(dirPrefix, tempFilename)
+            oldPath = os.path.join(dirPrefix, filename)
             newPath = os.path.join(dirPrefix, runDirectoryPath, key, newFilename)
             logger.info("Moving %s to %s" % (oldPath, newPath))
             # Don't import `move` from shutils. It appears to have unexpected behavior which

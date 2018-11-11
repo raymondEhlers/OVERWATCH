@@ -7,8 +7,9 @@
 
 import pytest
 
-import logging
+import copy
 import os
+import logging
 logger = logging.getLogger(__name__)
 
 from overwatch.base import replay
@@ -120,10 +121,50 @@ def testAvailableFiles(loggingMixin, mocker, hltMode, baseDir):
     assert set(names) == set(expectedDestinationNames)
     assert not set(expectedNotToBeDestinationNames).issubset(names)
 
+def testAvailableFilesWithUnprocessedFiles(loggingMixin, mocker):
+    """ Test replaying data which hasn't already been processed.
+
+    This is particularly used for replaying data for transfer to other Overwatch sites and EOS.
+    """
+    # Setup
+    hltMode = "C"
+    baseDir = os.path.join(os.path.dirname(os.path.realpath(__file__)), "replayUnprocessedData")
+    expectedSourceFilenames = [
+        "EMChistos_123_C_2015_11_24_18_05_10.root",
+        "EMChistos_123_C_2015_11_24_18_06_10.root",
+        "EMChistos_123_C_2015_11_24_18_07_10.root",
+        "EMChistos_123_C_2015_11_24_18_08_11.root",
+        "EMChistos_123_C_2015_11_24_18_09_12.root",
+        "HLThistos_123_C_2015_11_24_18_05_10.root",
+        "HLThistos_123_C_2015_11_24_18_06_10.root",
+        "HLThistos_123_C_2015_11_24_18_07_10.root",
+        "HLThistos_123_C_2015_11_24_18_08_11.root",
+        "HLThistos_123_C_2015_11_24_18_09_12.root",
+    ]
+    # These files shouldn't be available because they are empty.
+    expectedNotToBeDestinationNames = [
+        "EMChistos_123_C_2015_11_24_18_04_10.root",
+        "HLThistos_123_C_2015_11_24_18_04_10.root",
+    ]
+    expectedDestinationNames = copy.deepcopy(expectedSourceFilenames)
+    setupRetrieveHLTModeMock(hltMode = hltMode, mocker = mocker)
+
+    # Make the actual call. By calling list, it forces it to iterate and provide all files.
+    availableFiles = list(replay.availableFiles(baseDir = baseDir))
+    sourceFilenames = [os.path.split(f[0])[1] for f in availableFiles]
+    names = [f[1] for f in availableFiles]
+
+    # First check the source files
+    # Use a set to check the files because the order doesn't appear to be stable on different systems.
+    assert set(sourceFilenames) == set(expectedSourceFilenames)
+    # Then check the destination names
+    assert set(names) == set(expectedDestinationNames)
+    assert not set(expectedNotToBeDestinationNames).issubset(names)
+
 @pytest.mark.parametrize("nMaxFiles", [
     3,
     30,
-], ids = ["Move 3 files", "Try to move 30, but move fewer"])
+], ids = ["Move 3 files", "Try to move 30, but fewer are available"])
 def testMoveFiles(loggingMixin, mocker, nMaxFiles):
     """ Test the driver function to move files.
 
