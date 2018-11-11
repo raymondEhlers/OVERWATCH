@@ -753,6 +753,8 @@ def processMovedFilesIntoRuns(runs, runDict):
                         subsystem.startOfRun = fileKeys[0]
                         logger.debug("Previous EOR: {endOfRun}\tNew: {fileKey}".format(endOfRun = subsystem.endOfRun, fileKey = fileKeys[-1]))
                         subsystem.endOfRun = fileKeys[-1]
+                        # Also need to update the run length based on the new timestamps
+                        subsystem.runLength = subsystem.calculateRunLength()
                     else:
                         # Scenario 2
                         # Create a new subsystem in an existing run.

@@ -157,7 +157,8 @@ def runReplay(baseDir, destinationDir, nMaxFiles):
             if nMoved == 0:
                 # Inform about result so the user isn't surprised.
                 logger.info("No more files available to move! Finishing up")
-            break
+            # Set the handler to exit.
+            handler.exit.set()
 
     # Inform about completion.
     logger.info("Completed replay.")

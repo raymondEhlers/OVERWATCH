@@ -37,7 +37,8 @@ Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
 ### Fixed
 
 - Creation of run and subsystem containers as new data arrives. Issues were caused by received files arriving
-  at different times, which split up the processing. See: `b9230b98`.
+  at different times, which split up the processing. See: `b9230b98`, with fixes in
+  `1cfb18c3`, `5e3630a0`, and `f7863a64`.
 - Fixed data transfer to only select on files which end in ".root". ROOT appears to create temporary files
   when writing which are sometimes picked up during data transfer. See: `83412bb7`.
 - Execution data is now stored in the `exec` directory. Information includes logs, configurations (except for
@@ -50,6 +51,8 @@ Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
   logic. Switch to explicitly handling the time zones with the `pendulum` package, which makes things much
   easier. See: `819fa6a9` for the start, and `8fe66ba3` for the last commit, which resolved all known issues.
 - The docker images now run in a less privileged user.
+- Ensure that the data replay copies to the proper folder when there is already an existing folder. See:
+  `f71afab0`.
 - A wide variety of typos.
 
 ## [1.1] - 2 September 2018

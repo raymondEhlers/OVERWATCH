@@ -126,7 +126,7 @@ configuration file.
 
 # Overwatch Architecture
 
-![](https://cdn.rawgit.com/raymondEhlers/overwatch/37bc6f47/doc/images/overwatchArch.png)
+![](https://cdn.rawgit.com/raymondEhlers/overwatch/f1d173dd/doc/images/overwatchArch.png)
 
 The Overwatch architecture is as shown above. Incoming data is handled by the receivers, which then make that data
 available to be processed by the processing module. The output of the processing is then visualized via the WebApp.
@@ -166,7 +166,7 @@ Each detector (also known as a subsystem) is given the opportunity to plug into 
 
 ## Overwatch WebApp
 
-![An Overwatch run page](https://cdn.rawgit.com/raymondEhlers/overwatch/37bc6f47/doc/images/overwatch.upgrade.runPage.png)
+![An Overwatch run page](https://cdn.rawgit.com/raymondEhlers/overwatch/f1d173dd/doc/images/runPage.png)
 
 The web app visualizes the information provided by the processing. The WebApp is based on flask and serves
 the various forms of visualization, as well as providing an interface to request on-demand processing of the

@@ -38,6 +38,7 @@ from flask_assets import Environment
 from flask_wtf.csrf import CSRFProtect, CSRFError
 
 import sentry_sdk
+from sentry_sdk.integrations.logging import LoggingIntegration
 from sentry_sdk.integrations.flask import FlaskIntegration
 
 # Server configuration
@@ -146,9 +147,16 @@ def load_user(user):
     return auth.User.getUser(user, db)
 
 # Sentry for monitoring errors and other issues.
-# Usually, we want the module specific DSN, but we will take the general one if it's the only one available.
+# Setup sentry to create alerts for warning level messages. Those will include info level breadcrumbs.
+sentry_logging = LoggingIntegration(level = logging.INFO, event_level = logging.WARNING)
+# Usually, we want the module specific DSN, but we will take a generic one if it's the only one available.
+sentryDSN = os.getenv("SENTRY_DSN_WEBAPP") or os.getenv("SENTRY_DSN")
+if sentryDSN:
+    # It's helpful to know that sentry is setup, but we also don't want to put the DSN itself in the logs,
+    # so we simply note that it is enabled.
+    logger.info("Sentry DSN set and integrations enabled.")
 # Note that if SENTRY_DSN is not set, it simply won't activated.
-sentry_sdk.init(dsn = os.getenv("SENTRY_DSN_WEBAPP") or os.getenv("SENTRY_DSN"), integrations = [FlaskIntegration()])
+sentry_sdk.init(dsn = sentryDSN, integrations = [FlaskIntegration(), sentry_logging])
 
 ######################################################################################################
 # Unauthenticated Routes

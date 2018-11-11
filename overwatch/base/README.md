@@ -62,6 +62,22 @@ parts that you want for a particular execution. However, it is also important to
 doesn't support default values or overriding parts of the configuration like the Overwatch configuration
 system - every option of interest **must** be in the config passed to `overwatchDeploy`.
 
+### Steps to add a new executable
+
+1. Write the new executable.
+2. Create a new deployment executable. If it is an Overwatch executable, it can probably leverage the existing
+   Overwatch deployment classes. Otherwise, you'll need to write a class.
+3. Add this executable to the `_available_executables` list. Overwatch executables are often added via
+   `functools.partial` so we don't have to define an entirely new class.
+4. Add an entry for this executable into the documentation in the class.
+5. Add an entry for this executable into the `overwatch/base/deployReference.yaml` file, specifying all of the
+   options that may be used with your new executable. Remember that the task should be disabled by default!
+
+Then, to actually use this new executable, you should:
+
+1. Add an entry for the executable into your `deployConfig.yaml`, specifying all options as necessary.
+2. Add an entry into your `docker-compose.yaml` to create a container in which the executable will run.
+
 ## Monitoring for errors
 
 It is important to monitor Overwatch for errors and other issues. For the data transfer module, this

@@ -303,7 +303,7 @@ class subsystemContainer(persistent.Persistent):
         self.startOfRun = startOfRun
         self.endOfRun = endOfRun
         # The run length is in minutes
-        self.runLength = (endOfRun - startOfRun) // 60
+        self.runLength = self.calculateRunLength()
 
         # Histograms
         self.histGroups = persistent.list.PersistentList()
@@ -324,6 +324,28 @@ class subsystemContainer(persistent.Persistent):
 
         # Processing options
         self.processingOptions = persistent.mapping.PersistentMapping()
+
+    def calculateRunLength(self, startOfRun = None, endOfRun = None):
+        """ Helper function to update the run length.
+
+        Note:
+            The run length is defined in minutes.
+
+        Args:
+            startOfRun (int): Start of the run in unix time. Default: ``None``. If not specified,
+                the ``startOfRun`` stored in the subsystem will be used.
+            endOfRun (int): End of the run in unix time. Default: ``None``. If not specified,
+                the ``startOfRun`` stored in the subsystem will be used.
+        Returns:
+            int: The calculated run length in minutes.
+        """
+        if startOfRun is None:
+            startOfRun = self.startOfRun
+        if endOfRun is None:
+            endOfRun = self.endOfRun
+        # The run length is in minutes
+        runLength = (endOfRun - startOfRun) // 60
+        return runLength
 
     def setupDirectories(self, runDir):
         """ Helper function to setup the subsystem directories.

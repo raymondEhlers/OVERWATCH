@@ -36,10 +36,15 @@ utilities.setupLogging(logger = logger,
 # Log settings
 logger.info(parameters)
 
-# Setup sentry to create alerts for warning level messages.
-sentry_logging = LoggingIntegration(level = logging.WARNING, event_level = None)
-# Usually, we want the module specific DSN, but we will take the general one if it's the only one available.
-sentry_sdk.init(dsn = os.getenv("SENTRY_DSN_DATA_TRANSFER") or os.getenv("SENTRY_DSN"), integrations = [sentry_logging])
+# Setup sentry to create alerts for warning level messages. Those will include info level breadcrumbs.
+sentry_logging = LoggingIntegration(level = logging.INFO, event_level = logging.WARNING)
+# Usually, we want the module specific DSN, but we will take a generic one if it's the only one available.
+sentryDSN = os.getenv("SENTRY_DSN_DATA_TRANSFER") or os.getenv("SENTRY_DSN")
+if sentryDSN:
+    # It's helpful to know that sentry is setup, but we also don't want to put the DSN itself in the logs,
+    # so we simply note that it is enabled.
+    logger.info("Sentry DSN set and integrations enabled.")
+sentry_sdk.init(dsn = sentryDSN, integrations = [sentry_logging])
 
 # Imports are below here so that they can be logged
 from overwatch.base import dataTransfer
@@ -107,8 +112,14 @@ def runReplayData():
     # We need to explicitly add this additional directory - otherwise ``move(...)`` will dump the directory
     # contents right into the dataReplayTempStorageDirectory directory.
     _, runDir = os.path.split(baseDir)
-    temporaryDir = os.path.join(temporaryDir, runDir)
-    shutil.move(baseDir, temporaryDir)
+    temporaryRunDir = os.path.join(temporaryDir, runDir)
+    # Need to remove the temporary run directory before moving if it exists. Otherwise ``move(...)`` will move
+    # the directoy we are moving __inside__ of the existing directory...
+    if os.path.exists(temporaryRunDir):
+        shutil.rmtree(temporaryRunDir)
+    # Now actually move the file.
+    logger.debug("Moving existing runDir at {baseDir} to {temporaryRunDir}".format(baseDir = baseDir, temporaryRunDir = temporaryRunDir))
+    shutil.move(baseDir, temporaryRunDir)
 
     # Attempt to remove the runDir from the database so that replay is successful (otherwise, it looks for entries
     # and files that don't exist since replay moved the files).
@@ -121,7 +132,7 @@ def runReplayData():
         logger.debug("Successfully removed the existing run directory from the database.")
 
     # Now begin the actual replay.
-    replay.runReplay(baseDir = temporaryDir,
+    replay.runReplay(baseDir = temporaryRunDir,
                      destinationDir = parameters["dataReplayDestinationDirectory"],
                      nMaxFiles = parameters["dataReplayMaxFilesPerReplay"])
 
