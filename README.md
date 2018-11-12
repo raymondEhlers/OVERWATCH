@@ -7,7 +7,8 @@
 [![Build Status](https://travis-ci.org/raymondEhlers/OVERWATCH.svg?branch=master)](https://travis-ci.org/raymondEhlers/OVERWATCH)
 
 Welcome to ALICE Overwatch[\*](#name-meaning), a project to provide real-time online data monitoring and
-quality assurance using timestamped data from the ALICE High Level Trigger (HLT) and Data Quality Monitoring (DQM).
+quality assurance using timestamped data from the ALICE High Level Trigger (HLT) and Data Quality Monitoring
+(DQM). See the [Web App](https://aliceoverwatch.physics.yale.edu/) to access Overwatch displaying ALICE data.
 
 # Quick Start
 
@@ -122,7 +123,8 @@ configuration file.
 2. [Overwatch Configuration](#overwatch-configuration)
 3. [Overwatch Executables](#overwatch-executables)
 4. [Overwatch Deployment](#overwatch-deployment)
-5. [Citation](#citation)
+5. [Using Overwatch Data](#using-overwatch-data)
+6. [Citation](#citation)
 
 # Overwatch Architecture
 
@@ -291,8 +293,46 @@ $ docker run -d -v data:/overwatch/data -e config="$(config.yaml)" rehlers/overw
 
 ## Update Users in the Database
 
-This is a simple utility to update the users in the ZODB database. It can be called via `overwatchUpdateUsers`
-(it takes no arguments). It will use the username/password values stored in the `config.yaml`.
+There is a simple utility to update the users in the ZODB database. It can be called via
+`overwatchUpdateUsers` (it takes no arguments). It will use the username/password values stored in the
+`config.yaml`.
+
+# Using Overwatch Data
+
+Overwatch has time-stamped, persistently stored EMCal and HLT subsystem data dating back to November 2015. The
+TPC joined around April 2016 (Note that the HLT contains some data from various subsystems, such as the V0).
+This data is available through the end of Run 2 in December 2018, with the exception of the period between
+approximately mid-August to mid-October 2018, where some data was lost due to infrastructure issues.
+
+## Accessing the data
+
+This data can be accessed in a few different ways:
+
+- For small data volumes, the underlying data files can be accessed directly via the Web App. Simply select
+  the subsystem ROOT files from the main run list, and select the files to download.
+- For larger volumes, there are a few options:
+    - The unprocessed data is also archived on EOS. It is stored in `/eos/experiment/alice/overwatch`. To access
+      this data, send a request to Raymond and ALICE Offline.
+    - REST API file access is also possible under certain circumstances - contact Raymond if this is needed.
+
+## Utilizing the data
+
+To successfully use the Overwatch data, a few things must be kept in mind:
+
+- Each timestamp is in the CERN time zone. For properly handling these times, I recommend the `pendulum`
+  python package. For a concrete example, see `overwatch.utilities.base.extractTimeStampFromFilename`.
+- Each data file is cumulative. To get the data received between time n and n+1, one must subtract the
+  histogram, graph, or other object at time n+1 from the object at time n. From examples of and further
+  information on how to do this, see `overwatch.processing.mergeFiles`.
+- The data was requested every minute, but the data is not from precisely only that minute. The HLT runs the
+  QA components in a round-robin configuration through the HLT cluster. The new data that is received
+  corresponds to data the components sent into the mergers within that minute. The rate at which the QA
+  components send their data depends on the particular subsystem, but is often on the order of every 5
+  minutes. So the precision of the data is only on the order of approximately a few minutes.
+
+In general, Overwatch provides functionality to simplify working with this data, even if you don't want to use
+all of the overwatch processing features. A much more detailed information on how all of this is handled can
+be found in the documentation and code in `overwatch.processing.moveFiles`.
 
 # Citation
 
@@ -309,6 +349,10 @@ Please cite Overwatch as:
   url          = {https://doi.org/10.5281/zenodo.1309376}
 }
 ```
+
+## Additional Resources
+
+- [CHEP 2018 Presentation](https://indico.cern.ch/event/587955/contributions/2935758/)
 
 ## Name Meaning
 
