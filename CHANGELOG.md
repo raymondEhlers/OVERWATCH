@@ -23,6 +23,9 @@ Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
   `b09e7388`.
 - Added rudimentary ZMQ receiver monitoring via the `dataTransfer` module. If no files have been transferred
   in 12 hours, a warning will be emitted. See: `4ea80cf2`.
+- Added dedicated direct ZMQ receiver monitor via the `overwatch.receiver.monitor` module. It monitors
+  heartbeat information directly from the ZMQ receivers. It is a supplement to the monitoring via the
+  `dataTransfer` module. See: `c081a8bf`.
 - `repr` and `str` methods to most of the processing classes to aid in debugging. See: `3a544d67` and
   `43657bcf`
 
