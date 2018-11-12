@@ -176,7 +176,7 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
                     break
 
             # See if we've classified successfully.
-            logger.info("{subsystem} hist: {histName} - classified: {classifiedHist}".format(subsystem = subsystem.subsystem, histName = hist.histName, classifiedHist = classifiedHist))
+            logger.debug("{subsystem} hist: {histName} - classified: {classifiedHist}".format(subsystem = subsystem.subsystem, histName = hist.histName, classifiedHist = classifiedHist))
 
             if classifiedHist:
                 # Determine the processing functions to apply
@@ -432,7 +432,7 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
     filesToMerge = []
     for fileCont in subsystem.files.values():
         #logger.info("fileCont.fileTime: {fileTime}, minTimeCutUnix: {minTimeCutUnix}, maxTimeCutUnix: {maxTimeCutUnix}".format(fileTime = fileCont.fileTime, minTimeCutUnix = minTimeCutUnix, maxTimeCutUnix = maxTimeCutUnix))
-        logger.info("fileCont.timeIntoRun (minutes): {timeIntoRun}, minTimeMinutes: {minTimeMinutes}, maxTimeMinutes: {maxTimeMinutes}".format(timeIntoRun = round(fileCont.timeIntoRun / 60), minTimeMinutes = minTimeMinutes, maxTimeMinutes = maxTimeMinutes))
+        #logger.info("fileCont.timeIntoRun (minutes): {timeIntoRun}, minTimeMinutes: {minTimeMinutes}, maxTimeMinutes: {maxTimeMinutes}".format(timeIntoRun = round(fileCont.timeIntoRun / 60), minTimeMinutes = minTimeMinutes, maxTimeMinutes = maxTimeMinutes))
         # It is important to make this check in such a way that we can round to the nearest minute.
         # This is because the exact second when the receiver records the file can vary from file to file.
         if round(fileCont.timeIntoRun / 60) >= minTimeMinutes and round(fileCont.timeIntoRun / 60) <= maxTimeMinutes and fileCont.combinedFile is False:

@@ -286,7 +286,7 @@ class subsystemContainer(persistent.Persistent):
             self.fileLocationSubsystem = fileLocationSubsystem
 
         if self.showRootFiles is True and self.subsystem != self.fileLocationSubsystem:
-            logger.info("\tIt is requested to show ROOT files for subsystem {subsystem}, but the subsystem does not have specific data files. Using HLT data files!".format(subsystem = subsystem))
+            logger.info("It is requested to show ROOT files for subsystem {subsystem}, but the subsystem does not have specific data files. Using HLT data files!".format(subsystem = subsystem))
 
         # Files
         # Be certain to set these after the subsystem has been created!
