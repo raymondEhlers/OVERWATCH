@@ -208,7 +208,10 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
                 # at the warning level. We've split these up so that the warning doesn't end up as a different
                 # entry in sentry for every different histogram.
                 logger.info("Could not retrieve histogram for hist {}, histList: {}".format(hist.histName, hist.histList))
-                logger.warning("Could not retrieve histogram!")
+                # Disable the warning level log - it seems that this can happen at times when a file just lacks
+                # the file for whatever reason (even if it was present before in the same). The best we can do is log
+                # it internally (ie not to sentry) and continue.
+                #logger.warning("Could not retrieve histogram!")
                 continue
             processHist(subsystem = subsystem, hist = hist, canvas = canvas, outputFormatting = outputFormatting,
                         processingOptions = processingOptions, trendingManager = trendingManager)
