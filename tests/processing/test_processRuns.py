@@ -318,7 +318,7 @@ def testProcessMovedFilesWithInitialFileArrival(setupNewSubsystemsFromMovedFileI
     # Remove the initial run container.
     runs.pop(runDir)
 
-    # We need to mock the combined files to ensure that they are removed later.
+    # We need to mock the combined files and some histograms to ensure that they are removed later.
     mCombinedFiles = {}
     for i, simulatedRunDict in enumerate(simulatedFileArrival(runDir = runDir,
                                                               runDictForSimulatedArrival = runDict)):
@@ -331,6 +331,8 @@ def testProcessMovedFilesWithInitialFileArrival(setupNewSubsystemsFromMovedFileI
                 mCombinedFile = mocker.MagicMock()
                 runs[runDir].subsystems[subsystem].combinedFile = mCombinedFile
                 mCombinedFiles[subsystem] = mCombinedFile
+                # We use the existing dict because we just want to check that it is cleared.
+                runs[runDir].subsystems[subsystem].histsAvailable["hello"] = "world_{subsystem}".format(subsystem = subsystem)
 
     # Check the initial results
     assert checkAllCreatedSubsystems(runs = runs, subsystems = subsystems, expectedRunDict = runDict, runDir = runDir) is True
@@ -343,8 +345,11 @@ def testProcessMovedFilesWithInitialFileArrival(setupNewSubsystemsFromMovedFileI
     for subsystem in subsystems:
         if subsystem == "EMC":
             assert runs[runDir].subsystems[subsystem].combinedFile is None
+            assert len(runs[runDir].subsystems[subsystem].histsAvailable) == 0
         else:
             assert runs[runDir].subsystems[subsystem].combinedFile == mCombinedFiles[subsystem]
+            assert len(runs[runDir].subsystems[subsystem].histsAvailable) == 1
+            assert runs[runDir].subsystems[subsystem].histsAvailable["hello"] == "world_{subsystem}".format(subsystem = subsystem)
 
     # Now, use the additionalRunDict just for good measure to make sure that our conversion from
     # fileLocationSubsystem -> subsystem for EMC worked properly.
@@ -371,6 +376,10 @@ def testProcessMovedFilesWithInitialFileArrival(setupNewSubsystemsFromMovedFileI
     for subsystem in subsystems:
         if subsystem == "EMC":
             assert runs[runDir].subsystems[subsystem].combinedFile is None
+            # Not checking the histsAvailable because it isn't really meaningful. It will be empty, but
+            # that's just because we didn't set any after it converted.
         else:
             assert runs[runDir].subsystems[subsystem].combinedFile == mCombinedFiles[subsystem]
+            assert len(runs[runDir].subsystems[subsystem].histsAvailable) == 1
+            assert runs[runDir].subsystems[subsystem].histsAvailable["hello"] == "world_{subsystem}".format(subsystem = subsystem)
 

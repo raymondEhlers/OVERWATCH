@@ -204,7 +204,11 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
             hist = subsystem.hists[histName]
             retrievedHist = hist.retrieveHistogram(fIn = fIn, ROOT = ROOT)
             if not retrievedHist:
-                logger.warning("Could not retrieve histogram for hist {}, histList: {}".format(hist.histName, hist.histList))
+                # We first log at info level so the information is available, and then we fire a warning
+                # at the warning level. We've split these up so that the warning doesn't end up as a different
+                # entry in sentry for every different histogram.
+                logger.info("Could not retrieve histogram for hist {}, histList: {}".format(hist.histName, hist.histList))
+                logger.warning("Could not retrieve histogram!")
                 continue
             processHist(subsystem = subsystem, hist = hist, canvas = canvas, outputFormatting = outputFormatting,
                         processingOptions = processingOptions, trendingManager = trendingManager)
@@ -734,6 +738,9 @@ def processMovedFilesIntoRuns(runs, runDict):
                                 # Also need to remove the existing combined file. A new one will be generated
                                 # and added to the subsystem.
                                 subsystem.combinedFile = None
+                                # Lastly, we need to reset the subsyste histograms - they will have changed with
+                                # a new set of files.
+                                subsystem.resetContainer()
 
                         # Add the new files and note them in the subsystem, which will lead to reprocessing.
                         # NOTE: Recall that the BTree that stores the files is a sorted object, so we don't
