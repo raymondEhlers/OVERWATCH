@@ -38,7 +38,7 @@ Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
 
 - Creation of run and subsystem containers as new data arrives. Issues were caused by received files arriving
   at different times, which split up the processing. See: `b9230b98`, with fixes in
-  `1cfb18c3`, `5e3630a0`, and `f7863a64`.
+  `1cfb18c3`, `5e3630a0`, `f7863a64`, and `364543f3`.
 - Fixed data transfer to only select on files which end in ".root". ROOT appears to create temporary files
   when writing which are sometimes picked up during data transfer. See: `83412bb7`.
 - Execution data is now stored in the `exec` directory. Information includes logs, configurations (except for
