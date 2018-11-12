@@ -221,6 +221,11 @@ def createAdditionalTPCHistograms(subsystem):
     Returns:
         None. Newly created histograms are added to ``subsystemContainer.histsAvailable``.
     """
+    # Only create the new histograms if the TPC subsystem data is available. Otherwise, the underlying data won't
+    # be available, which will cause warnings.
+    if subsystem.subsystem != subsystem.fileLocationSubsystem:
+        return
+
     # DCAz and DCAr vs phi
     # Of the form ("Histogram name", "input histogram name")
     # Just for convenience.
