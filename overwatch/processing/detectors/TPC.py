@@ -29,7 +29,6 @@ try:
 except ImportError:
     pass
 
-
 def getTrendingObjectInfo():  # type: () -> List[TrendingInfo]
     """ Function create simple data objects - TrendingInfo, from which will be created TrendingObject.
 
@@ -93,6 +92,24 @@ def generalOptions(subsystem, hist, processingOptions):
     # drawing options for TH2 hists
     hist.hist.SetOption("COLZ")
 
+def ptSpectra(subsystem, hist, processingOptions, **kwargs):
+    """ Processing function for pT spectra.
+
+    Set the y axis labels (x is already set) and log y for a clearer visualization.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None. The current hist and canvas are modified.
+    """
+    hist.hist.GetYaxis().SetTitle("dN/dp_{T}")
+    hist.canvas.SetLogy(True)
+
 def findFunctionsForTPCHistogram(subsystem, hist):
     """ Find processing functions for TPC histograms based on their names.
 
@@ -117,8 +134,12 @@ def findFunctionsForTPCHistogram(subsystem, hist):
     Returns:
         None. The hist is modified.
     """
-    # General TPC Options
+    # General TPC Options.
     hist.functionsToApply.append(generalOptions)
+
+    # Improve pt spectra visualization.
+    if "pT_" in hist.histName:
+        hist.functionsToApply.append(ptSpectra)
 
 def createTPCHistogramGroups(subsystem):
     """ Create histogram groups for the TPC subsystem.
@@ -151,6 +172,13 @@ def createTPCHistogramGroups(subsystem):
     """
     # Sort the filenames of the histograms into categories for better presentation
     # The order in which these are added is the order in which they are processed!
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("DCAr vs Phi", "DCAr_vs_Phi"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("DCAz vs Phi", "DCAz_vs_Phi"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("TPC Cluster Eta vs Phi", "Eta_vs_Phi"))
+    # Must got below "Eta_vs_Phi" because the "Eta_" selection is greedy
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("TPC Cluster Eta", "Eta_"))
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("Pt spectra", "pT_"))
+    # Base histograms
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("TPC Cluster", "tpc_clust"))
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("TPC Constrain", "tpc_constrain"))
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("TPC Event RecVertex", "event_recvertex"))
@@ -211,15 +239,11 @@ def createAdditionalTPCHistograms(subsystem):
             histName = "{histName}_{label}".format(histName = tempName, label = label)
             # ``histList`` must be a list, so we pass the histogram name as a single entry list
             histCont = processingClasses.histogramContainer(histName = histName, histList = [inputHistName])
+            # Provide a more readable name
+            tempPrettyName = tempName.split("_")[:-1]
+            histCont.prettyName = "{name} for {sign} tracks on {side} side".format(name = " ".join(tempPrettyName), sign = "positive" if "pos" in tempName else "negative", side = "A" if label == "aSide" else "C")
             histCont.projectionFunctionsToApply.append(projFunction)
             subsystem.histsAvailable[histName] = histCont
-
-    # DCAz vs Phi
-    # NOTE: This is just an example and may not be the entirely correct!
-    histName = "dcaZVsPhi"
-    histCont = processingClasses.histogramContainer(histName, ["TPCQA/h_tpc_track_all_recvertex_4_5_7"])
-    histCont.projectionFunctionsToApply.append(restrictInclusiveDCAzVsPhiPtEtaRangeAndProjectTo1D)
-    subsystem.histsAvailable[histName] = histCont
 
     #eta, phi and pT projections
     #eta vs. phi pos/neg tracks
@@ -230,6 +254,8 @@ def createAdditionalTPCHistograms(subsystem):
 
     for histName, inputHistName in names:
         histCont = processingClasses.histogramContainer(histName = histName, histList = [inputHistName])
+        # Provide a more readable name
+        histCont.prettyName = "Eta vs Phi of {sign} tracks".format(sign = "positive" if "pos" in tempName else "negative")
         histCont.projectionFunctionsToApply.append(projectToYZ)
         subsystem.histsAvailable[histName] = histCont
 
@@ -243,6 +269,8 @@ def createAdditionalTPCHistograms(subsystem):
         for label in [("pT"), ("Eta")]:
             histName = "{label}_{histName}".format(histName = tempName, label = label)
             histCont = processingClasses.histogramContainer(histName = histName, histList = [inputHistName])
+            # Provide a more readable name
+            histCont.prettyName = "{label} of {sign} tracks".format(label = label, sign = "positive" if "pos" in tempName else "negative")
             histCont.projectionFunctionsToApply.append(projectTo1D)
             subsystem.histsAvailable[histName] = histCont
 
