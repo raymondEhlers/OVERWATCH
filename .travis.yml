@@ -65,6 +65,11 @@ deploy:
       skip_cleanup: true
       on:
           tags: true
+          # Only deploy the python 3 build by selecting on versions which start with 3. Either 2 or 3
+          # would be fine, but we only want to do one. Using build stages would be nice, but then we
+          # would need to upload the docker image and the polymer and jsRoot files. So we take the
+          # easier solution by just selecting one.
+          condition: ${DOCKER_PYTHON_VERSION} =~ ^3
     - provider: script
       # Variables are defined in the travis CI interface
       # They include: $DOCKER_USERNAME, $DOCKER_PASSWORD
