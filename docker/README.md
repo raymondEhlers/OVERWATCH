@@ -98,7 +98,7 @@ this is our external facing server, so this defaults to `0.0.0.0`.
 
     ```bash
     $ docker run --rm -it -v ${PWD}/data:/opt/overwatch/data -v ${PWD}/overwatch:/opt/overwatch/overwatch -v ${PWD}/exec:/opt/overwatch/exec -e config -e gridCert -e gridKey rehlers/overwatch:latest-py3.6.6 /bin/bash
-    # In the container
+    # In the container (note that a python socket exception is expected)
     $ overwatchDeploy -e config
     # Now everything should be all set!
     # Note that ls on the directory above overwatch my or may not work...
