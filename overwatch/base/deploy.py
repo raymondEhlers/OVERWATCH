@@ -1164,6 +1164,7 @@ class gridTokenProxy(executable):
         args = [
             "xrdgsiproxy",
             "init",
+            "-valid 168:00",
         ]
         config = kwargs.get("config", {})
         # Ensure that the task is eanbled.
