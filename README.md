@@ -2,7 +2,7 @@
 
 # ALICE Overwatch
 
-[![DOI](https://zenodo.org/badge/50686415.svg)](https://zenodo.org/badge/latestdoi/50686415)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1309375.svg)](https://doi.org/10.5281/zenodo.1309375)
 [![Documentation Status](https://readthedocs.org/projects/overwatch/badge/?version=latest)](https://overwatch.readthedocs.io/en/latest/?badge=latest)
 [![Build Status](https://travis-ci.org/raymondEhlers/OVERWATCH.svg?branch=master)](https://travis-ci.org/raymondEhlers/OVERWATCH)
 
