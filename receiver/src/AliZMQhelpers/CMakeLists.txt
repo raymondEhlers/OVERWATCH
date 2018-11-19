@@ -14,8 +14,7 @@ foreach(f ZMQ/AliZMQhelpers
         # made available in the dev branch of the ALICEHLT/AliRoot fork.
         # TEMP: 18 November 2018 - Need a particular tag because the AliZMQhelpers module isn't easily standalone.
         #       Should be updated in the coming days/weeks, and then we can return to master
-        # TEMP: 19 November 2018 - Trying a fix developed by Mikolaj.
-        file(DOWNLOAD https://raw.githubusercontent.com/mkrzewic/AliRoot/AliZMQhelpers_fix/HLT/${f}${extension} ${CMAKE_CURRENT_SOURCE_DIR}/${filename} SHOW_PROGRESS)
+        file(DOWNLOAD https://raw.githubusercontent.com/alisw/AliRoot/6ff53582eef8175441a014e7f0a28f2ede2d151b/HLT/${f}${extension} ${CMAKE_CURRENT_SOURCE_DIR}/${filename} SHOW_PROGRESS)
     endforeach()
 endforeach()
 
