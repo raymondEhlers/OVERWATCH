@@ -85,7 +85,7 @@ zmqReceiver::zmqReceiver():
 int zmqReceiver::Run()
 {
   // Show the current configuration
-  std::cout << PrintConfiguration() << std::endl;
+  std::cout << PrintConfiguration() << "\n";
 
   // Register signal hanlder
   // See: https://stackoverflow.com/a/1641223
@@ -118,7 +118,7 @@ int zmqReceiver::Run()
     if (rc == -1 && errno == ETERM) {
       // This can only happen it the context was terminated, one of the
       // sockets are not valid, or operation was interrupted
-      Printf("ZMQ context was terminated! Bailing out! rc = %i, %s", rc, zmq_strerror(errno));
+      std::cout << "ZMQ context was terminated! Bailing out! rc = " << rc << ", " << zmq_strerror(errno) << "\n";
       return -1;
     }
 
@@ -133,13 +133,13 @@ int zmqReceiver::Run()
     // Handle if the request timed out (perhaps due to a dead server).
     if (!(sockets[0].revents & ZMQ_POLLIN)) {
       // Server died
-      Printf("Connection timed out. Server %s died?", fZMQconfigIn.c_str());
+      std::cout << "Connection timed out. Server " << fZMQconfigIn << " died?\n";
       int fZMQsocketModeIn = alizmq_socket_init(fZMQin, fZMQcontext, fZMQconfigIn.c_str());
       if (fVerbose) {
-        std::cout << fZMQsocketModeIn << std::endl;
+        std::cout << fZMQsocketModeIn << "\n";
       }
       if (fZMQsocketModeIn < 0) {
-        Printf("Cannot reinit ZMQ socket %s, %s, exiting...", fZMQconfigIn.c_str(), zmq_strerror(errno));
+        std::cout << "Cannot reinit ZMQ socket " << fZMQconfigIn << ", " << zmq_strerror(errno) << ", exiting...\n";
         return -1;
       }
 
@@ -190,7 +190,7 @@ void zmqReceiver::ReceiveData()
       std::string info;
       alizmq_msg_iter_data(i, info);
       if (fVerbose) {
-        Printf("processing INFO %s", info.c_str());
+        std::cout << "processing INFO " << info << "\n";
       }
 
       // Parse the info string.
@@ -201,8 +201,7 @@ void zmqReceiver::ReceiveData()
       fHLTMode = fInfoMap["HLT_MODE"];
 
       if (fVerbose) {
-        Printf("Received:\n\tRun Number: %i\n\tHLT Mode: %s\n",
-            fRunNumber, fHLTMode.c_str());
+        std::cout << "Received:\n\tRun Number: " << fRunNumber << "\n\tHLT Mode: " << fHLTMode << "\n";
       }
 
       // Now move onto processing the actual data.
@@ -229,7 +228,7 @@ void zmqReceiver::ReceiveData()
         // Whatever this payload is, it doesn't appear to be a ROOT
         // object. Log the it happened and skip the object so we don't
         // crash due to trying to write a nullptr.
-        Printf( "Object at position %ld does not appear to be a ROOT object and will be skipped!", std::distance(message.begin(), i));
+        std::cout << "Object at position " << std::distance(message.begin(), i) << " does not appear to be a ROOT object and will be skipped!\n";
         continue;
       }
     }
@@ -247,9 +246,9 @@ void zmqReceiver::ReceiveData()
     WriteToFile();
   } else {
     if (fRunNumber != 0) {
-      Printf("fRunNumber == 0. Not printing, since this is not a real run!");
+      std::cout << "fRunNumber == 0. Not printing, since this is not a real run!\n";
     } else {
-      Printf("No new data to write. Waiting for next request.");
+      std::cout << "No new data to write. Waiting for next request.\n";
     }
   }
 }
@@ -277,15 +276,14 @@ void zmqReceiver::WriteToFile()
   TFile* fOut = new TFile(filename.Data(), "RECREATE");
 
   if (fVerbose) {
-    std::cout << "Writing " << fData.size() << " objects to "
-         << filename.Data() << std::endl;
+    std::cout << "Writing " << fData.size() << " objects to " << filename.Data() << "\n";
   }
 
   // Iterate over all objects and write them to the file
   for (std::vector<TObject*>::iterator it = fData.begin(); it != fData.end(); ++it)
   {
     if (fVerbose) {
-      Printf("writing object %s to %s", (*it)->GetName(), filename.Data());
+      std::cout << "Writing object " << (*it)->GetName() << " to " << filename << "\n";
     }
     (*it)->Write((*it)->GetName());
   }
@@ -317,7 +315,7 @@ void zmqReceiver::SendRequest()
   }
 
   if (fVerbose) {
-    Printf("\nsending request CONFIG with request \"%s\"", request.c_str());
+    std::cout << "\nsending request CONFIG with request \"" << request << "\"\n";
   }
   alizmq_msg_send("CONFIG", request, fZMQin, ZMQ_SNDMORE);
   alizmq_msg_send("", "", fZMQin, 0);
