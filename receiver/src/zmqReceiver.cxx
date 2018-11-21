@@ -97,8 +97,7 @@ int zmqReceiver::Run()
   sigaction(SIGINT, &sigIntHandler, NULL);
 
   // Main loop
-  while(1)
-  {
+  while (1) {
     // Write heartbeat to a file to show that the receiver is alive.
     WriteHeartbeat();
 
@@ -108,48 +107,47 @@ int zmqReceiver::Run()
     SendRequest();
 
     // Define ZMQ sockets
-    zmq_pollitem_t sockets[] = { 
-      { fZMQin, 0, ZMQ_POLLIN, 0 },
+    zmq_pollitem_t sockets[] = {
+      {fZMQin, 0, ZMQ_POLLIN, 0},
     };
 
-    // Wait for the data by polling sockets
-    // The second argument denotes the number of sockets that are being polled
-    // The third argument is the timeout
+    // Wait for the data by polling sockets.
+    // The second argument denotes the number of sockets that are being
+    // polled, while the third argument is the timeout.
     int rc = zmq_poll(sockets, 1, fPollTimeout);
-    if (rc==-1 && errno == ETERM)
-    {
-      // This can only happen it the context was terminated, one of the sockets are
-      // not valid, or operation was interrupted
+    if (rc == -1 && errno == ETERM) {
+      // This can only happen it the context was terminated, one of the
+      // sockets are not valid, or operation was interrupted
       Printf("ZMQ context was terminated! Bailing out! rc = %i, %s", rc, zmq_strerror(errno));
       return -1;
     }
 
     // If we caught ctrl-c, then break so we can close the sockets
-    // NOTE: This must be done before handling if the server is dead because otherwise it will
-    //       attempt to re-init the socket and continue instead of terminating!
+    // NOTE: This must be done before handling if the server is dead because
+    //       otherwise it will attempt to re-init the socket and continue
+    //       instead of terminating!
     if (fgSignalCaught) {
       break;
     }
 
     // Handle if the request timed out (perhaps due to a dead server).
-    if (!(sockets[0].revents & ZMQ_POLLIN))
-    {
+    if (!(sockets[0].revents & ZMQ_POLLIN)) {
       // Server died
       Printf("Connection timed out. Server %s died?", fZMQconfigIn.c_str());
       int fZMQsocketModeIn = alizmq_socket_init(fZMQin, fZMQcontext, fZMQconfigIn.c_str());
-      if (fVerbose) { std::cout << fZMQsocketModeIn << std::endl; }
-      if (fZMQsocketModeIn < 0) 
-      {
+      if (fVerbose) {
+        std::cout << fZMQsocketModeIn << std::endl;
+      }
+      if (fZMQsocketModeIn < 0) {
         Printf("Cannot reinit ZMQ socket %s, %s, exiting...", fZMQconfigIn.c_str(), zmq_strerror(errno));
         return -1;
       }
 
-      // If we managed to reinitialize the socket, then we start over again
+      // If we managed to reinitialize the socket, then we start over again.
       continue;
     }
     // Data present in socket 0 (ie fZMQin)
-    else if (sockets[0].revents & ZMQ_POLLIN)
-    {
+    else if (sockets[0].revents & ZMQ_POLLIN) {
       ReceiveData();
     }
 
@@ -179,58 +177,59 @@ void zmqReceiver::ReceiveData()
 {
   // Clear previous data
   ClearData();
-  
+
   // Receive message
   aliZMQmsg message;
   alizmq_msg_recv(&message, fZMQin, 0);
 
   // Processing message data
-  for (aliZMQmsg::iterator i=message.begin(); i!=message.end(); ++i)
-  {
+  for (aliZMQmsg::iterator i = message.begin(); i != message.end(); ++i) {
     // Check for information about the data
-    if (alizmq_msg_iter_check_id(i, AliZMQhelpers::kDataTypeInfo)==0)
-    {
-      // Retrieve info about the data
+    if (alizmq_msg_iter_check_id(i, AliZMQhelpers::kDataTypeInfo) == 0) {
+      // Retrieve info about the data.
       std::string info;
       alizmq_msg_iter_data(i, info);
-      if (fVerbose) { Printf("processing INFO %s", info.c_str()); }
-      
-      // Parse the info string
+      if (fVerbose) {
+        Printf("processing INFO %s", info.c_str());
+      }
+
+      // Parse the info string.
       stringMap fInfoMap = ParseParamString(info);
 
-      // Retrieve run number and HLT mode
+      // Retrieve run number and HLT mode.
       fRunNumber = atoi(fInfoMap["run"].c_str());
       fHLTMode = fInfoMap["HLT_MODE"];
 
-      if (fVerbose) { Printf("Received:\n\tRun Number: %i\n\tHLT Mode: %s\n", fRunNumber, fHLTMode.c_str()); }
+      if (fVerbose) {
+        Printf("Received:\n\tRun Number: %i\n\tHLT Mode: %s\n",
+            fRunNumber, fHLTMode.c_str());
+      }
 
-      // Now move onto processing the actual data
+      // Now move onto processing the actual data.
       continue;
     }
 
-    // Check for and retrieve streamer information and make it available to ROOT
-    if (alizmq_msg_iter_check_id(i, AliZMQhelpers::kDataTypeStreamerInfos) == 0)
-    {
+    // Check for and retrieve streamer information and make it available to ROOT.
+    if (alizmq_msg_iter_check_id(i, AliZMQhelpers::kDataTypeStreamerInfos) == 0) {
       alizmq_msg_iter_init_streamer_infos(i);
     }
 
-    // Store the data to be written out
+    // Store the data to be written out.
     TObject* object;
     int returnValue = alizmq_msg_iter_data(i, object);
-    if (returnValue != 0)
-    {
+    if (returnValue != 0) {
       // Something went wrong.
-      if (returnValue > 0)
-      {
-        // Something went wrong in the deserialization, so we need to re-request the streamers for
-        // this object. Skip it for now to avoid corrupting the file.
+      if (returnValue > 0) {
+        // Something went wrong in the deserialization, so we need to
+        // re-request the streamers for this object. Skip it for now to
+        // avoid corrupting the file.
         fRequestStreamers = true;
         continue;
-      }
-      else {
-        // Whatever this payload is, it doesn't appear to be a ROOT object.
-        // Log the it happened and skip the object so we don't crash due to trying to write a nullptr.
-        Printf("Object at position %ld does not appear to be a ROOT object and will be skipped!", std::distance(message.begin(), i));
+      } else {
+        // Whatever this payload is, it doesn't appear to be a ROOT
+        // object. Log the it happened and skip the object so we don't
+        // crash due to trying to write a nullptr.
+        Printf( "Object at position %ld does not appear to be a ROOT object and will be skipped!", std::distance(message.begin(), i));
         continue;
       }
     }
@@ -240,19 +239,16 @@ void zmqReceiver::ReceiveData()
   // Close message
   alizmq_msg_close(&message);
 
-  // The HLT sends run number 0 after it is has reset receivers at the end of a run.
-  // We shouldn't bother writing out the file in that case.
-  // We also shouldn't try to write an empty file if we haven't received any data.
-  if (fRunNumber != 0 && fData.size() != 0)
-  {
+  // The HLT sends run number 0 after it is has reset receivers at the end of
+  // a run. We shouldn't bother writing out the file in that case. We also
+  // shouldn't try to write an empty file if we haven't received any data.
+  if (fRunNumber != 0 && fData.size() != 0) {
     // Write Data
     WriteToFile();
-  }
-  else {
+  } else {
     if (fRunNumber != 0) {
       Printf("fRunNumber == 0. Not printing, since this is not a real run!");
-    }
-    else {
+    } else {
       Printf("No new data to write. Waiting for next request.");
     }
   }
@@ -268,9 +264,9 @@ void zmqReceiver::ReceiveData()
  */
 void zmqReceiver::WriteToFile()
 {
-  // Get current time
+  // Get current time (in the local timezone).
   time_t now = time(NULL);
-  struct tm * timestamp = localtime(&now);
+  struct tm* timestamp = localtime(&now);
 
   // Format is SUBSYSTEMhistos_runNumber_hltMode_time.root
   // For example, EMChistos_123456_B_2015_3_14_2_3_5.root
@@ -278,14 +274,19 @@ void zmqReceiver::WriteToFile()
   filename = fDataPath + "/" + filename;
 
   // Create file
-  TFile * fOut = new TFile(filename.Data(), "RECREATE");
+  TFile* fOut = new TFile(filename.Data(), "RECREATE");
 
-  if (fVerbose) { std::cout << "Writing " << fData.size() << " objects to " << filename.Data() << std::endl; }
+  if (fVerbose) {
+    std::cout << "Writing " << fData.size() << " objects to "
+         << filename.Data() << std::endl;
+  }
 
   // Iterate over all objects and write them to the file
-  for (std::vector<TObject *>::iterator it = fData.begin(); it != fData.end(); ++it)
+  for (std::vector<TObject*>::iterator it = fData.begin(); it != fData.end(); ++it)
   {
-    if (fVerbose) Printf("writing object %s to %s",(*it)->GetName(), filename.Data());
+    if (fVerbose) {
+      Printf("writing object %s to %s", (*it)->GetName(), filename.Data());
+    }
     (*it)->Write((*it)->GetName());
   }
 
@@ -315,7 +316,9 @@ void zmqReceiver::SendRequest()
     request += " -SchemaOnRequest";
   }
 
-  if (fVerbose) Printf("\nsending request CONFIG with request \"%s\"", request.c_str());
+  if (fVerbose) {
+    Printf("\nsending request CONFIG with request \"%s\"", request.c_str());
+  }
   alizmq_msg_send("CONFIG", request, fZMQin, ZMQ_SNDMORE);
   alizmq_msg_send("", "", fZMQin, 0);
 }
@@ -325,7 +328,7 @@ void zmqReceiver::SendRequest()
  */
 void zmqReceiver::ClearData()
 {
-  for (std::vector<TObject *>::iterator it = fData.begin(); it != fData.end(); ++it)
+  for (std::vector<TObject*>::iterator it = fData.begin(); it != fData.end(); ++it)
   {
     delete *it;
   }
@@ -335,13 +338,13 @@ void zmqReceiver::ClearData()
 int zmqReceiver::Init()
 {
   // Setup data path
-  // Remove trailing slash if it exists for consistency
-  // Use TString for convenience
+  // Remove trailing slash if it exists for consistency.
+  // We use TString for convenience.
   TString dataPath = fDataPath;
   fDataPath = dataPath.Strip(TString::kTrailing, '/').Data();
   // Ensure that fDataPath exists
-  // It creates it with read, write, and execute permissions
-  // If the directory already exists, it will fail silently
+  // It creates it with read, write, and execute permissions.
+  // If the directory already exists, it will fail silently.
   mkdir(fDataPath.c_str(), S_IRWXU);
 
   int retVal = 0;
@@ -357,7 +360,7 @@ int zmqReceiver::InitZMQ()
 {
   // Init or reinit ZMQ socket
   int rc = 0;
-  rc += alizmq_socket_init(fZMQin,  fZMQcontext, fZMQconfigIn.c_str());
+  rc += alizmq_socket_init(fZMQin, fZMQcontext, fZMQconfigIn.c_str());
 
   return rc;
 }
@@ -388,8 +391,8 @@ std::string zmqReceiver::PrintConfiguration()
   status << "\tData directory: \"" << fDataPath << "\"\n";
   status << "\tRequest ROOT streamers: " << fRequestStreamers << "\n";
   status << "\tResetMerger: " << fResetMerger << "\n";
-  status << "\tSleep time between requests: " << fPollInterval/1e3 << " s\n";
-  status << "\tRequest timeout: " << fPollTimeout/1e3 << " s\n";
+  status << "\tSleep time between requests: " << fPollInterval / 1e3 << " s\n";
+  status << "\tRequest timeout: " << fPollTimeout / 1e3 << " s\n";
   status << "\tZMQ In Configuration: " << fZMQconfigIn << "\n";
 
   return status.str();
@@ -410,44 +413,25 @@ int zmqReceiver::ProcessOption(TString option, TString value)
   //process option
   //to be implemented by the user
 
-  if (option.EqualTo("ZMQconfigIN") || option.EqualTo("in"))
-  {
+  if (option.EqualTo("ZMQconfigIN") || option.EqualTo("in")) {
     fZMQconfigIn = value;
-  }
-  else if (option.EqualTo("verbose"))
-  {
+  } else if (option.EqualTo("verbose")) {
     fVerbose = atoi(value);
-  }
-  else if (option.EqualTo("select"))
-  {
+  } else if (option.EqualTo("select")) {
     fSelection = value;
-  }
-  else if (option.EqualTo("dataPath"))
-  {
+  } else if (option.EqualTo("dataPath")) {
     fDataPath = value;
-  }
-  else if (option.EqualTo("requestStreamers"))
-  {
+  } else if (option.EqualTo("requestStreamers")) {
     fRequestStreamers = true;
-  }
-  else if (option.EqualTo("resetMerger"))
-  {
+  } else if (option.EqualTo("resetMerger")) {
     fResetMerger = true;
-  }
-  else if (option.EqualTo("subsystem"))
-  {
+  } else if (option.EqualTo("subsystem")) {
     fSubsystem = value;
-  }
-  else if (option.EqualTo("PollInterval") || option.EqualTo("sleep"))
-  {
-    fPollInterval = round(value.Atof()*1e3);
-  }
-  else if (option.EqualTo("PollTimeout") || option.EqualTo("timeout"))
-  {
-    fPollTimeout = round(value.Atof()*1e3);
-  }
-  else
-  {
+  } else if (option.EqualTo("PollInterval") || option.EqualTo("sleep")) {
+    fPollInterval = round(value.Atof() * 1e3);
+  } else if (option.EqualTo("PollTimeout") || option.EqualTo("timeout")) {
+    fPollTimeout = round(value.Atof() * 1e3);
+  } else {
     return -1;
   }
 
@@ -471,10 +455,9 @@ int zmqReceiver::ProcessOptionString(TString arguments)
   // Process passed options
   aliStringVec* options = AliOptionParser::TokenizeOptionString(arguments);
   int nOptions = 0;
-  for (aliStringVec::iterator i=options->begin(); i!=options->end(); ++i)
+  for (aliStringVec::iterator i = options->begin(); i != options->end(); ++i)
   {
-    if (ProcessOption(i->first,i->second) < 0)
-    {
+    if (ProcessOption(i->first, i->second) < 0) {
       // If an option is not found, then print the help
       nOptions = -1;
       break;
@@ -484,7 +467,8 @@ int zmqReceiver::ProcessOptionString(TString arguments)
     nOptions++;
   }
 
-  delete options; //tidy up
+  // tidy up
+  delete options;
 
-  return nOptions; 
+  return nOptions;
 }
