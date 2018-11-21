@@ -6,6 +6,7 @@ Assuming python 2.7.15
 
 ```bash
 $ docker build --build-arg PYTHON_VERSION=2.7.15 -t overwatch-base:py2.7.15 -f Dockerfile.build .
+# Can also set `--build-arg OVERWATCH_BRANCH="name"` to have it build a particlar branch in the container.
 $ docker build --build-arg PYTHON_VERSION=2.7.15 -t overwatch:latest-py2.7.15 -f Dockerfile .
 ```
 

@@ -216,6 +216,12 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
             processHist(subsystem = subsystem, hist = hist, canvas = canvas, outputFormatting = outputFormatting,
                         processingOptions = processingOptions, trendingManager = trendingManager)
 
+    # Delete the canvas. Although ROOT will mostly likely handle this eventually, the
+    # garbage collection doesn't have to happen immediately. So we help it out by explictly
+    # calling delete (which appears to delete object in some basic tests, even as far as ROOT
+    # is concerned).
+    del canvas
+
     # Since we are done, we can cleanup by closing the file.
     fIn.Close()
 
