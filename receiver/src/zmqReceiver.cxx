@@ -64,7 +64,6 @@ zmqReceiver::zmqReceiver():
   fRunNumber(123456789),
   fResetMerger(false),
   fSubsystem("EMC"),
-  fFirstRequest(true),
   fRequestStreamers(true),
   fHLTMode("B"),
   fSelection(""),
@@ -217,7 +216,24 @@ void zmqReceiver::ReceiveData()
 
     // Store the data to be written out
     TObject* object;
-    alizmq_msg_iter_data(i, object);
+    int returnValue = alizmq_msg_iter_data(i, object);
+    if (returnValue != 0)
+    {
+      // Something went wrong.
+      if (returnValue > 0)
+      {
+        // Something went wrong in the deserialization, so we need to re-request the streamers for
+        // this object. Skip it for now to avoid corrupting the file.
+        fRequestStreamers = true;
+        continue;
+      }
+      else {
+        // Whatever this payload is, it doesn't appear to be a ROOT object.
+        // Log the it happened and skip the object so we don't crash due to trying to write a nullptr.
+        Printf("Object at position %ld does not appear to be a ROOT object and will be skipped!", std::distance(message.begin(), i));
+        continue;
+      }
+    }
     fData.push_back(object);
   }
 
@@ -285,14 +301,16 @@ void zmqReceiver::SendRequest()
   if (fResetMerger == true) {
     request += " -ResetOnRequest";
   }
-  if (fFirstRequest == true && fRequestStreamers == true) {
-    fFirstRequest = false;
+  if (fRequestStreamers == true) {
+    // We only want to make this request once. Otherwise, we can cause problems within the mergers.
+    // This should only be triggered on the first request (if the command line argument is specified),
+    // or if the deserialization went wrong (in which can, we try to request the streamers again).
+    fRequestStreamers = false;
     request += " -SchemaOnRequest";
   }
 
   if (fVerbose) Printf("\nsending request CONFIG with request \"%s\"", request.c_str());
   alizmq_msg_send("CONFIG", request, fZMQin, ZMQ_SNDMORE);
-  //alizmq_msg_send("CONFIG", "select=EMC*", fZMQin, ZMQ_SNDMORE);
   alizmq_msg_send("", "", fZMQin, 0);
 }
 
