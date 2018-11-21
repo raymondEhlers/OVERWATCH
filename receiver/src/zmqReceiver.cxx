@@ -115,7 +115,7 @@ int zmqReceiver::Run()
     // Wait for the data by polling sockets
     // The second argument denotes the number of sockets that are being polled
     // The third argument is the timeout
-    int rc = zmq_poll(sockets, 1, -1);
+    int rc = zmq_poll(sockets, 1, fPollTimeout);
     if (rc==-1 && errno == ETERM)
     {
       // This can only happen it the context was terminated, one of the sockets are
@@ -131,7 +131,7 @@ int zmqReceiver::Run()
       break;
     }
 
-    // Handle if server died
+    // Handle if the request timed out (perhaps due to a dead server).
     if (!(sockets[0].revents & ZMQ_POLLIN))
     {
       // Server died
@@ -242,13 +242,19 @@ void zmqReceiver::ReceiveData()
 
   // The HLT sends run number 0 after it is has reset receivers at the end of a run.
   // We shouldn't bother writing out the file in that case.
-  if (fRunNumber != 0)
+  // We also shouldn't try to write an empty file if we haven't received any data.
+  if (fRunNumber != 0 && fData.size() != 0)
   {
     // Write Data
     WriteToFile();
   }
   else {
-    Printf("fRunNumber == 0. Not printing, since this is not a real run!");
+    if (fRunNumber != 0) {
+      Printf("fRunNumber == 0. Not printing, since this is not a real run!");
+    }
+    else {
+      Printf("No new data to write. Waiting for next request.");
+    }
   }
 }
 
