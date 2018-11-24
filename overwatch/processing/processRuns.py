@@ -730,7 +730,7 @@ def processMovedFilesIntoRuns(runs, runDict):
                             # Use whether the ``fileLocationSubsystem`` name is in the first file as a proxy of whether we
                             # have started receiving data for that subsystem.
                             if subsystem.fileLocationSubsystem not in runDict[runDir][subsystemName][0]:
-                                logger.info("Received data for subsystem {subsystem}. Switching the subsystem to having it's own data source, so: fileLocationSubsystem {fileLocationSubsystem} -> {subsystem}.".format(fileLocationSubsystem = subsystem.fileLocationSubsystem, subsystem = subsystem.subsystem))
+                                logger.info("Received data for subsystem {subsystem} in run {runDir}. Switching the subsystem to having it's own data source, so: fileLocationSubsystem {fileLocationSubsystem} -> {subsystem}.".format(fileLocationSubsystem = subsystem.fileLocationSubsystem, subsystem = subsystem.subsystem, runDir = runDir))
 
                                 # This should happen fairly early on. If it happens later, we provide a warning.
                                 # We define fairly early as having four files.
