@@ -62,6 +62,11 @@ parts that you want for a particular execution. However, it is also important to
 doesn't support default values or overriding parts of the configuration like the Overwatch configuration
 system - every option of interest **must** be in the config passed to `overwatchDeploy`.
 
+Why all of the complication in setting up the environment instead of just passing existing certificate and
+configuration files? Some possible operating envrionments would have precluded the possibility of mounting
+those files into the container. So the approach of the deploy module allows for them to be passed in as
+strings.
+
 ### Steps to add a new executable
 
 1. Write the new executable.
