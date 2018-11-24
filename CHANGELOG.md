@@ -2,6 +2,32 @@
 
 Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
 
+## [1.2.2] - 24 November 2018
+
+### Added
+
+- Updated ZMQ receiver to take advantage of improved error checking in `AliZMQhelpers`.
+- Minor documentation updates.
+
+### Changed
+
+- Modernized ZMQ receiver to use better coding practices (`Printf` -> `std::cout`, etc).
+- Increase certificate proxy validity time to a week. See: `ee64bd29`.
+
+### Fixed
+
+- Attempted fix at memory leak that appears to be associated with `TCanvas` in the processing not being
+  garaged collected very quickly. See: `de5945a4`.
+- Fully implemented polling timeout in the ZMQ receivers. It was possibly to specify an option, but it wasn't
+  actually applied. Now it is. See: `8a3fd937`
+
+## [1.2.1] - 24 November 2018
+
+### Fixed
+
+- Tagging synchronization went wrong with 1.2 between the GitHub release and PyPI. This release fixes it (with
+  the rest of the changes of 1.2).
+
 ## [1.2] - 12 November 2018
 
 ### Added
