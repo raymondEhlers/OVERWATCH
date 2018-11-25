@@ -7,7 +7,7 @@ except ImportError:
 
 
 class AndAlarm(Alarm):
-    def __init__(self, *children, alarmText=''):  # type: (*Alarm) -> None
+    def __init__(self, alarmText='', *children):  # type: (str, *Alarm) -> None
         super(AndAlarm, self).__init__(alarmText=alarmText)
         self.children = [] if not children else children
 

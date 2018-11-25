@@ -28,7 +28,7 @@ def alarmConfig():
     borderError.receivers = [workerMail, httpCollector]
 
     borderAlarm = BorderAlarm(maxVal=90)
-    seriousAlarm = AndAlarm(borderAlarm, alarmText="Serious Alarm")
+    seriousAlarm = AndAlarm("Serious Alarm", borderAlarm)
     cernBoss = MailSender("boss@cern")
     seriousAlarm.addReceiver(cernBoss)
 
