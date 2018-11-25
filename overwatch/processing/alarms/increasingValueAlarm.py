@@ -15,5 +15,5 @@ class IncreasingValueAlarm(Alarm):
             return False
 
         alarm = "value: {}, prev: {}, increase more than: {}".format(testedValue, prevValue, self.ratio)
-        self.announceAlarm(self.formatMessage(trend, alarm))
+        self._announceAlarm(alarm)
         return True

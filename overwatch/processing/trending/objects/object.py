@@ -29,6 +29,7 @@ class TrendingObject(Persistent):
         self.currentEntry = 0
         self.maxEntries = self.parameters.get(CON.ENTRIES, 100)
         self.trendedValues = self.initializeTrendingArray()
+        self.alarms = []
 
         self.histogram = None
         # Ensure that the axis and points are drawn on the TGraph
@@ -100,3 +101,7 @@ class TrendingObject(Persistent):
         canvas.SetLogx(False)
         canvas.SetLogy(False)
         canvas.SetLogz(False)
+
+    def addAlarms(self, alarms):  # type: (List['Alarm']) -> None
+        """ ADD DOC"""
+        self.alarms.extend(alarms)

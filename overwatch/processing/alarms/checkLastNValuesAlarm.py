@@ -11,12 +11,12 @@ class IncreasingValueAlarm(Alarm):
 
     def checkAlarm(self, trend):
         trendingValues = trend[-self.N:]
-        if (len(trendingValues) < self.N):
+        if len(trendingValues) < self.N:
             return False
         mean = np.mean(trendingValues)
-        if (self.minVal < np.mean(mean) < self.maxVal):
+        if self.minVal < np.mean(mean) < self.maxVal:
             return False
 
         alarm = "value of last: {} values not in {} {}".format(mean, self.minVal, self.maxVal)
-        self.announceAlarm(self.formatMessage(trend, alarm))
+        self._announceAlarm(alarm)
         return True

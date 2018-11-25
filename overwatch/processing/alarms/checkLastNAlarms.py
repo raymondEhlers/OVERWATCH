@@ -1,5 +1,4 @@
 from .alarm import Alarm
-import numpy as np
 
 
 class IncreasingValueAlarm(Alarm):
@@ -12,13 +11,13 @@ class IncreasingValueAlarm(Alarm):
 
     def checkAlarm(self, trend):
         trendingValues = trend[-self.N:]
-        if (len(trendingValues) < self.N):
+        if len(trendingValues) < self.N:
             return False
         notInBorderValues = [trendValue for trendValue in trendingValues if self.maxVal > trendingValues > self.minVal]
-        if (len(notInBorderValues) > (1 - self.ratio) * self.N):
+        if len(notInBorderValues) > (1 - self.ratio) * self.N:
             return False
 
         alarm = "more than {} % values of last: {} values not in {} {}".format(self.ratio * 10, self.N, self.minVal,
                                                                                self.maxVal)
-        self.announceAlarm(self.formatMessage(trend, alarm))
+        self._announceAlarm(alarm)
         return True

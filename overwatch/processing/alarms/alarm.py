@@ -7,7 +7,7 @@ else:
 
 
 class Alarm:
-    def __init__(self, *args, alarmText='', **kwargs):
+    def __init__(self, alarmText=''):
         self.alarmText = alarmText
         self.receivers = []
 
@@ -18,10 +18,7 @@ class Alarm:
         """abstract method"""
         raise NotImplementedError
 
-    def announceAlarm(self, msg):
+    def _announceAlarm(self, msg):  # type: (str) -> None
+        msg = "[{alarmText}]: {msg}".format(alarmText=self.alarmText, msg=msg)
         for receiver in self.receivers:
             receiver(msg)
-
-    def formatMessage(self, trend='', msg=''):  # type: (TrendingObject) -> str
-        return "{alarmText} {trend} {msg}".format(
-            alarmText=self.alarmText, trend=trend, msg=msg)

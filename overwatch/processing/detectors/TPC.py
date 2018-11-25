@@ -66,7 +66,8 @@ def getTrendingObjectInfo():  # type: () -> List[TrendingInfo]
     trendingInfo = []
     for prefix, cls in trendingNameToObject.items():
         for name, desc, histograms in infoList:
-            trendingInfo.append(TrendingInfo(prefix + name, prefix + desc, histograms, cls))
+            ti = TrendingInfo(prefix + name, prefix + desc, histograms, cls)
+            trendingInfo.append(ti)
     return trendingInfo
 
 

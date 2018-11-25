@@ -1,5 +1,7 @@
+
 try:
     from typing import *  # noqa
+    from overwatch.processing.alarms.alarm import Alarm  # noqa
 except ImportError:
     pass
 
@@ -23,7 +25,7 @@ class TrendingInfo:
     When TrendingInfo is initialized, data are validated.
     """
 
-    __slots__ = ['name', 'desc', 'histogramNames', 'trendingClass']
+    __slots__ = ['name', 'desc', 'histogramNames', 'trendingClass', '_alarms']
 
     def __init__(self, name, desc, histogramNames, trendingClass):
         """
@@ -40,12 +42,19 @@ class TrendingInfo:
         self.histogramNames = self._validateHist(histogramNames)
         self.trendingClass = self._validateTrendingClass(trendingClass)
 
+        self._alarms = []
+
+    def addAlarm(self, alarm):  # type: (Alarm) -> None
+        self._alarms.append(alarm)
+
     def createTrendingClass(self, subsystemName, parameters):  # type: (str, dict) -> TrendingObject
         """Create instance of TrendingObject from previously set parameters
         Returns:
             TrendingObject: newly created object
         """
-        return self.trendingClass(self.name, self.desc, self.histogramNames, subsystemName, parameters)
+        trend = self.trendingClass(self.name, self.desc, self.histogramNames, subsystemName, parameters)
+        trend.setAlarms(self._alarms)
+        return trend
 
     @staticmethod
     def _validate(obj):  # type: (str) -> str

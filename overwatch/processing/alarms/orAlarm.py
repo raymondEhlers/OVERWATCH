@@ -6,14 +6,14 @@ except ImportError:
     pass
 
 
-class AndAlarm(Alarm):
+class OrAlarm(Alarm):
     def __init__(self, *children, alarmText=''):  # type: (*Alarm) -> None
-        super(AndAlarm, self).__init__(alarmText=alarmText)
+        super(OrAlarm, self).__init__(alarmText=alarmText)
         self.children = [] if not children else children
 
     def checkAlarm(self, trend):
         for child in self.children:
-            if not child.checkAlarm(trend):
-                return False
+            if child.checkAlarm(trend):
+                return True
 
-        return True
+        return False

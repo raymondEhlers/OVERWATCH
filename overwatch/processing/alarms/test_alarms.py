@@ -1,7 +1,6 @@
 from overwatch.processing.alarms.collectors import workerMail, printCollector, httpCollector, MailSender
 from overwatch.processing.alarms.andAlarm import AndAlarm
 from overwatch.processing.alarms.boarderAlarm import BorderAlarm
-from overwatch.processing.alarms.totalTrendErrorAlarm import TotalTrendErrorAlarm
 
 
 class TrendingObjectMock:
@@ -29,8 +28,7 @@ def alarmConfig():
     borderError.receivers = [workerMail, httpCollector]
 
     borderAlarm = BorderAlarm(maxVal=90)
-    totalAlarm = TotalTrendErrorAlarm(limit=1000)
-    seriousAlarm = AndAlarm([borderAlarm, totalAlarm], alarmText="Serious Alarm")
+    seriousAlarm = AndAlarm(borderAlarm, alarmText="Serious Alarm")
     cernBoss = MailSender("boss@cern")
     seriousAlarm.addReceiver(cernBoss)
 
@@ -40,7 +38,7 @@ def alarmConfig():
 def main():
     to = TrendingObjectMock(alarmConfig())
 
-    values = [3, 14, 60, 80, 8888, 7, 95]
+    values = [3, 14, 15, 92, 65, 35, 89, 79]
     for i, val in enumerate(values):
         print("\nVal number: {i} New value:{val}".format(i=i, val=val))
         to.addNewValue(val)

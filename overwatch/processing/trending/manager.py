@@ -107,3 +107,5 @@ class TrendingManager(Persistent):
         """ADD DOC"""
         for trend in self.histToTrending.get(hist.histName, []):
             trend.extractTrendValue(hist)
+            for alarm in trend.alarms:
+                alarm.checkAlarm(trend)
