@@ -6,7 +6,7 @@ else:
     from ..trending.objects.object import TrendingObject  # noqa
 
 
-class Alarm:
+class Alarm(object):
     def __init__(self, alarmText=''):
         self.alarmText = alarmText
         self.receivers = []

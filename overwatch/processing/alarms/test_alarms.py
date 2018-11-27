@@ -1,6 +1,12 @@
-from overwatch.processing.alarms.collectors import workerMail, printCollector, httpCollector, MailSender
+from overwatch.processing.alarms.collectors import workerMail, workerSlack, printCollector, httpCollector, MailSender, \
+    Mail
 from overwatch.processing.alarms.andAlarm import AndAlarm
 from overwatch.processing.alarms.boarderAlarm import BorderAlarm
+
+import yaml
+
+with open("config.yaml", 'r') as ymlfile:
+    alarmsParameters = yaml.load(ymlfile)
 
 
 class TrendingObjectMock:
@@ -25,17 +31,18 @@ def alarmConfig():
     boarderWarning.addReceiver(printCollector)
 
     borderError = BorderAlarm(maxVal=70, alarmText="ERROR")
-    borderError.receivers = [workerMail, httpCollector]
+    borderError.receivers = [workerMail, httpCollector, workerSlack]
 
     borderAlarm = BorderAlarm(maxVal=90)
     seriousAlarm = AndAlarm("Serious Alarm", borderAlarm)
-    cernBoss = MailSender("boss@cern")
+    cernBoss = MailSender("test@mail")
     seriousAlarm.addReceiver(cernBoss)
 
     return [boarderWarning, borderError, seriousAlarm]
 
 
 def main():
+    # Mail(alarmsParameters)
     to = TrendingObjectMock(alarmConfig())
 
     values = [3, 14, 15, 92, 65, 35, 89, 79]
