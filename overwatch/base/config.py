@@ -37,6 +37,7 @@ class configurationType(aenum.OrderedEnum):
     api = 2
     processing = 3
     webApp = 4
+    database = 5
 
 def joinPaths(loader, node):
     """ Join elements of a list into a path using ``os.path.join``.

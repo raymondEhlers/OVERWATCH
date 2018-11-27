@@ -21,6 +21,8 @@ import ROOT
 # This onlly applies to Flask debug mode with ROOT 5.
 # See: https://root-forum.cern.ch/t/pyroot-and-spyder-re-running-error/20926/5
 # See: https://root.cern.ch/phpBB3/viewtopic.php?t=19594#p83968
+from overwatch.database.utilities import getDatabaseFactory
+
 ROOT.std.__file__ = "ROOT.std.py"
 
 # For batch mode when loading as a module
@@ -46,6 +48,7 @@ import persistent
 # Config
 from ..base import config
 (processingParameters, filesRead) = config.readConfig(config.configurationType.processing)
+(databaseParameters, _) = config.readConfig(config.configurationType.database)
 
 # Module includes
 from ..base import utilities
@@ -866,9 +869,10 @@ def processAllRuns():
 
     # Set up the trending.
     if processingParameters["trending"]:
-        trendingManager = TrendingManager(dbRoot, processingParameters)
+        (db, client) = getDatabaseFactory().getDB()
+        db.clear('trending')
+        trendingManager = TrendingManager(db, processingParameters)
         trendingManager.createTrendingObjects()
-        transaction.commit()
     else:
         trendingManager = None
 
@@ -932,8 +936,7 @@ def processAllRuns():
     # Run trending now that we have gotten to the most recent run
     if trendingManager:
         trendingManager.processTrending()
-        # Commit after we have successfully processed the trending
-        transaction.commit()
+        trendingManager.db.commit()
     logger.info("Finished trending processing!")
 
     # Update receiver last modified time if the log exists

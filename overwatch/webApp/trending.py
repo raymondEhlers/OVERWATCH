@@ -6,8 +6,9 @@ import jinja2
 import os
 
 import overwatch.processing.trending.constants as CON
+from overwatch.database.utilities import getDatabaseFactory
 from overwatch.processing.trending.manager import TrendingManager
-from overwatch.webApp.webApp import db, serverParameters
+from overwatch.webApp.webApp import serverParameters
 from overwatch.webApp import validation
 
 logger = logging.getLogger(__name__)
@@ -19,7 +20,7 @@ def determineSubsystemName(subsystemName, trendingManager):  # type: (str, Trend
     if subsystemName:
         return subsystemName
 
-    for subsystemName, subsystem in trendingManager.trendingDB.items():
+    for subsystemName, subsystem in trendingManager.db.get('trending').items():
         if len(subsystem):
             return subsystemName
 
@@ -48,21 +49,23 @@ def trending():
     logger.debug("request: {0}".format(request.args))
     (error, subsystemName, requestedHist, jsRoot, ajaxRequest) = validation.validateTrending(request)
 
+    trendingDatabase, _ = getDatabaseFactory().getDB()
+
     # Create trending container from stored trending information
-    trendingManager = TrendingManager(db, serverParameters)
+    trendingManager = TrendingManager(trendingDatabase, serverParameters)
     subsystemName = determineSubsystemName(subsystemName, trendingManager)
+    trendingData = trendingDatabase.get('trending')
 
     if not subsystemName:
         error.setdefault("Subsystem", []).append("Cannot find any trended subsystem")
         return render_template("error.html", error=error)
-
     # Template paths to the individual files
     filenameTemplate = os.path.join(CON.TRENDING, subsystemName, "{type}", "{{}}.{extension}")
     imgFilenameTemplate = filenameTemplate.format(type=CON.IMAGE, extension=serverParameters[CON.EXTENSION])
     jsonFilenameTemplate = filenameTemplate.format(type=CON.JSON, extension="json")
 
     templateKwargs = {
-        "trendingManager": trendingManager,
+        "trendingData": trendingData,
         "selectedHistGroup": subsystemName,
         "selectedHist": requestedHist,
         "jsonFilenameTemplate": jsonFilenameTemplate,
@@ -88,6 +91,7 @@ def trending():
 def safeRenderTemplate(error, *args, **kwargs):
     """If error is empty, return rendered template from *args and **kwargs.
     Otherwise return empty string, if exception appear return empty string."""
+    print error
     if error != {}:
         return ''
     try:
