@@ -2,21 +2,21 @@ from .alarm import Alarm
 import numpy as np
 
 
-class IncreasingValueAlarm(Alarm):
-    def __init__(self, minVal=0, maxVal=100, *args, **kwargs):
-        super(IncreasingValueAlarm, self).__init__(*args, **kwargs)
+class checkLastNValuesAlarm(Alarm):
+    def __init__(self, minVal=0, maxVal=100, N=5, *args, **kwargs):
+        super(checkLastNValuesAlarm, self).__init__(*args, **kwargs)
         self.minVal = minVal
         self.maxVal = maxVal
         self.N = 5
 
     def checkAlarm(self, trend):
-        trendingValues = trend[-self.N:]
-        if len(trendingValues) < self.N:
+        if len(trend.trendedValues) < self.N:
             return False
-        mean = np.mean(trendingValues)
+        trendedValues = np.array(trend.trendedValues)
+        mean = np.mean(trendedValues)
         if self.minVal < np.mean(mean) < self.maxVal:
             return False
 
-        alarm = "value of last: {} values not in {} {}".format(mean, self.minVal, self.maxVal)
+        alarm = "mean value of last: {} values not in {} {}".format(self.N, self.minVal, self.maxVal)
         self._announceAlarm(alarm)
         return True
