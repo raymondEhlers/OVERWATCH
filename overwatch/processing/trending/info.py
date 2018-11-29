@@ -22,7 +22,7 @@ class TrendingInfoException(Exception):
 class TrendingInfo:
     """ Container for data for TrendingObject
 
-    When TrendingInfo is initialized, data are validated.
+    When TrendingInfo is initialized, data is validated.
     """
 
     __slots__ = ['name', 'desc', 'histogramNames', 'trendingClass', '_alarms']

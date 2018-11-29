@@ -19,7 +19,7 @@ class Singleton(_Singleton('SingletonMeta', (object,), {})):
 class Mail(Singleton):
     def __init__(self, alarmsParameters=None):
         if alarmsParameters is not None:
-            smtpSettings = alarmsParameters["email_delivery"]["smtp_settings"]
+            smtpSettings = alarmsParameters["emailDelivery"]["smtp_settings"]
             host = smtpSettings["address"]
             port = smtpSettings["port"]
             password = smtpSettings["password"]
