@@ -8,6 +8,7 @@ from persistent import Persistent
 
 import overwatch.processing.pluginManager as pluginManager
 import overwatch.processing.trending.constants as CON
+from overwatch.processing.alarms.collectors import Mail, SlackNotification
 
 logger = logging.getLogger(__name__)
 
@@ -33,6 +34,8 @@ class TrendingManager(Persistent):
         self.trendingDB = dbRoot[CON.TRENDING]  # type: BTree[str, BTree[str, TrendingObject]]
 
         self._prepareDirStructure()
+        Mail(alarmsParameters=parameters)
+        SlackNotification(alarmsParameters=parameters)
 
     def _prepareDirStructure(self):
         trendingDir = os.path.join(self.parameters[CON.DIR_PREFIX], CON.TRENDING, '{{subsystemName}}', '{type}')
@@ -109,3 +112,4 @@ class TrendingManager(Persistent):
             trend.extractTrendValue(hist)
             for alarm in trend.alarms:
                 alarm.checkAlarm(trend)
+
