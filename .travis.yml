@@ -80,4 +80,6 @@ deploy:
           # Build a docker image for master or if it has "-docker" in the branch name.
           all_branches: true
           # For whatever reason, since Travis is parsing this line, we can't quote the variable here
-          condition: ${TRAVIS_BRANCH} =~ [a-zA-Z]+-docker|master
+          # We want it to build for branches that end in "-docker", "master" or for any tags of the form
+          # [number]+.[number]+ (ie tags which conform to semantic versioning).
+          condition: ${TRAVIS_BRANCH} =~ [a-zA-Z]+-docker|master|[0-9]+.[0-9]+
