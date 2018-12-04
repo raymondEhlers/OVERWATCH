@@ -62,7 +62,7 @@
                 {% endif -%}
                 <div id="{{ hist.histName }}" class="histogramContainer {% if jsRoot == True %}{{ histogramContainerClasses }}{% endif %}" data-filename="{{ jsonFilenameTemplate.format(hist.histName.replace("/", "_")) }}">
                 {%- if jsRoot != True %}
-                    <img src="{{ url_for("protected", filename=imgFilenameTemplate.format(hist.histName.replace("/", "_"))) }}" alt="{{ hist.histName }}">
+                    <img src="{{ url_for("protected", filename=imgFilenameTemplate.format(hist.histName.replace("/", "_"))) }}" alt="{{ hist.histName }}" class="histogramImage">
                 {%- else %}
                     {# Provide indication that we are loading jsroot content #}
                     {# It will disappear once jsroot loads the histogram #}
@@ -76,7 +76,12 @@
 
 {# Should only get here if nothing was selected! #}
 {%- if firstLoopCompleted == [] -%}
+    {#- We want to differentiate if this is because the subsystem just had nothing to extract, or because there was a problem with the request. -#}
+    {%- if subsystem.hists | length == 0 -%}
+    <p>No data available for this subsystem during this run! If you think this is in error, please contact the admin!</p>
+    {%- else -%}
     <p>Error! No hist group (input: {{ selectedHistGroup }}) or hist (input: {{ selectedHist }}) was selected! Please try again with a different value or contact the admin!</p>
+    {%- endif -%}
 {%- endif -%}
 
 {# Content for time slices #}

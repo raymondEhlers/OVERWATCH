@@ -63,8 +63,7 @@ availableRunPageTemplates: !findRunPageTemplates
 flaskAssetsDebug: null
 
 # Sites to check during the status request.
-statusRequestSites:
-    null: null
+statusRequestSites: {}
 
 ######
 # Sensitive parameters

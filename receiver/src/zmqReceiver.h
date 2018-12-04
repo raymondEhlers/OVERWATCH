@@ -18,8 +18,7 @@
 
 #include <TString.h>
 
-class zmqReceiver 
-{
+class zmqReceiver {
  public:
   zmqReceiver();
   virtual ~zmqReceiver() {}
@@ -33,7 +32,7 @@ class zmqReceiver
   /* @} */
 
   // Helper functions
-  int ProcessOptions(int argc, char * argv[]);
+  int ProcessOptions(int argc, char* argv[]);
   int ProcessOptionString(TString arguments);
 
   /// Print usage information
@@ -46,6 +45,8 @@ class zmqReceiver
   std::string PrintConfiguration();
   // Signal handler
   static void caughtSignal(int i);
+  // Heartbeat
+  void WriteHeartbeat();
   // Data management
   void ReceiveData();
   void ClearData();
@@ -56,31 +57,30 @@ class zmqReceiver
   void SendRequest();
 
   // Configuration
-  static const std::string fgUsage; //!<! Usage string
+  static const std::string fgUsage;  //!<! Usage string.
   // Receiver
-  int fVerbose;             ///< Sets verbosity in printing
-  int fRunNumber;           ///< Contains the run number
-  bool fResetMerger;        ///< Request the merger to reset the data
-  std::string fSubsystem;   ///< Contains the subsystem that this receiver should be interested in
-  bool fFirstRequest;       ///< True when we are making the first request
-  bool fRequestStreamers;   ///< True if the ROOT streamers schema should be requested from the merger
-  std::string fHLTMode;     ///< Contains the HLT mode
-  std::string fSelection;   ///< Selection option that should be requested to the merger
-  std::string fDataPath;    ///< Path to the data stroage directory
+  int fVerbose;              ///< Sets verbosity in printing.
+  int fRunNumber;            ///< Contains the run number.
+  bool fResetMerger;         ///< Request the merger to reset the data.
+  std::string fSubsystem;    ///< Contains the subsystem that this receiver should be interested in.
+  bool fRequestStreamers;    ///< True if the ROOT streamers schema should be requested from the merger.
+  std::string fHLTMode;      ///< Contains the HLT mode.
+  std::string fSelection;    ///< Selection option that should be requested to the merger.
+  std::string fDataPath;     ///< Path to the data stroage directory.
   // ZMQ
-  int fPollInterval;        ///< Time between each request for data in milliseconds
-  int fPollTimeout;         ///< Time to wait for data after each request In milliseconds
-  std::string fZMQconfigIn; ///< Contains the address for ZMQ
+  int fPollInterval;         ///< Time between each request for data in milliseconds.
+  int fPollTimeout;          ///< Time to wait for data after each request In milliseconds.
+  std::string fZMQconfigIn;  ///< Contains the address for ZMQ.
 
   // Received data
-  std::vector <TObject *> fData; //!<! Contains received objects
+  std::vector<TObject*> fData;  //!<! Contains received objects.
 
   // Signal status
-  static volatile sig_atomic_t fgSignalCaught; //!<! Status of whether a INT signal has been caught
+  static volatile sig_atomic_t fgSignalCaught; //!<! Status of whether a INT signal has been caught.
 
   // ZMQ context and socket
-  void* fZMQcontext;    //!<! The ZMQ context
-  void* fZMQin;         //!<! The in socket - entry point for the received data.
+  void* fZMQcontext;  //!<! The ZMQ context.
+  void* fZMQin;       //!<! The in socket - entry point for the received data.
 };
 
 #endif /* zmqReceiver.h */
