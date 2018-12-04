@@ -2,6 +2,18 @@
 
 Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
 
+## [1.2.3] - 3 December 2018
+
+### Added
+
+- Additional processing debug information. See: `b35ac4bc`.
+- Additional documentation. See: `97d4b884` and `20adf1b1`.
+
+### Fixed
+
+- Fixed Travis not successfully upload docker images during tags. See: `ff4c6f9b`.
+- Fix undefined variable in the web app validation. See: `2aed8646`.
+
 ## [1.2.2] - 24 November 2018
 
 ### Added
