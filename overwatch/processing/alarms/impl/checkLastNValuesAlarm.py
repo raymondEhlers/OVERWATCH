@@ -1,4 +1,9 @@
-from .alarm import Alarm
+#!/usr/bin/env python
+""" TODO add desc.
+
+.. code-author: Jacek Nabywaniec <>, AGH University of Science and Technology
+"""
+from overwatch.processing.alarms.alarm import Alarm
 import numpy as np
 
 
@@ -7,16 +12,15 @@ class checkLastNValuesAlarm(Alarm):
         super(checkLastNValuesAlarm, self).__init__(*args, **kwargs)
         self.minVal = minVal
         self.maxVal = maxVal
-        self.N = 5
+        self.N = N
 
     def checkAlarm(self, trend):
         if len(trend.trendedValues) < self.N:
-            return False
+            return False, ''
         trendedValues = np.array(trend.trendedValues)
         mean = np.mean(trendedValues)
         if self.minVal < np.mean(mean) < self.maxVal:
-            return False
+            return False, ''
 
-        alarm = "mean value of last: {} values not in {} {}".format(self.N, self.minVal, self.maxVal)
-        self._announceAlarm(alarm)
-        return True
+        msg = "mean value of last: {} values not in {} {}".format(self.N, self.minVal, self.maxVal)
+        return True, msg
