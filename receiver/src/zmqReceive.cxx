@@ -11,8 +11,8 @@
 
 #include "zmqReceiver.h"
 
-#include <string>
 #include <iostream>
+#include <string>
 
 #include <AliZMQhelpers.h>
 
@@ -23,8 +23,7 @@ int main(int argc, char** argv)
 
   // Process options from the terminal
   int nOptions = receiver.ProcessOptions(argc, argv);
-  if (nOptions <= 0) 
-  {
+  if (nOptions <= 0) {
     std::cout << zmqReceiver::Usage();
     return 1;
   }
@@ -45,4 +44,3 @@ int main(int argc, char** argv)
 
   return 0;
 }
-

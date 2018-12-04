@@ -1,12 +1,15 @@
-<h1 id="mainContentTitle">ALICE OVERWATCH</h1>
+<img src="{{ url_for("static", filename = "overwatchLogo.v1.svg") }}" class="centerLogo">
+
+{#- We stiil want to set this value to ensure that title is properly shown. However, we only want to show the logo, so we set this to be hidden. -#}
+<h1 id="mainContentTitle" style="display: none;">ALICE OVERWATCH</h1>
 <hr />
-<p>Welcome to OVERWATCH, an online monitoring framework utilizing detector histograms provided by the HLT. The OVERWATCH framework processes these histograms and displays them minute-by-minute on this website; this allows for real-time monitoring of detector performance, effortlessly available to any ALICE member at any location. For example, a collaborator in the US can monitor the EMCal trigger patch ADC spectrum for noisy TRUs in the comfort of daylight hours, while the CERN-based detector expert sleeps.
+<p>Welcome to ALICE OVERWATCH, an online monitoring framework utilizing detector histograms provided by the HLT. The OVERWATCH framework processes these histograms and displays them minute-by-minute on this website; this allows for real-time monitoring of detector performance, effortlessly available to any ALICE member at any location. For example, a collaborator in the US can monitor the EMCal trigger patch ADC spectrum for noisy TRUs in the comfort of daylight hours, while the CERN-based detector expert sleeps.
 <br /><br />The framework also features the ability to automate QA functions to identify detector performance problems, as well as the ability to examine detector behavior during user-specified time ranges within a run. Moreover, the framework provides long-term trending info, i.e. the ability to plot detector quantities as a function of run number. OVERWATCH complements the DQM framework, allowing remote monitoring and easily implementable user customization. We provide extensive documentation for any detector system to be easily added to OVERWATCH, and encourage more subsystems to take advantage of the framework.</p>
 {% if current_user.is_authenticated %}
     <p>Logged in as user {{ current_user.id }}. No additional authentication is needed!</p>
 {% else %}
-    <p>General users: Please login below to access the website.
-    <br />Developers (implementing detector-specific features): Proceed to the project <a href="https://github.com/raymondEhlers/OVERWATCH">Github page</a>.</p>
+    <p>General users: Please login below to access the website. See the <a target="_blank" href="https://twiki.cern.ch/twiki/bin/view/ALICE/OverwatchProject">TWiki</a> for login information.
+    <br />Developers (implementing detector-specific features): Proceed to the project <a target="_blank" href="https://github.com/raymondEhlers/OVERWATCH">Github page</a>.</p>
     {% if error %}
         <p class=error><strong>Error:</strong> {{ error }}
     {% endif %}

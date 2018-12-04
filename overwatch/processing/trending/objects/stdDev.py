@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-""" Example trending object with standard deviation.
+
+""" Trending object to extract the standard deviation of a histogram.
 
 .. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
 .. code-author: Artur Wolak <>, AGH University of Science and Technology

@@ -10,11 +10,11 @@ This module defines a REST API for receiving files via POST request. It is a rel
 from __future__ import print_function
 from future.utils import iteritems
 
-import os
-import time
 import functools
+import os
 import logging
 logger = logging.getLogger(__name__)
+import pendulum
 
 from overwatch.base import config
 (receiverParameters, filesRead) = config.readConfig(config.configurationType.receiver)
@@ -30,10 +30,6 @@ ROOT.std.__file__ = "ROOT.std.py"
 #import rootpy.ROOT as ROOT
 
 app = Flask(__name__)
-
-# Ensure the folder to write to exists.
-if not os.path.exists(receiverParameters["dataFolder"]):
-    os.makedirs(receiverParameters["dataFolder"])
 
 # From: http://flask.pocoo.org/docs/0.12/patterns/apierrors/
 class InvalidUsage(Exception):
@@ -205,9 +201,10 @@ def dqm():
     # Format is "SUBSYSTEMhistos_runNumber_hltMode_time.root".
     # For example, "EMChistos_123456_B_2015_3_14_2_3_5.root".
     unixTime = float(timestamp)
-    timeTuple = time.gmtime(unixTime)
+    # The timestamp was generated in Geneva, so we create the timestamp from that timezone.
+    timestamp = pendulum.from_timestamp(unixTime, tz = "Europe/Zurich")
     # NOTE: these values are zero padded! However, this should be fine.
-    timeStr = time.strftime("%Y_%m_%d_%H_%M_%S", timeTuple)
+    timeStr = timestamp.format("YYYY_MM_DD_HH_mm_ss")
     logger.info("timeStr: {timeStr}".format(timeStr = timeStr))
 
     # Determine the filename

@@ -185,4 +185,23 @@ There are a number of valid HLT modes. Their meaning is as follows:
 | E        | HLT data replay      | Replay of an old run for testing. This data is saved by the receiver, moved to the "ReplayData" directory, and not processed. |
 | U        | HLT mode unknown     | The HLT mode was lost somewhere. Process data as normal. The mode is available in the logbook if needed. |
 
+## Monitoring for errors
 
+It is important to monitor Overwatch for errors and other issues. For the processing module, this monitoring
+is provided by `sentry`, which hooks into exceptions, logging, and other parts of the app to automatically
+provide alerts and information when issues occur.
+
+For successful monitoring, the environment must export the `DSN` as `export SENTRY_DSN=<value>`. The value
+will be some sort of unique URL. Note that this endpoint is for _all_ Overwatch monitoring, so be certain to
+check the traceback to determine the originating source of the issue.
+
+For successful monitoring, the environment must export the `DSN` as `export SENTRY_DSN_PROCESSING=<value>`.
+The value will be some sort of unique URL. Note that this endpoint is just for Overwatch processing errors
+(called `overwatch-processing` on `sentry`). If it is not available, it will look for the general environment
+variable `SENTRY_DSN`.
+
+## Repeated execution
+
+For deployment, we want to run the processing repeatedly on a time interval. This can be achieved via the
+`processingTimeToSleep` YAML configuration option. This parameter, which is specified in seconds, is the sleep
+time between the end of the current round of processing and the start of the next round of processing.

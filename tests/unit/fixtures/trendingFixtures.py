@@ -1,12 +1,14 @@
 #!/usr/bin/env python
-""" Fixtures for trending.
+""" Fixtures for testing the trending subsystem.
 
 All fixtures for trending have 'tf_' prefix.
 
 .. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
 """
+
 import ROOT
 import pytest
+import uuid
 
 from overwatch.processing.trending.constants import EXTENSION, ENTRIES
 from overwatch.processing.trending.objects.mean import MeanTrending
@@ -50,5 +52,6 @@ def tf_histogram():
 
 @pytest.fixture
 def tf_canvas():
-    canvasName = 'testCanvas'
+    # Needs a random string so that ROOT doesn't complain about replacing the canvas.
+    canvasName = 'testCanvas_{random}'.format(random = uuid.uuid4())
     return ROOT.TCanvas(canvasName, canvasName)

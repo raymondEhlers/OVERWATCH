@@ -1,5 +1,6 @@
 #!/usr/bin/env python
-""" Example trending object with mean values.
+
+""" Trending object to extract the mean of a histogram.
 
 .. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
 """

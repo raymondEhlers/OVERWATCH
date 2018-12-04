@@ -1,8 +1,10 @@
 #!/usr/bin/env python
-""" Example trending object with maximum values.
+""" Trending object to extract the maximum value of a histogram.
 
 .. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+
 """
+
 import numpy as np
 import ROOT
 

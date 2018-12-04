@@ -19,6 +19,7 @@ try:
 except ImportError:
     pass
 else:
+    # Needed for typing information
     from overwatch.processing.processingClasses import histogramContainer  # noqa
 
 logger = logging.getLogger(__name__)

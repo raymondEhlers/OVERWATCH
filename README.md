@@ -2,12 +2,13 @@
 
 # ALICE Overwatch
 
-[![DOI](https://zenodo.org/badge/50686415.svg)](https://zenodo.org/badge/latestdoi/50686415)
+[![DOI](https://zenodo.org/badge/DOI/10.5281/zenodo.1309375.svg)](https://doi.org/10.5281/zenodo.1309375)
 [![Documentation Status](https://readthedocs.org/projects/overwatch/badge/?version=latest)](https://overwatch.readthedocs.io/en/latest/?badge=latest)
 [![Build Status](https://travis-ci.org/raymondEhlers/OVERWATCH.svg?branch=master)](https://travis-ci.org/raymondEhlers/OVERWATCH)
 
 Welcome to ALICE Overwatch[\*](#name-meaning), a project to provide real-time online data monitoring and
-quality assurance using timestamped data from the ALICE High Level Trigger (HLT) and Data Quality Monitoring (DQM).
+quality assurance using timestamped data from the ALICE High Level Trigger (HLT) and Data Quality Monitoring
+(DQM). See the [Web App](https://aliceoverwatch.physics.yale.edu/) to access Overwatch displaying ALICE data.
 
 # Quick Start
 
@@ -64,9 +65,9 @@ date.
 To use most parts of the Overwatch project, you need some data provided by the HLT. The latest five runs of data
 received by Overwatch can be accessed
 [here](https://aliceoverwatch.physics.yale.edu/testingDataArchive). The login credentials are available on the
-[ALICE TWiki](https://twiki.cern.ch/twiki/bin/view/ALICE/L1TriggerMonitoring). It includes at least the
-combined file and the file from which it is built. If the run is sufficiently long, it will include an
-additional file for testing of the time slice functionality.
+[ALICE TWiki](https://twiki.cern.ch/twiki/bin/view/ALICE/OverwatchProject). It includes at least the combined
+file and the file from which it is built. If the run is sufficiently long, it will include an additional file
+for testing of the time slice functionality.
 
 ### Process the data with `overwatchProcessing`
 
@@ -120,12 +121,15 @@ configuration file.
     - [Web App](@overwatch-webapp)
     - [Data Receivers](#overwatch-receivers)
 2. [Overwatch Configuration](#overwatch-configuration)
-3. [Overwatch Deployment](#overwatch-deployment)
-4. [Citation](#citation)
+3. [Overwatch Executables](#overwatch-executables)
+4. [Overwatch Deployment](#overwatch-deployment)
+5. [Using Overwatch Data](#using-overwatch-data)
+6. [Citation](#citation)
+7. [Additional Resources](#additional-resources)
 
 # Overwatch Architecture
 
-![](https://cdn.rawgit.com/raymondEhlers/overwatch/37bc6f47/doc/images/overwatchArch.png)
+![](https://cdn.rawgit.com/raymondEhlers/overwatch/f1d173dd/doc/images/overwatchArch.png)
 
 The Overwatch architecture is as shown above. Incoming data is handled by the receivers, which then make that data
 available to be processed by the processing module. The output of the processing is then visualized via the WebApp.
@@ -165,7 +169,7 @@ Each detector (also known as a subsystem) is given the opportunity to plug into 
 
 ## Overwatch WebApp
 
-![An Overwatch run page](https://cdn.rawgit.com/raymondEhlers/overwatch/37bc6f47/doc/images/overwatch.upgrade.runPage.png)
+![An Overwatch run page](https://cdn.rawgit.com/raymondEhlers/overwatch/f1d173dd/doc/images/runPage.png)
 
 The web app visualizes the information provided by the processing. The WebApp is based on flask and serves
 the various forms of visualization, as well as providing an interface to request on-demand processing of the
@@ -229,13 +233,46 @@ configuration.
 
 For a list of the available configuration options, see the `config.yaml` file in the desired module.
 
+# Overwatch Executables
+
+In addition to processing and web application, there are a number of other executables available within the
+Overwatch project. They predominately play supporting roles for those two main packages.
+
+A large number of executables are based on modules defined in `overwatch.base`. For further information, see
+the documentation and the README in `overwatch.base`. The following executables are defined there:
+
+- `overwatchDeploy` - Handle execution of Overwatch executables in deployments. Although not recommended, it
+  can also be used locally. See also [below](#overwatch-deployment)
+- `overwatchUpdateUsers` - Simple helper to update the database with the user information defined in the configuration.
+- `overwatchReceiverDataTransfer` - Transfer data received by the ZMQ and DQM receivers to other Overwatch
+  sites and EOS.
+- `overwatchReplay` - Replay processed Overwatch data as if it was newly received. Allows for full trending and
+  other testing of the data receiving process.
+- `overwatchReplayDataTransfer` - Replay process Overwatch data to a specified data at a high rate. It is a
+  more general tool than `overwatchReplay` and is used for moving processed data via
+  `overwatchReceiverDataTransfer`.
+
+The DQM receiver is defined in `overwatch.receiver`. For further information, see the documentation and the
+README in `overwatch.receiver`. The following executables are defined there:
+
+- `overwatchDQMReceiver` - Receiver data from the AMORE DQM system. Usage requires coordination with the DQM project.
+- `overwatchReceiverMonitor` - Monitor the ZMQ receivers via timestamps written by the C++ executables to ensure that
+  they haven't died.
+
+The ZMQ receiver is defined in `receiver.src`. It is a small C++ code base which receives files from the HLT
+and writes them to disk. It automatically downloads and compiles a few minor AliRoot dependency classes as
+needed, such that the only dependencies that must be install are ZMQ and ROOT. For further information, see
+the documentation and the README in `receiver`. The following executables are defined there:
+
+- `zmqReceive` - The main executable which handles receiving QA information from the HLT.
+
 # Overwatch Deployment
 
 All of the components of Overwatch can be configured and launched by the `overwatchDeploy` executable.
-Overwatch is intended to be deployed with a docker image. Within this image, configurations are
-managed by `supervisord`. All web apps are deployed behind nginx.
+Overwatch is intended to be deployed with a docker image. Within this image, configurations are managed by
+`supervisord`. All web apps are deployed behind `nginx`.
 
-The Dockerfiles and additional information is available in the `deploy/docker` directory.
+The Dockerfiles and additional information is available in the `docker` directory.
 
 ## Configuring Deployment
 
@@ -257,8 +294,49 @@ $ docker run -d -v data:/overwatch/data -e config="$(config.yaml)" rehlers/overw
 
 ## Update Users in the Database
 
-This is a simple utility to update the users in the ZODB database. It can be called via `overwatchUpdateUsers`
-(it takes no arguments). It will use the username/password values stored in the `config.yaml`.
+There is a simple utility to update the users in the ZODB database. It can be called via
+`overwatchUpdateUsers` (it takes no arguments). It will use the username/password values stored in the
+`config.yaml`.
+
+# Using Overwatch Data
+
+Overwatch has time-stamped, persistently stored EMCal and HLT subsystem data dating back to November 2015. The
+TPC joined around April 2016 (Note that the HLT contains some data from various subsystems, such as the V0).
+This data is available through the end of Run 2 in December 2018, with the exception of the period between
+approximately mid-August to mid-October 2018, where some data was lost due to infrastructure issues.
+
+For further detailed information no usage of this data, please see the [additional resources
+](#additional-resources).
+
+## Accessing the data
+
+This data can be accessed in a few different ways:
+
+- For small data volumes, the underlying data files can be accessed directly via the Web App. Simply select
+  the subsystem ROOT files from the main run list, and select the files to download.
+- For larger volumes, there are a few options:
+    - The unprocessed data is also archived on EOS. It is stored in `/eos/experiment/alice/overwatch`. To access
+      this data, send a request to Raymond and ALICE Offline.
+    - REST API file access is also possible under certain circumstances - contact Raymond if this is needed.
+
+## Utilizing the data
+
+To successfully use the Overwatch data, a few things must be kept in mind:
+
+- Each timestamp is in the CERN time zone. For properly handling these times, I recommend the `pendulum`
+  python package. For a concrete example, see `overwatch.utilities.base.extractTimeStampFromFilename`.
+- Each data file is cumulative. To get the data received between time n and n+1, one must subtract the
+  histogram, graph, or other object at time n+1 from the object at time n. From examples of and further
+  information on how to do this, see `overwatch.processing.mergeFiles`.
+- The data was requested every minute, but the data is not from precisely only that minute. The HLT runs the
+  QA components in a round-robin configuration through the HLT cluster. The new data that is received
+  corresponds to data the components sent into the mergers within that minute. The rate at which the QA
+  components send their data depends on the particular subsystem, but is often on the order of every 5
+  minutes. So the precision of the data is only on the order of approximately a few minutes.
+
+In general, Overwatch provides functionality to simplify working with this data, even if you don't want to use
+all of the overwatch processing features. A much more detailed information on how all of this is handled can
+be found in the documentation and code in `overwatch.processing.moveFiles`.
 
 # Citation
 
@@ -275,6 +353,12 @@ Please cite Overwatch as:
   url          = {https://doi.org/10.5281/zenodo.1309376}
 }
 ```
+
+# Additional Resources
+
+- [CHEP 2018 Presentation](https://indico.cern.ch/event/587955/contributions/2935758/)
+- [CHEP 2018 Proceedings](https://arxiv.org/abs/1812.00791)
+- [Overwatch data at ALICE QC/ML Workshop](https://indico.cern.ch/event/766450/contributions/3225214/)
 
 ## Name Meaning
 
