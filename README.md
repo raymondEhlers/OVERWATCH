@@ -125,6 +125,7 @@ configuration file.
 4. [Overwatch Deployment](#overwatch-deployment)
 5. [Using Overwatch Data](#using-overwatch-data)
 6. [Citation](#citation)
+7. [Additional Resources](#additional-resources)
 
 # Overwatch Architecture
 
@@ -304,6 +305,9 @@ TPC joined around April 2016 (Note that the HLT contains some data from various 
 This data is available through the end of Run 2 in December 2018, with the exception of the period between
 approximately mid-August to mid-October 2018, where some data was lost due to infrastructure issues.
 
+For further detailed information no usage of this data, please see the [additional resources
+](#additional-resources).
+
 ## Accessing the data
 
 This data can be accessed in a few different ways:
@@ -350,9 +354,11 @@ Please cite Overwatch as:
 }
 ```
 
-## Additional Resources
+# Additional Resources
 
 - [CHEP 2018 Presentation](https://indico.cern.ch/event/587955/contributions/2935758/)
+- [CHEP 2018 Proceedings](https://arxiv.org/abs/1812.00791)
+- [Overwatch data at ALICE QC/ML Workshop](https://indico.cern.ch/event/766450/contributions/3225214/)
 
 ## Name Meaning
 
