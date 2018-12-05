@@ -5,7 +5,12 @@ availableRunPageTemplates: [runPage.html, runPageDrawer.html, runPageMainContent
 basePath: ''
 cumulativeMode: true
 dataFolder: data
-dataHandlingTimeToSleep: 20
+dataReplayDestinationDirectory: 'data'
+dataReplayMaxFilesPerReplay: 1
+dataReplaySourceDirectory: null
+dataReplayTempStorageDirectory: 'data/tempReplayData'
+dataReplayTimeToSleep: 30
+dataTransferTimeToSleep: 20
 dataTransferLocations: {EOS: /eos/experiment/alice/overwatch/, site1: ''}
 dataTransferRetries: 2
 databaseLocation: file://data/overwatch.fs
@@ -25,6 +30,7 @@ forceReprocessing: false
 ipAddress: 127.0.0.1
 loggingLevel: INFO
 port: 8850
+processingTimeToSleep: -1
 protectedFolder: data
 receiverData: data
 receiverDataTempStorage: data/tempStorage
@@ -32,7 +38,7 @@ receiverIP: 127.0.0.1
 receiverPort: 8080
 staticFolder: static
 staticURLPath: /static
-statusRequestSites: {null: null}
+statusRequestSites: {}
 subsystemList: &id001 [EMC, TPC, HLT]
 subsystemsWithRootFilesToShow: *id001
 templateFolder: templates

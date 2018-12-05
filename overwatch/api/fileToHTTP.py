@@ -15,7 +15,7 @@ class ErrorInGettingFile(Exception):
     def __init__(self, value):
         self.value = value
 
-    def __repr(self):
+    def __repr__(self):
         return repr("ErrorInGettingFile: {}".format(self.value))
 
 def getFile(filename, fileObject, stream = False):

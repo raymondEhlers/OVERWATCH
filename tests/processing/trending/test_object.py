@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+""" Tests for TrendingObject.
+
+.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+"""
 import pytest
 import ROOT
 from overwatch.processing.trending.objects.object import TrendingObject
@@ -27,23 +32,23 @@ class CounterTrendingObject(TrendingObject):
 class TestHistogramSaving(object):
 
     @pytest.fixture(autouse=True)
-    def _prepare(self, tmpdir, trendingArgs):
+    def _prepare(self, tmpdir, tf_trendingArgs):
         ROOT.gROOT.SetBatch(True)
-        subsystem = trendingArgs[3]
+        subsystem = tf_trendingArgs[3]
         tmpdir.mkdir(TRENDING)
         tmpdir.mkdir(TRENDING, subsystem)
         self.img = tmpdir.mkdir(TRENDING, subsystem, IMAGE)
         self.json = tmpdir.mkdir(TRENDING, subsystem, JSON)
 
-        self.args = trendingArgs
+        self.args = tf_trendingArgs
         self.args[4][DIR_PREFIX] = tmpdir.strpath
 
     @pytest.mark.parametrize("elem", [10, 50, 120])
-    def testHistogramSaving(self, canvas, histogram, elem):
+    def testHistogramSaving(self, tf_canvas, tf_histogram, elem):
         to = CounterTrendingObject(*self.args)
         for i in range(elem):
-            to.extractTrendValue(histogram)
-        to.processHist(canvas)
+            to.extractTrendValue(tf_histogram)
+        to.processHist(tf_canvas)
 
         name = self.args[0].replace("/", "_")
         extension = self.args[4][EXTENSION]
