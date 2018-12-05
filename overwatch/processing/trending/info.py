@@ -3,14 +3,15 @@
 
 .. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
 """
+import past.builtins
+
+from overwatch.processing.alarms.alarm import Alarm
+from overwatch.processing.trending.objects.object import TrendingObject
+
 try:
     from typing import *  # noqa
-    from overwatch.processing.alarms.alarm import Alarm  # noqa
 except ImportError:
     pass
-
-from overwatch.processing.trending.objects.object import TrendingObject
-import past.builtins
 
 basestring = past.builtins.basestring
 
@@ -40,7 +41,7 @@ class TrendingInfo:
             trendingClass: concrete class of abstract class TrendingObject
         """
         # type: (str, str, List[str],  Type[TrendingObject]) -> None
-        # trending objects within subsystem must have different names - TODO add validation?
+        # trending objects within subsystem must have different names
         self.name = self._validate(name)
         self.desc = self._validate(desc)
         self.histogramNames = self._validateHist(histogramNames)
@@ -49,7 +50,10 @@ class TrendingInfo:
         self._alarms = []
 
     def addAlarm(self, alarm):  # type: (Alarm) -> None
-        self._alarms.append(alarm)
+        if isinstance(alarm, Alarm):
+            self._alarms.append(alarm)
+        else:
+            raise TrendingInfoException(msg='WrongAlarmType')
 
     def createTrendingClass(self, subsystemName, parameters):  # type: (str, dict) -> TrendingObject
         """Create instance of TrendingObject from previously set parameters

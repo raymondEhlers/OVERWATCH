@@ -3,6 +3,7 @@
 
 .. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
 """
+import numpy as np
 
 try:
     from typing import *  # noqa
@@ -22,7 +23,7 @@ class Alarm(object):
         self.receivers.append(receiver)
 
     def processCheck(self, trend=None):  # type: (Optional[TrendingObject]) -> None
-        args = (trend,) if trend else ()
+        args = (self.prepareTrendValues(trend),) if trend else ()
         result = self.checkAlarm(*args)
         isAlarm, msg = result
 
@@ -31,7 +32,16 @@ class Alarm(object):
         if self.parent:
             self.parent.childProcessed(child=self, result=isAlarm)
 
-    def checkAlarm(self, trend):  # type: (TrendingObject) -> bool
+    @staticmethod
+    def prepareTrendValues(trend):  # type: (TrendingObject) -> np.ndarray
+        trendingValues = np.array(trend.trendedValues)
+        if len(trendingValues.shape) == 2:
+            trendingValues = trendingValues[:, 0]
+        if len(trendingValues.shape) > 2:
+            raise TypeError
+        return trendingValues
+
+    def checkAlarm(self, trend):  # type: (np.ndarray) -> (bool, str)
         """abstract method"""
         raise NotImplementedError
 

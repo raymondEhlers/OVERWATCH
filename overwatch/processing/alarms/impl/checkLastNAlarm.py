@@ -1,24 +1,25 @@
 #!/usr/bin/env python
-""" TODO add desc.
+""" Check if minimum ratio*N last N alarms are in range.
 
 .. code-author: Jacek Nabywaniec <>, AGH University of Science and Technology
 """
 from overwatch.processing.alarms.alarm import Alarm
 
 
-class checkLastNAlarm(Alarm):
+class CheckLastNAlarm(Alarm):
     def __init__(self, minVal=0, maxVal=100, ratio=0.6, N=5, *args, **kwargs):
-        super(checkLastNAlarm, self).__init__(*args, **kwargs)
+        super(CheckLastNAlarm, self).__init__(*args, **kwargs)
         self.minVal = minVal
         self.maxVal = maxVal
         self.ratio = ratio
         self.N = N
 
     def checkAlarm(self, trend):
-        if len(trend.trendedValues) < self.N:
+        if len(trend) < self.N:
             return False, ''
+
         trendedValues = trend[-self.N:]
-        inBorderValues = [trendedValue for trendedValue in trendedValues if self.maxVal > trendedValue > self.minVal]
+        inBorderValues = [tv for tv in trendedValues if self.maxVal > tv > self.minVal]
         if len(inBorderValues) >= self.ratio * self.N:
             return False, ''
 
