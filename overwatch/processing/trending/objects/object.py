@@ -111,6 +111,6 @@ class TrendingObject(Persistent):
         canvas.SetLogy(False)
         canvas.SetLogz(False)
 
-    def addAlarms(self, alarms):  # type: (List['Alarm']) -> None
-        """ ADD DOC"""
-        self.alarms.extend(alarms)
+    def setAlarms(self, alarms):  # type: (List['Alarm']) -> None
+        """ Invoked by trendingInfo after trendingObject is created"""
+        self.alarms = alarms

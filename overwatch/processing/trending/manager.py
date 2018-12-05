@@ -125,6 +125,7 @@ class TrendingManager(Persistent):
 
     def resetDB(self):  # TODO not used - is it needed?
         self.trendingDB.clear()
+        self._prepareDirStructure()
 
     def processTrending(self):
         """ Process the trending objects.
