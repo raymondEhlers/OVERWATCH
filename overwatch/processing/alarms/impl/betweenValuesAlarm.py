@@ -13,7 +13,7 @@ class BetweenValuesAlarm(Alarm):
         self.maxVal = maxVal if maxVal is not None else centerValue + maxDistance
 
     def checkAlarm(self, trend):
-        testedValue = trend.trendedValues[-1]
+        testedValue = trend[-1]
         if self.minVal <= testedValue <= self.maxVal:
             return False, ''
 

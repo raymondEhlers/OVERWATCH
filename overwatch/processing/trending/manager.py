@@ -152,6 +152,7 @@ class TrendingManager(Persistent):
 
         It loops over trending objects to which histogram is subscribed to and calls function that extracts
         trended value from histogram e.g. mean, standard deviation (depending on trending object).
+        Then check alarms.
 
         Args:
             hist (histogramContainer): Histogram which is processed.
@@ -161,4 +162,4 @@ class TrendingManager(Persistent):
         for trend in self.histToTrending.get(hist.histName, []):
             trend.extractTrendValue(hist)
             for alarm in trend.alarms:
-                alarm.checkAlarm(trend)
+                alarm.processCheck(trend)

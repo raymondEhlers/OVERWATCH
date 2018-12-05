@@ -1,5 +1,5 @@
 #!/usr/bin/env python
-""" TODO add desc.
+""" Check if mean from N last measurements is in the range.
 
 .. code-author: Jacek Nabywaniec <>, AGH University of Science and Technology
 """
@@ -7,20 +7,22 @@ from overwatch.processing.alarms.alarm import Alarm
 import numpy as np
 
 
-class checkLastNValuesAlarm(Alarm):
+class MeanInRangeAlarm(Alarm):
     def __init__(self, minVal=0, maxVal=100, N=5, *args, **kwargs):
-        super(checkLastNValuesAlarm, self).__init__(*args, **kwargs)
+        super(MeanInRangeAlarm, self).__init__(*args, **kwargs)
         self.minVal = minVal
         self.maxVal = maxVal
         self.N = N
 
     def checkAlarm(self, trend):
-        if len(trend.trendedValues) < self.N:
+        if len(trend) < self.N:
             return False, ''
-        trendedValues = np.array(trend.trendedValues)
+
+        trendedValues = trend[-self.N:]
         mean = np.mean(trendedValues)
         if self.minVal < np.mean(mean) < self.maxVal:
             return False, ''
 
-        msg = "mean value of last: {} values not in {} {}".format(self.N, self.minVal, self.maxVal)
+        msg = "mean value of last: {n} values not in {min} {max}".format(
+            n=self.N, min=self.minVal, max=self.maxVal)
         return True, msg
