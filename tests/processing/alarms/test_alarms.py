@@ -5,7 +5,9 @@
 """
 import pytest
 
+from overwatch.processing.alarms.impl.absolutePreviousValueAlarm import AbsolutePreviousValueAlarm
 from overwatch.processing.alarms.impl.betweenValuesAlarm import BetweenValuesAlarm
+from overwatch.processing.alarms.impl.relativePreviousValueAlarm import RelativePreviousValueAlarm
 
 
 @pytest.mark.parametrize('alarm', [
@@ -30,4 +32,59 @@ def testBetweenValuesAlarm(af_alarmChecker, af_trendingObjectClass, alarm):
     test(-1, True)
     test(101, True)
 
-# TODO test more class
+
+def testRelativePreviousValueAlarm(af_alarmChecker, af_trendingObjectClass):
+    alarm = RelativePreviousValueAlarm(ratio=2.)
+    alarm.addReceiver(af_alarmChecker.receiver)
+    to = af_trendingObjectClass()
+    to.alarms = [alarm]
+
+    def test(val, isAlarm=False):
+        af_alarmChecker.addValueAndCheck(to, val, isAlarm)
+
+    test(6)
+    test(7)
+    test(14)
+    test(7)
+    test(15, True)
+    test(16)
+    test(7, True)
+    test(0.1, True)
+    test(0, True)
+    test(-0.1, True)
+    test(2, True)
+    test(-2, True)
+    test(-1)
+    test(-2)
+    test(-4)
+    test(-1, True)
+    test(-3, True)
+    test(-6)
+
+
+def testAbsolutePreviousValueAlarm(af_alarmChecker, af_trendingObjectClass):
+    alarm = AbsolutePreviousValueAlarm(maxDelta=3.)
+    alarm.addReceiver(af_alarmChecker.receiver)
+    to = af_trendingObjectClass()
+    to.alarms = [alarm]
+
+    def test(val, isAlarm=False):
+        af_alarmChecker.addValueAndCheck(to, val, isAlarm)
+
+    test(34)
+    test(33)
+    test(35)
+    test(32)
+    test(36, True)
+    test(30, True)
+    test(29)
+    test(10, True)
+    test(9)
+    test(15, True)
+    test(0, True)
+    test(-1)
+    test(1)
+    test(0)
+    test(-17, True)
+    test(-15)
+    test(-9, True)
