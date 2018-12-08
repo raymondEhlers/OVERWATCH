@@ -4,6 +4,7 @@
 .. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
 """
 import numpy as np
+from overwatch.processing.alarms.collectors import alarmCollector
 
 try:
     from typing import *  # noqa
@@ -26,9 +27,10 @@ class Alarm(object):
         args = (self.prepareTrendValues(trend),) if trend else ()
         result = self.checkAlarm(*args)
         isAlarm, msg = result
+        msg = trend.name + ': ' + msg
 
         if isAlarm:
-            self._announceAlarm(msg)
+            alarmCollector.addAlarm([self, msg])
         if self.parent:
             self.parent.childProcessed(child=self, result=isAlarm)
 
