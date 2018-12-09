@@ -3,7 +3,7 @@
 
 This module is responsible for generating alarms and sending notifications about them.
 
-Class Alarm has an abstract method checkAlarm(), which allows us to implement our own alarms.
+Class Alarm has an abstract method `checkAlarm()`, which allows us to implement our own alarms.
 Examples of alarms can be found in impl package.
 
 Alarms can be aggregated by logic functions or/and.
@@ -19,7 +19,7 @@ When histogram is processed and alarms are generated, they are displayed above t
 
 Each generated alarm is collected by AlarmCollector. It allows us send notifications about alarms when we want:
 after processing trending object, after processing histogram or when all histograms are processed. You have to call
-announceAlarm() method on alarmCollector object. AlarmCollector also groups alarms.
+`announceAlarm()` method on alarmCollector object. AlarmCollector also groups alarms.
 
 ## Emails
 
@@ -81,7 +81,7 @@ def alarmConfig(recipients):
     return [boarderWarning, borderError, seriousAlarm]
 ```
 
-And in manager.py in update _createTrendingObjectFromInfo method:
+And in manager.py in update `_createTrendingObjectFromInfo` method:
 
 ```python
 for info in infoList:
