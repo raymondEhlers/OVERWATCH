@@ -169,5 +169,7 @@ class TrendingManager(Persistent):
             trend.extractTrendValue(hist)
             for alarm in trend.alarms:
                 alarm.processCheck(trend)
-            hist.information[trend.name] = '\n'.join(trend.alarmsMessages)
-            alarmCollector.announceAlarm()
+            if trend.alarmsMessages:
+                hist.information[trend.name] = '; '.join(trend.alarmsMessages)
+                trend.alarmsMessages = []
+        alarmCollector.announceAlarm()

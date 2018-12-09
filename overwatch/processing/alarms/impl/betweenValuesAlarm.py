@@ -17,5 +17,5 @@ class BetweenValuesAlarm(Alarm):
         if self.minVal <= testedValue <= self.maxVal:
             return False, ''
 
-        msg = "value: {} not in [{}, {}]".format(testedValue, self.minVal, self.maxVal)
+        msg = "(BetweenValuesAlarm): value {} not in [{}, {}]".format(testedValue, self.minVal, self.maxVal)
         return True, msg

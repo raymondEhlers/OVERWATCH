@@ -23,6 +23,6 @@ class CheckLastNAlarm(Alarm):
         if len(inBorderValues) >= self.ratio * self.N:
             return False, ''
 
-        msg = "less than {} % values of last: {} values not in {} {}".format(
+        msg = "(CheckLastNAlarm): less than {} % values of last {} trending values not in [{}, {}]".format(
             self.ratio * 10, self.N, self.minVal, self.maxVal)
         return True, msg

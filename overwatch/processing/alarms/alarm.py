@@ -27,6 +27,7 @@ class Alarm(object):
         args = (self.prepareTrendValues(trend),) if trend else ()
         result = self.checkAlarm(*args)
         isAlarm, msg = result
+        msg = "[{alarmText}]: {msg}".format(alarmText=self.alarmText, msg=msg)
 
         if isAlarm:
             trend.alarmsMessages.append(msg)

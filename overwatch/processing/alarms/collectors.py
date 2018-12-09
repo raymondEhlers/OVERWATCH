@@ -94,9 +94,6 @@ class SlackNotification(Singleton):
                 text=payload, username='Alarms OVERWATCH',
                 icon_emoji=':robot_face:')
 
-def httpCollector(alarm):
-    printCollector("HTTP: <alarm>{}</alarm>".format(alarm))
-
 class AlarmCollector():
     """
     Class that collects generated alarms. Collected alarms are grouped and announced to
@@ -142,7 +139,6 @@ class AlarmCollector():
         for alarmMsg in self.alarms:
             alarm = alarmMsg[0]
             msg = alarmMsg[1]
-            msg = "[{alarmText}]: {msg}".format(alarmText=alarm.alarmText, msg=msg)
             for receiver in alarm.receivers:
                 if receiver not in receivers:
                     receivers[receiver] = []

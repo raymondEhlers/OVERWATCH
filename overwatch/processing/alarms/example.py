@@ -1,4 +1,4 @@
-from overwatch.processing.alarms.collectors import printCollector, httpCollector, MailSender
+from overwatch.processing.alarms.collectors import printCollector, MailSender
 from overwatch.processing.alarms.impl.andAlarm import AndAlarm
 from overwatch.processing.alarms.impl.betweenValuesAlarm import BetweenValuesAlarm
 from overwatch.processing.alarms.impl.checkLastNAlarm import CheckLastNAlarm

@@ -23,6 +23,6 @@ class RelativePreviousValueAlarm(Alarm):
         if abs(prevValue / self.ratio) <= curValue <= abs(prevValue * self.ratio):
             return False, ''
 
-        msg = "curValue: {curValue}, prevValue: {prevValue}, change more than: {ratio}".format(
+        msg = "(RelativePreviousValueAlarm): curValue: {curValue}, prevValue: {prevValue}, change more than: {ratio}".format(
             curValue=curValue, prevValue=prevValue, ratio=self.ratio)
         return True, msg

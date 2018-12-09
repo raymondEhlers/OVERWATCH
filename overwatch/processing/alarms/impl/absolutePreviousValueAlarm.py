@@ -21,6 +21,6 @@ class AbsolutePreviousValueAlarm(Alarm):
         if delta <= self.maxDelta:
             return False, ''
 
-        msg = "curValue: {curValue}, prevValue: {prevValue}, change more than: {maxDelta}".format(
+        msg = "(AbsolutePreviousValueAlarm): curValue: {curValue}, prevValue: {prevValue}, change more than: {maxDelta}".format(
             curValue=curValue, prevValue=prevValue, maxDelta=self.maxDelta)
         return True, msg
