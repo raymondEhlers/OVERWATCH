@@ -18,6 +18,8 @@ from persistent import Persistent
 import overwatch.processing.pluginManager as pluginManager
 import overwatch.processing.trending.constants as CON
 from overwatch.processing.alarms.collectors import Mail, SlackNotification
+from overwatch.processing.alarms.example import alarmConfig
+from overwatch.processing.alarms.collectors import alarmCollector
 
 logger = logging.getLogger(__name__)
 
@@ -115,6 +117,7 @@ class TrendingManager(Persistent):
         for info in infoList:
             if info.name not in self.trendingDB[subsystemName] or self.parameters[CON.RECREATE]:
                 to = info.createTrendingClass(subsystemName, self.parameters)
+                to.setAlarms(alarmConfig())
                 self.trendingDB[subsystemName][info.name] = to
                 self._subscribe(to, info.histogramNames)
 
@@ -166,3 +169,5 @@ class TrendingManager(Persistent):
             trend.extractTrendValue(hist)
             for alarm in trend.alarms:
                 alarm.processCheck(trend)
+            hist.information[trend.name] = '\n'.join(trend.alarmsMessages)
+            alarmCollector.announceAlarm()

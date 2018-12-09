@@ -1,6 +1,7 @@
-from overwatch.processing.alarms.collectors import workerMail, printCollector, httpCollector, MailSender
+from overwatch.processing.alarms.collectors import printCollector, httpCollector, MailSender
 from overwatch.processing.alarms.impl.andAlarm import AndAlarm
 from overwatch.processing.alarms.impl.betweenValuesAlarm import BetweenValuesAlarm
+from overwatch.processing.alarms.impl.checkLastNAlarm import CheckLastNAlarm
 
 
 class TrendingObjectMock:
@@ -24,16 +25,10 @@ def alarmConfig():
     boarderWarning = BetweenValuesAlarm(minVal=0, maxVal=50, alarmText="WARNING")
     boarderWarning.addReceiver(printCollector)
 
-    borderError = BetweenValuesAlarm(minVal=0, maxVal=70, alarmText="ERROR")
-    borderError.receivers = [workerMail, httpCollector]
+    lastAlarm = CheckLastNAlarm(alarmText="ERROR")
+    lastAlarm.addReceiver(printCollector)
 
-    bva = BetweenValuesAlarm(minVal=0, maxVal=90, alarmText='BETWEEN')
-    # TODO add second alarm to andAlarm
-    seriousAlarm = AndAlarm([bva], "Serious Alarm")
-    cernBoss = MailSender("boss@cern")
-    seriousAlarm.addReceiver(cernBoss)
-
-    return [boarderWarning, borderError, seriousAlarm]
+    return [boarderWarning, lastAlarm]
 
 
 def main():

@@ -27,9 +27,9 @@ class Alarm(object):
         args = (self.prepareTrendValues(trend),) if trend else ()
         result = self.checkAlarm(*args)
         isAlarm, msg = result
-        msg = trend.name + ': ' + msg
 
         if isAlarm:
+            trend.alarmsMessages.append(msg)
             alarmCollector.addAlarm([self, msg])
         if self.parent:
             self.parent.childProcessed(child=self, result=isAlarm)
