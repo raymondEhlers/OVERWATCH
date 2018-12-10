@@ -4,9 +4,32 @@
 This module is responsible for generating alarms and sending notifications about them.
 
 Class Alarm has an abstract method `checkAlarm()`, which allows us to implement our own alarms.
-Examples of alarms can be found in impl package.
 
 Alarms can be aggregated by logic functions or/and.
+
+Examples of alarms can be found in impl package.
+
+## BetweenValuesAlarm
+
+Checks if trend is between minimal and maximal allowed values.
+
+![betweenAlarm example](./doc/betweenAlarm.png)
+
+## MeanInRangeAlarm
+
+Checks if mean from N last measurements is in the range.
+![No alarm](./doc/meanRange1.png)
+![No alarm](./doc/meanRange2.png)
+![No alarm](./doc/meanRange3.png)
+![Alarm](./doc/meanRange4.png)
+
+![betweenAlarm example](./doc/betweenAlarm.png)
+
+## AbsolutePreviousValueAlarm
+
+Check if (new value - old value) is different more than delta.
+
+![absolutePreviousValueAlarm example](./doc/absolute.png)
 
 
 ## Displaying on the webApp
@@ -33,16 +56,6 @@ emailDelivery:
       port: 587
       userName: "email@address"
       password: "password"
-    recipients:
-      EMC:
-        - "emcExpert1@mail"
-        - "emcExpert2@mail"
-      HLT:
-        - "hltExpert1@mail"
-        - "hltExpert2@mail"
-      TPC:
-        - "tpcExpert1@mail"
-        - "tpcExpert2@mail"
 ```
 
 ## Slack
@@ -59,16 +72,15 @@ slack:
 
 # Usage
 
-To specify alarms and receivers write following function:
+To specify alarms and receivers write for example following function:
 
 ```python
 def alarmConfig(recipients):
-
     mailSender = MailSender(recipients)
     slackSender = SlackNotification()
-    boarderWarning = BetweenValuesAlarm(minVal=0, maxVal=50, alarmText="WARNING")
+    borderWarning = BetweenValuesAlarm(minVal=0, maxVal=50, alarmText="WARNING")
 
-    boarderWarning.receivers = [printCollector]
+    borderWarning.receivers = [printCollector]
 
     borderError = BetweenValuesAlarm(minVal=0, maxVal=70, alarmText="ERROR")
     borderError.receivers = [mailSender, slackSender]
@@ -78,7 +90,7 @@ def alarmConfig(recipients):
     seriousAlarm = AndAlarm([bva], "Serious Alarm")
     seriousAlarm.addReceiver(mailSender)
 
-    return [boarderWarning, borderError, seriousAlarm]
+    return [borderWarning, borderError, seriousAlarm]
 ```
 
 You can define separate alarms to different trending objects:
@@ -106,24 +118,32 @@ def alarmMaxConfig(recipients):
     return [borderWarning]
 ```
 
-To use alarms, define them in EMC.py or other detector file in `getTrendingObjectInfo()` function:
+To use alarms, define them in EMC.py or other detector file in `getTrendingObjectInfo()`:
 
 ```python
-    if "emailDelivery" in processingParameters:
-        recipients = processingParameters["emailDelivery"]["recipients"]["EMC"]
-    else:
-        recipients = None
+     trendingNameToObject = {
+        "max": trendingObjects.MaximumTrending,
+        "mean": trendingObjects.MeanTrending,
+        "stdDev": trendingObjects.StdDevTrending,
+    }
+
+    # Add email recipients
+    recipients = {
+        "max": ["test1@mail", "test2@mail"]
+    }
+
+    # Assign created earlier alarms to particular trending objects
     alarms = {
-        "max": alarmMaxConfig(recipients),
+        "max": alarmMaxConfig(recipients["max"]),
         "mean": alarmMeanConfig(),
-        # "stdDev": alarmStdConfig()
+        "stdDev": alarmStdConfig()
     }
     trendingInfo = []
     for prefix, cls in trendingNameToObject.items():
         for dependingFile, desc in infoList:
             infoObject = TrendingInfo(prefix + dependingFile, desc, [dependingFile], cls)
             if prefix in alarms:
-                infoObject.addAlarm(alarms[prefix])
+                infoObject.addAlarm(alarms[prefix])       # Set alarms
             trendingInfo.append(infoObject)
     return trendingInfo
 ```

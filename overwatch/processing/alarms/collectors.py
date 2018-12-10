@@ -6,40 +6,47 @@ import logging
 
 logger = logging.getLogger(__name__)
 
+
 # works in Python 2 & 3
 class _Singleton(type):
     """ A metaclass that creates a Singleton base class when called. """
     _instances = {}
+
     def __call__(cls, *args, **kwargs):
         if cls not in cls._instances:
             cls._instances[cls] = super(_Singleton, cls).__call__(*args, **kwargs)
         return cls._instances[cls]
 
+
 class Singleton(_Singleton('SingletonMeta', (object,), {})):
     # https://stackoverflow.com/questions/6760685/creating-a-singleton-in-python
     pass
 
+
 class Mail(Singleton):
     def __init__(self, alarmsParameters=None):
         if alarmsParameters is not None:
+            self.parameters = alarmsParameters
             try:
-                self.parameters = alarmsParameters
                 smtpSettings = alarmsParameters["emailDelivery"]["smtpSettings"]
                 host = smtpSettings["address"]
                 port = smtpSettings["port"]
                 password = smtpSettings["password"]
                 self.user_name = smtpSettings["userName"]
-                self.smtp = smtplib.SMTP(host=host, port=port)
-                self._login(password)
             except KeyError:
                 logger.debug("EmailDelivery not configured")
+            else:
+                self.smtp = smtplib.SMTP(host=host, port=port)
+                self._login(password)
 
     def _login(self, password):
         self.smtp.starttls()
         self.smtp.login(user=self.user_name, password=password)
 
+
 def printCollector(alarm):
     print(alarm)
+
 
 class MailSender:
     """Manages sending emails.
@@ -49,6 +56,7 @@ class MailSender:
     Attributes:
         recipients (list): List of email addresses
     """
+
     def __init__(self, addresses):
         self.recipients = addresses
 
@@ -80,28 +88,29 @@ class MailSender:
             else:
                 logger.debug(fail)
 
+
 class SlackNotification(Singleton):
     """Manages sending notifications on Slack.
 
     Args:
         alarmsParameters (dict): Parameters read from configuration files
     Attributes:
-        sc (SlackClient):
+        slackClient (SlackClient):
         channel (str): Channel name
     """
+
     def __init__(self, alarmsParameters=None):
         if alarmsParameters is not None:
             self.parameters = alarmsParameters
-            # if 'slack' in self.parameters:
             try:
-                self.sc = SlackClient(alarmsParameters["slack"]["apiToken"])
+                self.slackClient = SlackClient(alarmsParameters["slack"]["apiToken"])
                 self.channel = alarmsParameters["slack"]["slackChannel"]
             except KeyError:
                 logger.debug("Slack not configured")
 
     def __call__(self, alarm):
         self.sendMessage(alarm)
-        
+
     def sendMessage(self, payload):
         """ Sends message to specified earlier channel.
 
@@ -114,14 +123,15 @@ class SlackNotification(Singleton):
         fail = "Slack not configured, couldn't send messages"
 
         if 'slack' in self.parameters:
-            self.sc.api_call('chat.postMessage', channel=self.channel,
-                    text=payload, username='Alarms OVERWATCH',
-                    icon_emoji=':robot_face:')
+            self.slackClient.api_call('chat.postMessage', channel=self.channel,
+                             text=payload, username='Alarms OVERWATCH',
+                             icon_emoji=':robot_face:')
             logger.debug(success.format(channel=self.channel))
         else:
             logger.debug(fail)
 
-class AlarmCollector():
+
+class AlarmCollector(object):
     """
     Class that collects generated alarms. Collected alarms are grouped and announced to
     specified receivers.
@@ -129,18 +139,20 @@ class AlarmCollector():
     Attributes:
         alarms (list): List of alarms. Each element is a pair [Alarm, str]
     """
+
     def __init__(self):
         self.alarms = []
 
-    def addAlarm(self, alarm):
+    def addAlarm(self, alarm, msg):
         """ It adds alarm to the existing list of alarms
 
         Args:
-            alarm ([Alarm, str]): A pair - Alarm object and message
+            alarm (Alarm): Alarm object
+            msg (str): generated message
         Return:
             None.
         """
-        self.alarms.append(alarm)
+        self.alarms.append((alarm, msg))
 
     def announceAlarm(self):
         """ It sends collected and grouped messages to receivers.

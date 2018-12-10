@@ -90,14 +90,13 @@ def getTrendingObjectInfo():
         "mean": trendingObjects.MeanTrending,
         "stdDev": trendingObjects.StdDevTrending,
     }
-    if "emailDelivery" in processingParameters:
-        recipients = processingParameters["emailDelivery"]["recipients"]["EMC"]
-    else:
-        recipients = None
+    recipients = {
+        "max": ["test1@mail", "test2@mail"]
+    }
     alarms = {
-        "max": alarmMaxConfig(recipients),
+        "max": alarmMaxConfig(recipients["max"]),
         "mean": alarmMeanConfig(),
-        # "stdDev": alarmStdConfig()
+        "stdDev": alarmStdConfig()
     }
     trendingInfo = []
     for prefix, cls in trendingNameToObject.items():

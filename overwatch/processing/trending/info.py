@@ -49,7 +49,9 @@ class TrendingInfo:
 
         self._alarms = []
 
-    def addAlarm(self, alarms):  # type: ([Alarm]) -> None
+    def addAlarm(self, alarms):  # type: (Union(Alarm, List[Alarm])) -> None
+        if not isinstance(alarms, list):
+            alarms = [alarms]
         for alarm in alarms:
             if isinstance(alarm, Alarm):
                 self._alarms.append(alarm)

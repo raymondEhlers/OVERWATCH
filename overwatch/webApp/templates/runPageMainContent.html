@@ -45,8 +45,17 @@
                             <div>{{ label }}</div>
                             <paper-icon-button class="collapsibleContainerIcon" icon="icons:arrow-drop-down"></paper-icon-button>
                         </paper-button>
-                        <iron-collapse class="collapsibleContainer" id="collapse{{ loop.index0 }}{{ hist.histName }}">
-                            <div>{{ info }}</div>
+                         <iron-collapse class="collapsibleContainer"
+                                       id="collapse{{ loop.index0 }}{{ hist.histName }}">
+                            {%- if label not in ("Threshold", "Fast OR Hot Channels ID")-%}
+                                <div>
+                                    {% for infoData in info.split('\n') %}
+                                        <div>{{ infoData }}</div>
+                                    {% endfor %}
+                                </div>
+                            {% else %}
+                                <div>{{ info }}</div>
+                            {% endif -%}
                         </iron-collapse>
                         <br />
                         {% endfor -%}
