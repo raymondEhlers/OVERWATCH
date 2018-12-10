@@ -50,11 +50,11 @@ emailDelivery:
 To send messages on Slack add to configuration file:
 
 ```yaml
-# Slack token
-apiToken: 'token'
-
-# Slack channel
-slackChannel: "test"
+# Slack configuration
+# Define token and channel
+slack:
+  apiToken: 'token'
+  slackChannel: "alarms"
 ```
 
 # Usage
@@ -81,13 +81,49 @@ def alarmConfig(recipients):
     return [boarderWarning, borderError, seriousAlarm]
 ```
 
-And in manager.py in update `_createTrendingObjectFromInfo` method:
+You can define separate alarms to different trending objects:
 
 ```python
-for info in infoList:
-    if info.name not in self.trendingDB[subsystemName] or self.parameters[CON.RECREATE]:
-        to = info.createTrendingClass(subsystemName, self.parameters)
-        to.setAlarms(alarmConfig(to.recipients))     # Update here
-        self.trendingDB[subsystemName][info.name] = to
-        self._subscribe(to, info.histogramNames)
+def alarmMeanConfig():
+    slack = SlackNotification()
+    lastAlarm = CheckLastNAlarm(alarmText="ERROR")
+    lastAlarm.receivers = [printCollector, slack]
+
+    return [lastAlarm]
+
+def alarmStdConfig():
+    slack = SlackNotification()
+    meanInRangeWarning = MeanInRangeAlarm(alarmText="WARNING")
+    meanInRangeWarning.receivers = [printCollector, slack]
+
+    return [meanInRangeWarning]
+
+def alarmMaxConfig(recipients):
+    mailSender = MailSender(recipients)
+    borderWarning = BetweenValuesAlarm(minVal=0, maxVal=50, alarmText="WARNING")
+    borderWarning.receivers = [printCollector, mailSender]
+
+    return [borderWarning]
+```
+
+To use alarms, define them in EMC.py or other detector file in `getTrendingObjectInfo()` function:
+
+```python
+    if "emailDelivery" in processingParameters:
+        recipients = processingParameters["emailDelivery"]["recipients"]["EMC"]
+    else:
+        recipients = None
+    alarms = {
+        "max": alarmMaxConfig(recipients),
+        "mean": alarmMeanConfig(),
+        # "stdDev": alarmStdConfig()
+    }
+    trendingInfo = []
+    for prefix, cls in trendingNameToObject.items():
+        for dependingFile, desc in infoList:
+            infoObject = TrendingInfo(prefix + dependingFile, desc, [dependingFile], cls)
+            if prefix in alarms:
+                infoObject.addAlarm(alarms[prefix])
+            trendingInfo.append(infoObject)
+    return trendingInfo
 ```

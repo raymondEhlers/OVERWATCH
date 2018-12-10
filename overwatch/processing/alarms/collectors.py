@@ -2,6 +2,9 @@ from slackclient import SlackClient
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
+import logging
+
+logger = logging.getLogger(__name__)
 
 # works in Python 2 & 3
 class _Singleton(type):
@@ -19,17 +22,21 @@ class Singleton(_Singleton('SingletonMeta', (object,), {})):
 class Mail(Singleton):
     def __init__(self, alarmsParameters=None):
         if alarmsParameters is not None:
-            smtpSettings = alarmsParameters["emailDelivery"]["smtpSettings"]
-            host = smtpSettings["address"]
-            port = smtpSettings["port"]
-            password = smtpSettings["password"]
-            self.user_name = smtpSettings["userName"]
-            self.s = smtplib.SMTP(host=host, port=port)
-            self._login(password)
+            try:
+                self.parameters = alarmsParameters
+                smtpSettings = alarmsParameters["emailDelivery"]["smtpSettings"]
+                host = smtpSettings["address"]
+                port = smtpSettings["port"]
+                password = smtpSettings["password"]
+                self.user_name = smtpSettings["userName"]
+                self.smtp = smtplib.SMTP(host=host, port=port)
+                self._login(password)
+            except KeyError:
+                logger.debug("EmailDelivery not configured")
 
     def _login(self, password):
-        self.s.starttls()
-        self.s.login(user=self.user_name, password=password)
+        self.smtp.starttls()
+        self.smtp.login(user=self.user_name, password=password)
 
 def printCollector(alarm):
     print(alarm)
@@ -56,14 +63,22 @@ class MailSender:
         Return:
             None.
         """
+        success = "Emails successfully sent to {recipients}"
+        fail = "EmailDelivery not configured, couldn't send emails"
+
         if self.recipients is not None:
             mail = Mail()
-            msg = MIMEMultipart()
-            msg['From'] = mail.user_name
-            msg['To'] = ", ".join(self.recipients)
-            msg['Subject'] = 'Overwatch Alarm'
-            msg.attach(MIMEText(payload, 'plain'))
-            mail.s.sendmail(mail.user_name, self.recipients, msg.as_string())
+            if 'emailDelivery' in mail.parameters:
+                msg = MIMEMultipart()
+                msg['From'] = mail.user_name
+                msg['To'] = ", ".join(self.recipients)
+                msg['Subject'] = 'Overwatch Alarm'
+                msg.attach(MIMEText(payload, 'plain'))
+                mail.smtp.sendmail(mail.user_name, self.recipients, msg.as_string())
+
+                logger.debug(success.format(recipients=", ".join(self.recipients)))
+            else:
+                logger.debug(fail)
 
 class SlackNotification(Singleton):
     """Manages sending notifications on Slack.
@@ -76,8 +91,13 @@ class SlackNotification(Singleton):
     """
     def __init__(self, alarmsParameters=None):
         if alarmsParameters is not None:
-            self.sc = SlackClient(alarmsParameters["apiToken"])
-            self.channel = alarmsParameters["slackChannel"]
+            self.parameters = alarmsParameters
+            # if 'slack' in self.parameters:
+            try:
+                self.sc = SlackClient(alarmsParameters["slack"]["apiToken"])
+                self.channel = alarmsParameters["slack"]["slackChannel"]
+            except KeyError:
+                logger.debug("Slack not configured")
 
     def __call__(self, alarm):
         self.sendMessage(alarm)
@@ -90,9 +110,16 @@ class SlackNotification(Singleton):
         Return:
             None.
         """
-        self.sc.api_call('chat.postMessage', channel=self.channel,
-                text=payload, username='Alarms OVERWATCH',
-                icon_emoji=':robot_face:')
+        success = "Message successfully sent on Slack channel {channel}"
+        fail = "Slack not configured, couldn't send messages"
+
+        if 'slack' in self.parameters:
+            self.sc.api_call('chat.postMessage', channel=self.channel,
+                    text=payload, username='Alarms OVERWATCH',
+                    icon_emoji=':robot_face:')
+            logger.debug(success.format(channel=self.channel))
+        else:
+            logger.debug(fail)
 
 class AlarmCollector():
     """

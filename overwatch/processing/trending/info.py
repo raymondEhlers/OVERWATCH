@@ -49,11 +49,12 @@ class TrendingInfo:
 
         self._alarms = []
 
-    def addAlarm(self, alarm):  # type: (Alarm) -> None
-        if isinstance(alarm, Alarm):
-            self._alarms.append(alarm)
-        else:
-            raise TrendingInfoException(msg='WrongAlarmType')
+    def addAlarm(self, alarms):  # type: ([Alarm]) -> None
+        for alarm in alarms:
+            if isinstance(alarm, Alarm):
+                self._alarms.append(alarm)
+            else:
+                raise TrendingInfoException(msg='WrongAlarmType')
 
     def createTrendingClass(self, subsystemName, parameters):  # type: (str, dict) -> TrendingObject
         """Create instance of TrendingObject from previously set parameters

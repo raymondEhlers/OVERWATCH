@@ -33,6 +33,7 @@ from ...base import config
 
 from overwatch.processing.trending.info import TrendingInfo
 import overwatch.processing.trending.objects as trendingObjects
+from overwatch.processing.alarms.example import alarmStdConfig, alarmMaxConfig, alarmMeanConfig
 
 def getTrendingObjectInfo():
     """ Function create simple data objects - TrendingInfo, from which will be created TrendingObject.
@@ -89,10 +90,22 @@ def getTrendingObjectInfo():
         "mean": trendingObjects.MeanTrending,
         "stdDev": trendingObjects.StdDevTrending,
     }
+    if "emailDelivery" in processingParameters:
+        recipients = processingParameters["emailDelivery"]["recipients"]["EMC"]
+    else:
+        recipients = None
+    alarms = {
+        "max": alarmMaxConfig(recipients),
+        "mean": alarmMeanConfig(),
+        # "stdDev": alarmStdConfig()
+    }
     trendingInfo = []
     for prefix, cls in trendingNameToObject.items():
         for dependingFile, desc in infoList:
-            trendingInfo.append(TrendingInfo(prefix + dependingFile, desc, [dependingFile], cls))
+            infoObject = TrendingInfo(prefix + dependingFile, desc, [dependingFile], cls)
+            if prefix in alarms:
+                infoObject.addAlarm(alarms[prefix])
+            trendingInfo.append(infoObject)
     return trendingInfo
 
 def checkForEMCHistStack(subsystem, histName, skipList, selector):

@@ -1,7 +1,9 @@
-from overwatch.processing.alarms.collectors import printCollector, MailSender
+from overwatch.processing.alarms.collectors import printCollector, MailSender, SlackNotification
 from overwatch.processing.alarms.impl.andAlarm import AndAlarm
 from overwatch.processing.alarms.impl.betweenValuesAlarm import BetweenValuesAlarm
 from overwatch.processing.alarms.impl.checkLastNAlarm import CheckLastNAlarm
+from overwatch.processing.alarms.impl.meanInRangeAlarm import MeanInRangeAlarm
+
 
 
 class TrendingObjectMock:
@@ -21,15 +23,34 @@ class TrendingObjectMock:
         return self.__class__.__name__
 
 
-def alarmConfig():
-    boarderWarning = BetweenValuesAlarm(minVal=0, maxVal=50, alarmText="WARNING")
-    boarderWarning.addReceiver(printCollector)
+def alarmConfig(recipients):
+    mailSender = MailSender(recipients)
 
+    borderWarning = BetweenValuesAlarm(minVal=0, maxVal=50, alarmText="WARNING")
+    borderWarning.receivers = [printCollector, mailSender]
+
+    return [borderWarning]
+
+def alarmMeanConfig():
+    slack = SlackNotification()
     lastAlarm = CheckLastNAlarm(alarmText="ERROR")
-    lastAlarm.addReceiver(printCollector)
+    lastAlarm.receivers = [printCollector, slack]
 
-    return [boarderWarning, lastAlarm]
+    return [lastAlarm]
 
+def alarmStdConfig():
+    slack = SlackNotification()
+    meanInRangeWarning = MeanInRangeAlarm(alarmText="WARNING")
+    meanInRangeWarning.receivers = [printCollector, slack]
+
+    return [meanInRangeWarning]
+
+def alarmMaxConfig(recipients):
+    mailSender = MailSender(recipients)
+    borderWarning = BetweenValuesAlarm(minVal=0, maxVal=50, alarmText="WARNING")
+    borderWarning.receivers = [printCollector, mailSender]
+
+    return [borderWarning]
 
 def main():
     to = TrendingObjectMock(alarmConfig())
