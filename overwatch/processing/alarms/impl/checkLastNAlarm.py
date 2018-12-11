@@ -24,5 +24,5 @@ class CheckLastNAlarm(Alarm):
             return False, ''
 
         msg = "(CheckLastNAlarm): less than {} % values of last {} trending values not in [{}, {}]".format(
-            self.ratio * 10, self.N, self.minVal, self.maxVal)
+            self.ratio * 100, self.N, self.minVal, self.maxVal)
         return True, msg
