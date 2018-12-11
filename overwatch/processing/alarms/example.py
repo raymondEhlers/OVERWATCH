@@ -23,7 +23,9 @@ class TrendingObjectMock:
         return self.__class__.__name__
 
 
-def alarmConfig(recipients):
+def alarmConfig():
+    recipients = ["test1@mail", "test2@mail"]
+    
     mailSender = MailSender(recipients)
     slackSender = SlackNotification()
     borderWarning = BetweenValuesAlarm(minVal=0, maxVal=50, alarmText="WARNING")
@@ -57,7 +59,8 @@ def alarmStdConfig():
 
     return [meanInRangeWarning]
 
-def alarmMaxConfig(recipients):
+def alarmMaxConfig():
+    recipients = ["test1@mail", "test2@mail"]
     mailSender = MailSender(recipients)
     borderWarning = BetweenValuesAlarm(minVal=0, maxVal=50, alarmText="WARNING")
     borderWarning.receivers = [printCollector, mailSender]
@@ -65,8 +68,7 @@ def alarmMaxConfig(recipients):
     return [borderWarning]
 
 def main():
-    recipients = ["test1@mail", "test2@mail"]
-    to = TrendingObjectMock(alarmConfig(recipients))
+    to = TrendingObjectMock(alarmConfig())
 
     values = [3, 14, 15, 92, 65, 35, 89, 79]
     for i, val in enumerate(values):
