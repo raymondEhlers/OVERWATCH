@@ -90,11 +90,8 @@ def getTrendingObjectInfo():
         "mean": trendingObjects.MeanTrending,
         "stdDev": trendingObjects.StdDevTrending,
     }
-    recipients = {
-        "max": ["test1@mail", "test2@mail"]
-    }
     alarms = {
-        "max": alarmMaxConfig(recipients["max"]),
+        "max": alarmMaxConfig(),
         "mean": alarmMeanConfig(),
         "stdDev": alarmStdConfig()
     }
