@@ -45,7 +45,10 @@ def alarmMeanConfig():
     lastAlarm = CheckLastNAlarm(alarmText="ERROR")
     lastAlarm.receivers = [printCollector, slack]
 
-    return [lastAlarm]
+    borderWarning = BetweenValuesAlarm(minVal=0, maxVal=50, alarmText="WARNING")
+    borderWarning.receivers = [printCollector]
+
+    return [lastAlarm, borderWarning]
 
 def alarmStdConfig():
     slack = SlackNotification()

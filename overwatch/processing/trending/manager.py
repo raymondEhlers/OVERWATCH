@@ -5,7 +5,7 @@ Prepare trending part of database, create trending objects,
 notify appropriate objects about new histograms, manage processing trending histograms.
 
 .. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
-.. code-author: Artur Wolak <>, AGH University of Science and Technology
+.. code-author: Artur Wolak <awolak1996@gmail.com>, AGH University of Science and Technology
 """
 import logging
 import os
@@ -170,4 +170,4 @@ class TrendingManager(Persistent):
             if trend.alarmsMessages:
                 hist.information[trend.name] = '\n'.join(trend.alarmsMessages)
                 trend.alarmsMessages = []
-        alarmCollector.announceAlarm()
+        alarmCollector.showOnConsole()

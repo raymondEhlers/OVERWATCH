@@ -42,7 +42,7 @@ When histogram is processed and alarms are generated, they are displayed above t
 
 Each generated alarm is collected by AlarmCollector. It allows us send notifications about alarms when we want:
 after processing trending object, after processing histogram or when all histograms are processed. You have to call
-`announceAlarm()` method on alarmCollector object. AlarmCollector also groups alarms.
+`announceAlarm()` method on alarmCollector object. To print messages on console call `showOnConsole()` method.
 
 ## Emails
 

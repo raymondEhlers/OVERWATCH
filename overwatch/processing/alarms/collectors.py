@@ -1,8 +1,14 @@
+""" Alarms collectors.
+
+.. code-author: Artur Wolak <awolak1996@gmail.com>, AGH University of Science and Technology
+"""
+
 from slackclient import SlackClient
 import smtplib
 from email.mime.multipart import MIMEMultipart
 from email.mime.text import MIMEText
 import logging
+from collections import defaultdict
 
 logger = logging.getLogger(__name__)
 
@@ -133,18 +139,18 @@ class SlackNotification(Singleton):
 
 class AlarmCollector(object):
     """
-    Class that collects generated alarms. Collected alarms are grouped and announced to
+    Class that collects generated messages from alarms. Collected messages are grouped and announced to
     specified receivers.
 
     Attributes:
-        alarms (list): List of alarms. Each element is a pair [Alarm, str]
+        receivers (dict): Dictionary where key is receiver and value is generated messages form alarms
     """
 
     def __init__(self):
-        self.alarms = []
+        self.receivers = defaultdict(list)
 
-    def addAlarm(self, alarm, msg):
-        """ It adds alarm to the existing list of alarms
+    def collectMessage(self, alarm, msg):
+        """ It collects and assigns message to receivers.
 
         Args:
             alarm (Alarm): Alarm object
@@ -152,10 +158,13 @@ class AlarmCollector(object):
         Return:
             None.
         """
-        self.alarms.append((alarm, msg))
+        for receiver in alarm.receivers:
+            if receiver not in self.receivers:
+                self.receivers[receiver] = []
+            self.receivers[receiver].append(msg)
 
     def announceAlarm(self):
-        """ It sends collected and grouped messages to receivers.
+        """ It sends collected messages to receivers if it's not printCollector.
         Then resets list of alarms. It can be called anywhere:
         after processing each histogram, after each RUN, ect.
 
@@ -164,25 +173,25 @@ class AlarmCollector(object):
         Return:
             None.
         """
-        receivers = self._groupAlarms()
-        for receiver in receivers:
-            msg = '\n'.join(receivers[receiver])
-            receiver(msg)
-        self._resetCollector()
+        for receiver in self.receivers.keys():
+            if receiver != printCollector:
+                msg = '\n'.join(self.receivers[receiver])
+                receiver(msg)
+                self.receivers.pop(receiver)
 
-    def _resetCollector(self):
-        self.alarms = []
+    def showOnConsole(self):
+        """ Prints generated messages on console.
+        Can be called anywhere.
 
-    def _groupAlarms(self):
-        receivers = {}
-        for alarmMsg in self.alarms:
-            alarm = alarmMsg[0]
-            msg = alarmMsg[1]
-            for receiver in alarm.receivers:
-                if receiver not in receivers:
-                    receivers[receiver] = []
-                receivers[receiver].append(msg)
-        return receivers
+        Args:
+            None.
+        Return:
+            None.
+        """
+        if printCollector in self.receivers:
+            msg = self.receivers.pop(printCollector)
+            msg = '\n'.join(msg)
+            printCollector(msg)
 
 
 alarmCollector = AlarmCollector()
