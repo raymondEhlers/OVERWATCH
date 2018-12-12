@@ -23,13 +23,30 @@ Checks if mean from N last measurements is in the range.
 ![No alarm](./doc/meanRange3.png)
 ![Alarm](./doc/meanRange4.png)
 
-![betweenAlarm example](./doc/betweenAlarm.png)
-
 ## AbsolutePreviousValueAlarm
 
 Check if (new value - old value) is different more than delta.
 
 ![absolutePreviousValueAlarm example](./doc/absolute.png)
+
+## RelativeProviousValueAlarm
+
+Check if new value is between (previous value)/ratio and (previous value)*ratio.
+
+![No alarm](./doc/relative.png)
+![Alarm](./doc/relative1.png)
+![No alarm](./doc/relative2.png)
+![Alarm](./doc/relative3.png)
+
+
+## CheckLastNAlarm
+
+Check if minimum ratio*N last N alarms are in range.
+
+![No alarm](./doc/last.png)
+![No alarm](./doc/last1.png)
+![Alarm](./doc/last2.png)
+![No alarm](./doc/last3.png)
 
 
 ## Displaying on the webApp
@@ -41,8 +58,10 @@ When histogram is processed and alarms are generated, they are displayed above t
 # Notifications
 
 Each generated alarm is collected by AlarmCollector. It allows us send notifications about alarms when we want:
-after processing trending object, after processing histogram or when all histograms are processed. You have to call
-`announceAlarm()` method on alarmCollector object. To print messages on console call `showOnConsole()` method.
+after processing trending object, after processing histogram or when all histograms are processed. To send messages via email
+you have to call
+`announceOnEmail()` method on alarmCollector object. To print messages on console call `showOnConsole()` method. To
+send on Slack call `announceOnSlack()`
 
 ## Emails
 
@@ -75,7 +94,8 @@ slack:
 To specify alarms and receivers write for example following function:
 
 ```python
-def alarmConfig(recipients):
+def alarmConfig():
+    recipients = ["test1@mail", "test2@mail"]
     mailSender = MailSender(recipients)
     slackSender = SlackNotification()
     borderWarning = BetweenValuesAlarm(minVal=0, maxVal=50, alarmText="WARNING")
@@ -110,7 +130,8 @@ def alarmStdConfig():
 
     return [meanInRangeWarning]
 
-def alarmMaxConfig(recipients):
+def alarmMaxConfig():
+    recipients = ["test1@mail", "test2@mail"]
     mailSender = MailSender(recipients)
     borderWarning = BetweenValuesAlarm(minVal=0, maxVal=50, alarmText="WARNING")
     borderWarning.receivers = [printCollector, mailSender]
@@ -126,15 +147,9 @@ To use alarms, define them in EMC.py or other detector file in `getTrendingObjec
         "mean": trendingObjects.MeanTrending,
         "stdDev": trendingObjects.StdDevTrending,
     }
-
-    # Add email recipients
-    recipients = {
-        "max": ["test1@mail", "test2@mail"]
-    }
-
     # Assign created earlier alarms to particular trending objects
     alarms = {
-        "max": alarmMaxConfig(recipients["max"]),
+        "max": alarmMaxConfig(),
         "mean": alarmMeanConfig(),
         "stdDev": alarmStdConfig()
     }
