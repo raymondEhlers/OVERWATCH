@@ -163,10 +163,9 @@ class AlarmCollector(object):
                 self.receivers[receiver] = []
             self.receivers[receiver].append(msg)
 
-    def announceAlarm(self):
-        """ It sends collected messages to receivers if it's not printCollector.
-        Then resets list of alarms. It can be called anywhere:
-        after processing each histogram, after each RUN, ect.
+    def announceOnEmail(self):
+        """ It sends emails with collected messages to recipients defined in configuration.
+        It can be called anywhere: after processing each histogram, after each RUN, ect.
 
         Args:
             None.
@@ -174,10 +173,24 @@ class AlarmCollector(object):
             None.
         """
         for receiver in self.receivers.keys():
-            if receiver != printCollector:
+            if receiver != printCollector and receiver != SlackNotification():
                 msg = '\n'.join(self.receivers[receiver])
                 receiver(msg)
                 self.receivers.pop(receiver)
+
+    def announceOnSlack(self):
+        """ It sends collected messages on Slack.
+        Can be called anywhere.
+
+        Args:
+            None.
+        Return:
+            None.
+        """
+        if SlackNotification() in self.receivers:
+            msg = self.receivers.pop(SlackNotification())
+            msg = '\n'.join(msg)
+            SlackNotification()(msg)
 
     def showOnConsole(self):
         """ Prints generated messages on console.

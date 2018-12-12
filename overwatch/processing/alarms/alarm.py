@@ -31,7 +31,7 @@ class Alarm(object):
 
         if isAlarm:
             trend.alarmsMessages.append(msg)
-            alarmCollector.collectMessage(self, msg)
+            alarmCollector.collectMessage(self, "[{}]".format(trend.name) + msg)
         if self.parent:
             self.parent.childProcessed(child=self, result=isAlarm)
 
