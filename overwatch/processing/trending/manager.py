@@ -168,6 +168,7 @@ class TrendingManager(Persistent):
             for alarm in trend.alarms:
                 alarm.processCheck(trend)
             if trend.alarmsMessages:
-                hist.information[trend.name] = '\n'.join(trend.alarmsMessages)
+                hist.information["Alarm" + trend.name] = '\n'.join(trend.alarmsMessages)
                 trend.alarmsMessages = []
-        alarmCollector.showOnConsole()
+            alarmCollector.showOnConsole()
+        # alarmCollector.announceOnSlack()
