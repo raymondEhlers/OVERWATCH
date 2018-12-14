@@ -14,12 +14,11 @@ cmake "$SRC"                                                  \
     -Dbuiltin_pcre=ON                                         \
     -DCMAKE_CXX_COMPILER=g++                                  \
     -DCMAKE_C_COMPILER=gcc                                    \
-    -DCMAKE_LINKER=$gcc                                       \
     -DCMAKE_F_COMPILER=gfortran                               \
     -Dpgsql=OFF                                               \
     -Dminuit2=ON                                              \
     -Dpythia6_nolink=ON                                       \
-    -Droofit=ON                                               \
+    -Droofit=OFF                                              \
     -Dhttp=ON                                                 \
     -Dsoversion=ON                                            \
     -Dshadowpw=OFF                                            \
