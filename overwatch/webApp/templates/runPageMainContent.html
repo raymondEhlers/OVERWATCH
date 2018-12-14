@@ -58,12 +58,12 @@
                         {%- endif -%}
                         {% endfor -%}
                         {%- if alarms -%}
-                            <paper-button class="collapsibleContainerButton" id="collapseAlarmButton{{ hist.histName }}">
+                            <paper-button class="collapsibleContainerButton" id="collapseAlarmButton{{ hist.histName.replace("/", "") }}">
                                 <div>Alarms</div>
                             <paper-icon-button class="collapsibleContainerIcon" icon="icons:arrow-drop-down"></paper-icon-button>
                             </paper-button>
                              <iron-collapse class="collapsibleContainer"
-                                           id="collapseAlarm{{ hist.histName }}">
+                                           id="collapseAlarm{{ hist.histName.replace("/", "")  }}">
                                 {%- for trend, info in alarms.items() -%}
                                     {% for infoData in info.split('\n') %}
                                         <a href="{{ url_for("trendingPage.trending") }}" data-histname="{{ trend }}" data-histgroup="{{ subsystem.subsystem }}" style="text-decoration: none">

@@ -54,36 +54,36 @@ def getTrendingObjectInfo():
     # To quick add data we iterate over info list and example trendingObjects
     # info list has format: ["depending histogram name and also trending name", "desc"]
     infoList = [
-        ("EMCTRQA_histAmpEdgePosEMCGAHOffline", "Integrated amplitude EMCGAH patch Offline"),
-        ("EMCTRQA_histAmpEdgePosEMCGAHOnline", "Integrated amplitude EMCGAH patch Online"),
-        ("EMCTRQA_histAmpEdgePosEMCGAHRecalc", "Integrated amplitude EMCGAH patch Recalc"),
-        ("EMCTRQA_histAmpEdgePosEMCGALOnline", "Integrated amplitude EMCGAL patch Online"),
-        ("EMCTRQA_histAmpEdgePosEMCJEHOffline", "Integrated amplitude EMCJEH patch Offline"),
-        ("EMCTRQA_histAmpEdgePosEMCJEHOnline", "Integrated amplitude EMCJEH patch Online"),
-        ("EMCTRQA_histAmpEdgePosEMCJEHRecalc", "Integrated amplitude EMCJEH patch Recalc"),
-        ("EMCTRQA_histAmpEdgePosEMCJELOnline", "Integrated amplitude EMCJEL patch Online"),
-        ("EMCTRQA_histAmpEdgePosEMCL0Offline", "Integrated amplitude EMCL0 patch Offline"),
-        ("EMCTRQA_histAmpEdgePosEMCL0Online", "Integrated amplitude EMCL0 patch Online"),
-        ("EMCTRQA_histAmpEdgePosEMCL0Recalc", "Integrated amplitude EMCL0 patch Recalc"),
-        ("EMCTRQA_histEvents", "Number of events"),
-        ("EMCTRQA_histMaxEdgePosEMCGAHOffline", "Edge Position Max EMCGAH patch Offline"),
-        ("EMCTRQA_histMaxEdgePosEMCGAHOnline", "Edge Position Max EMCGAH patch Online"),
-        ("EMCTRQA_histMaxEdgePosEMCGAHRecalc", "Edge Position Max EMCGAH patch Recalc"),
-        ("EMCTRQA_histMaxEdgePosEMCGALOnline", "Edge Position Max EMCGAL patch Online"),
-        ("EMCTRQA_histMaxEdgePosEMCJEHOffline", "Edge Position Max EMCJEH patch Offline"),
-        ("EMCTRQA_histMaxEdgePosEMCJEHOnline", "Edge Position Max EMCJEH patch Online"),
-        ("EMCTRQA_histMaxEdgePosEMCJEHRecalc", "Edge Position Max EMCJEH patch Recalc"),
-        ("EMCTRQA_histMaxEdgePosEMCJELOnline", "Edge Position Max EMCJEL patch Online"),
-        ("EMCTRQA_histMaxEdgePosEMCL0Offline", "Edge Position Max EMCL0 patch Offline"),
-        ("EMCTRQA_histMaxEdgePosEMCL0Online", "Edge Position Max EMCL0 patch Online"),
-        ("EMCTRQA_histMaxEdgePosEMCL0Recalc", "Edge Position Max EMCL0 patch Recalc"),
-        ("EMCTRQA_histFastORL0", "L0 entries vs FastOR number"),
-        ("EMCTRQA_histFastORL0Amp", "L0 amplitudes vs position"),
-        ("EMCTRQA_histFastORL0LargeAmp", "L0 (amp>400) vs FastOR number"),
-        ("EMCTRQA_histFastORL0Time", "L0 trigger time vs FastOR number"),
-        ("EMCTRQA_histFastORL1", "L1 entries vs FastOR number"),
-        ("EMCTRQA_histFastORL1Amp", "L1 amplitudes"),
-        ("EMCTRQA_histFastORL1LargeAmp", "L1 (amp>400)"),
+        ("AmpEdgePosEMCGAHOffline", "Integrated amplitude EMCGAH patch Offline", ["EMCTRQA_histAmpEdgePosEMCGAHOffline"]),
+        ("AmpEdgePosEMCGAHOnline", "Integrated amplitude EMCGAH patch Online", ["EMCTRQA_histAmpEdgePosEMCGAHOnline"]),
+        ("AmpEdgePosEMCGAHRecalc", "Integrated amplitude EMCGAH patch Recalc", ["EMCTRQA_histAmpEdgePosEMCGAHRecalc"]),
+        ("AmpEdgePosEMCGALOnline", "Integrated amplitude EMCGAL patch Online", ["EMCTRQA_histAmpEdgePosEMCGALOnline"]),
+        ("AmpEdgePosEMCJEHOffline", "Integrated amplitude EMCJEH patch Offline", ["EMCTRQA_histAmpEdgePosEMCJEHOffline"]),
+        ("AmpEdgePosEMCJEHOnline", "Integrated amplitude EMCJEH patch Online", ["EMCTRQA_histAmpEdgePosEMCJEHOnline"]),
+        ("AmpEdgePosEMCJEHRecalc", "Integrated amplitude EMCJEH patch Recalc", ["EMCTRQA_histAmpEdgePosEMCJEHRecalc"]),
+        ("AmpEdgePosEMCJELOnline", "Integrated amplitude EMCJEL patch Online", ["EMCTRQA_histAmpEdgePosEMCJELOnline"]),
+        ("AmpEdgePosEMCL0Offline", "Integrated amplitude EMCL0 patch Offline", ["EMCTRQA_histAmpEdgePosEMCL0Offline"]),
+        ("AmpEdgePosEMCL0Online", "Integrated amplitude EMCL0 patch Online", ["EMCTRQA_histAmpEdgePosEMCL0Online"]),
+        ("AmpEdgePosEMCL0Recalc", "Integrated amplitude EMCL0 patch Recalc", ["EMCTRQA_histAmpEdgePosEMCL0Recalc"]),
+        ("Events", "Number of events", ["EMCTRQA_histEvents"]),
+        ("MaxEdgePosEMCGAHOffline", "Edge Position Max EMCGAH patch Offline", ["EMCTRQA_histMaxEdgePosEMCGAHOffline"]),
+        ("MaxEdgePosEMCGAHOnline", "Edge Position Max EMCGAH patch Online", ["EMCTRQA_histMaxEdgePosEMCGAHOnline"]),
+        ("MaxEdgePosEMCGAHRecalc", "Edge Position Max EMCGAH patch Recalc", ["EMCTRQA_histMaxEdgePosEMCGAHRecalc"]),
+        ("MaxEdgePosEMCGALOnline", "Edge Position Max EMCGAL patch Online", ["EMCTRQA_histMaxEdgePosEMCGALOnline"]),
+        ("MaxEdgePosEMCJEHOffline", "Edge Position Max EMCJEH patch Offline", ["EMCTRQA_histMaxEdgePosEMCJEHOffline"]),
+        ("MaxEdgePosEMCJEHOnline", "Edge Position Max EMCJEH patch Online", ["EMCTRQA_histMaxEdgePosEMCJEHOnline"]),
+        ("MaxEdgePosEMCJEHRecalc", "Edge Position Max EMCJEH patch Recalc", ["EMCTRQA_histMaxEdgePosEMCJEHRecalc"]),
+        ("MaxEdgePosEMCJELOnline", "Edge Position Max EMCJEL patch Online", ["EMCTRQA_histMaxEdgePosEMCJELOnline"]),
+        ("MaxEdgePosEMCL0Offline", "Edge Position Max EMCL0 patch Offline", ["EMCTRQA_histMaxEdgePosEMCL0Offline"]),
+        ("MaxEdgePosEMCL0Online", "Edge Position Max EMCL0 patch Online", ["EMCTRQA_histMaxEdgePosEMCL0Online"]),
+        ("MaxEdgePosEMCL0Recalc", "Edge Position Max EMCL0 patch Recalc", ["EMCTRQA_histMaxEdgePosEMCL0Recalc"]),
+        ("FastORL0", "L0 entries vs FastOR number", ["EMCTRQA_histFastORL0"]),
+        ("FastORL0Amp", "L0 amplitudes vs position", ["EMCTRQA_histFastORL0Amp"]),
+        ("FastORL0LargeAmp", "L0 (amp>400) vs FastOR number", ["EMCTRQA_histFastORL0LargeAmp"]),
+        ("FastORL0Time", "L0 trigger time vs FastOR number", ["EMCTRQA_histFastORL0Time"]),
+        ("FastORL1", "L1 entries vs FastOR number", ["EMCTRQA_histFastORL1"]),
+        ("FastORL1Amp", "L1 amplitudes", ["EMCTRQA_histFastORL1Amp"]),
+        ("FastORL1LargeAmp", "L1 (amp>400)", ["EMCTRQA_histFastORL1LargeAmp"]),
     ]
     trendingNameToObject = {
         "max": trendingObjects.MaximumTrending,
@@ -97,11 +97,11 @@ def getTrendingObjectInfo():
     }
     trendingInfo = []
     for prefix, cls in trendingNameToObject.items():
-        for dependingFile, desc in infoList:
-            infoObject = TrendingInfo(prefix + dependingFile, desc, [dependingFile], cls)
+        for name, desc, histograms in infoList:
+            ti = TrendingInfo(prefix + name, prefix + ": " + desc, histograms, cls)
             if prefix in alarms:
-                infoObject.addAlarm(alarms[prefix])
-            trendingInfo.append(infoObject)
+                ti.addAlarm(alarms[prefix])
+            trendingInfo.append(ti)
     return trendingInfo
 
 def checkForEMCHistStack(subsystem, histName, skipList, selector):
