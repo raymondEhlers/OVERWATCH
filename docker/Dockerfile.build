@@ -120,8 +120,7 @@ ENV CMAKE_BUILD_TYPE ${ROOT_CMAKE_BUILD_TYPE:-"MINSIZEREL"}
 # Install ROOT
 RUN mkdir -p ${SCRATCH}/root && cd ${SCRATCH}/root \
         && chmod +x ${SCRATCH}/buildScripts/buildRoot.sh \
-        && git clone https://github.com/root-project/root.git src \
-        && cd src && git checkout tags/v6-10-08 && cd .. \
+        && git clone --depth 1 --bracnh v6-10-08 https://github.com/root-project/root.git src \
         && mkdir build && cd build \
         && ${SCRATCH}/buildScripts/buildRoot.sh ../src /opt/root \
         && make -j2 install \
