@@ -123,7 +123,7 @@ RUN mkdir -p ${SCRATCH}/root && cd ${SCRATCH}/root \
         && git clone https://github.com/root-project/root.git src \
         && cd src && git checkout tags/v6-10-08 && cd .. \
         && mkdir build && cd build \
-        && ${SCRATCH}/buildScripts/buildRoot.sh ../src /opt/root ${PYTHON_VERSION} \
+        && ${SCRATCH}/buildScripts/buildRoot.sh ../src /opt/root \
         && make -j2 install \
         && rm -r ${SCRATCH}/root
 # Remove src and build files to keep container size down (since we can't cache the build process
