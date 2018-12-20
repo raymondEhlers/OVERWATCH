@@ -2,6 +2,26 @@
 
 Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
 
+## [1.2.4] - Unreleased
+
+### Added
+
+- Python 3.7 docker image. See: `aa97cecf`.
+
+### Changed
+
+- Updated python 3.6.6 -> 3.6.7. See: `358fed11`.
+- Reduced the cloned size of the ROOT repo when building the docker image. See: `5d9a63a7`.
+- Bumped ROOT version in the docker images to 6.14/06. See: `627381b2`.
+
+### Fixed
+
+- Fixed typos in the ROOT build script. See: `d967dda3`.
+- Blank pkgconfig directory created in the ROOT install. See: `627381b2` and the related [ROOT JIRA
+  ticket](https://sft.its.cern.ch/jira/browse/ROOT-9864).
+- Allow passing in of database information to the `processAllRuns() `to avoid database locking issue
+  when running repeated processing locally (ie without a ZEO/ZODB server). Thanks to Raquel for reporting! See: `7422451a`.
+
 ## [1.2.3] - 3 December 2018
 
 ### Added
