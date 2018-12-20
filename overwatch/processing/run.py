@@ -69,12 +69,15 @@ def run():
     handler = utilities.handleSignals()
     sleepTime = processingParameters["processingTimeToSleep"]
     logger.info("Starting processing with sleep time of {sleepTime}.".format(sleepTime = sleepTime))
+    # Create connection information here so the processing doesn't attempt to access the database
+    # each time that it runs during repeating processing, as such attempts will confuse the database lock.
+    (dbRoot, connection) = utilities.getDB(processingParameters["databaseLocation"])
     while not handler.exit.is_set():
         # Note both the time that the processing started, as well as the execution time.
         logger.info("Running processing at {time}.".format(time = pendulum.now()))
         start = timeit.default_timer()
         # Run the actual executable.
-        processRuns.processAllRuns()
+        processRuns.processAllRuns(dbRoot, connection)
         end = timeit.default_timer()
         logger.info("Processing complete in {time} seconds".format(time = end - start))
         # Only execute once if the sleep time is <= 0. Otherwise, sleep and repeat.
@@ -82,6 +85,8 @@ def run():
             handler.exit.wait(sleepTime)
         else:
             break
+
+    connection.close()
 
 if __name__ == "__main__":
     run()
