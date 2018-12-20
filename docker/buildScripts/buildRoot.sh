@@ -10,8 +10,7 @@ cmake "$SRC"                                                  \
     -Dcxx11=ON                                                \
     -Dfreetype=ON                                             \
     -Dbuiltin_freetype=OFF                                    \
-    -Dpcre=OFF                                                \
-    -Dbuiltin_pcre=ON                                         \
+    -Dpcre=ON                                                 \
     -DCMAKE_CXX_COMPILER=g++                                  \
     -DCMAKE_C_COMPILER=gcc                                    \
     -DCMAKE_F_COMPILER=gfortran                               \
