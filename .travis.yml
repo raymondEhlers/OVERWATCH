@@ -1,3 +1,4 @@
+dist: xenial
 language: python
 matrix:
     include:
@@ -6,9 +7,10 @@ matrix:
         # release as used on Travis (ie 2.7.14 on Travis vs 2.7.15 in the docker image as of Sept 2018).
         - python: 2.7
           env: DOCKER_PYTHON_VERSION=2.7.15
-        # 3.7 doesn't run flake8 or a number of other packages cleanly at the moment (as of Sept 2018).
         - python: 3.6
           env: DOCKER_PYTHON_VERSION=3.6.7
+        - python: 3.7
+          env: DOCKER_PYTHON_VERSION=3.7.1
 sudo: required
 services:
     - docker
