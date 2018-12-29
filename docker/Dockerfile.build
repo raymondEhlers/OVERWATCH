@@ -74,12 +74,13 @@ RUN npm install -g bower polymer-bundler n \
 RUN echo "daemon off;" >> /etc/nginx/nginx.conf && rm /etc/nginx/sites-enabled/default
 
 # Setup a user so we don't have to run everything as root.
-# Many packages expect root (or at least sudo to be available), so it takes a bit more care to get things setup properly.
-# If absolutely required, one can switch back to the root user temporarily, but as of Oct 2018, this shouldn't be
-# necessary for this Dockerfile.
-# We also create the overwatch home directory since it makes installing things with python (and npm(?)) much easier.
-# uid of 2143 may not follow convention, but we need to select a uid which is unlikely to be used elsewhere, so we pick something
-# far away from 500 and 1000, but not too large (which can apparently trigger a docker bug).
+# Many packages expect root (or at least sudo to be available), so it takes a bit more care to get things
+# setup properly. If absolutely required, one can switch back to the root user temporarily, but as of
+# Oct 2018, this shouldn't be necessary for this Dockerfile.
+# We also create the overwatch home directory since it makes installing things with python (and npm(?))
+# much easier. uid of 2143 may not follow convention, but we need to select a uid which is unlikely to
+# be used elsewhere, so we pick something far away from 500 and 1000, but not too large (which can
+# apparently trigger a docker bug).
 RUN groupadd -g 2143 overwatch \
         && useradd -r -u 2143 -g overwatch overwatch \
         && mkdir -p /home/overwatch \
@@ -89,10 +90,11 @@ RUN groupadd -g 2143 overwatch \
 ENV SCRATCH /opt/scratch
 RUN mkdir -p ${SCRATCH} && chown -R overwatch:overwatch /opt
 
-# Once we've installed the packages and setup the proper directories, root isn't needed. So switch to a less privileged user.
-# Furthermore, we actually want to build and install as many packages as possible as the less privileged user to ensure that
-# this user can access the files. If built as root, the file permissions may not be correct, which would require a chmod.
-# chmod on many files will increase the docker image size substantially, so it's best to avoid this if possible.
+# Once we've installed the packages and setup the proper directories, root isn't needed. So switch to a
+# less privileged user. Furthermore, we actually want to build and install as many packages as possible
+# as the less privileged user to ensure that this user can access the files. If built as root, the file
+# permissions may not be correct, which would require a chmod. chmod on many files will increase the docker
+# image size substantially, so it's best to avoid this if possible.
 USER overwatch
 
 # Provide build scripts
@@ -115,15 +117,14 @@ RUN mkdir -p ${SCRATCH}/xrootd && cd ${SCRATCH}/xrootd \
 # We set it here because we only care about the build type for ROOT (not XRootD).
 # For development, it would probably be best to be "RelWithDebInfo"
 ARG ROOT_CMAKE_BUILD_TYPE
-ENV CMAKE_BUILD_TYPE ${ROOT_CMAKE_BUILD_TYPE:-"MINSIZEREL"}
+ENV CMAKE_BUILD_TYPE ${ROOT_CMAKE_BUILD_TYPE:-"RELEASE"}
 
 # Install ROOT
 RUN mkdir -p ${SCRATCH}/root && cd ${SCRATCH}/root \
         && chmod +x ${SCRATCH}/buildScripts/buildRoot.sh \
-        && git clone https://github.com/root-project/root.git src \
-        && cd src && git checkout tags/v6-10-08 && cd .. \
+        && git clone --depth 1 --branch v6-14-06 https://github.com/root-project/root.git src \
         && mkdir build && cd build \
-        && ${SCRATCH}/buildScripts/buildRoot.sh ../src /opt/root ${PYTHON_VERSION} \
+        && ${SCRATCH}/buildScripts/buildRoot.sh ../src /opt/root \
         && make -j2 install \
         && rm -r ${SCRATCH}/root
 # Remove src and build files to keep container size down (since we can't cache the build process
@@ -132,7 +133,8 @@ RUN mkdir -p ${SCRATCH}/root && cd ${SCRATCH}/root \
 
 # AliEn Certs needed for EOS
 # The certs are not a dependency until runtime, so we can install it after XRootD and ROOT.
-# We install them last because they are mostly likely to need the update (and we would like to avoid rebuilding the above)
+# We install them last because they are mostly likely to need the update (and we would like to
+# avoid rebuilding the above)
 RUN mkdir -p /opt/scratch/alienCAs && cd /opt/scratch/alienCAs \
         && git clone https://github.com/alisw/alien-cas.git . \
         && /opt/scratch/buildScripts/buildAlienCAs.sh /opt/scratch/alienCAs /opt/alienCAs \

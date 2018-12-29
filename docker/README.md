@@ -20,7 +20,7 @@ Overwatch).
 
 The base image contains software which is heavy and/or unlikely to change, such as ROOT, XRootD, etc. It is
 build via the `Dockerfile.build` file. Each new version of the build tag will be of the form
-`overwatch-base:py3.6.6` (for python 3.6.6). Note that the base image is far too heavy to be built on Travis
+`overwatch-base:py3.6.7` (for python 3.6.7). Note that the base image is far too heavy to be built on Travis
 (for example, ROOT will often take hours to compile), so the base image must be built on another system (such
 as a developer's laptop), and then pushed to docker hub. Once updated, the standard image will use this new
 base image.
@@ -98,7 +98,7 @@ this is our external facing server, so this defaults to `0.0.0.0`.
   `OVERWATCH_EXECUTABLES` is not set, then run (for example):
 
     ```bash
-    $ docker run --rm -it -v ${PWD}/data:/opt/overwatch/data -v ${PWD}/overwatch:/opt/overwatch/overwatch -v ${PWD}/exec:/opt/overwatch/exec -e config -e gridCert -e gridKey rehlers/overwatch:latest-py3.6.6 /bin/bash
+    $ docker run --rm -it -v ${PWD}/data:/opt/overwatch/data -v ${PWD}/overwatch:/opt/overwatch/overwatch -v ${PWD}/exec:/opt/overwatch/exec -e config -e gridCert -e gridKey rehlers/overwatch:latest-py3.6.7 /bin/bash
     # In the container (note that a python socket exception is expected)
     $ overwatchDeploy -e config
     # Now everything should be all set!

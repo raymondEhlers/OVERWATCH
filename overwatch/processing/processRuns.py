@@ -804,7 +804,7 @@ def processMovedFilesIntoRuns(runs, runDict):
                     # to such a case, see ``createNewSubsystemFromMovedFilesInformation(...)``.
                     logger.warning(e.args[0])
 
-def processAllRuns():
+def processAllRuns(dbRoot = None, connection = None):
     """ Driver function for processing all available data, storing the results in a database and on disk.
 
     This function is responsible for driving all processing functionality in Overwatch. This spans from
@@ -824,8 +824,8 @@ def processAllRuns():
     - Transferring the processed data if requested.
 
     For further information on the technical details of how all of this is accomplished, see the
-    :doc:`processing README </processingReadme>`, as well as the package documentation. For further information
-    on the subsystem (detector) plug-in functionality, see
+    :doc:`processing README </processingReadme>`, as well as the package documentation. For further
+    information on the subsystem (detector) plug-in functionality, see
     the :doc:`detector subsystem and trending README </detectorPluginsReadme>`.
 
     Note:
@@ -833,13 +833,19 @@ def processAllRuns():
         information, see the :doc:`Overwatch base module README </baseReadme>`.
 
     Args:
-        None: See the note above.
+        dbRoot: Database root. Default: None. If either argument is None, this function will
+            retrieve the database information itself (and close the connection at the end).
+        connection: Database connection. Default: None. If either argument is None, this function will
+            retrieve the database information itself (and close the connection at the end).
     Returns:
         None. However, it has extensive side effects. It changes values in the database related to runs,
             subsystems, etc, as well as writing image and ``json`` files to disk.
     """
-    # Get the database.
-    (dbRoot, connection) = utilities.getDB(processingParameters["databaseLocation"])
+    # Get the database. Create the connection if necessary.
+    created_connection_in_this_function = False
+    if dbRoot is None or connection is None:
+        (dbRoot, connection) = utilities.getDB(processingParameters["databaseLocation"])
+        created_connection_in_this_function = True
 
     # Setup the runs dict by either retrieving it or recreating it.
     if "runs" in dbRoot:
@@ -1022,5 +1028,7 @@ def processAllRuns():
 
     # Ensure that any additional changes are committed and finish up with the database.
     transaction.commit()
-    connection.close()
+    # Only close the connection if we created it here.
+    if created_connection_in_this_function is True:
+        connection.close()
 
