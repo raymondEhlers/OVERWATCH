@@ -122,6 +122,8 @@ setup(
         "uwsgi",
         # Flask monitoring
         "sentry-sdk[flask]",
+        # Notifications
+        "slackclient",
     ],
 
     # Include additional files
