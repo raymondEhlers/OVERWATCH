@@ -23,6 +23,6 @@ class MeanInRangeAlarm(Alarm):
         if self.minVal < np.mean(mean) < self.maxVal:
             return False, ''
 
-        msg = "mean value of last: {n} values not in {min} {max}".format(
+        msg = "(MeanInRangeAlarm): mean of last {n} values not in [{min}, {max}]".format(
             n=self.N, min=self.minVal, max=self.maxVal)
         return True, msg

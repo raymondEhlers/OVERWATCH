@@ -1,12 +1,15 @@
-from overwatch.processing.alarms.collectors import workerMail, printCollector, httpCollector, MailSender
+from overwatch.processing.alarms.collectors import printCollector, MailSender, SlackNotification
 from overwatch.processing.alarms.impl.andAlarm import AndAlarm
 from overwatch.processing.alarms.impl.betweenValuesAlarm import BetweenValuesAlarm
+from overwatch.processing.alarms.impl.checkLastNAlarm import CheckLastNAlarm
+from overwatch.processing.alarms.impl.meanInRangeAlarm import MeanInRangeAlarm
 
 
 class TrendingObjectMock:
     def __init__(self, alarms):
         self.alarms = alarms
         self.trendedValues = []
+        self.alarmsMessages = []
 
     def addNewValue(self, val):
         self.trendedValues.append(val)
@@ -14,26 +17,66 @@ class TrendingObjectMock:
 
     def checkAlarms(self):
         for alarm in self.alarms:
-            alarm.checkAlarm(self)
+            alarm.processCheck(self)
 
     def __str__(self):
         return self.__class__.__name__
 
 
 def alarmConfig():
-    boarderWarning = BetweenValuesAlarm(minVal=0, maxVal=50, alarmText="WARNING")
-    boarderWarning.addReceiver(printCollector)
+    # recipients = ["test1@mail", "test2@mail"]
+    # mailSender = MailSender(recipients)
+    # slackSender = SlackNotification()
+
+    # for example purpose:
+    def mailSender(x):
+        printCollector("MAIL:" + x)
+
+    def slackSender(x):
+        printCollector("Slack: " + x)
+
+    borderWarning = BetweenValuesAlarm(minVal=0, maxVal=50, alarmText="WARNING")
+    borderWarning.receivers = [printCollector]
 
     borderError = BetweenValuesAlarm(minVal=0, maxVal=70, alarmText="ERROR")
-    borderError.receivers = [workerMail, httpCollector]
+    borderError.receivers = [mailSender, slackSender]
 
-    bva = BetweenValuesAlarm(minVal=0, maxVal=90, alarmText='BETWEEN')
-    # TODO add second alarm to andAlarm
-    seriousAlarm = AndAlarm([bva], "Serious Alarm")
-    cernBoss = MailSender("boss@cern")
-    seriousAlarm.addReceiver(cernBoss)
+    bva = BetweenValuesAlarm(minVal=0, maxVal=50, alarmText="BETWEEN")
+    clna = CheckLastNAlarm(minVal=0, maxVal=70, ratio=0.6, N=3, alarmText="LastN")
+    seriousAlarm = AndAlarm([bva, clna], "Serious Alarm")
+    seriousAlarm.addReceiver(mailSender)
 
-    return [boarderWarning, borderError, seriousAlarm]
+    return [borderWarning, borderError, bva, clna]
+
+
+def alarmMeanConfig():
+    slack = SlackNotification()
+    recipients = ["test@mail"]
+    mailSender = MailSender(recipients)
+    lastAlarm = CheckLastNAlarm(alarmText="ERROR")
+    lastAlarm.receivers = [printCollector, slack, mailSender]
+
+    borderWarning = BetweenValuesAlarm(minVal=0, maxVal=50, alarmText="WARNING")
+    borderWarning.receivers = [printCollector, mailSender]
+
+    return [lastAlarm, borderWarning]
+
+
+def alarmStdConfig():
+    slack = SlackNotification()
+    meanInRangeWarning = MeanInRangeAlarm(alarmText="WARNING", collector=True)
+    meanInRangeWarning.receivers = [printCollector, slack]
+
+    return [meanInRangeWarning]
+
+
+def alarmMaxConfig():
+    recipients = ["test@mail"]
+    mailSender = MailSender(recipients)
+    borderError = BetweenValuesAlarm(minVal=0, maxVal=300, alarmText="ERROR", collector=True)
+    borderError.receivers = [printCollector, mailSender]
+
+    return [borderError]
 
 
 def main():

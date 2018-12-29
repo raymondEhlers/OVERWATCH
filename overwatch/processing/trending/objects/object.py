@@ -39,6 +39,7 @@ class TrendingObject(Persistent):
         self.maxEntries = self.parameters.get(CON.ENTRIES, 100)
         self.trendedValues = self.initializeTrendingArray()
         self.alarms = []
+        self.alarmsMessages = []
 
         self.histogram = None
         # Ensure that the axis and points are drawn on the TGraph

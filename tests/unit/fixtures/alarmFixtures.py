@@ -19,6 +19,7 @@ class TrendingObjectMock:
         self.name = name
         self.alarms = []
         self.trendedValues = []
+        self.alarmsMessages = []
 
     def addNewValue(self, val):
         self.trendedValues.append(val)

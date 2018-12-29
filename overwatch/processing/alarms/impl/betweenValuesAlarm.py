@@ -7,8 +7,8 @@ from overwatch.processing.alarms.alarm import Alarm
 
 
 class BetweenValuesAlarm(Alarm):
-    def __init__(self, centerValue=50., maxDistance=50., minVal=None, maxVal=None, alarmText=''):
-        super(BetweenValuesAlarm, self).__init__(alarmText=alarmText)
+    def __init__(self, centerValue=50., maxDistance=50., minVal=None, maxVal=None, alarmText='', *args, **kwargs):
+        super(BetweenValuesAlarm, self).__init__(alarmText=alarmText, *args, **kwargs)
         self.minVal = minVal if minVal is not None else centerValue - maxDistance
         self.maxVal = maxVal if maxVal is not None else centerValue + maxDistance
 
@@ -17,5 +17,5 @@ class BetweenValuesAlarm(Alarm):
         if self.minVal <= testedValue <= self.maxVal:
             return False, ''
 
-        msg = "value: {} not in [{}, {}]".format(testedValue, self.minVal, self.maxVal)
+        msg = "(BetweenValuesAlarm): value {} not in [{}, {}]".format(testedValue, self.minVal, self.maxVal)
         return True, msg

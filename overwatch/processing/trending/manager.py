@@ -5,7 +5,7 @@ Prepare trending part of database, create trending objects,
 notify appropriate objects about new histograms, manage processing trending histograms.
 
 .. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
-.. code-author: Artur Wolak <>, AGH University of Science and Technology
+.. code-author: Artur Wolak <awolak1996@gmail.com>, AGH University of Science and Technology
 """
 import logging
 import os
@@ -17,6 +17,8 @@ from persistent import Persistent
 
 import overwatch.processing.pluginManager as pluginManager
 import overwatch.processing.trending.constants as CON
+from overwatch.processing.alarms.collectors import Mail, SlackNotification
+from overwatch.processing.alarms.collectors import alarmCollector
 
 logger = logging.getLogger(__name__)
 
@@ -62,6 +64,8 @@ class TrendingManager(Persistent):
         self.trendingDB = dbRoot[CON.TRENDING]  # type: BTree[str, BTree[str, TrendingObject]]
 
         self._prepareDirStructure()
+        Mail(alarmsParameters=parameters)
+        SlackNotification(alarmsParameters=parameters)
 
     def _prepareDirStructure(self):
         trendingDir = os.path.join(self.parameters[CON.DIR_PREFIX], CON.TRENDING, '{{subsystemName}}', '{type}')
@@ -163,3 +167,8 @@ class TrendingManager(Persistent):
             trend.extractTrendValue(hist)
             for alarm in trend.alarms:
                 alarm.processCheck(trend)
+            if trend.alarmsMessages:
+                hist.information["Alarm" + trend.name] = '\n'.join(trend.alarmsMessages)
+                trend.alarmsMessages = []
+            alarmCollector.showOnConsole()
+        # alarmCollector.announceOnSlack()

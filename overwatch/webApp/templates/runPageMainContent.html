@@ -25,6 +25,7 @@
     {%- if selectedHistGroup == histGroup.selectionPattern or (selectedHistGroup == None and firstLoopCompleted == []) -%}
         {%- for histName in histGroup.histList -%}
             {%- set hist = subsystem.hists[histName] -%}
+            {%- set alarms = {} -%}
             {%- if selectedHist == hist.histName or selectedHist == None -%}
                 {%- if histGroup.plotInGrid == False or (histGroup.plotInGrid == True and firstLoopCompleted == []) -%}
                     {# Effective increments our counter #}
@@ -41,15 +42,41 @@
                         {%- if label == "Threshold" -%}
                             {%- if threshold.append(info) -%}{%- endif -%}
                         {%- endif -%}
-                        <paper-button class="collapsibleContainerButton" id="collapse{{ loop.index0 }}Button{{ hist.histName }}">
-                            <div>{{ label }}</div>
-                            <paper-icon-button class="collapsibleContainerIcon" icon="icons:arrow-drop-down"></paper-icon-button>
-                        </paper-button>
-                        <iron-collapse class="collapsibleContainer" id="collapse{{ loop.index0 }}{{ hist.histName }}">
-                            <div>{{ info }}</div>
-                        </iron-collapse>
-                        <br />
+                        {%- if label.startswith("Alarm") -%}
+                            {%- set trend = label.split("Alarm")[1] -%}
+                            {%- if alarms.update({trend: info}) -%}{%- endif -%}
+                        {%- else -%}
+                            <paper-button class="collapsibleContainerButton" id="collapse{{ loop.index0 }}Button{{ hist.histName }}">
+                                <div>{{ label }}</div>
+                                <paper-icon-button class="collapsibleContainerIcon" icon="icons:arrow-drop-down"></paper-icon-button>
+                            </paper-button>
+                             <iron-collapse class="collapsibleContainer"
+                                           id="collapse{{ loop.index0 }}{{ hist.histName }}">
+                                <div>{{ info }}</div>
+                            </iron-collapse>
+                            <br />
+                        {%- endif -%}
                         {% endfor -%}
+                        {%- if alarms -%}
+                            <paper-button class="collapsibleContainerButton" id="collapseAlarmButton{{ hist.histName.replace("/", "") }}">
+                                <div>Alarms</div>
+                            <paper-icon-button class="collapsibleContainerIcon" icon="icons:arrow-drop-down"></paper-icon-button>
+                            </paper-button>
+                             <iron-collapse class="collapsibleContainer"
+                                           id="collapseAlarm{{ hist.histName.replace("/", "")  }}">
+                                {%- for trend, info in alarms.items() -%}
+                                    {% for infoData in info.split('\n') %}
+                                        <a href="{{ url_for("trendingPage.trending") }}" data-histname="{{ trend }}" data-histgroup="{{ subsystem.subsystem }}" style="text-decoration: none">
+                                            <paper-button raised>
+                                                <div>{{ infoData }}</div>
+                                            </paper-button>
+                                        </a>
+                                    {% endfor -%}
+                                {% endfor -%}
+                                <div>{{ info }}</div>
+                            </iron-collapse>
+                            <br />
+                        {% endif -%}
                     {% endif -%}
                 {% endif -%}
                 {# If grid, then add class #}

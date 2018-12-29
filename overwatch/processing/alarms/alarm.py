@@ -4,6 +4,7 @@
 .. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
 """
 import numpy as np
+from overwatch.processing.alarms.collectors import alarmCollector
 
 try:
     from typing import *  # noqa
@@ -13,9 +14,10 @@ except ImportError:
     from overwatch.processing.alarms.aggregatingAlarm import AggregatingAlarm  # noqa
 
 
-class Alarm:
-    def __init__(self, alarmText=''):
+class Alarm(object):
+    def __init__(self, alarmText='', collector=None):
         self.alarmText = alarmText
+        self.collector = collector
         self.receivers = []
         self.parent = None  # type: Optional[AggregatingAlarm]
 
@@ -28,7 +30,17 @@ class Alarm:
         isAlarm, msg = result
 
         if isAlarm:
-            self._announceAlarm(msg)
+            msg = "[{alarmText}]: {msg}".format(alarmText=self.alarmText, msg=msg)
+
+            # aggregating alarms don't have trend
+            if trend:
+                trend.alarmsMessages.append(msg)
+
+            # tell collector about alarm or announce alarm itself
+            if self.collector:
+                alarmCollector.collectMessage(self, "[{trendName}]{msg}".format(trendName=trend.name, msg=msg))
+            else:
+                self._announceAlarm(msg)
         if self.parent:
             self.parent.childProcessed(child=self, result=isAlarm)
 
@@ -46,6 +58,5 @@ class Alarm:
         raise NotImplementedError
 
     def _announceAlarm(self, msg):  # type: (str) -> None
-        msg = "[{alarmText}]: {msg}".format(alarmText=self.alarmText, msg=msg)
         for receiver in self.receivers:
             receiver(msg)
