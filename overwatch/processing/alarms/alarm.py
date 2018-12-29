@@ -15,8 +15,9 @@ except ImportError:
 
 
 class Alarm(object):
-    def __init__(self, alarmText=''):
+    def __init__(self, alarmText='', collector=None):
         self.alarmText = alarmText
+        self.collector = collector
         self.receivers = []
         self.parent = None  # type: Optional[AggregatingAlarm]
 
@@ -27,11 +28,19 @@ class Alarm(object):
         args = (self.prepareTrendValues(trend),) if trend else ()
         result = self.checkAlarm(*args)
         isAlarm, msg = result
-        msg = "[{alarmText}]: {msg}".format(alarmText=self.alarmText, msg=msg)
 
         if isAlarm:
-            trend.alarmsMessages.append(msg)
-            alarmCollector.collectMessage(self, "[{}]".format(trend.name) + msg)
+            msg = "[{alarmText}]: {msg}".format(alarmText=self.alarmText, msg=msg)
+
+            # aggregating alarms don't have trend
+            if trend:
+                trend.alarmsMessages.append(msg)
+
+            # tell collector about alarm or announce alarm itself
+            if self.collector:
+                alarmCollector.collectMessage(self, "[{trendName}]{msg}".format(trendName=trend.name, msg=msg))
+            else:
+                self._announceAlarm(msg)
         if self.parent:
             self.parent.childProcessed(child=self, result=isAlarm)
 
@@ -49,6 +58,5 @@ class Alarm(object):
         raise NotImplementedError
 
     def _announceAlarm(self, msg):  # type: (str) -> None
-        msg = "[{alarmText}]: {msg}".format(alarmText=self.alarmText, msg=msg)
         for receiver in self.receivers:
             receiver(msg)

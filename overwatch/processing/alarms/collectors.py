@@ -129,9 +129,9 @@ class SlackNotification(Singleton):
         fail = "Slack not configured, couldn't send messages"
 
         if 'slack' in self.parameters:
-            self.slackClient.api_call('chat.postMessage', channel=self.channel,
-                             text=payload, username='Alarms OVERWATCH',
-                             icon_emoji=':robot_face:')
+            self.slackClient.api_call(
+                'chat.postMessage', channel=self.channel, text=payload,
+                username='Alarms OVERWATCH', icon_emoji=':robot_face:')
             logger.debug(success.format(channel=self.channel))
         else:
             logger.debug(fail)
@@ -184,7 +184,7 @@ class AlarmCollector(object):
 
         Args:
             None.
-        Return:
+        Return:split previousValue into absolute and relative
             None.
         """
         if SlackNotification() in self.receivers:

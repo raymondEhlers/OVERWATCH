@@ -7,6 +7,8 @@ import pytest
 
 from overwatch.processing.alarms.impl.absolutePreviousValueAlarm import AbsolutePreviousValueAlarm
 from overwatch.processing.alarms.impl.betweenValuesAlarm import BetweenValuesAlarm
+from overwatch.processing.alarms.impl.checkLastNAlarm import CheckLastNAlarm
+from overwatch.processing.alarms.impl.meanInRangeAlarm import MeanInRangeAlarm
 from overwatch.processing.alarms.impl.relativePreviousValueAlarm import RelativePreviousValueAlarm
 
 
