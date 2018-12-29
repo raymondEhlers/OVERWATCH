@@ -5,20 +5,27 @@
 Classes that define the structure of processing. This information can be created and processed,
 or read from file.
 
+Note:
+    For the ``__repr__`` and ``__str__`` methods defined here, they can throw ``KeyError`` for class attributes
+    if the these methods rely on ``__dict__`` and the objects have just been loaded from ZODB. Presumably, ``__dict__``
+    doesn't cause ZODB to fully load the object. To work around this issue, any methods using ``__dict__`` first
+    call some attribute (ideally, something simple) to ensure that the object is fully loaded. The result of that call
+    is ignored.
+
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 """
 
 from __future__ import print_function
 from __future__ import absolute_import
 from future.utils import iteritems
+from future.utils import itervalues
 
 # Database
 import BTrees.OOBTree
 import persistent
 
 import os
-import time
-import ruamel.yaml as yaml
+import pendulum
 import logging
 # Setup logger
 logger = logging.getLogger(__name__)
@@ -59,7 +66,7 @@ class runContainer(persistent.Persistent):
             formatted as ``Run123456``
         runNumber (int): Run number extracted from the ``runDir``.
         prettyName (str): Reformatting of the ``runDir`` for improved readability.
-        mode (bool): If true, the run data was collected in cumulative mode. See the
+        fileMode (bool): If true, the run data was collected in cumulative mode. See the
             :doc:`processing README </processingReadme>` for further information. Set via ``fileMode``.
         subsystems (BTree): Dict-like object which will contain all of the subsystem containers in
             an event. The key is the corresponding subsystem three letter name.
@@ -76,32 +83,29 @@ class runContainer(persistent.Persistent):
         self.hltMode = hltMode
 
         # Try to retrieve the HLT mode if it was not passed
-        runInfoFilePath = os.path.join(processingParameters["dirPrefix"], self.runDir, "runInfo.yaml")
+        runDirectory = os.path.join(processingParameters["dirPrefix"], self.runDir)
         if not hltMode:
-            # Use the mode from the file if it exists, or otherwise note it as undefined = "U".
-            try:
-                with open(runInfoFilePath, "r") as f:
-                    runInfo = yaml.load(f.read(), Loader = yaml.SafeLoader)
+            self.hltMode = utilities.retrieveHLTModeFromStoredRunInfo(runDirectory = runDirectory)
 
-                self.hltMode = runInfo["hltMode"]
-            except IOError:
-                # File does not exist
-                # HLT mode will have to be unknown
-                self.hltMode = "U"
+        # Write run information
+        utilities.writeRunInfoToFile(runDirectory = runDirectory, hltMode = hltMode)
 
-        # Run Information
-        # Since this is only information to save (ie it doesn't update each time the object is constructed),
-        # only write it if the file doesn't exist
-        if not os.path.exists(runInfoFilePath):
-            runInfo = {}
-            # "U" for unknown
-            runInfo["hltMode"] = hltMode if hltMode else "U"
+    def __repr__(self):
+        """ Representation of the object. """
+        # Dummy call. See note at the top of the module.
+        self.runDir
+        return "{}(runDir = {runDir}, fileMode = {mode}, hltMode = {hltMode})".format(self.__class__.__name__, **self.__dict__)
 
-            # Write information
-            if not os.path.exists(os.path.dirname(runInfoFilePath)):
-                os.makedirs(os.path.dirname(runInfoFilePath))
-            with open(runInfoFilePath, "w") as f:
-                yaml.dump(runInfo, f)
+    def __str__(self):
+        """ Print many of the elements of the object. """
+        return "{}: runDir: {runDir}, runNumber: {runNumber}, prettyName: {prettyName}, fileMode: {mode}," \
+               " subsystems: {subsystems}, hltMode: {hltMode}".format(self.__class__.__name__,
+                                                                      runDir = self.runDir,
+                                                                      runNumber = self.runNumber,
+                                                                      prettyName = self.prettyName,
+                                                                      mode = self.mode,
+                                                                      subsystems = list(self.subsystems.keys()),
+                                                                      hltMode = self.hltMode)
 
     def isRunOngoing(self):
         """ Checks if a run is ongoing.
@@ -110,6 +114,14 @@ class runContainer(persistent.Persistent):
         any of the subsystems. If they have just received a new file, then the run
         is ongoing.
 
+        Note:
+            If ``subsystem.newFile`` is false, this is not a sufficient condition to say that
+            the run has ended. This is because ``newFile`` will be set to false if the subsystem
+            didn't have a file in the most recent processing run, even if the run is still
+            ongoing. This can happen for many reasons, including if the processing is executed
+            more frequently than the data transfer rate or receiver request rate, for example.
+            However, if ``newFile`` is true, then it is sufficient to know that the run is ongoing.
+
         Args:
             None
         Returns:
@@ -117,13 +129,55 @@ class runContainer(persistent.Persistent):
         """
         returnValue = False
         try:
-            # We just take the last subsystem in a given run. Any will do
-            lastSubsystem = self.subsystems[self.subsystems.keys()[-1]]
-            returnValue = lastSubsystem.newFile
+            for subsystem in itervalues(self.subsystems):
+                if subsystem.newFile is True:
+                    # We know we have a new file, so nothing else needs to be done. Just return it.
+                    returnValue = True
+                    break
+
+            # If we haven't found a new file yet, we'll check the time stamps.
+            if returnValue is False:
+                logger.debug("Checking timestamps for whether the run in ongoing.")
+                minutesSinceLastTimestamp = self.minutesSinceLastTimestamp()
+                logger.debug("{minutesSinceLastTimestamp} minutes since the last timestamp.".format(minutesSinceLastTimestamp = minutesSinceLastTimestamp))
+                # Compare the unix timestamps with a five minute buffer period.
+                # This buffer time is arbitrarily selected, but the value is motivated by a balance to ensure
+                # that a missed file doesn't cause the run to appear over, while also not claiming that the
+                # run continues much longer than it actually does.
+                if minutesSinceLastTimestamp < 5:
+                    returnValue = True
         except KeyError:
             returnValue = False
 
         return returnValue
+
+    def minutesSinceLastTimestamp(self):
+        """ Determine the time since the last file timestamp in minutes.
+
+        Args:
+            None.
+        Returns:
+            float: Minutes since the timestamp of the most recent file. Default: -1.
+        """
+        timeSinceLastTimestamp = -1
+        try:
+            mostRecentTimestamp = -1
+            for subsystem in itervalues(self.subsystems):
+                newestFile = subsystem.files[subsystem.files.keys()[-1]]
+                if newestFile.fileTime > mostRecentTimestamp:
+                    mostRecentTimestamp = newestFile.fileTime
+
+            # The timestamps of the files are set in Geneva, so we need to construct the timestamp in Geneva
+            # to compare against. The proper timezone for this is "Europe/Zurich".
+            geneva = pendulum.from_timestamp(mostRecentTimestamp, tz = "Europe/Zurich")
+            now = pendulum.now()
+            # Return in minutes
+            timeSinceLastTimestamp = now.diff(geneva).in_minutes()
+        except KeyError:
+            # If there is a KeyError somewhere, we just ignore it and pass back the default value.
+            pass
+
+        return timeSinceLastTimestamp
 
     def startOfRunTimeStamp(self):
         """ Provides the start of the run time stamp in a format suitable for display.
@@ -232,7 +286,7 @@ class subsystemContainer(persistent.Persistent):
             self.fileLocationSubsystem = fileLocationSubsystem
 
         if self.showRootFiles is True and self.subsystem != self.fileLocationSubsystem:
-            logger.warning("\tIt is requested to show ROOT files for subsystem {subsystem}, but the subsystem does not have specific data files. Using HLT data files!".format(subsystem = subsystem))
+            logger.info("It is requested to show ROOT files for subsystem {subsystem}, but the subsystem does not have specific data files. Using HLT data files!".format(subsystem = subsystem))
 
         # Files
         # Be certain to set these after the subsystem has been created!
@@ -243,21 +297,13 @@ class subsystemContainer(persistent.Persistent):
         self.combinedFile = None
 
         # Directories
-        # Depends on whether the subsystem actually contains the files!
-        self.baseDir = os.path.join(runDir, self.fileLocationSubsystem)
-        self.imgDir = os.path.join(self.baseDir, "img")
-        self.jsonDir = os.path.join(self.baseDir, "json")
-        # Ensure that they exist
-        if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.imgDir)):
-            os.makedirs(os.path.join(processingParameters["dirPrefix"], self.imgDir))
-        if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.jsonDir)):
-            os.makedirs(os.path.join(processingParameters["dirPrefix"], self.jsonDir))
+        self.setupDirectories(runDir)
 
         # Times
         self.startOfRun = startOfRun
         self.endOfRun = endOfRun
         # The run length is in minutes
-        self.runLength = (endOfRun - startOfRun) // 60
+        self.runLength = self.calculateRunLength()
 
         # Histograms
         self.histGroups = persistent.list.PersistentList()
@@ -279,21 +325,91 @@ class subsystemContainer(persistent.Persistent):
         # Processing options
         self.processingOptions = persistent.mapping.PersistentMapping()
 
+    def calculateRunLength(self, startOfRun = None, endOfRun = None):
+        """ Helper function to update the run length.
+
+        Note:
+            The run length is defined in minutes.
+
+        Args:
+            startOfRun (int): Start of the run in unix time. Default: ``None``. If not specified,
+                the ``startOfRun`` stored in the subsystem will be used.
+            endOfRun (int): End of the run in unix time. Default: ``None``. If not specified,
+                the ``startOfRun`` stored in the subsystem will be used.
+        Returns:
+            int: The calculated run length in minutes.
+        """
+        if startOfRun is None:
+            startOfRun = self.startOfRun
+        if endOfRun is None:
+            endOfRun = self.endOfRun
+        # The run length is in minutes
+        runLength = (endOfRun - startOfRun) // 60
+        return runLength
+
+    def setupDirectories(self, runDir):
+        """ Helper function to setup the subsystem directories.
+
+        Defines the base, img, and JSON directories, as well as creating the them if necessary.
+
+        Args:
+            runDir (str): String containing the run number. For an example run 123456, it should be
+                formatted as ``Run123456``
+        Returns:
+            None. However, it sets the ``baseDir``, ``imgDir``, and ``jsonDir`` properties of the ``subsystemContainer``.
+        """
+        # Depends on whether the subsystem actually contains the files!
+        self.baseDir = os.path.join(runDir, self.fileLocationSubsystem)
+        self.imgDir = os.path.join(self.baseDir, "img")
+        self.jsonDir = os.path.join(self.baseDir, "json")
+        # Ensure that they exist
+        if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.imgDir)):
+            os.makedirs(os.path.join(processingParameters["dirPrefix"], self.imgDir))
+        if not os.path.exists(os.path.join(processingParameters["dirPrefix"], self.jsonDir)):
+            os.makedirs(os.path.join(processingParameters["dirPrefix"], self.jsonDir))
+
+    def __repr__(self):
+        """ Representation of the object. """
+        return "{}(subsystem = {subsystem}, runDir = {runDir}, startOfRun = {startOfRun}," \
+               " endOfRun = {endOfRun}, showRootFiles = {showRootFiles}," \
+               " fileLocationSubsystem = {fileLocationSubsystem})".format(self.__class__.__name__,
+                                                                          subsystem = self.subsystem,
+                                                                          runDir = os.path.dirname(self.baseDir),
+                                                                          startOfRun = self.startOfRun,
+                                                                          endOfRun = self.endOfRun,
+                                                                          showRootFiles = self.showRootFiles,
+                                                                          fileLocationSubsystem = self.fileLocationSubsystem)
+
+    def __str__(self):
+        """ Print many of the elements of the object. """
+        return "{}: subsystem: {subsystem}, fileLocationSubsystem: {fileLocationSubsystem}," \
+               " showRootFiles: {showRootFiles}, startOfRun: {startOfRun}, endOfRun: {endOfRun}," \
+               " newFile: {newFile}, hists: {hists}".format(self.__class__.__name__,
+                                                            subsystem = self.subsystem,
+                                                            fileLocationSubsystem = self.fileLocationSubsystem,
+                                                            showRootFiles = self.showRootFiles,
+                                                            startOfRun = self.startOfRun,
+                                                            endOfRun = self.endOfRun,
+                                                            newFile = self.newFile,
+                                                            hists = list(self.hists.keys()))
+
     @staticmethod
     def prettyPrintUnixTime(unixTime):
         """ Converts the given time stamp into an appropriate manner ("pretty") for display.
 
-        Needed mostly in Jinja templates were arbitrary functions are not allowed.
+        The time is returned in the format: "Tuesday, 6 Nov 2018 20:55:10". This function is
+        mainly needed in Jinja templates were arbitrary functions are not allowed.
+
+        Note:
+            We display this in the CERN time zone, so we convert it here to that timezone.
 
         Args:
             unixTime (int): Unix time to be converted.
         Returns:
             str: The time stamp converted into an appropriate manner for display.
         """
-        timeStruct = time.gmtime(unixTime)
-        timeString = time.strftime("%A, %d %b %Y %H:%M:%S", timeStruct)
-
-        return timeString
+        d = pendulum.from_timestamp(unixTime, tz = "Europe/Zurich")
+        return d.format("dddd, D MMM YYYY HH:mm:ss")
 
     def resetContainer(self):
         """ Clear the stored hist information so we can recreate (reprocess) the subsystem.
@@ -310,7 +426,6 @@ class subsystemContainer(persistent.Persistent):
         self.histsInFile.clear()
         self.histsAvailable.clear()
         self.hists.clear()
-
 
 class timeSliceContainer(persistent.Persistent):
     """ Time slice information container.
@@ -372,6 +487,30 @@ class timeSliceContainer(persistent.Persistent):
         # This allows us return full processing when appropriate
         # Same as the type of options implemented in the subsystemContainer!
         self.processingOptions = persistent.mapping.PersistentMapping()
+
+    def __repr__(self):
+        """ Representation of the object. """
+        # Dummy call. See note at the top of the module.
+        self.minUnixTimeRequested
+        return "{}(minUnixTimeRequested = {minUnixTimeRequested}, maxUnixTimeRequested = {maxUnixTimeRequested}," \
+               " minUnixTimeAvailable = {minUnixTimeAvailable}, maxUnixTimeAvailable = {maxUnixTimeAvailable}," \
+               " startOfRun = {startOfRun}, filesToMerge = {filesToMerge}," \
+               " optionsHash = {optionsHash}".format(self.__class__.__name__, **self.__dict__)
+
+    def __str__(self):
+        """ Print many of the elements of the object. """
+        return "{}: minUnixTimeRequested = {minUnixTimeRequested}, maxUnixTimeRequested = {maxUnixTimeRequested}," \
+               " minUnixTimeAvailable = {minUnixTimeAvailable}, maxUnixTimeAvailable = {maxUnixTimeAvailable}," \
+               " filenamePrefix: {filenamePrefix}, startOfRun = {startOfRun}, filesToMerge = {filesToMerge}," \
+               " optionsHash = {optionsHash}".format(self.__class__.__name__,
+                                                     minUnixTimeRequested = self.minUnixTimeRequested,
+                                                     maxUnixTimeRequested = self.maxUnixTimeRequested,
+                                                     minUnixTimeAvailable = self.minUnixTimeAvailable,
+                                                     maxUnixTimeAvailable = self.maxUnixTimeAvailable,
+                                                     filenamePrefix = self.filenamePrefix,
+                                                     startOfRun = self.startOfRun,
+                                                     filesToMerge = self.filesToMerge,
+                                                     optionsHash = self.optionsHash)
 
     def timeInMinutes(self, inputTime):
         """ Return the time from the input unix time to the start of the run in minutes.
@@ -446,6 +585,19 @@ class fileContainer(persistent.Persistent):
             # Show a clearly invalid time, since timeIntoRun doesn't make much sense for a time slice
             self.timeIntoRun = -1
 
+    def __repr__(self):
+        """ Representation of the object. """
+        return "{}(filename = {filename}, startOfRun = {startOfRun})".format(self.__class__.__name__,
+                                                                             filename = self.filename,
+                                                                             startOfRun = self.fileTime - self.timeIntoRun)
+
+    def __str__(self):
+        """ Print the elements of the object. """
+        # Dummy call. See note at the top of the module.
+        self.filename
+        return "{}: filename = {filename}, combinedFile: {combinedFile}, timeSlice: {timeSlice}," \
+               " fileTime: {fileTime}, timeIntoRun: {timeIntoRun}".format(self.__class__.__name__, **self.__dict__)
+
 class histogramGroupContainer(persistent.Persistent):
     """ Organizes similar histograms into groups for processing and display.
 
@@ -483,6 +635,21 @@ class histogramGroupContainer(persistent.Persistent):
             self.plotInGrid = True
         else:
             self.plotInGrid = False
+
+    def __repr__(self):
+        """ Representation of the object. """
+        # Dummy call. See note at the top of the module.
+        self.prettyName
+        return "{}(prettyName = {prettyName}, groupSelectionPattern = {groupSelectionPattern}," \
+               " plotInGridSelectionPattern = {plotInGridSelectionPattern}".format(self.__class__.__name__, **self.__dict__)
+
+    def __str__(self):
+        """ Print the elements of the object. """
+        # Dummy call. See note at the top of the module.
+        self.prettyName
+        return "{}: prettyName = {prettyName}, groupSelectionPattern = {groupSelectionPattern}," \
+               " plotInGridSelectionPattern = {plotInGridSelectionPattern}, histList: {histList}," \
+               " plotInGrid: {plotInGrid}".format(self.__class__.__name__, **self.__dict__)
 
 class histogramContainer(persistent.Persistent):
     """ Histogram information container.
@@ -555,6 +722,21 @@ class histogramContainer(persistent.Persistent):
         self.functionsToApply = persistent.list.PersistentList()
         # Trending objects which use this histogram
         self.trendingObjects = persistent.list.PersistentList()
+
+    def __repr__(self):
+        """ Representation of the object. """
+        # Dummy call. See note at the top of the module.
+        self.histName
+        return "{}(histName = {histName}, histList = {histList}, prettyName = {prettyName})".format(self.__class__.__name__, **self.__dict__)
+
+    def __str__(self):
+        """ Print many of the elements of the object. """
+        # Dummy call. See note at the top of the module.
+        self.histName
+        return "{}: histName = {histName}, histList = {histList}, prettyName = {prettyName}," \
+               " information: {information}, hist: {hist}, histType: {histType}, drawOptions: {drawOptions}," \
+               " canvas: {canvas}, projectionFunctionsToApply: {projectionFunctionsToApply}," \
+               " functionsToApply: {functionsToApply}".format(self.__class__.__name__, **self.__dict__)
 
     def retrieveHistogram(self, ROOT, fIn = None, trending = None):
         """ Retrieve the histogram from the given file or trending container.

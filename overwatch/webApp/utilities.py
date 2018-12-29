@@ -85,7 +85,7 @@ class PolymerBundler(webassets.filter.ExternalTool):
             "--strip-comments",
             #"--out-html",
             #os.path.join(serverParameters["staticFolder"], "{output}.tmp".format(**kwargs)),
-            "--in-html",
+            # NOTE: It appears that ``--in-html`` is not a valid option anyonre. The input file should just be the last argument.
             os.path.join(serverParameters["staticFolder"], "{source}".format(**kwargs))
         ]
 

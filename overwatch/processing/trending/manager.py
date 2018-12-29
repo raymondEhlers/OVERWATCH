@@ -1,3 +1,12 @@
+#!/usr/bin/env python
+""" Class for management of trends.
+
+Prepare trending part of database, create trending objects,
+notify appropriate objects about new histograms, manage processing trending histograms.
+
+.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+.. code-author: Artur Wolak <awolak1996@gmail.com>, AGH University of Science and Technology
+"""
 import logging
 import os
 from collections import defaultdict
@@ -8,6 +17,8 @@ from persistent import Persistent
 
 import overwatch.processing.pluginManager as pluginManager
 import overwatch.processing.trending.constants as CON
+from overwatch.processing.alarms.collectors import Mail, SlackNotification
+from overwatch.processing.alarms.collectors import alarmCollector
 
 logger = logging.getLogger(__name__)
 
@@ -16,6 +27,7 @@ try:
 except ImportError:
     pass
 else:
+    # Needed for typing information
     from persistent.mapping import PersistentMapping  # noqa
     from overwatch.processing.processingClasses import histogramContainer  # noqa
     from overwatch.processing.trending.info import TrendingInfo  # noqa
@@ -52,6 +64,8 @@ class TrendingManager(Persistent):
         self.trendingDB = dbRoot[CON.TRENDING]  # type: BTree[str, BTree[str, TrendingObject]]
 
         self._prepareDirStructure()
+        Mail(alarmsParameters=parameters)
+        SlackNotification(alarmsParameters=parameters)
 
     def _prepareDirStructure(self):
         trendingDir = os.path.join(self.parameters[CON.DIR_PREFIX], CON.TRENDING, '{{subsystemName}}', '{type}')
@@ -115,6 +129,7 @@ class TrendingManager(Persistent):
 
     def resetDB(self):  # TODO not used - is it needed?
         self.trendingDB.clear()
+        self._prepareDirStructure()
 
     def processTrending(self):
         """ Process the trending objects.
@@ -141,6 +156,7 @@ class TrendingManager(Persistent):
 
         It loops over trending objects to which histogram is subscribed to and calls function that extracts
         trended value from histogram e.g. mean, standard deviation (depending on trending object).
+        Then check alarms.
 
         Args:
             hist (histogramContainer): Histogram which is processed.
@@ -149,3 +165,10 @@ class TrendingManager(Persistent):
         """
         for trend in self.histToTrending.get(hist.histName, []):
             trend.extractTrendValue(hist)
+            for alarm in trend.alarms:
+                alarm.processCheck(trend)
+            if trend.alarmsMessages:
+                hist.information["Alarm" + trend.name] = '\n'.join(trend.alarmsMessages)
+                trend.alarmsMessages = []
+            alarmCollector.showOnConsole()
+        # alarmCollector.announceOnSlack()

@@ -32,8 +32,9 @@ ROOT.gROOT.SetBatch(True)
 ROOT.gROOT.ProcessLine("gErrorIgnoreLevel = kWarning;")
 
 # General includes
-import os
+import copy
 import hashlib
+import os
 import uuid
 import logging
 logger = logging.getLogger(__name__)
@@ -175,7 +176,7 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
                     break
 
             # See if we've classified successfully.
-            logger.info("{subsystem} hist: {histName} - classified: {classifiedHist}".format(subsystem = subsystem.subsystem, histName = hist.histName, classifiedHist = classifiedHist))
+            logger.debug("{subsystem} hist: {histName} - classified: {classifiedHist}".format(subsystem = subsystem.subsystem, histName = hist.histName, classifiedHist = classifiedHist))
 
             if classifiedHist:
                 # Determine the processing functions to apply
@@ -203,10 +204,23 @@ def processRootFile(filename, outputFormatting, subsystem, processingOptions = N
             hist = subsystem.hists[histName]
             retrievedHist = hist.retrieveHistogram(fIn = fIn, ROOT = ROOT)
             if not retrievedHist:
-                logger.warning("Could not retrieve histogram for hist {}, histList: {}".format(hist.histName, hist.histList))
+                # We first log at info level so the information is available, and then we fire a warning
+                # at the warning level. We've split these up so that the warning doesn't end up as a different
+                # entry in sentry for every different histogram.
+                logger.info("Could not retrieve histogram for hist {}, histList: {}".format(hist.histName, hist.histList))
+                # Disable the warning level log - it seems that this can happen at times when a file just lacks
+                # the file for whatever reason (even if it was present before in the same). The best we can do is log
+                # it internally (ie not to sentry) and continue.
+                #logger.warning("Could not retrieve histogram!")
                 continue
             processHist(subsystem = subsystem, hist = hist, canvas = canvas, outputFormatting = outputFormatting,
                         processingOptions = processingOptions, trendingManager = trendingManager)
+
+    # Delete the canvas. Although ROOT will mostly likely handle this eventually, the
+    # garbage collection doesn't have to happen immediately. So we help it out by explictly
+    # calling delete (which appears to delete object in some basic tests, even as far as ROOT
+    # is concerned).
+    del canvas
 
     # Since we are done, we can cleanup by closing the file.
     fIn.Close()
@@ -431,7 +445,7 @@ def validateAndCreateNewTimeSlice(run, subsystem, minTimeMinutes, maxTimeMinutes
     filesToMerge = []
     for fileCont in subsystem.files.values():
         #logger.info("fileCont.fileTime: {fileTime}, minTimeCutUnix: {minTimeCutUnix}, maxTimeCutUnix: {maxTimeCutUnix}".format(fileTime = fileCont.fileTime, minTimeCutUnix = minTimeCutUnix, maxTimeCutUnix = maxTimeCutUnix))
-        logger.info("fileCont.timeIntoRun (minutes): {timeIntoRun}, minTimeMinutes: {minTimeMinutes}, maxTimeMinutes: {maxTimeMinutes}".format(timeIntoRun = round(fileCont.timeIntoRun / 60), minTimeMinutes = minTimeMinutes, maxTimeMinutes = maxTimeMinutes))
+        #logger.info("fileCont.timeIntoRun (minutes): {timeIntoRun}, minTimeMinutes: {minTimeMinutes}, maxTimeMinutes: {maxTimeMinutes}".format(timeIntoRun = round(fileCont.timeIntoRun / 60), minTimeMinutes = minTimeMinutes, maxTimeMinutes = maxTimeMinutes))
         # It is important to make this check in such a way that we can round to the nearest minute.
         # This is because the exact second when the receiver records the file can vary from file to file.
         if round(fileCont.timeIntoRun / 60) >= minTimeMinutes and round(fileCont.timeIntoRun / 60) <= maxTimeMinutes and fileCont.combinedFile is False:
@@ -602,7 +616,7 @@ def createNewSubsystemFromMovedFilesInformation(runs, subsystem, runDict, runDir
     if subsystem in runDict[runDir]:
         fileLocationSubsystem = subsystem
     else:
-        # First check is applicable for an entirely new run, while the second is for # handling an
+        # First check is applicable for an entirely new run, while the second is for handling an
         # existing subsystem which where the `runDict` doesn't have any HLT files, but there may
         # already by some which exist. In particular, this may be possible if the data sync the HLT
         # receiver hasn't written it's first file yet. This shouldn't be terribly likely, but it
@@ -620,7 +634,7 @@ def createNewSubsystemFromMovedFilesInformation(runs, subsystem, runDict, runDir
     filenames = sorted(runDict[runDir][fileLocationSubsystem])
     startOfRun = utilities.extractTimeStampFromFilename(filenames[0])
     endOfRun = utilities.extractTimeStampFromFilename(filenames[-1])
-    logger.info("end of run filename: {filename}".format(filename = filenames[-1]))
+    logger.info("For subsystem {subsystem}, end of run filename: {filename}".format(subsystem = subsystem, filename = filenames[-1]))
 
     # Create the subsystem
     showRootFiles = False
@@ -660,52 +674,116 @@ def processMovedFilesIntoRuns(runs, runDict):
         None. Subsystems are created inside of the ``runContainer`` objects for which there are entries in the
             ``runDict``.
     """
+    # Copy the dict to avoid modifying the passed copy.
+    # Although it is not used after this function as of Oct 2018, since we modify the dict by adding entries for subsystems
+    # which are not their own ``fileLocationSubsystem``, as well as popping the ``hltMode``, it is safer to copy it and
+    # be certain that there are no adverse impacts.
+    runDict = copy.deepcopy(runDict)
     for runDir in runDict:
         # Remove the HLT mode so it doesn't get interpreted as a subsystem.
         hltMode = runDict[runDir].pop("hltMode")
+
+        # It was replay data, so we don't want to process it. Skip it (which will ensure that we don't create)
+        # it's corresponding subsystem) and continue.
+        if hltMode == "E":
+            continue
 
         # Update existing runs and subsystems or create new ones if necessary
         if runDir in runs:
             run = runs[runDir]
 
-            # Determine the subsystems which we want to update. When the subsystem is initially created,
-            # every subsystem that does not have its `fileLocationSubsystem` is already created. Thus, we want to
-            # update any subsystem that already exist (including those which do not have their own
-            # `fileLocationSubsystem`) or those which have new files. However, if it's somehow not included
-            # (for example, EMC files were not provided, then these won't be included).
-            # Basically, we need existing subsystems in the run, and then any which subsystems which have
-            # files in the `runDict`.
-            subsystemsToCheck = set(run.subsystems)
-            subsystemsToCheck.union(runDict[runDir])
+            # Possible scenarios that have to be handled below:
+            # - 1) runDir has new data, and the corresponding subsystem exists. -> Update the subsystem.
+            # - 1a) We received new data for a subsystem which previously didn't have it's own data, but now it does. -> Notify as having it's own files
+            #       and replace the existing ones with the existing data.
+            # - 2) runDir has new data, but subsystem doesn't exist in run container -> Create a new subsystem.
+            # - 3) runDir has new data, and it is used in a subsystem which doesn't have it's own data -> Update the subsystem with HLT files (but it will be indirect)
+            # - 4) runDir doesn't have new data, but the subsystem exists -> Do nothing.
+
+            # Handle scenario 3
+            # To handle this scenario, we basically want to copy the HLT (or other fileLocationSubsystem) files to the existing subsystem.
+            # When we are done, the run subsystems should be a subset of the runDict subsystems. The runDict subsystems could have additional subsystems
+            # if began receiving new data.
+            for name, subsystem in iteritems(run.subsystems):
+                if name not in runDict[runDir]:
+                    newFiles = []
+                    if subsystem.fileLocationSubsystem != subsystem.subsystem:
+                        # This will almost always be "HLT", but in principle it could be something else!
+                        newFiles = runDict[runDir].get(subsystem.fileLocationSubsystem, [])
+                    runDict[runDir][name] = newFiles
+
+            # Sanity check to make sure that we've in the desired state to proceed.
+            assert set(runDict[runDir]).issuperset(run.subsystems)
+
             # Update each subsystem and note that it needs to be reprocessed
-            for subsystemName in subsystemsToCheck:
-                if subsystemName in run.subsystems:
-                    logger.debug("Updating files in existing subsystem {subsystemName}.".format(subsystemName = subsystemName))
-                    # Update the existing subsystem
-                    subsystem = run.subsystems[subsystemName]
-                    # Add the new files and note them in the subsystem, which will lead to reprocessing.
-                    subsystem.newFile = True
-                    for filename in runDict[runDir][subsystemName]:
-                        # We need the full path to the file (ie everything except for the dirPrefix).
-                        filename = os.path.join(subsystem.baseDir, filename)
-                        subsystem.files[utilities.extractTimeStampFromFilename(filename)] = processingClasses.fileContainer(filename = filename, startOfRun = subsystem.startOfRun)
+            for subsystemName in runDict[runDir]:
+                # We only want to update files if there are actually new files (and not just an empty list)
+                if runDict[runDir][subsystemName]:
+                    if subsystemName in run.subsystems:
+                        # Scenario 1
+                        # Update the subsystem
+                        logger.debug("Updating files in existing subsystem {subsystemName}.".format(subsystemName = subsystemName))
+                        # Update the existing subsystem
+                        subsystem = run.subsystems[subsystemName]
+                        # First handle scenario 1A
+                        if subsystem.subsystem != subsystem.fileLocationSubsystem:
+                            # Use whether the ``fileLocationSubsystem`` name is in the first file as a proxy of whether we
+                            # have started receiving data for that subsystem.
+                            if subsystem.fileLocationSubsystem not in runDict[runDir][subsystemName][0]:
+                                logger.info("Received data for subsystem {subsystem} in run {runDir}. Switching the subsystem to having it's own data source, so: fileLocationSubsystem {fileLocationSubsystem} -> {subsystem}.".format(fileLocationSubsystem = subsystem.fileLocationSubsystem, subsystem = subsystem.subsystem, runDir = runDir))
 
-                    # Update time stamps
-                    fileKeys = subsystem.files.keys()
-                    # This should rarely change, but in principle we could get a new file that we missed.
-                    subsystem.startOfRun = fileKeys[0]
-                    logger.info("Previous EOR: {endOfRun}\tNew: {fileKey}".format(endOfRun = subsystem.endOfRun, fileKey = fileKeys[-1]))
-                    subsystem.endOfRun = fileKeys[-1]
+                                # This should happen fairly early on. If it happens later, we provide a warning.
+                                # We define fairly early as having four files.
+                                if len(subsystem.files) > 4:
+                                    logger.warning("Conversion of subsystem {subsystem} to having it's own data source is occurring later than expected! It already has {nFiles}. Continuing with conversion, but it is worth checking!".format(subsystem = subsystem.subsystem, nFiles = len(subsystem.files)))
+
+                                # Convert by changing the fileLocationSubsystem to the subsystem name and clearing
+                                # out the existing files. The new ones will be added in below.
+                                subsystem.fileLocationSubsystem = subsystem.subsystem
+                                # Also need to update the directories
+                                subsystem.setupDirectories(runDir = runDir)
+                                logger.debug("Existing files: {filenames}".format(filenames = [f.filename for f in itervalues(subsystem.files)]))
+                                subsystem.files.clear()
+                                # Also need to remove the existing combined file. A new one will be generated
+                                # and added to the subsystem.
+                                subsystem.combinedFile = None
+                                # Lastly, we need to reset the subsyste histograms - they will have changed with
+                                # a new set of files.
+                                subsystem.resetContainer()
+
+                        # Add the new files and note them in the subsystem, which will lead to reprocessing.
+                        # NOTE: Recall that the BTree that stores the files is a sorted object, so we don't
+                        #       need to worry about inserting files out of timestamp order - the new values
+                        #       will automatically be sorted by their keys, which will result in the entire
+                        #       files BTree sorted by time. This is exactly the desired structure!
+                        subsystem.newFile = True
+                        for filename in runDict[runDir][subsystemName]:
+                            # We need the full path to the file (ie everything except for the dirPrefix).
+                            filename = os.path.join(subsystem.baseDir, filename)
+                            subsystem.files[utilities.extractTimeStampFromFilename(filename)] = processingClasses.fileContainer(filename = filename, startOfRun = subsystem.startOfRun)
+
+                        # Update time stamps
+                        fileKeys = subsystem.files.keys()
+                        # The start of run time should rarely change, but in principle we could get a new file that we
+                        # missed. It also could happen if we change to a subsystem which contains it's own data source.
+                        subsystem.startOfRun = fileKeys[0]
+                        logger.debug("Previous EOR: {endOfRun}\tNew: {fileKey}".format(endOfRun = subsystem.endOfRun, fileKey = fileKeys[-1]))
+                        subsystem.endOfRun = fileKeys[-1]
+                        # Also need to update the run length based on the new timestamps
+                        subsystem.runLength = subsystem.calculateRunLength()
+                    else:
+                        # Scenario 2
+                        # Create a new subsystem in an existing run.
+                        # This may occur if a new run has started, but we haven't yet received data from each subsystem.
+                        logger.debug("Creating new subsystem {subsystemName} in existing run.".format(subsystemName = subsystemName))
+                        # NOTE: We don't catch the exception here, as we want it to fail if the subsystem doesn't have its own
+                        #       files and the HLT receiver data isn't available.
+                        createNewSubsystemFromMovedFilesInformation(runs, subsystemName, runDict, runDir)
                 else:
-                    # Create a new subsystem in an existing run.
-                    # This shouldn't be super common, as it corresponds to the case where we have
-                    # already setup a run (with all of its subsystems already created), then later received a file
-                    # from a new subsystem.
-                    logger.debug("Creating new subsystem {subsystemName} in existing run.".format(subsystemName = subsystemName))
-                    # NOTE: We don't catch the exception here, as we want it to fail if the subsystem doesn't have its own
-                    #       files and the HLT receiver data isn't available.
-                    createNewSubsystemFromMovedFilesInformation(runs, subsystemName, runDict, runDir)
-
+                    # Scenario 4
+                    # We end up here if there is now new data for subsystemName.
+                    # In that case, we have nothing to do and we just continue.
+                    logger.debug("No new data for subsystem {subsystemName}, so not updating this subsystem in the run".format(subsystemName = subsystemName))
         else:
             # The run doesn't yet exist, so we'll create a new run and new subsystems.
             # First, create the new run.
@@ -726,7 +804,7 @@ def processMovedFilesIntoRuns(runs, runDict):
                     # to such a case, see ``createNewSubsystemFromMovedFilesInformation(...)``.
                     logger.warning(e.args[0])
 
-def processAllRuns():
+def processAllRuns(dbRoot = None, connection = None):
     """ Driver function for processing all available data, storing the results in a database and on disk.
 
     This function is responsible for driving all processing functionality in Overwatch. This spans from
@@ -746,8 +824,8 @@ def processAllRuns():
     - Transferring the processed data if requested.
 
     For further information on the technical details of how all of this is accomplished, see the
-    :doc:`processing README </processingReadme>`, as well as the package documentation. For further information
-    on the subsystem (detector) plug-in functionality, see
+    :doc:`processing README </processingReadme>`, as well as the package documentation. For further
+    information on the subsystem (detector) plug-in functionality, see
     the :doc:`detector subsystem and trending README </detectorPluginsReadme>`.
 
     Note:
@@ -755,13 +833,19 @@ def processAllRuns():
         information, see the :doc:`Overwatch base module README </baseReadme>`.
 
     Args:
-        None: See the note above.
+        dbRoot: Database root. Default: None. If either argument is None, this function will
+            retrieve the database information itself (and close the connection at the end).
+        connection: Database connection. Default: None. If either argument is None, this function will
+            retrieve the database information itself (and close the connection at the end).
     Returns:
         None. However, it has extensive side effects. It changes values in the database related to runs,
             subsystems, etc, as well as writing image and ``json`` files to disk.
     """
-    # Get the database.
-    (dbRoot, connection) = utilities.getDB(processingParameters["databaseLocation"])
+    # Get the database. Create the connection if necessary.
+    created_connection_in_this_function = False
+    if dbRoot is None or connection is None:
+        (dbRoot, connection) = utilities.getDB(processingParameters["databaseLocation"])
+        created_connection_in_this_function = True
 
     # Setup the runs dict by either retrieving it or recreating it.
     if "runs" in dbRoot:
@@ -891,7 +975,7 @@ def processAllRuns():
     # in which Overwatch is operating. See more on this in the `mergeFiles` module).
     # Regardless of the mode, this will result in a single "combined" file which contains all of the
     # most up to date files.
-    # NOTE: We will only subsystems which contain new files.
+    # NOTE: We will only merge subsystems which contain new files.
     mergeFiles.mergeRootFiles(runs, processingParameters["dirPrefix"],
                               processingParameters["forceNewMerge"],
                               processingParameters["cumulativeMode"])
@@ -922,7 +1006,7 @@ def processAllRuns():
                 pass
             else:
                 # We often want to skip processing since most runs won't have new files and will not need to be processed most times.
-                logger.debug("Don't need to process {prettyName}. It has already been processed".format(prettyName = run.prettyName))
+                logger.debug("Don't need to process {prettyName} for subsystem {subsystem}. It has already been processed".format(prettyName = run.prettyName, subsystem = subsystem.subsystem))
 
         # Commit after we have successfully processed each run
         transaction.commit()
@@ -934,23 +1018,7 @@ def processAllRuns():
         trendingManager.processTrending()
         # Commit after we have successfully processed the trending
         transaction.commit()
-    logger.info("Finished trending processing!")
-
-    # Update receiver last modified time if the log exists
-    # This allows to keep track of when we last processed a new file.
-    # However, it requires that the receiver log file is available on the same machine as where the processing
-    # is performed.
-    receiverLogFileDir = os.path.join("deploy")
-    if os.path.exists(receiverLogFileDir):
-        receiverLogFilePath = os.path.join(receiverLogFileDir,
-                                           next((name for name in os.listdir(receiverLogFileDir) if "Receiver.log" in name), ""))
-        logger.debug("receiverLogFilePath: {receiverLogFilePath}".format(receiverLogFilePath = receiverLogFilePath))
-
-        # Add the receiver last modified time
-        if receiverLogFilePath and os.path.exists(receiverLogFilePath):
-            logger.debug("Updating receiver log last modified time!")
-            receiverLogLastModified = os.path.getmtime(receiverLogFilePath)
-            dbRoot["config"]["receiverLogLastModified"] = receiverLogLastModified
+        logger.info("Finished trending processing!")
 
     # Add users and secret key if debugging
     # This needs to be done manually if deploying, since this requires some care to ensure that everything is
@@ -960,5 +1028,7 @@ def processAllRuns():
 
     # Ensure that any additional changes are committed and finish up with the database.
     transaction.commit()
-    connection.close()
+    # Only close the connection if we created it here.
+    if created_connection_in_this_function is True:
+        connection.close()
 

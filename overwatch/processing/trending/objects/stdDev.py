@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+
+""" Trending object to extract the standard deviation of a histogram.
+
+.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+.. code-author: Artur Wolak <awolak1996@gmail.com>, AGH University of Science and Technology
+"""
+
 import numpy as np
 import ROOT
 

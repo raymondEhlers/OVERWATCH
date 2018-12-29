@@ -4,4 +4,5 @@
 pytest_plugins = [
     "tests.unit.fixtures.loggingPlugin",
     "tests.unit.fixtures.trendingFixtures",
+    "tests.unit.fixtures.alarmFixtures",
 ]

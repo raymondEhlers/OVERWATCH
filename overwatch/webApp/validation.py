@@ -99,6 +99,8 @@ def validateTimeSlicePostRequest(request, runs):
         hotChannelThreshold = request.form.get("hotChannelThreshold", -1, type=int)
         histGroup = convertRequestToStringWhichMayBeEmpty("histGroup", request.form)
         histName = convertRequestToStringWhichMayBeEmpty("histName", request.form)
+        # Will be set below, but we define it here so that we have valid return values.
+        inputProcessingOptions = {}
     # See: https://stackoverflow.com/a/23139085
     except KeyError as e:
         # Format is:
@@ -137,7 +139,6 @@ def validateTimeSlicePostRequest(request, runs):
         validateHistGroupAndHistName(histGroup, histName, subsystem, run, error)
 
         # Processing options
-        inputProcessingOptions = {}
         # Ensure scaleHists is a bool
         if scaleHists is not False:
             scaleHists = True

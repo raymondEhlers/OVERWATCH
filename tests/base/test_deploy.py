@@ -41,7 +41,7 @@ def testExpandEnvironmentVars(loggingMixin):
     s.write(testYaml)
     s.seek(0)
 
-    config = deploy.yaml.load(s, Loader = yaml.SafeLoader)
+    config = deploy.configModule.yaml.load(s, Loader = yaml.SafeLoader)
 
     assert config["normalVar"] == 3
     # Should have no impact because it explicitly needs to be tagged (a `$` on it's own is not enough)
@@ -70,6 +70,10 @@ def setupBasicExecutable(loggingMixin, mocker):
         tuple: (executable, expected) where executable is an executable object and expected are the expected
             parameters.
     """
+    # Mock folder creation. We want to make it a noop so we don't make a bunch of random empty folders.
+    mMakedirs = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.os.makedirs", mMakedirs)
+
     expected = {
         "name": "{label}Executable",
         "description": "Basic executable for {label}ing",
@@ -126,7 +130,7 @@ def testExecutableFromConfig(loggingMixin):
 
     assert executable.runInBackground == expected.config["runInBackground"]
     assert executable.executeTask == expected.config["enabled"]
-    assert executable.logFilename == "{name}.log".format(name = expected.name)
+    assert executable.logFilename == os.path.join("exec", "logs", "{name}.log".format(name = expected.name))
 
 @pytest.mark.parametrize("pid", [
     [],
@@ -295,7 +299,7 @@ def testStandardStartProcessWithLogs(setupStartProcessWithLog, setupBasicExecuta
     process = executable.startProcessWithLog()
 
     # Check that it was called successfully
-    mFile.assert_called_once_with("{}.log".format(expected.name), "w")
+    mFile.assert_called_once_with(os.path.join("exec", "logs", "{}.log".format(expected.name)), "a")
     mPopen.assert_called_once_with(expected.args, stderr = subprocess.STDOUT, stdout = mFile())
 
     # No need to actually mock up a subprocess.Popen class object.
@@ -415,6 +419,9 @@ def setupEnvironment(loggingMixin, mocker):
     Note:
         ROOT must be available in your environment!
     """
+    # Store a clean environment for cleanup
+    cleanEnvironment = copy.deepcopy(os.environ)
+
     # Setup
     config = {
         "environment": {
@@ -431,14 +438,11 @@ def setupEnvironment(loggingMixin, mocker):
             },
         },
     }
-    # Store (some of) the original environment variables
-    path = os.environ["PATH"]
-    ldLibraryPath = os.environ["LD_LIBRARY_PATH"]
     # Create a value for us to overwrite
     # It should be overwritten during setup()
     os.environ["overwriteVar"] = "overwrite"
-    # Ensure that the ROOTSYS that is found was actually one that was set.
-    standardROOTSYSPath = os.environ.pop("ROOTSYS")
+    # Ensure that the `ROOTSYS` that is found was actually one that was set and isn't from the existing environment.
+    os.environ.pop("ROOTSYS")
     assert "ROOTSYS" not in os.environ
     # Remove the receiver from the path if necessary
     receiverPath = config["environment"]["zmqReceiver"]["path"]
@@ -447,12 +451,9 @@ def setupEnvironment(loggingMixin, mocker):
 
     yield config
 
-    # Restore (part of) the original environment
-    os.environ["PATH"] = path
-    os.environ["LD_LIBRARY_PATH"] = ldLibraryPath
-    del os.environ["overwriteVar"]
-    if standardROOTSYSPath:
-        os.environ["ROOTSYS"] = standardROOTSYSPath
+    # Cleanup back to the original envrionemnt
+    os.environ.clear()
+    os.environ = cleanEnvironment
 
 def testEnvironment(loggingMixin, setupEnvironment, mocker):
     """ (Effectively) integration tests for configuring the environment.  """
@@ -485,10 +486,15 @@ def setupSensitiveVariables(setupEnvironment, mocker):
             "variableName": "mySSHKey",
             "writeLocation": os.path.join("/my", "ssh", "file"),
         },
-        "cert": {
+        "gridCert": {
             "enabled": False,
             "variableName": "myCert",
             "writeLocation": os.path.join("/my", "cert", "file"),
+        },
+        "gridKey": {
+            "enabled": False,
+            "variableName": "myKey",
+            "writeLocation": os.path.join("/my", "key", "file"),
         },
     }
     # Setup for the actual str to write to the environment.
@@ -511,8 +517,9 @@ def setupSensitiveVariables(setupEnvironment, mocker):
 
 @pytest.mark.parametrize("name, func", [
     ("sshKey", deploy.environment.writeSSHKeyFromVariableToFile),
-    ("cert", deploy.environment.writeCertFromVariableToFile),
-], ids = ["SSH Key", "Certficiate"])
+    ("gridCert", deploy.environment.writeGridCertFromVariableToFile),
+    ("gridKey", deploy.environment.writeGridKeyFromVariableToFile),
+], ids = ["SSH Key", "Grid certficiate", "Grid key"])
 @pytest.mark.parametrize("varEnabled", [
     None,
     False,
@@ -549,7 +556,9 @@ def testSensitiveVarFromEnvironment(name, func, varEnabled, setupSensitiveVariab
             # By writing out the calls explicitly, we can specify the order.
             mChmod.assert_has_calls([mocker.call(expectedWriteLocation, stat.S_IRUSR | stat.S_IWUSR),
                                      mocker.call(os.path.dirname(expectedWriteLocation), stat.S_IRUSR | stat.S_IWUSR | stat.S_IXUSR)])
-        else:
+        elif name == "gridCert":
+            mChmod.assert_not_called()
+        elif name == "gridKey":
             mChmod.assert_called_once_with(expectedWriteLocation, stat.S_IRUSR)
 
     # Cleanup so it doesn't interfere with other tests.
@@ -590,8 +599,9 @@ def testWriteFailureDueToExistingSensitiveFile(setupSensitiveVariables):
 
 @pytest.mark.parametrize("name, func, expectedWriteLocation", [
     ("sshKey", deploy.environment.writeSSHKeyFromVariableToFile, "~/.ssh/id_rsa"),
-    ("cert", deploy.environment.writeCertFromVariableToFile, "~/.globus/overwatchCert.pem"),
-], ids = ["SSH Key", "Certficiate"])
+    ("gridCert", deploy.environment.writeGridCertFromVariableToFile, "~/.globus/usercert.pem"),
+    ("gridKey", deploy.environment.writeGridKeyFromVariableToFile, "~/.globus/userkey.pem"),
+], ids = ["SSH Key", "Grid Certficiate", "Grid key"])
 def testWriteSensitiveParameterDefaults(setupSensitiveVariables, name, func, expectedWriteLocation):
     """ Test the defaults for writing sensitive parameters. """
     # Setup
@@ -787,6 +797,9 @@ def testZODB(loggingMixin, mocker):
     }
     executable = deploy.retrieveExecutable("zodb", config = config)
 
+    # Mock folder creation. We want to make it a noop so we don't make a bunch of random empty folders.
+    mMakedirs = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.os.makedirs", mMakedirs)
     # Mock opening the file
     mFile = mocker.mock_open()
     mocker.patch("overwatch.base.deploy.open", mFile)
@@ -860,7 +873,7 @@ def testWriteCustomOverwatchConfig(setupOverwatchExecutable, existingConfig, moc
     # Mock yaml.dump so we can check what was written.
     # (We can't check the write directly because dump writes many times!)
     mYaml = mocker.MagicMock()
-    mocker.patch("overwatch.base.deploy.yaml.dump", mYaml)
+    mocker.patch("overwatch.base.deploy.configModule.yaml.dump", mYaml)
 
     # Perform the actual setup
     executable.setup()
@@ -900,16 +913,16 @@ def testTwoOverwatchExecutablesWithCustomConfigs(loggingMixin):
     expected.update(webAppOptions["additionalOptions"])
 
     with open(filename, "r") as f:
-        generatedConfig = deploy.yaml.load(f, Loader = yaml.SafeLoader)
+        generatedConfig = deploy.configModule.yaml.load(f, Loader = yaml.SafeLoader)
 
     assert generatedConfig == expected
 
 @pytest.mark.parametrize("executableType, config, expected", [
-    ("dataTransfer", {"additionalOptions": {"testVal": True}},
+    ("dataTransfer", {"additionalOptions": {"testVal": True, "dataTransferLocations": {"EOS": "EOSpath", "rsync": "rsyncPath"}}},
      executableExpected(name = "dataTransfer",
                         description = "Overwatch receiver data transfer",
-                        args = ["overwatchReceiverDataHandling"],
-                        config = {"testVal": True})),
+                        args = ["overwatchReceiverDataTransfer"],
+                        config = {"testVal": True, "dataTransferLocations": {"EOS": "EOSpath", "rsync": "rsyncPath"}})),
     ("processing", {},
      executableExpected(name = "processing",
                         description = "Overwatch processing",
@@ -923,12 +936,12 @@ def testTwoOverwatchExecutablesWithCustomConfigs(loggingMixin):
     ("webApp", {"uwsgi": {"enabled": True}},
      executableExpected(name = "webApp",
                         description = "Overwatch web app",
-                        args = ["uwsgi", "--yaml", "data/config/webApp_uwsgi.yaml"],
+                        args = ["uwsgi", "--yaml", "exec/config/webApp_uwsgi.yaml"],
                         config = {})),
     ("webApp", {"uwsgi": {"enabled": True}, "nginx": {"enabled": True}},
      executableExpected(name = "webApp",
                         description = "Overwatch web app",
-                        args = ["uwsgi", "--yaml", "data/config/webApp_uwsgi.yaml"],
+                        args = ["uwsgi", "--yaml", "exec/config/webApp_uwsgi.yaml"],
                         config = {})),
     ("dqmReceiver", {"uwsgi": {}},
      executableExpected(name = "dqmReceiver",
@@ -959,7 +972,7 @@ def testOverwatchExecutableProperties(loggingMixin, executableType, config, expe
         executable.config["nginx"] = {
             "enabled": True,
             "webAppName": "webApp",
-            "basePath": "data/config",
+            "basePath": "exec/config",
             "sitesPath": "sites-enabled",
             "configPath": "conf.d",
         }
@@ -972,10 +985,19 @@ def testOverwatchExecutableProperties(loggingMixin, executableType, config, expe
     # Mock yaml.dump so we can check what was written.
     # (We can't check the write directly because dump writes many times!)
     mYaml = mocker.MagicMock()
-    mocker.patch("overwatch.base.deploy.yaml.dump", mYaml)
-    # Redirect nginx run to nginx setup so we don't have to mock all of run()
+    mocker.patch("overwatch.base.deploy.configModule.yaml.dump", mYaml)
+    # Mock running nginx so we don't have to mock all of run()
     mNginxRun = mocker.MagicMock()
     mocker.patch("overwatch.base.deploy.nginx.run", mNginxRun)
+    # Mock running grid toekn and ssh known hosts so we don't have to mock all of run()
+    # These are used by the data transfer module
+    mGridTokenProxy = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.gridTokenProxy.run", mGridTokenProxy)
+    mKnownHosts = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.sshKnownHosts.run", mKnownHosts)
+    # Avoid creating any new directories
+    mMakedirs = mocker.MagicMock()
+    mocker.patch("overwatch.base.deploy.os.makedirs", mMakedirs)
 
     # Perform task setup.
     executable.setup()
@@ -998,7 +1020,7 @@ def testOverwatchExecutableProperties(loggingMixin, executableType, config, expe
         # Effectively copied from the uwsgi config
         expectedConfig = {
             "vacuum": True,
-            "stats": "/tmp/sockets/wsgi_{name}_stats.sock",
+            "stats": ":9002",
             "chdir": "myDir",
             "http-socket": "127.0.0.1:8850",
             "module": "overwatch.webApp.run",
@@ -1008,7 +1030,7 @@ def testOverwatchExecutableProperties(loggingMixin, executableType, config, expe
             "threads": 2,
             "cheaper": 2,
             "master": True,
-            "master-fifo": "/tmp/sockets/wsgiMasterFifo{name}",
+            "master-fifo": "myDir/exec/sockets/wsgiMasterFifo{name}.sock",
         }
         # Format in the variables
         for k, v in iteritems(expectedConfig):
@@ -1034,11 +1056,11 @@ def testOverwatchExecutableProperties(loggingMixin, executableType, config, expe
         expectedMainNginxConfig = expectedMainNginxConfig % {"name": executable.config["nginx"]["webAppName"]}
         expectedMainNginxConfig = inspect.cleandoc(expectedMainNginxConfig)
 
-        mFile.assert_any_call(os.path.join("data", "config", "sites-enabled", "webAppNginx.conf"), "w")
+        mFile.assert_any_call(os.path.join("exec", "config", "sites-enabled", "webAppNginx.conf"), "w")
         mFile().write.assert_any_call(expectedMainNginxConfig)
 
         # We skip the gzip config contents because they're static
-        mFile.assert_any_call(os.path.join("data", "config", "conf.d", "gzip.conf"), "w")
+        mFile.assert_any_call(os.path.join("exec", "config", "conf.d", "gzip.conf"), "w")
 
 def testUwsgiExecutableRunFailure(loggingMixin):
     """ Minimal test to ensure that the uwsgi executable fails when attempting to execute it directly. """
@@ -1065,7 +1087,7 @@ def testEnableExecutablesFromEnvironmentVariables(loggingMixin, executablesToEna
     # there should be less to mock. Note that we take advantage of the reference distributed in the source.
     referenceFilename = pkg_resources.resource_filename("overwatch.base", "deployReference.yaml")
     with open(referenceFilename, "r") as f:
-        config = deploy.yaml.load(f, Loader = yaml.SafeLoader)
+        config = deploy.configModule.yaml.load(f, Loader = yaml.SafeLoader)
 
     # Setup config
     for executable in additionalExecutablesToEnable:
@@ -1113,7 +1135,7 @@ def testStartOverwatch(loggingMixin, enableSupervisor, configureFromEnvironment,
     # there should be less to mock. Note that we take advantage of the reference distributed in the source.
     referenceFilename = pkg_resources.resource_filename("overwatch.base", "deployReference.yaml")
     with open(referenceFilename, "r") as f:
-        config = deploy.yaml.load(f, Loader = yaml.SafeLoader)
+        config = deploy.configModule.yaml.load(f, Loader = yaml.SafeLoader)
 
     # Turn supervisor on or off depending on the test.
     config["supervisor"] = enableSupervisor
@@ -1125,7 +1147,7 @@ def testStartOverwatch(loggingMixin, enableSupervisor, configureFromEnvironment,
     # We don't perform this initially on the read because we need to update the configuration before
     # we turn it back into a string.
     configStr = StringIO()
-    deploy.yaml.dump(config, configStr, default_flow_style = False)
+    deploy.configModule.yaml.dump(config, configStr, default_flow_style = False)
     configStr.seek(0)
     # Convert to a standard string
     configStr = configStr.read()

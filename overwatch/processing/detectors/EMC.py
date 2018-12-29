@@ -1,4 +1,4 @@
-#/usr/bin/env python
+#!/usr/bin/env python
 
 """ EMC detector specific functionality.
 
@@ -11,6 +11,7 @@ plug-in system. These functions allow for enhanced data extraction, as well as i
 
 # Python 2/3 support
 from __future__ import print_function
+from future.utils import iteritems
 from builtins import range
 
 # General includes
@@ -32,6 +33,7 @@ from ...base import config
 
 from overwatch.processing.trending.info import TrendingInfo
 import overwatch.processing.trending.objects as trendingObjects
+from overwatch.processing.alarms.example import alarmStdConfig, alarmMaxConfig, alarmMeanConfig
 
 def getTrendingObjectInfo():
     """ Function create simple data objects - TrendingInfo, from which will be created TrendingObject.
@@ -52,48 +54,55 @@ def getTrendingObjectInfo():
     # To quick add data we iterate over info list and example trendingObjects
     # info list has format: ["depending histogram name and also trending name", "desc"]
     infoList = [
-        ("EMCTRQA_histAmpEdgePosEMCGAHOffline", "Integrated amplitude EMCGAH patch Offline"),
-        ("EMCTRQA_histAmpEdgePosEMCGAHOnline", "Integrated amplitude EMCGAH patch Online"),
-        ("EMCTRQA_histAmpEdgePosEMCGAHRecalc", "Integrated amplitude EMCGAH patch Recalc"),
-        ("EMCTRQA_histAmpEdgePosEMCGALOnline", "Integrated amplitude EMCGAL patch Online"),
-        ("EMCTRQA_histAmpEdgePosEMCJEHOffline", "Integrated amplitude EMCJEH patch Offline"),
-        ("EMCTRQA_histAmpEdgePosEMCJEHOnline", "Integrated amplitude EMCJEH patch Online"),
-        ("EMCTRQA_histAmpEdgePosEMCJEHRecalc", "Integrated amplitude EMCJEH patch Recalc"),
-        ("EMCTRQA_histAmpEdgePosEMCJELOnline", "Integrated amplitude EMCJEL patch Online"),
-        ("EMCTRQA_histAmpEdgePosEMCL0Offline", "Integrated amplitude EMCL0 patch Offline"),
-        ("EMCTRQA_histAmpEdgePosEMCL0Online", "Integrated amplitude EMCL0 patch Online"),
-        ("EMCTRQA_histAmpEdgePosEMCL0Recalc", "Integrated amplitude EMCL0 patch Recalc"),
-        ("EMCTRQA_histEvents", "Number of events"),
-        ("EMCTRQA_histMaxEdgePosEMCGAHOffline", "Edge Position Max EMCGAH patch Offline"),
-        ("EMCTRQA_histMaxEdgePosEMCGAHOnline", "Edge Position Max EMCGAH patch Online"),
-        ("EMCTRQA_histMaxEdgePosEMCGAHRecalc", "Edge Position Max EMCGAH patch Recalc"),
-        ("EMCTRQA_histMaxEdgePosEMCGALOnline", "Edge Position Max EMCGAL patch Online"),
-        ("EMCTRQA_histMaxEdgePosEMCJEHOffline", "Edge Position Max EMCJEH patch Offline"),
-        ("EMCTRQA_histMaxEdgePosEMCJEHOnline", "Edge Position Max EMCJEH patch Online"),
-        ("EMCTRQA_histMaxEdgePosEMCJEHRecalc", "Edge Position Max EMCJEH patch Recalc"),
-        ("EMCTRQA_histMaxEdgePosEMCJELOnline", "Edge Position Max EMCJEL patch Online"),
-        ("EMCTRQA_histMaxEdgePosEMCL0Offline", "Edge Position Max EMCL0 patch Offline"),
-        ("EMCTRQA_histMaxEdgePosEMCL0Online", "Edge Position Max EMCL0 patch Online"),
-        ("EMCTRQA_histMaxEdgePosEMCL0Recalc", "Edge Position Max EMCL0 patch Recalc"),
-        ("EMCTRQA_histFastORL0", "L0 entries vs FastOR number"),
-        ("EMCTRQA_histFastORL0Amp", "L0 amplitudes vs position"),
-        ("EMCTRQA_histFastORL0LargeAmp", "L0 (amp>400) vs FastOR number"),
-        ("EMCTRQA_histFastORL0Time", "L0 trigger time vs FastOR number"),
-        ("EMCTRQA_histFastORL1", "L1 entries vs FastOR number"),
-        ("EMCTRQA_histFastORL1Amp", "L1 amplitudes"),
-        ("EMCTRQA_histFastORL1LargeAmp", "L1 (amp>400)"),
+        ("AmpEdgePosEMCGAHOffline", "Integrated amplitude EMCGAH patch Offline", ["EMCTRQA_histAmpEdgePosEMCGAHOffline"]),
+        ("AmpEdgePosEMCGAHOnline", "Integrated amplitude EMCGAH patch Online", ["EMCTRQA_histAmpEdgePosEMCGAHOnline"]),
+        ("AmpEdgePosEMCGAHRecalc", "Integrated amplitude EMCGAH patch Recalc", ["EMCTRQA_histAmpEdgePosEMCGAHRecalc"]),
+        ("AmpEdgePosEMCGALOnline", "Integrated amplitude EMCGAL patch Online", ["EMCTRQA_histAmpEdgePosEMCGALOnline"]),
+        ("AmpEdgePosEMCJEHOffline", "Integrated amplitude EMCJEH patch Offline", ["EMCTRQA_histAmpEdgePosEMCJEHOffline"]),
+        ("AmpEdgePosEMCJEHOnline", "Integrated amplitude EMCJEH patch Online", ["EMCTRQA_histAmpEdgePosEMCJEHOnline"]),
+        ("AmpEdgePosEMCJEHRecalc", "Integrated amplitude EMCJEH patch Recalc", ["EMCTRQA_histAmpEdgePosEMCJEHRecalc"]),
+        ("AmpEdgePosEMCJELOnline", "Integrated amplitude EMCJEL patch Online", ["EMCTRQA_histAmpEdgePosEMCJELOnline"]),
+        ("AmpEdgePosEMCL0Offline", "Integrated amplitude EMCL0 patch Offline", ["EMCTRQA_histAmpEdgePosEMCL0Offline"]),
+        ("AmpEdgePosEMCL0Online", "Integrated amplitude EMCL0 patch Online", ["EMCTRQA_histAmpEdgePosEMCL0Online"]),
+        ("AmpEdgePosEMCL0Recalc", "Integrated amplitude EMCL0 patch Recalc", ["EMCTRQA_histAmpEdgePosEMCL0Recalc"]),
+        ("Events", "Number of events", ["EMCTRQA_histEvents"]),
+        ("MaxEdgePosEMCGAHOffline", "Edge Position Max EMCGAH patch Offline", ["EMCTRQA_histMaxEdgePosEMCGAHOffline"]),
+        ("MaxEdgePosEMCGAHOnline", "Edge Position Max EMCGAH patch Online", ["EMCTRQA_histMaxEdgePosEMCGAHOnline"]),
+        ("MaxEdgePosEMCGAHRecalc", "Edge Position Max EMCGAH patch Recalc", ["EMCTRQA_histMaxEdgePosEMCGAHRecalc"]),
+        ("MaxEdgePosEMCGALOnline", "Edge Position Max EMCGAL patch Online", ["EMCTRQA_histMaxEdgePosEMCGALOnline"]),
+        ("MaxEdgePosEMCJEHOffline", "Edge Position Max EMCJEH patch Offline", ["EMCTRQA_histMaxEdgePosEMCJEHOffline"]),
+        ("MaxEdgePosEMCJEHOnline", "Edge Position Max EMCJEH patch Online", ["EMCTRQA_histMaxEdgePosEMCJEHOnline"]),
+        ("MaxEdgePosEMCJEHRecalc", "Edge Position Max EMCJEH patch Recalc", ["EMCTRQA_histMaxEdgePosEMCJEHRecalc"]),
+        ("MaxEdgePosEMCJELOnline", "Edge Position Max EMCJEL patch Online", ["EMCTRQA_histMaxEdgePosEMCJELOnline"]),
+        ("MaxEdgePosEMCL0Offline", "Edge Position Max EMCL0 patch Offline", ["EMCTRQA_histMaxEdgePosEMCL0Offline"]),
+        ("MaxEdgePosEMCL0Online", "Edge Position Max EMCL0 patch Online", ["EMCTRQA_histMaxEdgePosEMCL0Online"]),
+        ("MaxEdgePosEMCL0Recalc", "Edge Position Max EMCL0 patch Recalc", ["EMCTRQA_histMaxEdgePosEMCL0Recalc"]),
+        ("FastORL0", "L0 entries vs FastOR number", ["EMCTRQA_histFastORL0"]),
+        ("FastORL0Amp", "L0 amplitudes vs position", ["EMCTRQA_histFastORL0Amp"]),
+        ("FastORL0LargeAmp", "L0 (amp>400) vs FastOR number", ["EMCTRQA_histFastORL0LargeAmp"]),
+        ("FastORL0Time", "L0 trigger time vs FastOR number", ["EMCTRQA_histFastORL0Time"]),
+        ("FastORL1", "L1 entries vs FastOR number", ["EMCTRQA_histFastORL1"]),
+        ("FastORL1Amp", "L1 amplitudes", ["EMCTRQA_histFastORL1Amp"]),
+        ("FastORL1LargeAmp", "L1 (amp>400)", ["EMCTRQA_histFastORL1LargeAmp"]),
     ]
     trendingNameToObject = {
         "max": trendingObjects.MaximumTrending,
         "mean": trendingObjects.MeanTrending,
         "stdDev": trendingObjects.StdDevTrending,
     }
+    alarms = {
+        "max": alarmMaxConfig(),
+        "mean": alarmMeanConfig(),
+        "stdDev": alarmStdConfig()
+    }
     trendingInfo = []
     for prefix, cls in trendingNameToObject.items():
-        for dependingFile, desc in infoList:
-            trendingInfo.append(TrendingInfo(prefix + dependingFile, desc, [dependingFile], cls))
+        for name, desc, histograms in infoList:
+            ti = TrendingInfo(prefix + name, prefix + ": " + desc, histograms, cls)
+            if prefix in alarms:
+                ti.addAlarm(alarms[prefix])
+            trendingInfo.append(ti)
     return trendingInfo
-
 
 def checkForEMCHistStack(subsystem, histName, skipList, selector):
     """ Check for and create histograms stacks from existing histograms.
@@ -205,8 +214,9 @@ def setEMCHistogramOptions(subsystem):
         # Set the histogram pretty names
         # We can remove the first 12 characters to truncate the prefix off of EMC hists.
         # NOTE: The if statement is to protect against truncating non-EMC hists
-        if "EMC" in hist.histName:
-            hist.prettyName = hist.histName[12:]
+        removePrefix = "EMCTRQA_hist"
+        if hist.histName.startswith(removePrefix):
+            hist.prettyName = hist.histName.replace(removePrefix, "")
 
         # Set `colz` for any TH2 hists
         if hist.histType.InheritsFrom(ROOT.TH2.Class()):
@@ -262,6 +272,12 @@ def createEMCHistogramGroups(subsystem):
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L1 (hits with ADC > 0)", "FastORL1_SM", "_SM"))
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L1 Amp (hits weighted with ADC value)", "FastORL1Amp_SM", "_SM"))
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("FastOR L1 Large Amp (hits above 400 ADC)", "FastORL1LargeAmp_SM", "_SM"))
+    # Cluster histograms
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("EMCal cluster level", "Cluster"))
+    # Cell ID vs Amplitude, Time
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("EMCal cell level", "hIDvs"))
+    # Median vs Median
+    subsystem.histGroups.append(processingClasses.histogramGroupContainer("EMCal vs DCal Median", "EMCalMedianVsDCalMedian"))
     # Trigger classes
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("Gamma Trigger Low", "GAL"))
     subsystem.histGroups.append(processingClasses.histogramGroupContainer("Gamma Trigger High", "GAH"))
@@ -441,6 +457,259 @@ def addTRUGrid(subsystem, hist):
     line = ROOT.TLine(24, 100, 24, 104)
     ROOT.SetOwnership(line, False)
     line.Draw()
+
+def generalClusterOptions(subsystem, hist, processingOptions, **kwargs):
+    """ Processing function for all cluster histograms.
+
+    Note:
+        We only remove the cluster name prefix to ensure that the prefix is available to help classify
+        it properly.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None. The current hist and canvas are modified.
+    """
+    hist.prettyName = hist.prettyName.replace("hCluster", "")
+
+def numberOfCellsPerCluster(subsystem, hist, processingOptions, **kwargs):
+    """ Processing function for the number of cells per cluster.
+
+    The y-axis should be plotted as log, and we set the axis labels.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None. The current hist and canvas are modified.
+    """
+    hist.prettyName = "Number of cells/cluster"
+    hist.hist.GetXaxis().SetTitle("Number of cells/cluster")
+    hist.hist.GetYaxis().SetTitle("Number")
+    hist.canvas.SetLogy(True)
+
+def clusterEnergyVsNumberOfCells(subsystem, hist, processingOptions, **kwargs):
+    """ Processing function for cluster energy vs number of cells per cluster.
+
+    We set the axis labels and set log x and z for a better representation.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None. The current hist and canvas are modified.
+    """
+    hist.prettyName = "Cluster E vs # of cells/cluster"
+    hist.hist.GetXaxis().SetTitle("Cluster Energy (GeV)")
+    hist.hist.GetYaxis().SetTitle("dN_{cells/cluster}/dE")
+    hist.canvas.SetLogx(True)
+    hist.canvas.SetLogz(True)
+
+def clusterEnergy(subsystem, hist, processingOptions, **kwargs):
+    """ Processing function for cluster energy.
+
+    Set the axis labels and log y for a clearer visualization.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None. The current hist and canvas are modified.
+    """
+    hist.prettyName = "Cluster E"
+    hist.hist.GetXaxis().SetTitle("Cluster Energy (GeV)")
+    hist.hist.GetYaxis().SetTitle("dN_{cluster}/dE")
+    hist.canvas.SetLogy(True)
+
+def clusterEnergyVsTime(subsystem, hist, processingOptions, **kwargs):
+    """ Processing function for cluster energy vs time.
+
+    Set the axis labels.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None. The current hist and canvas are modified.
+    """
+    hist.prettyName = "Cluster E vs Time"
+    hist.hist.GetXaxis().SetTitle("Cluster Energy (GeV)")
+    hist.hist.GetYaxis().SetTitle("Cluster time (ns)")
+
+def clusterEtaVsPhi(subsystem, hist, processingOptions, **kwargs):
+    """ Processing function for cluster eta vs phi.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None.
+    """
+    hist.prettyName = "Cluster Eta vs Phi"
+    # As of November 2018, the hist presentation doesn't need any modification
+    # However, we keep it here for easy implementation later.
+
+def clusterInvariantMass(subsystem, hist, processingOptions, **kwargs):
+    """ Processing function for cluster invariant mass.
+
+    Set axis labels.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None. The current hist is modified.
+    """
+    hist.prettyName = "Cluster Invariant Mass"
+    hist.hist.GetXaxis().SetTitle("M_{#gamma#gamma} (GeV/#it{c}^{2})")
+    hist.hist.GetYaxis().SetTitle("Counts/1 MeV")
+
+def clusterShape(subsystem, hist, processingOptions, **kwargs):
+    """ Processing function for cluster shape (M02 and M20).
+
+    Set the axis labels and log y for a clearer visualization.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None. The current hist and canvas are modified.
+    """
+    # Extract the 02 or 20 from the hist name.
+    label = hist.histName[-2:]
+    hist.prettyName = "Cluster M{label}".format(label = label)
+    hist.hist.GetXaxis().SetTitle("M_{{{label}}}".format(label = label))
+    hist.hist.GetYaxis().SetTitle("dN/dM_{{{label}}}".format(label = label))
+    hist.canvas.SetLogy(True)
+
+def numberOfClustersVsV0(subsystem, hist, processingOptions, **kwargs):
+    """ Processing function for number of clusters vs V0.
+
+    Set the axis range and labels, as well as log z for a clearer visualization.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None. The current hist and canvas are modified.
+    """
+    hist.prettyName = "Number of Clusters vs V0 amplitude"
+    # NOTE: As of November 2018, the ranges for both axes is too large.
+    hist.hist.GetXaxis().SetTitle("Number of clusters")
+    hist.hist.GetXaxis().SetRangeUser(0, 1000)
+    hist.hist.GetYaxis().SetTitle("V0 amplitude")
+    hist.hist.GetYaxis().SetRangeUser(0, 500)
+    hist.canvas.SetLogz(True)
+
+def cellIDVsAmplitudeLabels(subsystem, hist, processingOptions, **kwargs):
+    """ Processing function for cell ID vs amplitude.
+
+    Here, we just set the axis labels.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None. The current hist is modified.
+    """
+    hist.prettyName = "Cell ID vs Amplitude - {label}".format(label = hist.histName[-2:])
+    hist.hist.GetXaxis().SetTitle("Cell amplitude")
+    hist.hist.GetYaxis().SetTitle("Cell ID")
+
+def cellIDVsAmplitudeHighGain(subsystem, hist, processingOptions, **kwargs):
+    """ Processing function for cell ID vs amplitude for high gain cells.
+
+    Set log x and z for a clearer visualization.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None. The current canvas is modified.
+    """
+    hist.canvas.SetLogx(True)
+    hist.canvas.SetLogz(True)
+
+def cellIDVsTimeLabels(subsystem, hist, processingOptions, **kwargs):
+    """ Processing function for cell ID vs time.
+
+    Here, we just set the axis labels.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None. The current hist is modified.
+    """
+    hist.prettyName = "Cell ID vs Time - {label}".format(label = hist.histName[-2:])
+    hist.hist.GetXaxis().SetTitle("Cell time (ns)")
+    hist.hist.GetYaxis().SetTitle("Cell ID")
+
+def cellIDVsTimeHighGain(subsystem, hist, processingOptions, **kwargs):
+    """ Processing function for cell ID vs time for high gain cells.
+
+    Set log x and z for a clearer visualization.
+
+    Args:
+        subsystem (subsystemContainer): The subsystem for the current run.
+        hist (histogramContainer): The histogram being processed.
+        processingOptions (dict): Processing options to be used in this function. It may be the same
+            as the options specified in the subsystem, but it doesn't need to be, such as in the case
+            of processing for time slices.
+        **kwargs (dict): Reserved for future use.
+    Returns:
+        None. The current canvas is modified.
+    """
+    hist.canvas.SetLogz(True)
 
 def edgePosOptions(subsystem, hist, processingOptions, **kwargs):
     """ Processing function for patch edge positions histograms.
@@ -729,6 +998,36 @@ def findFunctionsForEMCHistogram(subsystem, hist, **kwargs):
         # For FEE plots, set a different range
         if "FEE" in hist.histName:
             hist.functionsToApply.append(feeSMOptions)
+
+    # Cluster histograms
+    if "hCluster" in hist.histName:
+        hist.functionsToApply.append(generalClusterOptions)
+    # We need separate functions for pretty much every histogram, so we create a map to avoid too much
+    # duplicated code.
+    clusterFunctionMap = {
+        "hClusterCells": numberOfCellsPerCluster,
+        "hClusterEneCells": clusterEnergyVsNumberOfCells,
+        "hClusterEneEMCAL": clusterEnergy,
+        "hClusterEneVsTime": clusterEnergyVsTime,
+        "hClusterEtaVsPhi": clusterEtaVsPhi,
+        "hClusterInvariantMass": clusterInvariantMass,
+        "hClusterM02": clusterShape,
+        "hClusterM20": clusterShape,
+        "hClusterNumVsV0": numberOfClustersVsV0,
+    }
+    for name, func in iteritems(clusterFunctionMap):
+        if hist.histName == name:
+            hist.functionsToApply.append(func)
+
+    # Cell ID vs Amplitude, Time
+    if "hIDvsAmp" in hist.histName:
+        hist.functionsToApply.append(cellIDVsAmplitudeLabels)
+    if hist.histName == "hIDvsAmpHG":
+        hist.functionsToApply.append(cellIDVsAmplitudeHighGain)
+    if "hIDvsTime" in hist.histName:
+        hist.functionsToApply.append(cellIDVsTimeLabels)
+    if hist.histName == "hIDvsTimeHG":
+        hist.functionsToApply.append(cellIDVsTimeHighGain)
 
     # EdgePos plots
     if "EdgePos" in hist.histName:
