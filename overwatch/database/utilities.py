@@ -1,4 +1,5 @@
 import aenum
+import os
 
 from overwatch.base import config
 from overwatch.database.mongoDatabaseFactory import MongoDatabaseFactory
@@ -19,6 +20,10 @@ def getDatabaseFactory():
             host=databaseParameters["mongoHost"],
             port=databaseParameters["mongoPort"])
     if databaseTypes[databaseType] == databaseTypes.zodb:
+        # Create target Directory if don't exist
+        dirName = os.path.join(databaseParameters["dataFolder"], "trending")
+        if not os.path.exists(dirName):
+            os.mkdir(dirName)
         return ZodbDatabaseFactory(
             databaseName=databaseParameters["databaseName"],
             databaseLocation=databaseParameters["trendingDatabaseLocation"])

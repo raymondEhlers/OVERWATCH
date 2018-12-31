@@ -13,6 +13,7 @@ from overwatch.webApp import validation
 
 logger = logging.getLogger(__name__)
 trendingPage = Blueprint('trendingPage', __name__)
+databaseFactory = getDatabaseFactory()
 
 
 def determineSubsystemName(subsystemName, trendingManager):  # type: (str, TrendingManager) -> str
@@ -49,7 +50,7 @@ def trending():
     logger.debug("request: {0}".format(request.args))
     (error, subsystemName, requestedHist, jsRoot, ajaxRequest) = validation.validateTrending(request)
 
-    trendingDatabase, _ = getDatabaseFactory().getDB()
+    trendingDatabase, _ = databaseFactory.getDB()
 
     # Create trending container from stored trending information
     trendingManager = TrendingManager(trendingDatabase, serverParameters)

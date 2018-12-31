@@ -1,3 +1,4 @@
+import os
 import zodburi
 import ZODB
 
@@ -8,8 +9,9 @@ class ZodbDatabaseFactory(DatabaseFactory):
     def __init__(self, databaseName, databaseLocation):
         DatabaseFactory.__init__(self, databaseName)
         self.databaseLocation = databaseLocation
+        self.instance = None
 
-    def getDB(self):
+    def initializeDB(self):
         # Get the database
         # See: http://docs.pylonsproject.org/projects/zodburi/en/latest/
         # storage = ZODB.FileStorage.FileStorage(os.path.join(dirPrefix,"overwatch.fs"))
