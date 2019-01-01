@@ -5,9 +5,8 @@ class Database:
         self.collection = {}
 
     def contains(self, item):
-        if self.collection:
-            return item in self.collection
-        return False
+        self.get(item)
+        return item in self.collection
 
     def get(self, item):
         if item not in self.collection:
