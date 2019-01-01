@@ -28,3 +28,8 @@ cumulativeMode: True
 # Don't include a trailing slash! (This may be mitigated by os.path calls, but not worth the
 # risk in changing it).
 dirPrefix: *dataFolder
+
+# Can be ignored during development!
+# Time to sleep (in seconds) between executing the processing. A value <= 0 will ensure
+# that the processing is only executed once. The repeated execution is used for deployment.
+processingTimeToSleep: -1

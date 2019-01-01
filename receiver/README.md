@@ -8,14 +8,21 @@ automatically if `AliRoot` is not available.
 
 To compile, from the receiver directory, run
 
-```
-mkdir build && cd build
+```bash
+$ mkdir build && cd build
 # Configure cmake and provide the software locations
 # With the options below, it will install to receiver/bin
 # Adapt the zmq location. Specifying DAlIROOT is optional.
-cmake ../ -DCMAKE_INSTALL_PREFIX="../" -DZEROMQ=/usr/local -DALIROOT="$ALICE_ROOT"
+$ cmake ../ -DCMAKE_INSTALL_PREFIX="../" -DZEROMQ=/usr/local -DALIROOT="$ALICE_ROOT"
 # Compile the executable
-make
+$ make
 # Install it
-make install
+$ make install
 ```
+
+## Heartbeat
+
+The ZMQ receivers each emit a heartbeat before request. The file is named `heartbeat.${SYS}Receiver` and
+containers the unix time stamp when the heartbeat was created. This can then be monitored via
+`overwatchZMQReceiverMonitor`, which will check those time stamps and compare them to the current time, and
+send an alert if the heartbeats are too old.

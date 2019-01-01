@@ -1,5 +1,6 @@
-{# Display histograms here #}
-<h1 id="mainContentTitle">OVERWATCH Trending</h1>
+<img src="{{ url_for("static", filename = "overwatchLogo.v1.svg") }}" class="centerLogo">
+
+<h1 id="mainContentTitle">Trending</h1>
 <hr />
 
 {# NOTE: We cannot use loop.first because we loop through many empty histGroups! #}
@@ -18,7 +19,7 @@
                 {%- set histogramContainerClasses = "histogramContainerStyle" -%}
                 <div id="{{ name }}" class="histogramContainer {% if jsRoot == True %}{{ histogramContainerClasses }}{% endif %}" data-filename="{{ jsonFilenameTemplate.format(name.replace("/", "_")) }}">
                 {% if jsRoot != True %}
-                    <img src="{{ url_for("protected", filename=imgFilenameTemplate.format(name.replace("/", "_"))) }}" alt="{{ name }}">
+                    <img src="{{ url_for("protected", filename=imgFilenameTemplate.format(name.replace("/", "_"))) }}" alt="{{ name }}" class="histogramImage">
                 {% else %}
                     {# Provide indication that we are loading jsroot content #}
                     {# It will disappear once jsroot loads the histogram #}
@@ -29,3 +30,9 @@
         {% endfor %}
     {% endif %}
 {% endfor %}
+
+{# Should only get here if nothing was selected! #}
+{%- if firstLoopCompleted == [] -%}
+    <p>Error! No trending histogram available for selected subsystem (input: {{ selectedHistGroup }}) or selected histogram (input: {{ selectedHist }})! Please try again with a different value or contact the admin!</p>
+{%- endif -%}
+

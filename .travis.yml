@@ -1,14 +1,16 @@
+dist: xenial
 language: python
 matrix:
     include:
-        # In addition to the base python version, we need the full python version to identify the docker images.
-        # It is defined as the DOCKER_PYTHON_VERSION because it may not be the same version as point release as
-        # used on Travis (ie 2.7.14 on Travis vs 2.7.15 in the docker image as of Sept 2018).
+        # In addition to the base python version, we need the full python version to identify the docker
+        # images. It is defined as the DOCKER_PYTHON_VERSION because it may not be the same version as point
+        # release as used on Travis (ie 2.7.14 on Travis vs 2.7.15 in the docker image as of Sept 2018).
         - python: 2.7
           env: DOCKER_PYTHON_VERSION=2.7.15
-        # 3.7 doesn't run flake8 or a number of other packages cleanly at the moment (as of Sept 2018).
         - python: 3.6
-          env: DOCKER_PYTHON_VERSION=3.6.6
+          env: DOCKER_PYTHON_VERSION=3.6.7
+        - python: 3.7
+          env: DOCKER_PYTHON_VERSION=3.7.1
 sudo: required
 services:
     - docker
@@ -22,17 +24,18 @@ install: pip install --upgrade -e .[tests,dev,docs]
 before_script:
     # Runs the tests in a docker container. Necessary because we can't install ROOT easily here.
     # Further, we run in the tests directory to avoid any possible config.yaml interfering with the tests.
-    # Since we mount the Travis overwatch directory inside of the container, the results should still be available
-    # even after this docker container has stopped
-    # To use codecov, we first retrieve the variables necessary to pass to the container (via codecov), and then we
-    # send the results from inside the container to codecov. If we try to send afterwards from outside the container,
-    # the paths will be wrong and the coverage report will fail!
+    # Since we mount the Travis overwatch directory inside of the container, the results should still be
+    # available even after this docker container has stopped
+    # To use codecov, we first retrieve the variables necessary to pass to the container (via codecov),
+    # and then we send the results from inside the container to codecov. If we try to send afterwards from
+    # outside the container, the paths will be wrong and the coverage report will fail!
     - ci_env=`bash <(curl -s https://codecov.io/env)`
-    - docker run -v ${PWD}:/opt/overwatch $ci_env rehlers/overwatch:latest-py${DOCKER_PYTHON_VERSION} /bin/bash -c "pip install --upgrade -e .[tests,dev,docs]; cd tests; pytest -l --cov=overwatch --cov-branch --durations=5 . && bash <(curl -s https://codecov.io/bash)"
+    # Needs to run as root so that it can successfully write back into the travis environment.
+    - docker run --user root -v ${PWD}:/opt/overwatch $ci_env rehlers/overwatch:latest-py${DOCKER_PYTHON_VERSION} /bin/bash -c "pip install --user --upgrade -e .[tests,dev,docs]; cd tests; pytest -l -vv --cov=overwatch --cov-branch --durations=5 . && bash <(curl -s https://codecov.io/bash)"
     # Install polymer and jsRoot so it they will be avialable and included in a built package
-    # We can't easily install nodejs to install polymer and jsRoot, so instead, we extract it from the docker image.
-    # Yes, it's super hacky, but it seems to work, so why not?
-    - docker run -v ${PWD}/overwatch/webApp/static/:/opt/extractJS rehlers/overwatch:latest-py${DOCKER_PYTHON_VERSION} /bin/bash -c "cd overwatch/webApp/static && cp -r bower_components /opt/extractJS/. && cp -r jsRoot /opt/extractJS/."
+    # We can't easily install nodejs to install polymer and jsRoot, so instead, we extract it from the
+    # docker image. Yes, it's super hacky, but it seems to work, so why not?
+    - docker run --user root -v ${PWD}/overwatch/webApp/static/:/opt/extractJS rehlers/overwatch:latest-py${DOCKER_PYTHON_VERSION} /bin/bash -c "cd overwatch/webApp/static && cp -r bower_components /opt/extractJS/. && cp -r jsRoot /opt/extractJS/."
 script:
     # Since we ran the tests above, we don't need to run them here.
     # Check code quality
@@ -40,14 +43,17 @@ script:
     # Check that the docs build successfully
     - pushd doc && make html && popd
 after_success:
-    # This will work for both tags and standard buidls. The build is performed for PRs, but it won't be deplyoed.
-    # First, determine the Overwatch branch. If ${TRAVIS_BRANCH} is the same as ${TRAVIS_TAG}, then means that we're
-    # working with a tag and we should use the master branch (which won't be available under $TRAVIS_BRANCH because
-    # the branch is not available when building a tag). Otherwise, we just use $TRAVIS_BRANCH
+    # This will work for both tags and standard buidls. The build is performed for PRs, but it won't be
+    # deplyoed. First, determine the Overwatch branch. If ${TRAVIS_BRANCH} is the same as ${TRAVIS_TAG},
+    # then means that we're working with a tag and we should use the master branch (which won't be
+    # available under $TRAVIS_BRANCH because the branch is not available when building a tag). Otherwise,
+    # we just use $TRAVIS_BRANCH
     - if [[ ${TRAVIS_BRANCH} == ${TRAVIS_TAG} ]]; then OVERWATCH_BRANCH="master"; else OVERWATCH_BRANCH=${TRAVIS_BRANCH}; fi
     # NOTE: To be clear about what is done here, we set PYTHON_VERSION in the docker build to the variable
     #       ${DOCKER_PYTHON_VERSION}.
-    - cd deploy/docker; docker build --build-arg PYTHON_VERSION=${DOCKER_PYTHON_VERSION} --build-arg OVERWATCH_BRANCH=${OVERWATCH_BRANCH} -f Dockerfile -t "${DOCKER_USERNAME}/overwatch:${TRAVIS_TAG:-latest}-py${DOCKER_PYTHON_VERSION}" .; cd -
+    # NOTE: For an unclear reason, the docker build exit code doesn't seem to always propagate to fully
+    #       propagate to Travis.
+    - pushd docker && docker build --build-arg PYTHON_VERSION=${DOCKER_PYTHON_VERSION} --build-arg OVERWATCH_BRANCH=${OVERWATCH_BRANCH} -f Dockerfile -t "${DOCKER_USERNAME}/overwatch:${TRAVIS_TAG:-latest}-py${DOCKER_PYTHON_VERSION}" . && popd
     # Print out to see if we've build it as expected.
     - docker images
 before_deploy:
@@ -64,13 +70,20 @@ deploy:
       skip_cleanup: true
       on:
           tags: true
+          # Only deploy the python 3 build by selecting on versions which start with 3. Either 2 or 3
+          # would be fine, but we only want to do one. Using build stages would be nice, but then we
+          # would need to upload the docker image and the polymer and jsRoot files. So we take the
+          # easier solution by just selecting one.
+          condition: ${DOCKER_PYTHON_VERSION} =~ ^3
     - provider: script
       # Variables are defined in the travis CI interface
       # They include: $DOCKER_USERNAME, $DOCKER_PASSWORD
-      script: bash deploy/docker/pushToDockerHub.sh
+      script: bash docker/pushToDockerHub.sh
       # We don't need to skip cleanup here because the docker image is already built!
       on:
           # Build a docker image for master or if it has "-docker" in the branch name.
           all_branches: true
           # For whatever reason, since Travis is parsing this line, we can't quote the variable here
-          condition: ${TRAVIS_BRANCH} =~ [a-zA-Z]+-docker|master
+          # We want it to build for branches that end in "-docker", "master" or for any tags of the form
+          # [number]+.[number]+ (ie tags which conform to semantic versioning).
+          condition: ${TRAVIS_BRANCH} =~ [a-zA-Z]+-docker|master|[0-9]+.[0-9]+

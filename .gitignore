@@ -26,6 +26,8 @@ notes.md
 *.DS_Store
 *.swp
 *.log
+# VS code configuration
+.vscode/
 
 # Ignore config file often used when running overwatch
 *.yaml

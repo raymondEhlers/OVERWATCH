@@ -1,3 +1,11 @@
+#!/usr/bin/env python
+""" Abstract class for all trendingObjects.
+
+Has abstract methods to implement,
+can save create histogram to image file and json file.
+
+.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+"""
 import logging
 import os
 
@@ -11,6 +19,7 @@ try:
 except ImportError:
     pass
 else:
+    # Needed for typing information
     from overwatch.processing.processingClasses import histogramContainer  # noqa
 
 logger = logging.getLogger(__name__)
@@ -29,6 +38,8 @@ class TrendingObject(Persistent):
         self.currentEntry = 0
         self.maxEntries = self.parameters.get(CON.ENTRIES, 100)
         self.trendedValues = self.initializeTrendingArray()
+        self.alarms = []
+        self.alarmsMessages = []
 
         self.histogram = None
         # Ensure that the axis and points are drawn on the TGraph
@@ -100,3 +111,7 @@ class TrendingObject(Persistent):
         canvas.SetLogx(False)
         canvas.SetLogy(False)
         canvas.SetLogz(False)
+
+    def setAlarms(self, alarms):  # type: (List['Alarm']) -> None
+        """ Invoked by trendingInfo after trendingObject is created"""
+        self.alarms = alarms

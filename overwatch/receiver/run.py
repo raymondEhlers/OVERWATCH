@@ -19,8 +19,7 @@ logger = logging.getLogger("")
 # Setup logger
 utilities.setupLogging(logger = logger,
                        logLevel = receiverParameters["loggingLevel"],
-                       debug = receiverParameters["debug"],
-                       logFilename = "dqmReceiver")
+                       debug = receiverParameters["debug"])
 
 # Imports are below here so that they can be logged
 from overwatch.receiver.dqmReceiver import app

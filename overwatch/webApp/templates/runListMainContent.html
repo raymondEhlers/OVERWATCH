@@ -1,4 +1,7 @@
-<h1 id="mainContentTitle">OVERWATCH Run List</h1>
+<img src="{{ url_for("static", filename = "overwatchLogo.v1.svg") }}"class="centerLogo">
+
+{#- We stiil want to set this value to ensure that title is properly shown. However, we only want to show the logo, so we set this to be hidden. -#}
+<h1 id="mainContentTitle" style="display: none;">OVERWATCH Run List</h1>
 <hr />
 
 {%- for run in runs %}
