@@ -1,6 +1,7 @@
 #!/usr/bin/env python
-
 """ Trending object to extract the maximum value of a histogram.
+
+.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
 
 """
 

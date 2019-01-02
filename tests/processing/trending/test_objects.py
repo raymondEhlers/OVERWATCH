@@ -1,9 +1,8 @@
 #!/usr/bin/env python
+""" Tests for example implementations of TrendingObject.
 
-""" Tests for trending objects.
-
+.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
 """
-
 import pytest
 import ROOT
 

@@ -23,6 +23,7 @@ from .. import processingClasses
 
 from overwatch.processing.trending.info import TrendingInfo
 import overwatch.processing.trending.objects as trendingObjects
+from overwatch.processing.alarms.example import alarmStdConfig, alarmMaxConfig, alarmMeanConfig
 
 try:
     from typing import *  # noqa
@@ -63,10 +64,18 @@ def getTrendingObjectInfo():  # type: () -> List[TrendingInfo]
         "mean": trendingObjects.MeanTrending,
         "stdDev": trendingObjects.StdDevTrending,
     }
+    alarms = {
+        "max": alarmMaxConfig(),
+        "mean": alarmMeanConfig(),
+        "stdDev": alarmStdConfig()
+    }
     trendingInfo = []
     for prefix, cls in trendingNameToObject.items():
         for name, desc, histograms in infoList:
-            trendingInfo.append(TrendingInfo(prefix + name, prefix + desc, histograms, cls))
+            ti = TrendingInfo(prefix + name, prefix + ": " + desc, histograms, cls)
+            if prefix in alarms:
+                ti.addAlarm(alarms[prefix])
+            trendingInfo.append(ti)
     return trendingInfo
 
 def generalOptions(subsystem, hist, processingOptions):

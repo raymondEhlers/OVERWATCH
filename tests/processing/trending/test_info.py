@@ -1,9 +1,8 @@
 #!/usr/bin/env python
+""" Tests for TrendingInfo.
 
-""" Tests for trending info objects.
-
+.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
 """
-
 import pytest
 
 from overwatch.processing.trending.info import TrendingInfoException, TrendingInfo

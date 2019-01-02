@@ -1,7 +1,9 @@
 #!/usr/bin/env python
-
 """ Fixtures for testing the trending subsystem.
 
+All fixtures for trending have 'tf_' prefix.
+
+.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
 """
 
 import ROOT
@@ -10,10 +12,6 @@ import uuid
 
 from overwatch.processing.trending.constants import EXTENSION, ENTRIES
 from overwatch.processing.trending.objects.mean import MeanTrending
-
-"""
-All fixtures for trending have 'tf_' prefix
-"""
 
 
 @pytest.fixture

@@ -1,16 +1,17 @@
 #!/usr/bin/env python
+""" Simple container of parameter for TrendingObject.
 
-""" Trending information class used to describe trending objects.
-
+.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
 """
+import past.builtins
+
+from overwatch.processing.alarms.alarm import Alarm
+from overwatch.processing.trending.objects.object import TrendingObject
 
 try:
     from typing import *  # noqa
 except ImportError:
     pass
-
-from overwatch.processing.trending.objects.object import TrendingObject
-import past.builtins
 
 basestring = past.builtins.basestring
 
@@ -26,10 +27,10 @@ class TrendingInfoException(Exception):
 class TrendingInfo:
     """ Container for data for TrendingObject
 
-    When TrendingInfo is initialized, data are validated.
+    When TrendingInfo is initialized, data is validated.
     """
 
-    __slots__ = ['name', 'desc', 'histogramNames', 'trendingClass']
+    __slots__ = ['name', 'desc', 'histogramNames', 'trendingClass', '_alarms']
 
     def __init__(self, name, desc, histogramNames, trendingClass):
         """
@@ -40,18 +41,31 @@ class TrendingInfo:
             trendingClass: concrete class of abstract class TrendingObject
         """
         # type: (str, str, List[str],  Type[TrendingObject]) -> None
-        # trending objects within subsystem must have different names - TODO add validation?
+        # trending objects within subsystem must have different names
         self.name = self._validate(name)
         self.desc = self._validate(desc)
         self.histogramNames = self._validateHist(histogramNames)
         self.trendingClass = self._validateTrendingClass(trendingClass)
+
+        self._alarms = []
+
+    def addAlarm(self, alarms):  # type: (Union(Alarm, List[Alarm])) -> None
+        if not isinstance(alarms, list):
+            alarms = [alarms]
+        for alarm in alarms:
+            if isinstance(alarm, Alarm):
+                self._alarms.append(alarm)
+            else:
+                raise TrendingInfoException(msg='WrongAlarmType')
 
     def createTrendingClass(self, subsystemName, parameters):  # type: (str, dict) -> TrendingObject
         """Create instance of TrendingObject from previously set parameters
         Returns:
             TrendingObject: newly created object
         """
-        return self.trendingClass(self.name, self.desc, self.histogramNames, subsystemName, parameters)
+        trend = self.trendingClass(self.name, self.desc, self.histogramNames, subsystemName, parameters)
+        trend.setAlarms(self._alarms)
+        return trend
 
     @staticmethod
     def _validate(obj):  # type: (str) -> str
