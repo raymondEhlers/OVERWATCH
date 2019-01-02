@@ -2,7 +2,7 @@
 
 """ Tests for the ZMQ receiver monitor.
 
-.. code-author: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
+.. codeauthor:: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
 """
 
 import logging

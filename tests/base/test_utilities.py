@@ -4,7 +4,7 @@
 
 As of Oct 2018, It is not comprehensive, but should be continually improved as time permits.
 
-.. code-author: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
+.. codeauthor:: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
 """
 
 import pytest

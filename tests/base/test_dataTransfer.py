@@ -8,7 +8,7 @@ takes much less time than mocking objects. Note that these tests modify the para
 of the ``dataTransfer`` module since it is slightly easier here than through a ``config.yaml``
 which we would need to rely on being in the proper location.
 
-.. code-author: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
+.. codeauthor:: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
 """
 
 from future.utils import iteritems

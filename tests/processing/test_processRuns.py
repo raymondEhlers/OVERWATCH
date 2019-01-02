@@ -5,7 +5,7 @@
 The process runs module is quite complicated (and probably is due for a refactor), so only some functionality is
 tested here. Due to the nature of the module, these tests are more or less integration tests.
 
-.. code-author: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
+.. codeauthor:: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
 """
 
 from future.utils import itervalues

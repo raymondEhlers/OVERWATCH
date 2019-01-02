@@ -3,7 +3,7 @@
 
 All fixtures for alarms have 'af_' prefix
 
-.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+.. codeauthor:: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
 """
 
 try:

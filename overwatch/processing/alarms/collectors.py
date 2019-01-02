@@ -1,6 +1,6 @@
 """ Alarms collectors.
 
-.. code-author: Artur Wolak <awolak1996@gmail.com>, AGH University of Science and Technology
+.. codeauthor:: Artur Wolak <awolak1996@gmail.com>, AGH University of Science and Technology
 """
 
 from slackclient import SlackClient

@@ -4,8 +4,8 @@
 Prepare trending part of database, create trending objects,
 notify appropriate objects about new histograms, manage processing trending histograms.
 
-.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
-.. code-author: Artur Wolak <awolak1996@gmail.com>, AGH University of Science and Technology
+.. codeauthor:: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+.. codeauthor:: Artur Wolak <awolak1996@gmail.com>, AGH University of Science and Technology
 """
 import logging
 import os

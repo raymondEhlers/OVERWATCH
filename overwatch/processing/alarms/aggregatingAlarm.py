@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """ Base class for alarms which manage of aggregation alarms.
 
-.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+.. codeauthor:: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
 """
 
 from overwatch.processing.alarms.alarm import Alarm

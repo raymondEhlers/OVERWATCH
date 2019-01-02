@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """ Simple container of parameter for TrendingObject.
 
-.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+.. codeauthor:: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
 """
 import past.builtins
 

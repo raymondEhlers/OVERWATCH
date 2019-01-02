@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """ Check if new value is between (previous value)/ratio and (previous value)*ratio.
 
-.. code-author: Jacek Nabywaniec <>, AGH University of Science and Technology
+.. codeauthor:: Jacek Nabywaniec <>, AGH University of Science and Technology
 """
 from overwatch.processing.alarms.alarm import Alarm
 

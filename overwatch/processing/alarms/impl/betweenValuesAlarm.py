@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """ Check if trend is between minimal and maximal allowed values.
 
-.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+.. codeauthor:: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
 """
 from overwatch.processing.alarms.alarm import Alarm
 

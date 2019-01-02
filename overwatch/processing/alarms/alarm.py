@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """ Base class for alarms.
 
-.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+.. codeauthor:: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
 """
 import numpy as np
 from overwatch.processing.alarms.collectors import alarmCollector
