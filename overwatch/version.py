@@ -12,7 +12,7 @@ as well as ``uproot`` (which more or less implements this pattern). Further disc
 import re
 
 # Provide the version as a string
-__version__ = "1.3"
+__version__ = "1.3.1"
 version = __version__
 # As provide as a tuple, with each value as it's own entry.
 # ie. "1.0" -> `("1", "0")`

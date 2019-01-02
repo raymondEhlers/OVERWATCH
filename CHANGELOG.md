@@ -2,6 +2,13 @@
 
 Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
 
+## [1.3.1] - 2 January 2019
+
+### Fixed
+
+- Tagging issue in Travis with multiple python 3 versions. We only wanted to deploy to PyPI for one python
+  version, which we arbitrarily select as the python 3.7 version. See: `460aab69`.
+
 ## [1.3] - 2 January 2019
 
 ### Added
@@ -21,7 +28,7 @@ Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
 - Fixed typos in the ROOT build script. See: `d967dda3`.
 - Blank pkgconfig directory created in the ROOT install. See: `627381b2` and the related [ROOT JIRA
   ticket](https://sft.its.cern.ch/jira/browse/ROOT-9864).
-- Allow passing in of database information to the `processAllRuns() `to avoid database locking issue
+- Allow passing in of database information to the `processAllRuns()` to avoid database locking issue
   when running repeated processing locally (ie without a ZEO/ZODB server). Thanks to Raquel for reporting! See: `7422451a`.
 
 ## [1.2.3] - 3 December 2018
