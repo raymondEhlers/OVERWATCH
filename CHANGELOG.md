@@ -2,11 +2,13 @@
 
 Changelog based on the [format here](https://keepachangelog.com/en/1.0.0/).
 
-## [1.2.4] - Unreleased
+## [1.3] - 2 January 2019
 
 ### Added
 
 - Python 3.7 docker image. See: `aa97cecf`.
+- Alarms subsystem to automatically detect unexpected trending values using user defined criteria. Thanks to
+  Artur, Jacek, Pawel! See PR #50.
 
 ### Changed
 
