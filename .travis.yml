@@ -74,7 +74,9 @@ deploy:
           # would be fine, but we only want to do one. Using build stages would be nice, but then we
           # would need to upload the docker image and the polymer and jsRoot files. So we take the
           # easier solution by just selecting one.
-          condition: ${DOCKER_PYTHON_VERSION} =~ ^3
+          # Further, since there are multiple python 3 versions used in testing, we explicitly select 3.7 to
+          # deploy the tag to ensure that it doesn't try to deploy to PyPI twice (which will fail).
+          condition: ${DOCKER_PYTHON_VERSION} =~ ^3.7
     - provider: script
       # Variables are defined in the travis CI interface
       # They include: $DOCKER_USERNAME, $DOCKER_PASSWORD
