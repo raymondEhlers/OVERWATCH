@@ -28,6 +28,8 @@ import pkg_resources
 import requests
 import logging
 
+from overwatch.database.utilities import getDatabaseFactory
+
 logger = logging.getLogger(__name__)
 
 # Flask
@@ -61,9 +63,9 @@ from ..processing import processRuns
 app = Flask(__name__, static_url_path=serverParameters["staticURLPath"], static_folder=serverParameters["staticFolder"], template_folder=serverParameters["templateFolder"])
 
 # Setup database
-app.config["ZODB_STORAGE"] = serverParameters["databaseLocation"]
-db = ZODB(app)
-
+# app.config["ZODB_STORAGE"] = serverParameters["databaseLocation"]
+# db = ZODB(app)
+databaseFactory = getDatabaseFactory()
 from .trending import trendingPage
 app.register_blueprint(trendingPage)
 
@@ -145,6 +147,7 @@ def load_user(user):
         auth.User: The user stored in the database which corresponds to the given username, or
             ``None`` if it doesn't exist.
     """
+    db = databaseFactory.getDB()
     return auth.User.getUser(user, db)
 
 # Sentry for monitoring errors and other issues.
@@ -190,8 +193,9 @@ def login():
     errorValue = None
     nextValue = routing.getRedirectTarget()
 
+    db = databaseFactory.getDB()
     # Check for users and notify if there are none!
-    if "users" not in db["config"] or not db["config"]["users"]:
+    if "users" not in db.get("config") or not db.get("config")["users"]:
         logger.fatal("No users found in database!")
         # This is just for developer convenience.
         if serverParameters["debug"]:
@@ -328,6 +332,7 @@ def statusQuery():
     """
     # Responds to requests from other OVERWATCH servers to display the status of the site
     response = "DB failed", 500
+    db = databaseFactory.getDB()
     if db:
         response = "Alive", 200
     return response
@@ -363,7 +368,8 @@ def index():
     # We only use this once and there isn't much complicated, so we just perform the validation here.
     runOffset = validation.convertRequestToPositiveInteger(paramName = "runOffset", source = request.args)
 
-    runs = db["runs"]
+    db = databaseFactory.getDB()
+    runs = db.get("runs")
 
     # Determine if a run is ongoing
     # To do so, we need the most recent run (regardless of which runs we selected to display)
@@ -447,7 +453,8 @@ def runPage(runNumber, subsystemName, requestedFileType):
     """
     # Setup runDir and db information
     runDir = "Run{runNumber}".format(runNumber = runNumber)
-    runs = db["runs"]
+    db = databaseFactory.getDB()
+    runs = db.get("runs")
 
     # Validation for all passed values
     (error, run, subsystem, requestedFileType, jsRoot, ajaxRequest, requestedHistGroup, requestedHist, timeSliceKey, timeSlice) = validation.validateRunPage(runDir, subsystemName, requestedFileType, runs)
@@ -624,7 +631,8 @@ def timeSlice():
 
     if request.method == "POST":
         # Get the runs
-        runs = db["runs"]
+        db = databaseFactory.getDB()
+        runs = db.get("runs")
 
         # Validates the request.
         (error, minTime, maxTime, runDir, subsystem, histGroup, histName, inputProcessingOptions) = validation.validateTimeSlicePostRequest(request, runs)
@@ -697,7 +705,8 @@ def testingDataArchive():
         redirect: Redirect to the newly created file.
     """
     # Get db
-    runs = db["runs"]
+    db = databaseFactory.getDB()
+    runs = db.get("runs")
     runList = runs.keys()
 
     # Retrieve at most 5 files
@@ -773,7 +782,8 @@ def overwatchStatus():
         Response: Status template populated with the status of Overwatch sites specified in the configuration.
     """
     # Setup
-    runs = db["runs"]
+    db = databaseFactory.getDB()
+    runs = db.get("runs")
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
     # Where the statuses will be collected

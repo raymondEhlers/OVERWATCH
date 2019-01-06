@@ -79,7 +79,7 @@ class runContainer(persistent.Persistent):
         self.runNumber = int(runDir.replace("Run", ""))
         self.prettyName = "Run {runNumber}".format(runNumber = self.runNumber)
         self.mode = fileMode
-        self.subsystems = BTrees.OOBTree.BTree()
+        self.subsystems = {}
         self.hltMode = hltMode
 
         # Try to retrieve the HLT mode if it was not passed
@@ -291,8 +291,8 @@ class subsystemContainer(persistent.Persistent):
         # Files
         # Be certain to set these after the subsystem has been created!
         # Contains all files for that particular run
-        self.files = BTrees.OOBTree.BTree()
-        self.timeSlices = persistent.mapping.PersistentMapping()
+        self.files = {}
+        self.timeSlices = {}
         # Only one combined file, so we do not need a dict!
         self.combinedFile = None
 
@@ -306,13 +306,13 @@ class subsystemContainer(persistent.Persistent):
         self.runLength = self.calculateRunLength()
 
         # Histograms
-        self.histGroups = persistent.list.PersistentList()
+        self.histGroups = []
         # Should be accessed through the group usually, but this provides direct access
-        self.histsInFile = BTrees.OOBTree.BTree()
+        self.histsInFile = {}
         # All hists, including those which were created, along with those in the file
-        self.histsAvailable = BTrees.OOBTree.BTree()
+        self.histsAvailable = {}
         # Hists list that should be used
-        self.hists = BTrees.OOBTree.BTree()
+        self.hists = {}
 
         # True if we received a new file, therefore leading to reprocessing
         # If the subsystem is being created, we likely need reprocessing, so defaults to true
@@ -323,7 +323,7 @@ class subsystemContainer(persistent.Persistent):
         self.nEvents = 1
 
         # Processing options
-        self.processingOptions = persistent.mapping.PersistentMapping()
+        self.processingOptions = {}
 
     def calculateRunLength(self, startOfRun = None, endOfRun = None):
         """ Helper function to update the run length.
@@ -486,7 +486,7 @@ class timeSliceContainer(persistent.Persistent):
         # Implemented by the detector to note how it was processed that may be changed during time slice processing
         # This allows us return full processing when appropriate
         # Same as the type of options implemented in the subsystemContainer!
-        self.processingOptions = persistent.mapping.PersistentMapping()
+        self.processingOptions = {}
 
     def __repr__(self):
         """ Representation of the object. """
@@ -628,7 +628,7 @@ class histogramGroupContainer(persistent.Persistent):
         self.prettyName = prettyName
         self.selectionPattern = groupSelectionPattern
         self.plotInGridSelectionPattern = plotInGridSelectionPattern
-        self.histList = persistent.list.PersistentList()
+        self.histList = []
 
         # So that it is not necessary to check the list every time
         if self.plotInGridSelectionPattern in self.selectionPattern:
@@ -710,18 +710,18 @@ class histogramContainer(persistent.Persistent):
             self.prettyName = self.histName
 
         self.histList = histList
-        self.information = persistent.mapping.PersistentMapping()
+        self.information = {}
         self.hist = None
         self.histType = None
         self.drawOptions = ""
         # Contains the canvas where the hist may be plotted, along with additional content
         self.canvas = None
         # Functions which will be applied to project an available histogram to a new derived histogram
-        self.projectionFunctionsToApply = persistent.list.PersistentList()
+        self.projectionFunctionsToApply = []
         # Functions which will be applied to the histogram each time it is processed
-        self.functionsToApply = persistent.list.PersistentList()
+        self.functionsToApply = []
         # Trending objects which use this histogram
-        self.trendingObjects = persistent.list.PersistentList()
+        self.trendingObjects = []
 
     def __repr__(self):
         """ Representation of the object. """

@@ -807,7 +807,7 @@ def processMovedFilesIntoRuns(runs, runDict):
                     # to such a case, see ``createNewSubsystemFromMovedFilesInformation(...)``.
                     logger.warning(e.args[0])
 
-def processAllRuns(dbRoot = None, connection = None):
+def processAllRuns(db = None):
     """ Driver function for processing all available data, storing the results in a database and on disk.
 
     This function is responsible for driving all processing functionality in Overwatch. This spans from
@@ -836,9 +836,7 @@ def processAllRuns(dbRoot = None, connection = None):
         information, see the :doc:`Overwatch base module README </baseReadme>`.
 
     Args:
-        dbRoot: Database root. Default: None. If either argument is None, this function will
-            retrieve the database information itself (and close the connection at the end).
-        connection: Database connection. Default: None. If either argument is None, this function will
+        db: Database object. Default: None. If either argument is None, this function will
             retrieve the database information itself (and close the connection at the end).
     Returns:
         None. However, it has extensive side effects. It changes values in the database related to runs,
@@ -846,15 +844,16 @@ def processAllRuns(dbRoot = None, connection = None):
     """
     # Get the database. Create the connection if necessary.
     created_connection_in_this_function = False
-    if dbRoot is None or connection is None:
-        (dbRoot, connection) = utilities.getDB(processingParameters["databaseLocation"])
+    if db is None:
+        db = getDatabaseFactory().getDB()
         created_connection_in_this_function = True
 
     # Setup the runs dict by either retrieving it or recreating it.
-    if "runs" in dbRoot:
+    if db.contains("runs"):
         # The objects already exist, so we use the existing information.
+        raise Exception
         logger.info("Utilizing existing database!")
-        runs = dbRoot["runs"]
+        runs = db.get("runs")
 
         # During the previous processing run, new files were marked as new in the subsystem.
         # At the end of the previous processing run, this flag wasn't clear so we can know
@@ -866,8 +865,8 @@ def processAllRuns(dbRoot = None, connection = None):
                     subsystem.newFile = False
     else:
         # Create the runs tree to store the information
-        dbRoot["runs"] = BTrees.OOBTree.BTree()
-        runs = dbRoot["runs"]
+        db.set("runs", {})
+        runs = db.get("runs")
 
         # The objects don't exist, so we need to create them.
         # This will be a slow process, so the results should be stored.
@@ -940,7 +939,7 @@ def processAllRuns(dbRoot = None, connection = None):
                     logger.info("No combined file in {runDir}".format(runDir = runDir))
 
         # Commit any changes made to the database so we can proceed onto the actual processing.
-        transaction.commit()
+        db.commit()
 
     # See how we've done so far.
     # This is quite verbose, so we don't want it to be normally enabled.
@@ -948,12 +947,11 @@ def processAllRuns(dbRoot = None, connection = None):
 
     # Create the configuration stored in the database if necessary
     # This doesn't exhaustively contain all of the settings, but stores some properties are useful.
-    if "config" not in dbRoot:
-        dbRoot["config"] = persistent.mapping.PersistentMapping()
+    if not db.contains("config"):
+        db.set("config", {})
 
     # Set up the trending.
     if processingParameters["trending"]:
-        (db, client) = getDatabaseFactory().getDB()
         db.clear('trending')
         trendingManager = TrendingManager(db, processingParameters)
         trendingManager.createTrendingObjects()
@@ -1013,25 +1011,25 @@ def processAllRuns(dbRoot = None, connection = None):
                 logger.debug("Don't need to process {prettyName} for subsystem {subsystem}. It has already been processed".format(prettyName = run.prettyName, subsystem = subsystem.subsystem))
 
         # Commit after we have successfully processed each run
-        transaction.commit()
+        db.commit()
 
     logger.info("Finished standard processing!")
 
     # Run trending now that we have gotten to the most recent run
     if trendingManager:
         trendingManager.processTrending()
-        trendingManager.db.commit()
+        db.commit()
         logger.info("Finished trending processing!")
 
     # Add users and secret key if debugging
     # This needs to be done manually if deploying, since this requires some care to ensure that everything is
     # configured properly. However, it's quite convenient for development.
     if processingParameters["debug"]:
-        utilities.updateDBSensitiveParameters(dbRoot)
+        utilities.updateDBSensitiveParameters(db)
 
     # Ensure that any additional changes are committed and finish up with the database.
-    transaction.commit()
+    db.commit()
     # Only close the connection if we created it here.
     if created_connection_in_this_function is True:
-        connection.close()
+        db.close_connection()
 

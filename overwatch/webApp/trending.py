@@ -14,12 +14,11 @@ import os
 import overwatch.processing.trending.constants as CON
 from overwatch.database.utilities import getDatabaseFactory
 from overwatch.processing.trending.manager import TrendingManager
-from overwatch.webApp.webApp import serverParameters
+from overwatch.webApp.webApp import serverParameters, databaseFactory
 from overwatch.webApp import validation
 
 logger = logging.getLogger(__name__)
 trendingPage = Blueprint('trendingPage', __name__)
-databaseFactory = getDatabaseFactory()
 
 
 def determineSubsystemName(subsystemName, trendingManager):  # type: (str, TrendingManager) -> str
@@ -55,10 +54,10 @@ def trending():
     logger.debug("request: {0}".format(request.args))
     (error, subsystemName, requestedHist, jsRoot, ajaxRequest) = validation.validateTrending(request)
 
-    trendingDatabase, _ = databaseFactory.getDB()
+    db = databaseFactory.getDB()
 
     # Return a useful error if trending is disabled
-    if not trendingDatabase.contains("trending"):
+    if not db.contains("trending"):
         error.setdefault("Trending", []).append("Trending is disabled.")
         if ajaxRequest:
             drawerContent = ""
@@ -67,9 +66,9 @@ def trending():
         return render_template("error.html", errors = error)
 
     # Create trending container from stored trending information
-    trendingManager = TrendingManager(trendingDatabase, serverParameters)
+    trendingManager = TrendingManager(db, serverParameters)
     subsystemName = determineSubsystemName(subsystemName, trendingManager)
-    trendingData = trendingDatabase.get('trending')
+    trendingData = db.get('trending')
 
     if not subsystemName:
         error.setdefault("Subsystem", []).append("Cannot find any trended subsystem")

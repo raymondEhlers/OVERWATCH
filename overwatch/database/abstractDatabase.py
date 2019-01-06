@@ -1,12 +1,8 @@
-
 class Database:
-    def __init__(self, db):
+    def __init__(self, db, connection):
         self.db = db
+        self.connection = connection
         self.collection = {}
-
-    def contains(self, item):
-        self.get(item)
-        return item in self.collection
 
     def get(self, item):
         if item not in self.collection:
@@ -16,6 +12,9 @@ class Database:
     def set(self, key, value):
         self.collection[key] = value
 
+    def contains(self, item):
+        raise NotImplementedError
+
     def fetch(self, key):
         raise NotImplementedError
 
@@ -24,3 +23,7 @@ class Database:
 
     def clear(self, item):
         raise NotImplementedError
+
+    def close_connection(self):
+        if self.connection:
+            self.connection.close()

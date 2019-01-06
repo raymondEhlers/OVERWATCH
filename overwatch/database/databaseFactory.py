@@ -1,8 +1,7 @@
-
 class DatabaseFactory:
-    def __init__(self, databaseName):
-        self.databaseName = databaseName
+    def __init__(self):
         self.instance = None
+
     def getDB(self):
         if not self.instance:
             self.instance = self.initializeDB()
@@ -10,4 +9,3 @@ class DatabaseFactory:
 
     def initializeDB(self):
         raise NotImplementedError
-

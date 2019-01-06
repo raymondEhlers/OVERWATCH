@@ -1,13 +1,15 @@
 import os
 import zodburi
 import ZODB
+from zc.lockfile import LockError
 
 from overwatch.database.databaseFactory import DatabaseFactory
 from overwatch.database.zodbDatabase import ZodbDatabase
 
+
 class ZodbDatabaseFactory(DatabaseFactory):
-    def __init__(self, databaseName, databaseLocation):
-        DatabaseFactory.__init__(self, databaseName)
+    def __init__(self,  databaseLocation):
+        DatabaseFactory.__init__(self)
         self.databaseLocation = databaseLocation
         self.instance = None
 
@@ -20,4 +22,4 @@ class ZodbDatabaseFactory(DatabaseFactory):
         db = ZODB.DB(storage, **dbArgs)
         connection = db.open()
         dbRoot = connection.root()
-        return ZodbDatabase(dbRoot), connection
+        return ZodbDatabase(dbRoot, connection)

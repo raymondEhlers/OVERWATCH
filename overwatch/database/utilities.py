@@ -12,6 +12,7 @@ class databaseTypes(aenum.OrderedEnum):
     mongodb = 0
     zodb = 1
 
+
 def getDatabaseFactory():
     databaseType = databaseParameters["databaseType"]
     if databaseTypes[databaseType] == databaseTypes.mongodb:
@@ -20,30 +21,6 @@ def getDatabaseFactory():
             host=databaseParameters["mongoHost"],
             port=databaseParameters["mongoPort"])
     if databaseTypes[databaseType] == databaseTypes.zodb:
-        # Create target Directory if don't exist
-        dirName = os.path.join(databaseParameters["dataFolder"], "trending")
-        if not os.path.exists(dirName):
-            os.mkdir(dirName)
         return ZodbDatabaseFactory(
-            databaseName=databaseParameters["databaseName"],
-            databaseLocation=databaseParameters["trendingDatabaseLocation"])
+            databaseLocation=databaseParameters["databaseLocation"])
 
-def todict(obj, classkey=None):
-    if isinstance(obj, dict):
-        data = {}
-        for (k, v) in obj.items():
-            data[str(k)] = todict(v, classkey)
-        return data
-    elif hasattr(obj, "_ast"):
-        return todict(obj._ast())
-    elif hasattr(obj, "__iter__") and not isinstance(obj, str):
-        return [todict(v, classkey) for v in obj]
-    elif hasattr(obj, "__dict__"):
-        data = dict([(key, todict(value, classkey))
-            for key, value in obj.__dict__.items()
-            if not callable(value) and not key.startswith('_')])
-        if classkey is not None and hasattr(obj, "__class__"):
-            data[classkey] = obj.__class__.__name__
-        return data
-    else:
-        return obj

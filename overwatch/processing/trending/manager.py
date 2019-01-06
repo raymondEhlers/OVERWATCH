@@ -145,7 +145,7 @@ class TrendingManager(Persistent):
             for name, trendingObject in subsystem.items():  # type: (str, TrendingObject)
                 logger.debug("trendingObject: {trendingObject}".format(trendingObject=trendingObject))
                 trendingObject.processHist(canvas)
-        self.db.set('trending', todict(self.subsystems))
+        self.db.set('trending', self.subsystems)
 
 
     def notifyAboutNewHistogramValue(self, hist):  # type: (histogramContainer) -> None
