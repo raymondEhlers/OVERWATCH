@@ -17,7 +17,6 @@ from persistent import Persistent
 
 import overwatch.processing.pluginManager as pluginManager
 import overwatch.processing.trending.constants as CON
-from overwatch.database.utilities import todict
 from overwatch.processing.alarms.collectors import Mail, SlackNotification
 from overwatch.processing.alarms.collectors import alarmCollector
 

@@ -106,8 +106,8 @@ class runContainer(persistent.Persistent):
                                                                       mode = self.mode,
                                                                       subsystems = list(self.subsystems.keys()),
                                                                       hltMode = self.hltMode)
-
-    def isRunOngoing(self):
+    @staticmethod
+    def isRunOngoing(container):
         """ Checks if a run is ongoing.
 
         The ongoing run check is performed by looking checking for a new file in
@@ -123,13 +123,13 @@ class runContainer(persistent.Persistent):
             However, if ``newFile`` is true, then it is sufficient to know that the run is ongoing.
 
         Args:
-            None
+            container: runContainer
         Returns:
             bool: True if the run is ongoing.
         """
         returnValue = False
         try:
-            for subsystem in itervalues(self.subsystems):
+            for subsystem in itervalues(container.subsystems):
                 if subsystem.newFile is True:
                     # We know we have a new file, so nothing else needs to be done. Just return it.
                     returnValue = True
@@ -138,7 +138,7 @@ class runContainer(persistent.Persistent):
             # If we haven't found a new file yet, we'll check the time stamps.
             if returnValue is False:
                 logger.debug("Checking timestamps for whether the run in ongoing.")
-                minutesSinceLastTimestamp = self.minutesSinceLastTimestamp()
+                minutesSinceLastTimestamp = runContainer.minutesSinceLastTimestamp(container)
                 logger.debug("{minutesSinceLastTimestamp} minutes since the last timestamp.".format(minutesSinceLastTimestamp = minutesSinceLastTimestamp))
                 # Compare the unix timestamps with a five minute buffer period.
                 # This buffer time is arbitrarily selected, but the value is motivated by a balance to ensure
@@ -151,18 +151,19 @@ class runContainer(persistent.Persistent):
 
         return returnValue
 
-    def minutesSinceLastTimestamp(self):
+    @staticmethod
+    def minutesSinceLastTimestamp(container):
         """ Determine the time since the last file timestamp in minutes.
 
         Args:
-            None.
+            container: runContainer
         Returns:
             float: Minutes since the timestamp of the most recent file. Default: -1.
         """
         timeSinceLastTimestamp = -1
         try:
             mostRecentTimestamp = -1
-            for subsystem in itervalues(self.subsystems):
+            for subsystem in itervalues(container.subsystems):
                 newestFile = subsystem.files[subsystem.files.keys()[-1]]
                 if newestFile.fileTime > mostRecentTimestamp:
                     mostRecentTimestamp = newestFile.fileTime
@@ -179,7 +180,8 @@ class runContainer(persistent.Persistent):
 
         return timeSinceLastTimestamp
 
-    def startOfRunTimeStamp(self):
+    @staticmethod
+    def startOfRunTimeStamp(container):
         """ Provides the start of the run time stamp in a format suitable for display.
 
         This timestamp is determined by looking at the timestamp of the last subsystem
@@ -188,14 +190,14 @@ class runContainer(persistent.Persistent):
         time in production systems).
 
         Args:
-            None
+            container: runContainer
         Returns:
             str: Start of run time stamp formatted in an appropriate manner for display.
         """
         returnValue = False
         try:
             # We just take the last subsystem in a given run. Any will do
-            lastSubsystem = self.subsystems[self.subsystems.keys()[-1]]
+            lastSubsystem = container.subsystems[container.subsystems.keys()[-1]]
             returnValue = lastSubsystem.prettyPrintUnixTime(lastSubsystem.startOfRun)
         except KeyError:
             returnValue = False

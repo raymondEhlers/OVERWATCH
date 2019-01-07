@@ -28,7 +28,8 @@ import pkg_resources
 import requests
 import logging
 
-from overwatch.database.utilities import getDatabaseFactory
+from overwatch.database.factoryMethod import getDatabaseFactory
+from overwatch.processing.processingClasses import runContainer
 
 logger = logging.getLogger(__name__)
 
@@ -374,7 +375,7 @@ def index():
     # Determine if a run is ongoing
     # To do so, we need the most recent run (regardless of which runs we selected to display)
     mostRecentRun = runs[runs.keys()[-1]]
-    runOngoing = mostRecentRun.isRunOngoing()
+    runOngoing = runContainer.isRunOngoing(mostRecentRun)
     if runOngoing:
         runOngoingNumber = mostRecentRun.runNumber
     else:
@@ -407,7 +408,8 @@ def index():
                                totalNumberOfRuns = numberOfRuns)
     else:
         drawerContent = render_template("runListDrawer.html", runs = runsToUse, runOngoing = runOngoing,
-                                        runOngoingNumber = runOngoingNumber, anchorFrequency = anchorFrequency)
+                                        runOngoingNumber = runOngoingNumber, anchorFrequency = anchorFrequency,
+                                        startOfRunTimeStamp=runContainer.startOfRunTimeStamp)
         mainContent = render_template("runListMainContent.html", runs = runsToUse, runOngoing = runOngoing,
                                       runOngoingNumber = runOngoingNumber,
                                       subsystemsWithRootFilesToShow = serverParameters["subsystemsWithRootFilesToShow"],
@@ -539,7 +541,8 @@ def runPage(runNumber, subsystemName, requestedFileType):
                                                   selectedHistGroup = requestedHistGroup, selectedHist = requestedHist,
                                                   jsonFilenameTemplate = jsonFilenameTemplate,
                                                   imgFilenameTemplate = imgFilenameTemplate,
-                                                  jsRoot = jsRoot, timeSlice = timeSlice)
+                                                  jsRoot = jsRoot, timeSlice = timeSlice,
+                                                  prettyPrintUnixTime=utilities.prettyPrintUnixTime)
                 except jinja2.exceptions.TemplateNotFound as e:
                     error.setdefault("Template Error", []).append("Request template: \"{}\", but it was not found!".format(e.name))
             elif requestedFileType == "rootFiles":
@@ -547,7 +550,10 @@ def runPage(runNumber, subsystemName, requestedFileType):
                     # Subsystem specific run pages are not available since they don't seem to be necessary
                     # Note that even though this file should always be found, we check for exceptions just in case.
                     drawerContent = ""
-                    mainContent = render_template("rootFilesMainContent.html", run = run, subsystem = subsystemName)
+                    mainContent = render_template("rootFilesMainContent.html",
+                                                  run = run,
+                                                  subsystem = subsystemName,
+                                                  prettyPrintUnixTime=utilities.prettyPrintUnixTime)
                 except jinja2.exceptions.TemplateNotFound as e:
                     error.setdefault("Template Error", []).append("Request template: \"{}\", but it was not found!".format(e.name))
             else:
@@ -792,7 +798,7 @@ def overwatchStatus():
     # Determine if a run is ongoing
     # To do so, we need the most recent run
     mostRecentRun = runs[runs.keys()[-1]]
-    runOngoing = mostRecentRun.isRunOngoing()
+    runOngoing = runContainer.isRunOngoing(mostRecentRun)
     if runOngoing:
         runOngoingNumber = "- " + mostRecentRun.prettyName
     else:

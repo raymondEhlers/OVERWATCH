@@ -21,7 +21,7 @@ import ROOT
 # This onlly applies to Flask debug mode with ROOT 5.
 # See: https://root-forum.cern.ch/t/pyroot-and-spyder-re-running-error/20926/5
 # See: https://root.cern.ch/phpBB3/viewtopic.php?t=19594#p83968
-from overwatch.database.utilities import getDatabaseFactory
+from overwatch.database.factoryMethod import getDatabaseFactory
 
 ROOT.std.__file__ = "ROOT.std.py"
 

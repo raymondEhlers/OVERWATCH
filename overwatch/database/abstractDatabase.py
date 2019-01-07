@@ -1,8 +1,11 @@
+from utilities import Map
+
+
 class Database:
     def __init__(self, db, connection):
         self.db = db
         self.connection = connection
-        self.collection = {}
+        self.collection = Map()
 
     def get(self, item):
         if item not in self.collection:

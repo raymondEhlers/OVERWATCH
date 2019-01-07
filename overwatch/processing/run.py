@@ -16,7 +16,7 @@ import pprint
 import timeit
 
 import sentry_sdk
-from overwatch.database.utilities import getDatabaseFactory
+from overwatch.database.factoryMethod import getDatabaseFactory
 from sentry_sdk.integrations.logging import LoggingIntegration
 
 # Config
