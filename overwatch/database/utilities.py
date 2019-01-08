@@ -1,4 +1,12 @@
+import BTrees
+import persistent
+
+
 class Map(dict):
+    """ Dictionary wrapper class. This class allows to acess dictionary with dot notation.
+        For more information see https://stackoverflow.com/questions/2352181/how-to-use-a-dot-to-access-members-of-dictionary
+    """
+
     def __init__(self, *args, **kwargs):
         super(Map, self).__init__(*args, **kwargs)
         for arg in args:
@@ -29,7 +37,10 @@ class Map(dict):
 
 
 def todict(obj, classkey=None):
-    if isinstance(obj, dict):
+    """ Converts object to dictionary.
+        For more information see https://stackoverflow.com/questions/1036409/recursively-convert-python-object-graph-to-dictionary
+    """
+    if isinstance(obj, dict) or isinstance(obj, BTrees.OOBTree.BTree) or isinstance(obj, persistent.mapping.PersistentMapping):
         data = Map()
         for (k, v) in obj.items():
             data[str(k)] = todict(v, classkey)

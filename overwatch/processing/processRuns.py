@@ -41,11 +41,6 @@ import uuid
 import logging
 logger = logging.getLogger(__name__)
 
-# ZODB
-import BTrees.OOBTree
-import transaction
-import persistent
-
 # Config
 from ..base import config
 (processingParameters, filesRead) = config.readConfig(config.configurationType.processing)
@@ -849,9 +844,8 @@ def processAllRuns(db = None):
         created_connection_in_this_function = True
 
     # Setup the runs dict by either retrieving it or recreating it.
-    if db.contains("runs"):
+    if db.contains("runs") and databaseParameters["databaseType"] == "zodb":
         # The objects already exist, so we use the existing information.
-        raise Exception
         logger.info("Utilizing existing database!")
         runs = db.get("runs")
 
@@ -952,7 +946,6 @@ def processAllRuns(db = None):
 
     # Set up the trending.
     if processingParameters["trending"]:
-        db.clear('trending')
         trendingManager = TrendingManager(db, processingParameters)
         trendingManager.createTrendingObjects()
     else:
@@ -1018,6 +1011,7 @@ def processAllRuns(db = None):
     # Run trending now that we have gotten to the most recent run
     if trendingManager:
         trendingManager.processTrending()
+        db.set('trending', trendingManager.subsystems)
         db.commit()
         logger.info("Finished trending processing!")
 

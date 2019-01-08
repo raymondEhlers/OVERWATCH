@@ -29,7 +29,7 @@ import requests
 import logging
 
 from overwatch.database.factoryMethod import getDatabaseFactory
-from overwatch.processing.processingClasses import runContainer
+from overwatch.processing.processingClasses import runContainer, subsystemContainer
 
 logger = logging.getLogger(__name__)
 
@@ -37,7 +37,6 @@ logger = logging.getLogger(__name__)
 from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, jsonify, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
-from flask_zodb import ZODB
 from flask_assets import Environment
 from flask_wtf.csrf import CSRFProtect, CSRFError
 
@@ -63,9 +62,6 @@ from ..processing import processRuns
 # Flask setup
 app = Flask(__name__, static_url_path=serverParameters["staticURLPath"], static_folder=serverParameters["staticFolder"], template_folder=serverParameters["templateFolder"])
 
-# Setup database
-# app.config["ZODB_STORAGE"] = serverParameters["databaseLocation"]
-# db = ZODB(app)
 databaseFactory = getDatabaseFactory()
 from .trending import trendingPage
 app.register_blueprint(trendingPage)
@@ -405,7 +401,8 @@ def index():
                                subsystemsWithRootFilesToShow = serverParameters["subsystemsWithRootFilesToShow"],
                                anchorFrequency = anchorFrequency,
                                runOffset = runOffset, numberOfRunsToDisplay = numberOfRunsToDisplay,
-                               totalNumberOfRuns = numberOfRuns)
+                               totalNumberOfRuns = numberOfRuns,
+                               startOfRunTimeStamp=runContainer.startOfRunTimeStamp)
     else:
         drawerContent = render_template("runListDrawer.html", runs = runsToUse, runOngoing = runOngoing,
                                         runOngoingNumber = runOngoingNumber, anchorFrequency = anchorFrequency,
@@ -497,7 +494,8 @@ def runPage(runNumber, subsystemName, requestedFileType):
                                                   selectedHistGroup = requestedHistGroup, selectedHist = requestedHist,
                                                   jsonFilenameTemplate = jsonFilenameTemplate,
                                                   imgFilenameTemplate = imgFilenameTemplate,
-                                                  jsRoot = jsRoot, timeSlice = timeSlice)
+                                                  jsRoot = jsRoot, timeSlice = timeSlice,
+                                                  prettyPrintUnixTime=subsystemContainer.prettyPrintUnixTime)
                 except jinja2.exceptions.TemplateNotFound as e:
                     error.setdefault("Template Error", []).append("Request template: \"{}\", but it was not found!".format(e.name))
             elif requestedFileType == "rootFiles":
@@ -542,7 +540,7 @@ def runPage(runNumber, subsystemName, requestedFileType):
                                                   jsonFilenameTemplate = jsonFilenameTemplate,
                                                   imgFilenameTemplate = imgFilenameTemplate,
                                                   jsRoot = jsRoot, timeSlice = timeSlice,
-                                                  prettyPrintUnixTime=utilities.prettyPrintUnixTime)
+                                                  prettyPrintUnixTime=subsystemContainer.prettyPrintUnixTime)
                 except jinja2.exceptions.TemplateNotFound as e:
                     error.setdefault("Template Error", []).append("Request template: \"{}\", but it was not found!".format(e.name))
             elif requestedFileType == "rootFiles":
@@ -553,7 +551,7 @@ def runPage(runNumber, subsystemName, requestedFileType):
                     mainContent = render_template("rootFilesMainContent.html",
                                                   run = run,
                                                   subsystem = subsystemName,
-                                                  prettyPrintUnixTime=utilities.prettyPrintUnixTime)
+                                                  prettyPrintUnixTime=subsystemContainer.prettyPrintUnixTime)
                 except jinja2.exceptions.TemplateNotFound as e:
                     error.setdefault("Template Error", []).append("Request template: \"{}\", but it was not found!".format(e.name))
             else:

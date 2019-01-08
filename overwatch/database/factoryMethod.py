@@ -13,6 +13,13 @@ class databaseTypes(aenum.OrderedEnum):
 
 
 def getDatabaseFactory():
+    """ Creates database factory object using parameters specified in config.yaml.
+     Args:
+         None
+
+     Returns:
+         Database factory object.
+     """
     databaseType = databaseParameters["databaseType"]
     if databaseTypes[databaseType] == databaseTypes.mongodb:
         return MongoDatabaseFactory(

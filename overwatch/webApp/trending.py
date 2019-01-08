@@ -12,7 +12,6 @@ import jinja2
 import os
 
 import overwatch.processing.trending.constants as CON
-from overwatch.database.factoryMethod import getDatabaseFactory
 from overwatch.processing.trending.manager import TrendingManager
 from overwatch.webApp.webApp import serverParameters, databaseFactory
 from overwatch.webApp import validation

@@ -79,7 +79,7 @@ class runContainer(persistent.Persistent):
         self.runNumber = int(runDir.replace("Run", ""))
         self.prettyName = "Run {runNumber}".format(runNumber = self.runNumber)
         self.mode = fileMode
-        self.subsystems = {}
+        self.subsystems = BTrees.OOBTree.BTree()
         self.hltMode = hltMode
 
         # Try to retrieve the HLT mode if it was not passed
@@ -106,6 +106,7 @@ class runContainer(persistent.Persistent):
                                                                       mode = self.mode,
                                                                       subsystems = list(self.subsystems.keys()),
                                                                       hltMode = self.hltMode)
+
     @staticmethod
     def isRunOngoing(container):
         """ Checks if a run is ongoing.
@@ -123,7 +124,7 @@ class runContainer(persistent.Persistent):
             However, if ``newFile`` is true, then it is sufficient to know that the run is ongoing.
 
         Args:
-            container: runContainer
+            container: runContainer object
         Returns:
             bool: True if the run is ongoing.
         """
@@ -198,7 +199,7 @@ class runContainer(persistent.Persistent):
         try:
             # We just take the last subsystem in a given run. Any will do
             lastSubsystem = container.subsystems[container.subsystems.keys()[-1]]
-            returnValue = lastSubsystem.prettyPrintUnixTime(lastSubsystem.startOfRun)
+            returnValue = subsystemContainer.prettyPrintUnixTime(lastSubsystem.startOfRun)
         except KeyError:
             returnValue = False
 
@@ -293,8 +294,8 @@ class subsystemContainer(persistent.Persistent):
         # Files
         # Be certain to set these after the subsystem has been created!
         # Contains all files for that particular run
-        self.files = {}
-        self.timeSlices = {}
+        self.files = BTrees.OOBTree.BTree()
+        self.timeSlices = persistent.mapping.PersistentMapping()
         # Only one combined file, so we do not need a dict!
         self.combinedFile = None
 
@@ -308,13 +309,13 @@ class subsystemContainer(persistent.Persistent):
         self.runLength = self.calculateRunLength()
 
         # Histograms
-        self.histGroups = []
+        self.histGroups = persistent.list.PersistentList()
         # Should be accessed through the group usually, but this provides direct access
-        self.histsInFile = {}
+        self.histsInFile = BTrees.OOBTree.BTree()
         # All hists, including those which were created, along with those in the file
-        self.histsAvailable = {}
+        self.histsAvailable = BTrees.OOBTree.BTree()
         # Hists list that should be used
-        self.hists = {}
+        self.hists = BTrees.OOBTree.BTree()
 
         # True if we received a new file, therefore leading to reprocessing
         # If the subsystem is being created, we likely need reprocessing, so defaults to true
@@ -325,7 +326,7 @@ class subsystemContainer(persistent.Persistent):
         self.nEvents = 1
 
         # Processing options
-        self.processingOptions = {}
+        self.processingOptions = persistent.mapping.PersistentMapping()
 
     def calculateRunLength(self, startOfRun = None, endOfRun = None):
         """ Helper function to update the run length.
@@ -630,7 +631,7 @@ class histogramGroupContainer(persistent.Persistent):
         self.prettyName = prettyName
         self.selectionPattern = groupSelectionPattern
         self.plotInGridSelectionPattern = plotInGridSelectionPattern
-        self.histList = []
+        self.histList = persistent.list.PersistentList()
 
         # So that it is not necessary to check the list every time
         if self.plotInGridSelectionPattern in self.selectionPattern:
@@ -712,18 +713,18 @@ class histogramContainer(persistent.Persistent):
             self.prettyName = self.histName
 
         self.histList = histList
-        self.information = {}
+        self.information = persistent.mapping.PersistentMapping()
         self.hist = None
         self.histType = None
         self.drawOptions = ""
         # Contains the canvas where the hist may be plotted, along with additional content
         self.canvas = None
         # Functions which will be applied to project an available histogram to a new derived histogram
-        self.projectionFunctionsToApply = []
+        self.projectionFunctionsToApply = persistent.list.PersistentList()
         # Functions which will be applied to the histogram each time it is processed
-        self.functionsToApply = []
+        self.functionsToApply = persistent.list.PersistentList()
         # Trending objects which use this histogram
-        self.trendingObjects = []
+        self.trendingObjects = persistent.list.PersistentList()
 
     def __repr__(self):
         """ Representation of the object. """

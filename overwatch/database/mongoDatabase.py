@@ -7,24 +7,27 @@ class MongoDatabase(Database):
     def fetch(self, item):
         if item not in self.db.collection_names():
             return {}
-        collection = list(self.db[item].find())[0]
+        collection = dict(self.db[item].find_one({"_id": item}))
         collection.pop("_id", None)
         return collection
 
     def commit(self):
         for key, value in todict(self.collection).items():
-            self.db[key].insert_one(value)
+            self.db[key].update_one(
+                {"_id": key},
+                {"$set": dict(todict(value), **{"_id": key})},
+                upsert=True)
 
-    def clear(self, item):
-        self.db[item].remove()
+    def clear(self, key):
+        self.db[key].remove()
 
-    def contains(self, item):
-        return item in self.db.collection_names() or item in self.collection
+    def contains(self, key):
+        return key in self.db.collection_names() or key in self.collection
 
-    def get(self, item):
-        if item not in self.collection:
-            self.collection[item] = todict(self.fetch(item))
-        return self.collection[item]
+    def get(self, key):
+        if key not in self.collection:
+            self.collection[key] = todict(self.fetch(key))
+        return self.collection[key]
 
     def set(self, key, value):
-        self.collection[key] = todict(value)
+        self.collection[key] = value

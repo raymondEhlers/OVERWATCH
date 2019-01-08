@@ -22,8 +22,6 @@ import threading
 
 # ZODB
 import ZODB
-import transaction
-import persistent
 # For determining the storage type
 import zodburi
 

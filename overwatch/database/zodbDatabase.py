@@ -13,9 +13,9 @@ class ZodbDatabase(Database):
             self.db[key] = value
         transaction.commit()
 
-    def clear(self, item):
-        self.db[item] = {}
+    def clear(self, key):
+        self.db[key] = {}
         transaction.commit()
 
-    def contains(self, item):
-        return item in self.db or item in self.collection
+    def contains(self, key):
+        return key in self.db or key in self.collection

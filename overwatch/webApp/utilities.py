@@ -12,8 +12,6 @@ import os
 import subprocess
 import logging
 
-import pendulum
-
 logger = logging.getLogger(__name__)
 # Webassets
 import webassets.filter
@@ -102,21 +100,3 @@ class PolymerBundler(webassets.filter.ExternalTool):
 
 # Register filter so it can be run in the web app
 webassets.filter.register_filter(PolymerBundler)
-
-
-def prettyPrintUnixTime(unixTime):
-    """ Converts the given time stamp into an appropriate manner ("pretty") for display.
-
-    The time is returned in the format: "Tuesday, 6 Nov 2018 20:55:10". This function is
-    mainly needed in Jinja templates were arbitrary functions are not allowed.
-
-    Note:
-        We display this in the CERN time zone, so we convert it here to that timezone.
-
-    Args:
-        unixTime (int): Unix time to be converted.
-    Returns:
-        str: The time stamp converted into an appropriate manner for display.
-    """
-    d = pendulum.from_timestamp(unixTime, tz="Europe/Zurich")
-    return d.format("dddd, D MMM YYYY HH:mm:ss")

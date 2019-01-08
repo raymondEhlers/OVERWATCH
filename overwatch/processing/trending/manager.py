@@ -11,8 +11,8 @@ import logging
 import os
 from collections import defaultdict
 
+import BTrees
 import ROOT
-from BTrees.OOBTree import BTree
 from persistent import Persistent
 
 import overwatch.processing.pluginManager as pluginManager
@@ -53,7 +53,7 @@ class TrendingManager(Persistent):
     Attributes:
         parameters (dict): Parameters read from configuration files
         histToTrending (dict): Dictionary whose key is histogram and value is the list of trending objects
-        subsystems (BTree): Database for trending
+        subsystems (dict): Database for trending
         """
 
     def __init__(self, db, parameters):  # type: (PersistentMapping, dict)->None
@@ -61,7 +61,7 @@ class TrendingManager(Persistent):
         self.parameters = parameters
         self.histToTrending = defaultdict(list)  # type: Dict[str, List[TrendingObject]]
 
-        self.subsystems = {}  # type: BTree[str, BTree[str, TrendingObject]]
+        self.subsystems = BTrees.OOBTree.BTree()  # type: Dict[str, Dict[str, TrendingObject]]
         self._prepareDirStructure()
         Mail(alarmsParameters=parameters)
         SlackNotification(alarmsParameters=parameters)
@@ -82,10 +82,9 @@ class TrendingManager(Persistent):
 
             self._prepareDataBase(subsystemName)
 
-
     def _prepareDataBase(self, objName):
         if objName not in self.subsystems:
-            self.subsystems[objName] = {}
+            self.subsystems[objName] = BTrees.OOBTree.BTree()
 
     def createTrendingObjects(self):
         """ It loops over subsystems and calls function that creates trending objects for each subsystem.
@@ -139,13 +138,11 @@ class TrendingManager(Persistent):
         # Cannot have same name as other canvases, otherwise the canvas will be replaced, leading to segfaults
         canvasName = 'processTrendingCanvas'
         canvas = ROOT.TCanvas(canvasName, canvasName)
-        for subsystemName, subsystem in self.subsystems.items():  # type: (str, BTree[str, TrendingObject])
+        for subsystemName, subsystem in self.subsystems.items():  # type: (str, Dict[str, TrendingObject])
             logger.debug("subsystem: {subsystemName} is going to be trended".format(subsystemName=subsystemName))
             for name, trendingObject in subsystem.items():  # type: (str, TrendingObject)
                 logger.debug("trendingObject: {trendingObject}".format(trendingObject=trendingObject))
                 trendingObject.processHist(canvas)
-        self.db.set('trending', self.subsystems)
-
 
     def notifyAboutNewHistogramValue(self, hist):  # type: (histogramContainer) -> None
         """ This function is called when the ROOT histogram is being processed.
