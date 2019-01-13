@@ -1,3 +1,8 @@
+"""
+.. code-author: Mateusz Piwowarczyk <>, AGH University of Science and Technology
+"""
+
+
 class DatabaseFactory:
     """ Allows to create and manage instances of database objects.
 
