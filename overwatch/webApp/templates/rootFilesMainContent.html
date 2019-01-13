@@ -8,10 +8,11 @@
 
 <ul class="listColumns">
     {% if subsystemObject.combinedFile != None %}
-    <li><a href="{{ url_for("protected", filename=subsystemObject.combinedFile.filename) }}" download>Combined file created at {{ subsystemObject.prettyPrintUnixTime(subsystemObject.combinedFile.fileTime) }}</a></li>
+    <li><a href="{{ url_for("protected", filename=subsystemObject.combinedFile.filename) }}" download>Combined file created at {{ prettyPrintUnixTime(subsystemObject.combinedFile.fileTime) }}</a></li>
     {% endif %}
     {% for fileCont in subsystemObject.files.values() %}
     <li><a href="{{ url_for("protected", filename=fileCont.filename) }}" download>
-        {{ subsystemObject.prettyPrintUnixTime(fileCont.fileTime) }}</a></li>
+        {{ prettyPrintUnixTime(fileCont.fileTime) }}
+    </a></li>
     {% endfor %}
 </ul>

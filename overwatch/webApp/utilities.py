@@ -11,6 +11,7 @@ to other Overwatch packages.
 import os
 import subprocess
 import logging
+
 logger = logging.getLogger(__name__)
 # Webassets
 import webassets.filter

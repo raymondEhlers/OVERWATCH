@@ -22,8 +22,6 @@ import threading
 
 # ZODB
 import ZODB
-import transaction
-import persistent
 # For determining the storage type
 import zodburi
 
@@ -497,32 +495,32 @@ def updateDBSensitiveParameters(db, overwriteSecretKey = True):
     (sensitiveParameters, filesRead) = config.readConfig(config.configurationType.webApp)
 
     # Ensure that the config exists
-    if "config" not in db:
-        db["config"] = persistent.mapping.PersistentMapping()
+    if not db.contains("config"):
+        db.set("config", {})
         logger.warning("Needed to create the config!")
 
     # Users
     # Create mapping if not already there
-    if "users" not in db['config']:
-        db["config"]["users"] = persistent.mapping.PersistentMapping()
+    if "users" not in db.get('config'):
+        db.get("config")["users"] = {}
         logger.info("Created the users dict!")
 
     # Add each user, overriding an existing settings
-    users = db["config"]["users"]
+    users = db.get("config")["users"]
     for user, pw in iteritems(sensitiveParameters["_users"]):
         users[user] = pw
         logger.info("Adding user {user}".format(user = user))
 
     # Secret key
     # Set the secret key to the one set in the server parameters.
-    if overwriteSecretKey or "secretKey" not in db["config"]:
+    if overwriteSecretKey or "secretKey" not in db.get("config"):
         # NOTE: There will always be a secret key in the sensitive paramers (by default, it just generates a random one),
         #       so we can just use the value without worrying whether it exists.
-        db["config"]["secretKey"] = sensitiveParameters["_secretKey"]
+        db.get("config")["secretKey"] = sensitiveParameters["_secretKey"]
         logger.info("Adding secret key to db!")
 
     # Ensure that any additional changes are committed
-    transaction.commit()
+    db.commit()
 
 ####################
 # Histogram array functions

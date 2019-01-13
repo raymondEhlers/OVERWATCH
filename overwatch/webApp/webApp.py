@@ -27,13 +27,16 @@ import pkg_resources
 # For server status
 import requests
 import logging
+
+from overwatch.database.factoryMethod import getDatabaseFactory
+from overwatch.processing.processingClasses import runContainer, subsystemContainer
+
 logger = logging.getLogger(__name__)
 
 # Flask
 from flask import Flask, url_for, request, render_template, redirect, flash, send_from_directory, jsonify, session
 from flask_login import LoginManager, login_user, logout_user, login_required, current_user
 from flask_bcrypt import Bcrypt
-from flask_zodb import ZODB
 from flask_assets import Environment
 from flask_wtf.csrf import CSRFProtect, CSRFError
 
@@ -59,10 +62,7 @@ from ..processing import processRuns
 # Flask setup
 app = Flask(__name__, static_url_path=serverParameters["staticURLPath"], static_folder=serverParameters["staticFolder"], template_folder=serverParameters["templateFolder"])
 
-# Setup database
-app.config["ZODB_STORAGE"] = serverParameters["databaseLocation"]
-db = ZODB(app)
-
+databaseFactory = getDatabaseFactory()
 from .trending import trendingPage
 app.register_blueprint(trendingPage)
 
@@ -144,6 +144,7 @@ def load_user(user):
         auth.User: The user stored in the database which corresponds to the given username, or
             ``None`` if it doesn't exist.
     """
+    db = databaseFactory.getDB()
     return auth.User.getUser(user, db)
 
 # Sentry for monitoring errors and other issues.
@@ -189,8 +190,9 @@ def login():
     errorValue = None
     nextValue = routing.getRedirectTarget()
 
+    db = databaseFactory.getDB()
     # Check for users and notify if there are none!
-    if "users" not in db["config"] or not db["config"]["users"]:
+    if "users" not in db.get("config") or not db.get("config")["users"]:
         logger.fatal("No users found in database!")
         # This is just for developer convenience.
         if serverParameters["debug"]:
@@ -327,6 +329,7 @@ def statusQuery():
     """
     # Responds to requests from other OVERWATCH servers to display the status of the site
     response = "DB failed", 500
+    db = databaseFactory.getDB()
     if db:
         response = "Alive", 200
     return response
@@ -362,12 +365,13 @@ def index():
     # We only use this once and there isn't much complicated, so we just perform the validation here.
     runOffset = validation.convertRequestToPositiveInteger(paramName = "runOffset", source = request.args)
 
-    runs = db["runs"]
+    db = databaseFactory.getDB()
+    runs = db.get("runs")
 
     # Determine if a run is ongoing
     # To do so, we need the most recent run (regardless of which runs we selected to display)
     mostRecentRun = runs[runs.keys()[-1]]
-    runOngoing = mostRecentRun.isRunOngoing()
+    runOngoing = runContainer.isRunOngoing(mostRecentRun)
     if runOngoing:
         runOngoingNumber = mostRecentRun.runNumber
     else:
@@ -397,10 +401,12 @@ def index():
                                subsystemsWithRootFilesToShow = serverParameters["subsystemsWithRootFilesToShow"],
                                anchorFrequency = anchorFrequency,
                                runOffset = runOffset, numberOfRunsToDisplay = numberOfRunsToDisplay,
-                               totalNumberOfRuns = numberOfRuns)
+                               totalNumberOfRuns = numberOfRuns,
+                               startOfRunTimeStamp=runContainer.startOfRunTimeStamp)
     else:
         drawerContent = render_template("runListDrawer.html", runs = runsToUse, runOngoing = runOngoing,
-                                        runOngoingNumber = runOngoingNumber, anchorFrequency = anchorFrequency)
+                                        runOngoingNumber = runOngoingNumber, anchorFrequency = anchorFrequency,
+                                        startOfRunTimeStamp=runContainer.startOfRunTimeStamp)
         mainContent = render_template("runListMainContent.html", runs = runsToUse, runOngoing = runOngoing,
                                       runOngoingNumber = runOngoingNumber,
                                       subsystemsWithRootFilesToShow = serverParameters["subsystemsWithRootFilesToShow"],
@@ -446,7 +452,8 @@ def runPage(runNumber, subsystemName, requestedFileType):
     """
     # Setup runDir and db information
     runDir = "Run{runNumber}".format(runNumber = runNumber)
-    runs = db["runs"]
+    db = databaseFactory.getDB()
+    runs = db.get("runs")
 
     # Validation for all passed values
     (error, run, subsystem, requestedFileType, jsRoot, ajaxRequest, requestedHistGroup, requestedHist, timeSliceKey, timeSlice) = validation.validateRunPage(runDir, subsystemName, requestedFileType, runs)
@@ -487,7 +494,8 @@ def runPage(runNumber, subsystemName, requestedFileType):
                                                   selectedHistGroup = requestedHistGroup, selectedHist = requestedHist,
                                                   jsonFilenameTemplate = jsonFilenameTemplate,
                                                   imgFilenameTemplate = imgFilenameTemplate,
-                                                  jsRoot = jsRoot, timeSlice = timeSlice)
+                                                  jsRoot = jsRoot, timeSlice = timeSlice,
+                                                  prettyPrintUnixTime=subsystemContainer.prettyPrintUnixTime)
                 except jinja2.exceptions.TemplateNotFound as e:
                     error.setdefault("Template Error", []).append("Request template: \"{}\", but it was not found!".format(e.name))
             elif requestedFileType == "rootFiles":
@@ -531,7 +539,8 @@ def runPage(runNumber, subsystemName, requestedFileType):
                                                   selectedHistGroup = requestedHistGroup, selectedHist = requestedHist,
                                                   jsonFilenameTemplate = jsonFilenameTemplate,
                                                   imgFilenameTemplate = imgFilenameTemplate,
-                                                  jsRoot = jsRoot, timeSlice = timeSlice)
+                                                  jsRoot = jsRoot, timeSlice = timeSlice,
+                                                  prettyPrintUnixTime=subsystemContainer.prettyPrintUnixTime)
                 except jinja2.exceptions.TemplateNotFound as e:
                     error.setdefault("Template Error", []).append("Request template: \"{}\", but it was not found!".format(e.name))
             elif requestedFileType == "rootFiles":
@@ -539,7 +548,10 @@ def runPage(runNumber, subsystemName, requestedFileType):
                     # Subsystem specific run pages are not available since they don't seem to be necessary
                     # Note that even though this file should always be found, we check for exceptions just in case.
                     drawerContent = ""
-                    mainContent = render_template("rootFilesMainContent.html", run = run, subsystem = subsystemName)
+                    mainContent = render_template("rootFilesMainContent.html",
+                                                  run = run,
+                                                  subsystem = subsystemName,
+                                                  prettyPrintUnixTime=subsystemContainer.prettyPrintUnixTime)
                 except jinja2.exceptions.TemplateNotFound as e:
                     error.setdefault("Template Error", []).append("Request template: \"{}\", but it was not found!".format(e.name))
             else:
@@ -623,7 +635,8 @@ def timeSlice():
 
     if request.method == "POST":
         # Get the runs
-        runs = db["runs"]
+        db = databaseFactory.getDB()
+        runs = db.get("runs")
 
         # Validates the request.
         (error, minTime, maxTime, runDir, subsystem, histGroup, histName, inputProcessingOptions) = validation.validateTimeSlicePostRequest(request, runs)
@@ -696,7 +709,8 @@ def testingDataArchive():
         redirect: Redirect to the newly created file.
     """
     # Get db
-    runs = db["runs"]
+    db = databaseFactory.getDB()
+    runs = db.get("runs")
     runList = runs.keys()
 
     # Retrieve at most 5 files
@@ -772,7 +786,8 @@ def overwatchStatus():
         Response: Status template populated with the status of Overwatch sites specified in the configuration.
     """
     # Setup
-    runs = db["runs"]
+    db = databaseFactory.getDB()
+    runs = db.get("runs")
     ajaxRequest = validation.convertRequestToPythonBool("ajaxRequest", request.args)
 
     # Where the statuses will be collected
@@ -781,7 +796,7 @@ def overwatchStatus():
     # Determine if a run is ongoing
     # To do so, we need the most recent run
     mostRecentRun = runs[runs.keys()[-1]]
-    runOngoing = mostRecentRun.isRunOngoing()
+    runOngoing = runContainer.isRunOngoing(mostRecentRun)
     if runOngoing:
         runOngoingNumber = "- " + mostRecentRun.prettyName
     else:

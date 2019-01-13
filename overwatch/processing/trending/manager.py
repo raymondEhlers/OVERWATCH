@@ -11,8 +11,8 @@ import logging
 import os
 from collections import defaultdict
 
+import BTrees
 import ROOT
-from BTrees.OOBTree import BTree
 from persistent import Persistent
 
 import overwatch.processing.pluginManager as pluginManager
@@ -53,16 +53,15 @@ class TrendingManager(Persistent):
     Attributes:
         parameters (dict): Parameters read from configuration files
         histToTrending (dict): Dictionary whose key is histogram and value is the list of trending objects
-        trendingDB (BTree): Database for trending
+        subsystems (dict): Database for trending
         """
 
-    def __init__(self, dbRoot, parameters):  # type: (PersistentMapping, dict)->None
+    def __init__(self, db, parameters):  # type: (PersistentMapping, dict)->None
+        self.db = db
         self.parameters = parameters
         self.histToTrending = defaultdict(list)  # type: Dict[str, List[TrendingObject]]
 
-        self._prepareDataBase(CON.TRENDING, dbRoot)
-        self.trendingDB = dbRoot[CON.TRENDING]  # type: BTree[str, BTree[str, TrendingObject]]
-
+        self.subsystems = BTrees.OOBTree.BTree()  # type: Dict[str, Dict[str, TrendingObject]]
         self._prepareDirStructure()
         Mail(alarmsParameters=parameters)
         SlackNotification(alarmsParameters=parameters)
@@ -81,12 +80,11 @@ class TrendingManager(Persistent):
             if not os.path.exists(subJsonDir):
                 os.makedirs(subJsonDir)
 
-            self._prepareDataBase(subsystemName, self.trendingDB)
+            self._prepareDataBase(subsystemName)
 
-    @staticmethod
-    def _prepareDataBase(objName, dbPosition):  # type: (str, Persistent)-> None
-        if objName not in dbPosition:
-            dbPosition[objName] = BTree()
+    def _prepareDataBase(self, objName):
+        if objName not in self.subsystems:
+            self.subsystems[objName] = BTrees.OOBTree.BTree()
 
     def createTrendingObjects(self):
         """ It loops over subsystems and calls function that creates trending objects for each subsystem.
@@ -114,22 +112,18 @@ class TrendingManager(Persistent):
         fail = "Trending object {name} already exists in subsystem {subsystemName}"
 
         for info in infoList:
-            if info.name not in self.trendingDB[subsystemName] or self.parameters[CON.RECREATE]:
+            if info.name not in self.subsystems[subsystemName] or self.parameters[CON.RECREATE]:
                 to = info.createTrendingClass(subsystemName, self.parameters)
-                self.trendingDB[subsystemName][info.name] = to
+                self.subsystems[subsystemName][info.name] = to
                 self._subscribe(to, info.histogramNames)
 
                 logger.debug(success.format(name=info.name, subsystemName=subsystemName))
             else:
-                logger.debug(fail.format(name=self.trendingDB[subsystemName][info.name], subsystemName=subsystemName))
+                logger.debug(fail.format(name=self.subsystems[subsystemName][info.name], subsystemName=subsystemName))
 
     def _subscribe(self, trendingObject, histogramNames):  # type: (TrendingObject, List[str])->None
         for histName in histogramNames:
             self.histToTrending[histName].append(trendingObject)
-
-    def resetDB(self):  # TODO not used - is it needed?
-        self.trendingDB.clear()
-        self._prepareDirStructure()
 
     def processTrending(self):
         """ Process the trending objects.
@@ -144,8 +138,7 @@ class TrendingManager(Persistent):
         # Cannot have same name as other canvases, otherwise the canvas will be replaced, leading to segfaults
         canvasName = 'processTrendingCanvas'
         canvas = ROOT.TCanvas(canvasName, canvasName)
-
-        for subsystemName, subsystem in self.trendingDB.items():  # type: (str, BTree[str, TrendingObject])
+        for subsystemName, subsystem in self.subsystems.items():  # type: (str, Dict[str, TrendingObject])
             logger.debug("subsystem: {subsystemName} is going to be trended".format(subsystemName=subsystemName))
             for name, trendingObject in subsystem.items():  # type: (str, TrendingObject)
                 logger.debug("trendingObject: {trendingObject}".format(trendingObject=trendingObject))

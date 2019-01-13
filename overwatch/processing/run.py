@@ -16,6 +16,7 @@ import pprint
 import timeit
 
 import sentry_sdk
+from overwatch.database.factoryMethod import getDatabaseFactory
 from sentry_sdk.integrations.logging import LoggingIntegration
 
 # Config
@@ -71,13 +72,13 @@ def run():
     logger.info("Starting processing with sleep time of {sleepTime}.".format(sleepTime = sleepTime))
     # Create connection information here so the processing doesn't attempt to access the database
     # each time that it runs during repeating processing, as such attempts will confuse the database lock.
-    (dbRoot, connection) = utilities.getDB(processingParameters["databaseLocation"])
+    db = getDatabaseFactory().getDB()
     while not handler.exit.is_set():
         # Note both the time that the processing started, as well as the execution time.
         logger.info("Running processing at {time}.".format(time = pendulum.now()))
         start = timeit.default_timer()
         # Run the actual executable.
-        processRuns.processAllRuns(dbRoot, connection)
+        processRuns.processAllRuns(db)
         end = timeit.default_timer()
         logger.info("Processing complete in {time} seconds".format(time = end - start))
         # Only execute once if the sleep time is <= 0. Otherwise, sleep and repeat.
@@ -86,7 +87,7 @@ def run():
         else:
             break
 
-    connection.close()
+    db.close_connection()
 
 if __name__ == "__main__":
     run()
