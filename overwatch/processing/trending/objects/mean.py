@@ -20,6 +20,8 @@ class MeanTrending(TrendingObject):
     def retrieveHist(self):
         histogram = ROOT.TGraphErrors(self.maxEntries)
         histogram.SetName(self.name)
+        histogram.GetXaxis().SetTitle("Time")
+        histogram.GetYaxis().SetTitle(self.desc)
         histogram.GetXaxis().SetTimeDisplay(True)
         histogram.SetTitle(self.desc)
         histogram.SetMarkerStyle(ROOT.kFullCircle)
