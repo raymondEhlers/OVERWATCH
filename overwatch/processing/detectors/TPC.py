@@ -60,6 +60,11 @@ def getTrendingObjectInfo():  # type: () -> List[TrendingInfo]
     alarms = {
         "mean": alarmMeanConfig()
     }
+    alarms = {
+        "max": alarmMaxConfig(),
+        "mean": alarmMeanConfig(),
+        "stdDev": alarmStdConfig()
+    }
     trendingInfo = []
     for prefix, cls in trendingNameToObject.items():
         for name, desc, histograms in infoList:
@@ -92,7 +97,9 @@ def generalOptions(subsystem, hist, processingOptions):
 
 def ptSpectra(subsystem, hist, processingOptions, **kwargs):
     """ Processing function for pT spectra.
+
     Set the y axis labels (x is already set) and log y for a clearer visualization.
+
     Args:
         subsystem (subsystemContainer): The subsystem for the current run.
         hist (histogramContainer): The histogram being processed.
@@ -192,6 +199,7 @@ def createAdditionalTPCHistograms(subsystem):
       those histograms to the A side and the C side to determine their performance at the readouts on each side.
     - The DCAz vs phi for all tracks. We restrict the eta and pt ranges. This is just as an example.
     - The eta, phi and pT projection histograms for positive and negative tracks.
+
     Note:
         Older histograms has an additional "TPCQA " in front of their names (ie. "TPCQA TPCQA/h_tpc_track_pos_recvertex_3_5_6").
         The name was changed in the TPC HLT component. For simplicity, we only consider the current name (ie. without
@@ -359,7 +367,9 @@ def projectToXZ(subsystem, hist, processingOptions, aSide):
 
 def projectToYZ(subsystem, hist, processingOptions):
     """ Project a given TH3 histogram onto the YZ axis.
+
     This function was built to get an eta vs. phi histograms for positive and negative tracks.
+
     Args:
         subsystem (subsystemContainer): Subsystem which contains the projected histogram.
         hist (histogramContainer): Histogram container corresponding to the projected histogram.

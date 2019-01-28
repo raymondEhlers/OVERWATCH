@@ -1,3 +1,8 @@
+#!/usr/bin/env python
+""" Tests for TrendingObject.
+
+.. codeauthor:: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+"""
 import pytest
 import ROOT
 from overwatch.processing.trending.objects.object import TrendingObject

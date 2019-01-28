@@ -61,7 +61,7 @@ templates_path = ['_templates']
 
 # Add markdown support
 source_parsers = {
-   '.md': 'recommonmark.parser.CommonMarkParser',
+    '.md': 'recommonmark.parser.CommonMarkParser',
 }
 
 # The suffix(es) of source filenames.
@@ -81,12 +81,13 @@ language = None
 # List of patterns, relative to source directory, that match files and
 # directories to ignore when looking for source files.
 # This pattern also affects html_static_path and html_extra_path .
-exclude_patterns = ['_build', 'Thumbs.db', '.DS_Store',
-        "CHEP",
-        "planning",
-        "logo",
-        "README.md" # This is a README for the docs generation, so it shouldn't be included in the generated docs
-    ]
+exclude_patterns = [
+    '_build', 'Thumbs.db', '.DS_Store',
+    "CHEP",
+    "planning",
+    "logo",
+    "README.md"  # This is a README for the docs generation, so it shouldn't be included in the generated docs
+]
 
 # The name of the Pygments (syntax highlighting) style to use.
 pygments_style = 'sphinx'
@@ -104,13 +105,13 @@ html_theme = 'alabaster'
 # documentation.
 #
 html_theme_options = {
-        "github_user": "raymondEhlers",
-        "github_repo": "OVERWATCH",
-        "github_type": "star",
-        "github_banner": True,
-        "logo" : "overwatchLogo.v1.svg",
-        "show_powered_by": False
-    }
+    "github_user": "raymondEhlers",
+    "github_repo": "OVERWATCH",
+    "github_type": "star",
+    "github_banner": True,
+    "logo": "overwatchLogo.v1.svg",
+    "show_powered_by": False
+}
 
 # Add any paths that contain custom static files (such as style sheets) here,
 # relative to this directory. They are copied after the builtin static files,
@@ -125,15 +126,15 @@ html_static_path = ['_static']
 # default: ``['localtoc.html', 'relations.html', 'sourcelink.html',
 # 'searchbox.html']``.
 html_sidebars = {
-        # Two starts is extremely important! Otherwise, it won't apply the navigation bar
-        # to pages further down in the docs, like in the api folder.
-        "**" : [
-            "about.html",
-            "navigation.html",
-            "relations.html",
-            "searchbox.html"
-        ]
-    }
+    # Two starts is extremely important! Otherwise, it won't apply the navigation bar
+    # to pages further down in the docs, like in the api folder.
+    "**": [
+        "about.html",
+        "navigation.html",
+        "relations.html",
+        "searchbox.html"
+    ]
+}
 
 
 # -- Options for HTMLHelp output ---------------------------------------------

@@ -45,6 +45,9 @@ databaseLocation: !joinPaths
     - *dataFolder
     - "overwatch.fs"
 
+# The file extension to use when printing ROOT files.
+fileExtension: "png"
+
 # Location of the receiver files.
 receiverData: *dataFolder
 # Temporary storage location for the receiver data files.
@@ -61,8 +64,24 @@ dataTransferLocations:
 # Number of times we should try to transfer data when the transfer fails.
 dataTransferRetries: 2
 # Time in seconds to wait between checking for new files
-dataHandlingTimeToSleep: 20
+dataTransferTimeToSleep: 20
 
-# The file extension to use when printing ROOT files.
-fileExtension: "png"
-
+# Data replay settings
+# Time to sleep between each replay execution.
+dataReplayTimeToSleep: 30
+# Select which Run directory will be replayed. This must be the path to the full run directory.
+# For example, it may be "data/Run123456". "Run" must be in the directory name.
+# It is null be default because we don't want to unexpected begin replaying, which could lead to data loss.
+dataReplaySourceDirectory: null
+# Where the data should be replayed to. Usually, this is just the data folder, because Overwatch
+# will then process the files from there.
+dataReplayDestinationDirectory: !joinPaths
+    - *dataFolder
+# Location where directories and files are temporarily stored when replaying a run.
+dataReplayTempStorageDirectory: !joinPaths
+    - *dataFolder
+    - "tempReplayData"
+# Maximum number of files to move per replay.
+# nMaxFiles set to one will ensure that files are transferred one by one, which is the desired behavior if one
+# wants to test the evolution of dataset. Such an approach is the best possible simulation of actually receiving data.
+dataReplayMaxFilesPerReplay: 1

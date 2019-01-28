@@ -1,3 +1,9 @@
+#!/usr/bin/env python
+
+""" Trending object to extract the mean of a histogram.
+
+.. codeauthor:: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+"""
 import numpy as np
 import ROOT
 

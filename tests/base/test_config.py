@@ -6,7 +6,7 @@ Note that these tests are not quite ideal, as they rely on the default implement
 for the configuration and modules (which can change), but using this implementation
 takes much less time than mocking objects.
 
-.. code-author: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
+.. codeauthor:: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
 """
 
 from future.utils import iteritems
