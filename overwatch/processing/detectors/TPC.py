@@ -1,9 +1,7 @@
 #!/usr/bin/env python
 
 """ TPC subsystem specific functionality.
-
 The TPC has a variety of monitoring and trending functionality.
-
 .. codeauthor:: Raymond Ehlers <raymond.ehlers@cern.ch>, Yale University
 .. codeauthor:: James Mulligan <james.mulligan@yale.edu>, Yale University
 .. codeauthor:: Anthony Timmins <anthony.timmins@cern.ch>, University of Houston
@@ -38,7 +36,6 @@ def getTrendingObjectInfo():  # type: () -> List[TrendingInfo]
     desc - verbose description of trendingObject, it is displayed on generated histograms
     histogramNames - list of histogram names from which trendingObject depends
     trendingClass - concrete class of abstract class TrendingObject
-
      It is possible to catch TrendingInfoException and continue without invalid object
      (for example when TrendingInfo have unavailable histogram [Not implemented in current version])
 
@@ -60,9 +57,10 @@ def getTrendingObjectInfo():  # type: () -> List[TrendingInfo]
         ("histMneg", "<Multiplicity of neg. tracks>", ["TPCQA/h_tpc_event_recvertex_5"])
     ]
     trendingNameToObject = {
-        "max": trendingObjects.MaximumTrending,
-        "mean": trendingObjects.MeanTrending,
-        "stdDev": trendingObjects.StdDevTrending,
+        "mean": trendingObjects.MeanTrending
+    }
+    alarms = {
+        "mean": alarmMeanConfig()
     }
     alarms = {
         "max": alarmMaxConfig(),
@@ -121,7 +119,6 @@ def ptSpectra(subsystem, hist, processingOptions, **kwargs):
 
 def findFunctionsForTPCHistogram(subsystem, hist):
     """ Find processing functions for TPC histograms based on their names.
-
     This plug-in function steers the histograms to the right set of processing functions. These functions
     will then be executed later when the histograms are actually processed. This function only executes
     when the subsystem is created at the start of each new run. By doing so, we can minimize inefficient
@@ -160,20 +157,15 @@ def createTPCHistogramGroups(subsystem):
     which match. Thus, histograms should be ordered in such that the most inclusive are specified last.
 
     Generally, hists are sorted as follows:
-
     - Cluster related histograms
     - Match tracking efficiency
     - Vertex position
-
-    However, as of August 2018, the above list isn't comprehensive due to some difficulty in deciphering
-    the histogram names! This can be resolved by a TPC expert.
 
     Note:
         Since the TPC usually has a corresponding receiver and therefore a file source,
         we include a catch all group at the end. However, it is protected such that it will
         only be added for a particular run if there is actually an TPC file. This avoids
         collecting a bunch of unrelated hists in the case that there isn't a file.
-
     Args:
         subsystem (subsystemContainer): The subsystem for the current run.
     Returns:
@@ -224,7 +216,6 @@ def createAdditionalTPCHistograms(subsystem):
         Older histograms has an additional "TPCQA " in front of their names (ie. "TPCQA TPCQA/h_tpc_track_pos_recvertex_3_5_6").
         The name was changed in the TPC HLT component. For simplicity, we only consider the current name (ie. without
         the extra "TPCQA ").
-
     Args:
         subsystem (subsystemContainer): Subsystem for which the additional histograms are to be created.
     Returns:
@@ -438,4 +429,3 @@ def projectTo1D(subsystem, hist, processingOptions):
     tempHist.SetTitle("{histName} (ncl>70)".format(histName = hist.histName))
 
     return tempHist
-

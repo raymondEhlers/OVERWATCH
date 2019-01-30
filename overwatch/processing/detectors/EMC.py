@@ -405,8 +405,8 @@ def addTRUGrid(subsystem, hist):
         is only implicit.
 
     Warning:
-        The grid is created by allocating a large number of ``TLine`` objects which are owned by ROOT, but not by
-        python. Although this hasn't been observed to be a problem, this could in principle lead to memory problems.
+        The grid is created by allocating a large number of ``TLine`` objects which are owned by python, but not by
+        ROOT. Although this hasn't been observed to be a problem, this could in principle lead to memory problems.
 
     Args:
         subsystem (subsystemContainer): The subsystem for the current run.

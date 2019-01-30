@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """ Check if minimum ratio*N last N alarms are in range.
 
-.. code-author: Jacek Nabywaniec <>, AGH University of Science and Technology
+.. codeauthor:: Jacek Nabywaniec <>, AGH University of Science and Technology
 """
 from overwatch.processing.alarms.alarm import Alarm
 

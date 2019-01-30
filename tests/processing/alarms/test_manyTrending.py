@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """ Tests for N trending object to N alarms.
 
-.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+.. codeauthor:: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
 """
 
 from overwatch.processing.alarms.impl.andAlarm import AndAlarm

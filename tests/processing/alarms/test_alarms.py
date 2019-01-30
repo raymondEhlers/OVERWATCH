@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """ Tests for alarm implementations.
-.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
-.. code-author: Jacek Nabywaniec <jacek.nabywaniec@gmail.com>, AGH University of Science and Technology
+.. codeauthor:: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+.. codeauthor:: Jacek Nabywaniec <jacek.nabywaniec@gmail.com>, AGH University of Science and Technology
 """
 import pytest
 

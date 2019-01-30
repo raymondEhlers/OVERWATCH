@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """ Alarms aggregation class - will notify if any alarm appeared.
 
-.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+.. codeauthor:: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
 """
 from overwatch.processing.alarms.aggregatingAlarm import AggregatingAlarm
 

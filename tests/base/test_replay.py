@@ -2,7 +2,7 @@
 
 """ Tests for the replay module, which replays already processed data.
 
-.. code-author: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
+.. codeauthor:: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
 """
 
 import pytest

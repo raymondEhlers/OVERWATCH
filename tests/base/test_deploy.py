@@ -2,7 +2,7 @@
 
 """ Tests for the deploy module, which is used to configure and execute Overwatch scripts.
 
-.. code-author: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
+.. codeauthor:: Raymond Ehlers <raymond.ehlers@yale.edu>, Yale University
 """
 
 from future.utils import iteritems

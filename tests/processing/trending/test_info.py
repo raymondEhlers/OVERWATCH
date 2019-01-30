@@ -1,7 +1,7 @@
 #!/usr/bin/env python
 """ Tests for TrendingInfo.
 
-.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+.. codeauthor:: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
 """
 import pytest
 

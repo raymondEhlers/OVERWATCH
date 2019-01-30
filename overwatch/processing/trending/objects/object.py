@@ -4,7 +4,7 @@
 Has abstract methods to implement,
 can save create histogram to image file and json file.
 
-.. code-author: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
+.. codeauthor:: Pawel Ostrowski <ostr000@interia.pl>, AGH University of Science and Technology
 """
 import logging
 import os

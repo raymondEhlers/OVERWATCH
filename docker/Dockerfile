@@ -40,9 +40,10 @@ RUN mkdir -p ${OVERWATCH_ROOT}
 WORKDIR ${OVERWATCH_ROOT}
 # Download OVERWATCH, setup the needed python packages, and compile the reciever
 # Size increase here is mainly due to the numpy dependency. We use --no-cache-dir to keep the image size down.
+# NOTE: Temporarily pinned pip to 18.1 because of a bug in 19.0. See: https://github.com/pypa/pip/issues/6197
 RUN git clone https://github.com/raymondEhlers/OVERWATCH.git . \
         && git checkout origin/${OVERWATCH_BRANCH} \
-        && pip install --user --no-cache-dir --upgrade pip \
+        && pip install --user --no-cache-dir --upgrade pip==18.1 \
         && pip install --user --no-cache-dir git+https://github.com/SpotlightKid/flask-zodb.git \
         && pip install --user --no-cache-dir -e ".[tests, docs, dev]" \
         && mkdir -p receiver/build && cd receiver/build \
