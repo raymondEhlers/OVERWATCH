@@ -1,3 +1,6 @@
+"""
+.. code-author: Mateusz Piwowarczyk <>, AGH University of Science and Technology
+"""
 import BTrees
 import persistent
 
@@ -11,11 +14,11 @@ class Map(dict):
         super(Map, self).__init__(*args, **kwargs)
         for arg in args:
             if isinstance(arg, dict):
-                for k, v in arg.iteritems():
+                for k, v in arg.items():
                     self[k] = v
 
         if kwargs:
-            for k, v in kwargs.iteritems():
+            for k, v in kwargs.items():
                 self[k] = v
 
     def __getattr__(self, attr):
@@ -40,7 +43,8 @@ def todict(obj, classkey=None):
     """ Converts object to dictionary.
         For more information see https://stackoverflow.com/questions/1036409/recursively-convert-python-object-graph-to-dictionary
     """
-    if isinstance(obj, dict) or isinstance(obj, BTrees.OOBTree.BTree) or isinstance(obj, persistent.mapping.PersistentMapping):
+    if isinstance(obj, dict) or isinstance(obj, BTrees.OOBTree.BTree) \
+            or isinstance(obj, persistent.mapping.PersistentMapping):
         data = Map()
         for (k, v) in obj.items():
             data[str(k)] = todict(v, classkey)

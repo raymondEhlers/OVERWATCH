@@ -1,4 +1,8 @@
-from utilities import Map
+"""
+.. code-author: Mateusz Piwowarczyk <>, AGH University of Science and Technology
+"""
+
+from overwatch.database.utilities import Map
 
 
 class Database:

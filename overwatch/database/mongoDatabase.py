@@ -1,6 +1,8 @@
+"""
+.. code-author: Mateusz Piwowarczyk <>, AGH University of Science and Technology
+"""
 from overwatch.database.abstractDatabase import Database
-
-from utilities import todict
+from overwatch.database.utilities import todict
 
 
 class MongoDatabase(Database):

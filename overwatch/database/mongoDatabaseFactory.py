@@ -1,3 +1,6 @@
+"""
+.. code-author: Mateusz Piwowarczyk <>, AGH University of Science and Technology
+"""
 import pymongo
 
 from overwatch.database.databaseFactory import DatabaseFactory
