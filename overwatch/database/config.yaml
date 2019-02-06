@@ -1,0 +1,13 @@
+
+mongoPort: 27017
+
+mongoHost: "0.0.0.0"
+
+databaseName: overwatch
+
+databaseLocation: !joinPaths
+    - "file://"
+    - *dataFolder
+    - "overwatch.fs"
+
+databaseType: mongodb
