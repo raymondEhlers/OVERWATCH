@@ -110,7 +110,9 @@ setup(
         # need to explicitly include it here.
         "PyYAML",
         "Flask-RESTful",
+        # Database
         "ZODB",
+        "pymongo",
         # Install `Flask-ZODB` from git repo to support the newer hook and py 3
         # git+https://github.com/SpotlightKid/flask-zodb.git
         # Unfortunately, we can't install this directly from git, so it has to be handled directly.
