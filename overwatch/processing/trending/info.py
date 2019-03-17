@@ -9,7 +9,7 @@ from overwatch.processing.alarms.alarm import Alarm
 from overwatch.processing.trending.objects.object import TrendingObject
 
 try:
-    from typing import *  # noqa
+    from typing import Any, Collection, List, Type, Union
 except ImportError:
     pass
 

@@ -24,7 +24,7 @@ import overwatch.processing.trending.objects as trendingObjects
 from overwatch.processing.alarms.example import alarmStdConfig, alarmMaxConfig, alarmMeanConfig
 
 try:
-    from typing import *  # noqa
+    from typing import List
 except ImportError:
     pass
 

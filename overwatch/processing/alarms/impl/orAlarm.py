@@ -6,7 +6,7 @@
 from overwatch.processing.alarms.aggregatingAlarm import AggregatingAlarm
 
 try:
-    from typing import *  # noqa
+    from typing import List
 except ImportError:
     # Imports in this block below here are used solely for typing information
     from overwatch.processing.alarms.alarm import Alarm  # noqa

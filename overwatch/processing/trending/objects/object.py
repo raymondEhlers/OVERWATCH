@@ -15,7 +15,7 @@ from persistent import Persistent
 import overwatch.processing.trending.constants as CON
 
 try:
-    from typing import *  # noqa
+    from typing import Any, List
 except ImportError:
     pass
 else:

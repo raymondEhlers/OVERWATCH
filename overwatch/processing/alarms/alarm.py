@@ -7,7 +7,7 @@ import numpy as np
 from overwatch.processing.alarms.collectors import alarmCollector
 
 try:
-    from typing import *  # noqa
+    from typing import Optional
 except ImportError:
     # Imports in this block below here are used solely for typing information
     from ..trending.objects.object import TrendingObject  # noqa

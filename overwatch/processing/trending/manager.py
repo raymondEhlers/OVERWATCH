@@ -23,7 +23,7 @@ from overwatch.processing.alarms.collectors import alarmCollector
 logger = logging.getLogger(__name__)
 
 try:
-    from typing import *  # noqa
+    from typing import Callable, Dict, List
 except ImportError:
     pass
 else:

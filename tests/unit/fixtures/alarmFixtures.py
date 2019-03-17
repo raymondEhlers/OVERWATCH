@@ -7,7 +7,7 @@ All fixtures for alarms have 'af_' prefix
 """
 
 try:
-    from typing import *  # noqa
+    from typing import Union
 except ImportError:
     pass
 

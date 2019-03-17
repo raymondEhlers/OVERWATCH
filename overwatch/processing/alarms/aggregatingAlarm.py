@@ -7,7 +7,7 @@
 from overwatch.processing.alarms.alarm import Alarm
 
 try:
-    from typing import *  # noqa
+    from typing import Dict, List, Optional
 except ImportError:
     pass
 
