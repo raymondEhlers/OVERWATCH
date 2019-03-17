@@ -67,7 +67,7 @@ class User(UserMixin):
                 returns ``None``.
         """
         try:
-            userPasswordHash = db["config"]["users"][username]
+            userPasswordHash = db.get("config")["users"][username]
         except KeyError:
             # Catch if one of the keys doesn't exist.
             userPasswordHash = None

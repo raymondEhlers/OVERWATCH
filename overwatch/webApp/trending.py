@@ -13,7 +13,7 @@ import os
 
 import overwatch.processing.trending.constants as CON
 from overwatch.processing.trending.manager import TrendingManager
-from overwatch.webApp.webApp import db, serverParameters
+from overwatch.webApp.webApp import serverParameters, databaseFactory
 from overwatch.webApp import validation
 
 logger = logging.getLogger(__name__)
@@ -25,7 +25,7 @@ def determineSubsystemName(subsystemName, trendingManager):  # type: (str, Trend
     if subsystemName:
         return subsystemName
 
-    for subsystemName, subsystem in trendingManager.trendingDB.items():
+    for subsystemName, subsystem in trendingManager.db.get('trending').items():
         if len(subsystem):
             return subsystemName
 
@@ -53,8 +53,10 @@ def trending():
     logger.debug("request: {0}".format(request.args))
     (error, subsystemName, requestedHist, jsRoot, ajaxRequest) = validation.validateTrending(request)
 
+    db = databaseFactory.getDB()
+
     # Return a useful error if trending is disabled
-    if "trending" not in db:
+    if not db.contains("trending"):
         error.setdefault("Trending", []).append("Trending is disabled.")
         if ajaxRequest:
             drawerContent = ""
@@ -65,6 +67,7 @@ def trending():
     # Create trending container from stored trending information
     trendingManager = TrendingManager(db, serverParameters)
     subsystemName = determineSubsystemName(subsystemName, trendingManager)
+    trendingData = db.get('trending')
 
     if not subsystemName:
         error.setdefault("Subsystem", []).append("Cannot find any trended subsystem")
@@ -80,7 +83,7 @@ def trending():
     jsonFilenameTemplate = filenameTemplate.format(type=CON.JSON, extension="json")
 
     templateKwargs = {
-        "trendingManager": trendingManager,
+        "trendingData": trendingData,
         "selectedHistGroup": subsystemName,
         "selectedHist": requestedHist,
         "jsonFilenameTemplate": jsonFilenameTemplate,
