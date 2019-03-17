@@ -12,7 +12,7 @@
 # date: 16 July 2018
 
 # Sets the ip address.
-ipAddress: "0.0.0.0"
+ipAddress: "127.0.0.1"
 
 # Sets the port.
 port: 8850
