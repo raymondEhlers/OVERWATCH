@@ -10,6 +10,8 @@ Welcome to ALICE Overwatch[\*](#name-meaning), a project to provide real-time on
 quality assurance using timestamped data from the ALICE High Level Trigger (HLT) and Data Quality Monitoring
 (DQM). See the [Web App](https://aliceoverwatch.physics.yale.edu/) to access Overwatch displaying ALICE data.
 
+**NOTE: With the end of Run 2, Overwatch is now complete.**
+
 # Quick Start
 
 ## Setup Overwatch
